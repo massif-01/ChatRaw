@@ -28,6 +28,7 @@ Existing open-source chat frontends are too heavy and complex. Many developers a
 
 - 🪶 **Ultra Lightweight** - <50MB memory usage
 - ⚡ **Instant Startup** - Ready in seconds
+- 🎨 **Custom Branding** - Freely change name and logo
 - 🔌 **Plug & Play** - Any OpenAI-compatible API (Ollama, vLLM, LocalAI, LM Studio, etc.)
 - 📄 **Drag & Drop RAG** - Upload documents for instant Q&A
 - 🖼️ **Vision AI** - Multimodal image understanding
@@ -63,6 +64,7 @@ docker compose up -d
 
 - 🪶 **极致轻量** - 内存占用 <50MB
 - ⚡ **极速启动** - 秒级启动
+- 🎨 **自定义品牌** - 随意更改名称和LOGO
 - 🔌 **即插即用** - 支持任意 OpenAI 兼容 API（Ollama、vLLM、LocalAI、LM Studio 等）
 - 📄 **拖拽 RAG** - 拖个文档进来就能问答
 - 🖼️ **视觉理解** - 支持多模态模型图片理解
