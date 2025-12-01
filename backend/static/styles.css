@@ -69,12 +69,14 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html {
     height: 100%;
     overflow: hidden;
 }
 
 body {
+    height: 100%;
+    overflow: hidden;
     font-family: var(--font-main);
     background: var(--bg-primary);
     color: var(--text-primary);
@@ -82,6 +84,10 @@ body {
     line-height: 1.6;
     font-size: 15px;
     -webkit-font-smoothing: antialiased;
+    /* iOS safe area support */
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
 }
 
 [x-cloak] { display: none !important; }
@@ -90,18 +96,24 @@ body {
 .sidebar {
     width: 280px;
     min-width: 280px;
-    height: 100vh;
+    height: 100%;
     background: var(--bg-secondary);
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 10;
+    flex-shrink: 0;
 }
 
 .sidebar.collapsed {
     width: 72px;
     min-width: 72px;
+}
+
+/* Sidebar Overlay (mobile only) */
+.sidebar-overlay {
+    display: none;
 }
 
 .sidebar-header {
@@ -210,7 +222,11 @@ body {
 .chat-list {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 0 12px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    min-height: 0;
 }
 
 .chat-list::-webkit-scrollbar { width: 4px; }
@@ -304,9 +320,12 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 100%;
+    min-height: 0;
     background: var(--bg-primary);
     position: relative;
+    overflow: hidden;
+    width: 100%;
 }
 
 .chat-container {
@@ -318,6 +337,7 @@ body {
     width: 100%;
     position: relative;
     overflow: hidden;
+    min-height: 0;
 }
 
 /* Welcome Screen */
@@ -404,9 +424,12 @@ body {
 .messages {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 40px 24px 20px;
     scroll-behavior: smooth;
     min-height: 0;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 .message {
@@ -683,6 +706,8 @@ body {
     justify-content: center;
     z-index: 100;
     padding: 40px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 .settings-modal {
@@ -712,6 +737,15 @@ body {
     padding: 24px 12px;
     display: flex;
     flex-direction: column;
+}
+
+.settings-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.settings-nav {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 .settings-title {
@@ -765,7 +799,10 @@ body {
 .settings-scroll-area {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 40px 48px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 .section-header {
@@ -1029,33 +1066,71 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+    body {
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+    }
+    
+    .sidebar-overlay {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 99;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+    }
+    
+    .sidebar-overlay[style*="display: none"] {
+        opacity: 0;
+    }
+    
     .sidebar {
         position: fixed;
-        left: 0; top: 0;
+        left: 0; 
+        top: 0;
+        bottom: 0;
         height: 100%;
+        height: -webkit-fill-available;
         z-index: 100;
         transform: translateX(0);
-        box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+        box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+        padding-top: env(safe-area-inset-top);
     }
     
     .sidebar.collapsed {
         transform: translateX(-100%);
-        width: 280px; /* Keep width when hidden to animate properly */
+        width: 280px;
+        min-width: 280px;
     }
     
     .main-content {
         width: 100%;
+        min-width: 0;
+        height: 100%;
+        height: -webkit-fill-available;
+    }
+    
+    .chat-container {
+        height: 100%;
+        max-width: 100%;
+        padding: 0;
     }
     
     .mobile-header {
         display: flex !important;
         align-items: center;
         padding: 12px 16px;
+        padding-top: max(12px, env(safe-area-inset-top));
         border-bottom: 1px solid var(--border-color);
         background: var(--bg-primary);
         position: sticky;
         top: 0;
         z-index: 10;
+        flex-shrink: 0;
     }
     
     .mobile-title {
@@ -1064,47 +1139,194 @@ input[type=range]::-webkit-slider-thumb:hover {
         margin-left: 12px;
     }
 
+    .welcome {
+        padding: 24px 16px;
+    }
+    
+    .welcome h1 {
+        font-size: 1.8rem;
+    }
+    
+    .welcome-subtitle {
+        font-size: 1rem;
+        margin-bottom: 40px;
+    }
+    
+    .welcome-features {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        max-width: 100%;
+    }
+    
+    .feature {
+        padding: 20px 16px;
+        flex-direction: row;
+        justify-content: flex-start;
+    }
+    
+    .feature svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .messages {
+        padding: 16px 12px;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .message {
+        gap: 12px;
+        padding: 16px 0;
+        max-width: 100%;
+    }
+    
+    .message-avatar {
+        width: 32px;
+        height: 32px;
+        min-width: 32px;
+    }
+    
+    .message-content {
+        font-size: 0.95rem;
+    }
+    
+    .message-content pre {
+        padding: 12px;
+        margin: 12px 0;
+        font-size: 0.85rem;
+    }
+    
+    .input-area {
+        padding: 12px;
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+    }
+    
+    .input-container-inner {
+        max-width: 100%;
+    }
+    
+    .input-wrapper {
+        padding: 12px 12px 48px 12px;
+        border-radius: var(--radius-md);
+    }
+    
+    .input-wrapper textarea {
+        font-size: 16px !important; /* Prevent iOS zoom */
+    }
+    
+    .input-toolbar {
+        bottom: 12px;
+        left: 12px;
+    }
+    
+    .btn-send {
+        width: 36px;
+        height: 36px;
+        bottom: 10px;
+        right: 10px;
+    }
+    
+    .uploaded-image-preview {
+        bottom: 52px;
+    }
+    
+    /* Settings Modal Mobile */
+    .modal-overlay {
+        padding: 0;
+    }
+    
     .settings-modal {
         flex-direction: column;
         width: 100%;
         height: 100%;
+        max-height: 100%;
         border-radius: 0;
     }
     
     .settings-nav {
         width: 100%;
+        min-width: 100%;
         flex-direction: row;
         overflow-x: auto;
-        padding: 10px;
+        -webkit-overflow-scrolling: touch;
+        padding: 8px;
+        padding-top: max(8px, env(safe-area-inset-top));
         border-bottom: 1px solid var(--border-color);
         border-right: none;
-        min-height: 60px;
+        min-height: auto;
+        flex-shrink: 0;
+    }
+    
+    .settings-title {
+        display: none;
+    }
+    
+    .settings-footer {
+        display: none;
     }
     
     .nav-item {
         white-space: nowrap;
         padding: 8px 12px;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+    
+    .settings-content {
+        flex: 1;
+        min-height: 0;
     }
     
     .settings-scroll-area {
-        padding: 24px;
-        padding-bottom: 100px; /* Space for mobile keyboard */
+        padding: 20px 16px;
+        padding-bottom: max(100px, env(safe-area-inset-bottom) + 80px);
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+    }
+    
+    .modal-actions-bar {
+        padding: 16px;
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+    
+    .model-card {
+        padding: 16px;
+    }
+    
+    .theme-grid {
+        gap: 12px;
+    }
+    
+    .theme-option {
+        padding: 16px;
     }
     
     /* Prevent iOS zoom on inputs */
     .input-minimal, 
     .input-wrapper textarea,
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
     select {
         font-size: 16px !important;
     }
     
-    .messages {
-        padding: 20px 16px;
-    }
-    
-    /* Hide new chat button in collapsed sidebar on mobile (since sidebar is hidden) */
+    /* Hide new chat button in collapsed sidebar on mobile */
     .btn-new-chat-collapsed {
         display: none;
+    }
+    
+    /* Toast positioning for mobile */
+    .toast {
+        bottom: max(24px, env(safe-area-inset-bottom) + 16px);
+        left: 16px;
+        right: 16px;
+        transform: none;
+        max-width: calc(100% - 32px);
+        text-align: center;
     }
 }
 
@@ -1117,6 +1339,72 @@ input[type=range]::-webkit-slider-thumb:hover {
 .input-area {
     padding-bottom: max(40px, env(safe-area-inset-bottom) + 20px);
 }
+
 .sidebar-footer {
     padding-bottom: max(20px, env(safe-area-inset-bottom) + 20px);
+}
+
+/* Extra small screens (iPhone SE, etc.) */
+@media (max-width: 375px) {
+    .welcome h1 {
+        font-size: 1.5rem;
+    }
+    
+    .welcome-subtitle {
+        font-size: 0.9rem;
+    }
+    
+    .feature {
+        padding: 16px 12px;
+        gap: 12px;
+    }
+    
+    .message {
+        gap: 10px;
+    }
+    
+    .message-avatar {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+    }
+    
+    .input-wrapper {
+        padding: 10px 10px 44px 10px;
+    }
+    
+    .settings-scroll-area {
+        padding: 16px 12px;
+    }
+}
+
+/* Landscape mode fixes for mobile */
+@media (max-height: 500px) and (max-width: 900px) {
+    .welcome {
+        padding: 16px;
+    }
+    
+    .welcome-logo-img {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .welcome h1 {
+        font-size: 1.4rem;
+        margin-bottom: 8px;
+    }
+    
+    .welcome-subtitle {
+        margin-bottom: 20px;
+    }
+    
+    .welcome-features {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .feature {
+        flex-direction: column;
+        padding: 12px 8px;
+        gap: 8px;
+    }
 }
