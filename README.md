@@ -31,6 +31,7 @@ Existing open-source chat frontends are too heavy and complex. Many developers a
 - 🎨 **Custom Branding** - Freely change name and logo
 - 🔌 **Plug & Play** - Any OpenAI-compatible API (Ollama, vLLM, LocalAI, LM Studio, etc.)
 - 📄 **Drag & Drop RAG** - Upload documents for instant Q&A
+- 🔗 **URL Parser** - Parse web pages and use content as AI context
 - 🖼️ **Vision AI** - Multimodal image understanding
 - 🌍 **i18n** - English & Chinese with one-click switch
 - 🔒 **Zero Registration** - Settings auto-saved locally
@@ -75,6 +76,7 @@ python main.py
 - 🎨 **自定义品牌** - 随意更改名称和LOGO
 - 🔌 **即插即用** - 支持任意 OpenAI 兼容 API（Ollama、vLLM、LocalAI、LM Studio 等）
 - 📄 **拖拽 RAG** - 拖个文档进来就能问答
+- 🔗 **网页解析** - 解析网页内容作为 AI 上下文辅助回答
 - 🖼️ **视觉理解** - 支持多模态模型图片理解
 - 🌍 **多语言** - 中英文一键切换
 - 🔒 **零注册** - 无需登录，设置自动保存到本地
