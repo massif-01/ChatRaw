@@ -16,14 +16,6 @@
 
 ---
 
-## 🎨 Interface | 界面展示
-
-| Light Mode | Dark Mode |
-|:----------:|:---------:|
-| ![Light](assets/interfacelight.png) | ![Dark](assets/interfacedark.png) |
-
----
-
 ## 💡 Why ChatRaw?
 
 Existing open-source chat frontends are too heavy and complex. Many developers and AI hardware vendors simply need a clean, ready-to-use, minimal chat tool that supports any OpenAI-compatible API, allows drag-and-drop document RAG, requires zero registration, and can be deployed with one click — to demo their AI hardware or local models to clients in 30 seconds.
@@ -66,6 +58,12 @@ python main.py
 ```
 
 **Visit http://localhost:51111**
+
+## 🎨 Interface
+
+| Light Mode | Dark Mode |
+|:----------:|:---------:|
+| ![Light](assets/interfacelight.png) | ![Dark](assets/interfacedark.png) |
 
 ## 📸 Feature Screenshots
 
@@ -138,6 +136,12 @@ python main.py
 ```
 
 **访问 http://localhost:51111**
+
+## 🎨 界面展示
+
+| 浅色模式 | 深色模式 |
+|:-------:|:-------:|
+| ![浅色](assets/interfacelight.png) | ![深色](assets/interfacedark.png) |
 
 ## 📸 功能截图
 
