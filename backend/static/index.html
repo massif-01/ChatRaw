@@ -147,7 +147,7 @@
                     </div>
                 </template>
                 
-                <div class="message assistant" x-show="isGenerating">
+                <div class="message assistant" x-show="isGenerating && (!messages.length || messages[messages.length-1].role !== 'assistant')">
                     <div class="message-avatar assistant">
                         <img x-show="settings.ui_settings.assistant_avatar" :src="settings.ui_settings.assistant_avatar" alt="AI" style="width:100%; height:100%; object-fit:cover;">
                         <span x-show="!settings.ui_settings.assistant_avatar">AI</span>
@@ -524,6 +524,6 @@
     <!-- Toast -->
     <div class="toast" x-show="toast.show" x-text="toast.message" :class="toast.type" x-transition></div>
 
-    <script src="app.js?v=3.6"></script>
+    <script src="app.js?v=3.7"></script>
 </body>
 </html>
