@@ -4,7 +4,7 @@
 
 **Minimalist AI Chat Interface | 极简 AI 聊天界面**
 
-![ChatRaw Screenshot](assets/screenshot.png)
+![ChatRaw Demo](assets/demo.png)
 
 *30s deployment, zero registration, any OpenAI-compatible API*
 
