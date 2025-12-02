@@ -69,38 +69,28 @@ python main.py
 
 ## 📸 Feature Screenshots
 
-### 1. Model Settings | 模型设置
+### 1. Model Settings
 Configure your AI models with any OpenAI-compatible API endpoint.
-
-配置您的 AI 模型，支持任意 OpenAI 兼容 API 端点。
 
 ![Model Settings](assets/models.png)
 
-### 2. Chat Settings | 聊天设置
+### 2. Chat Settings
 Adjust temperature, top_p and other model hyperparameters.
-
-调整 temperature、top_p 等模型超参数。
 
 ![Chat Settings](assets/chat.png)
 
-### 3. RAG Settings | RAG 设置
+### 3. RAG Settings
 Configure chunk size, overlap, top_k and score threshold for document retrieval.
-
-配置文档检索的分块大小、重叠、Top K 和相似度阈值。
 
 ![RAG Settings](assets/RAG.png)
 
-### 4. Interface Settings | 界面设置
+### 4. Interface Settings
 Customize theme, language, logo, subtitle and avatars.
-
-自定义主题、语言、Logo、副标题和头像。
 
 ![Interface Settings](assets/interface.png)
 
-### 5. Knowledge Base | 知识库管理
+### 5. Knowledge Base
 Upload and manage documents for RAG-powered Q&A.
-
-上传和管理文档，实现基于 RAG 的智能问答。
 
 ![Knowledge Base](assets/knowledgebase.png)
 
@@ -148,6 +138,33 @@ python main.py
 ```
 
 **访问 http://localhost:51111**
+
+## 📸 功能截图
+
+### 1. 模型设置
+配置您的 AI 模型，支持任意 OpenAI 兼容 API 端点。
+
+![模型设置](assets/models.png)
+
+### 2. 聊天设置
+调整 temperature、top_p 等模型超参数。
+
+![聊天设置](assets/chat.png)
+
+### 3. RAG 设置
+配置文档检索的分块大小、重叠、Top K 和相似度阈值。
+
+![RAG 设置](assets/RAG.png)
+
+### 4. 界面设置
+自定义主题、语言、Logo、副标题和头像。
+
+![界面设置](assets/interface.png)
+
+### 5. 知识库管理
+上传和管理文档，实现基于 RAG 的智能问答。
+
+![知识库管理](assets/knowledgebase.png)
 
 ---
 
