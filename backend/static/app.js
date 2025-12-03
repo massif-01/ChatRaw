@@ -4,6 +4,9 @@
 const i18n = {
     en: {
         newChat: 'New Chat',
+        clearAllChats: 'Clear All',
+        confirmClearAll: 'Are you sure you want to delete all chats? This cannot be undone.',
+        allChatsCleared: 'All chats cleared',
         settings: 'Settings',
         delete: 'Delete',
         expand: 'Expand',
@@ -95,6 +98,9 @@ const i18n = {
     },
     zh: {
         newChat: '新对话',
+        clearAllChats: '清空所有',
+        confirmClearAll: '确定要删除所有对话吗？此操作无法撤销。',
+        allChatsCleared: '已清空所有对话',
         settings: '设置',
         delete: '删除',
         expand: '展开',
@@ -407,6 +413,24 @@ function app() {
                     this.currentChatId = null;
                     this.messages = [];
                 }
+            } catch (e) {
+                this.showToast(this.t('deleteFailed'), 'error');
+            }
+        },
+        
+        // Clear all chats
+        async clearAllChats() {
+            if (!confirm(this.t('confirmClearAll'))) return;
+            
+            try {
+                // Delete all chats one by one
+                for (const chat of this.chats) {
+                    await fetch(`/api/chats/${chat.id}`, { method: 'DELETE' });
+                }
+                this.chats = [];
+                this.currentChatId = null;
+                this.messages = [];
+                this.showToast(this.t('allChatsCleared'), 'success');
             } catch (e) {
                 this.showToast(this.t('deleteFailed'), 'error');
             }

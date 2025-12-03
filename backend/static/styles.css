@@ -198,6 +198,28 @@ body {
     box-shadow: var(--shadow-md);
 }
 
+.btn-clear-all {
+    margin: 10px 20px;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.btn-clear-all:hover {
+    border-color: var(--error-color);
+    color: var(--error-color);
+    background: rgba(239, 68, 68, 0.1);
+}
+
 .btn-new-chat:active {
     transform: translateY(0);
 }
