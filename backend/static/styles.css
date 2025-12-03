@@ -359,14 +359,13 @@ body {
 }
 
 .welcome-logo {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
 
 .welcome-logo-img {
     width: 80px;
     height: 80px;
     border-radius: 20px;
-    margin-bottom: 20px;
     box-shadow: var(--shadow-lg);
 }
 
@@ -374,14 +373,14 @@ body {
     font-size: 2.5rem;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     letter-spacing: -0.03em;
 }
 
 .welcome-subtitle {
     color: var(--text-secondary);
     font-size: 1.1rem;
-    margin-bottom: 60px;
+    margin-bottom: 40px;
     max-width: 600px;
 }
 
@@ -1277,26 +1276,37 @@ input[type=range]::-webkit-slider-thumb:hover {
     }
 
     .welcome {
-        padding: 24px 16px;
+        padding: 20px 16px;
+    }
+    
+    .welcome-logo {
+        margin-bottom: 12px;
+    }
+    
+    .welcome-logo-img {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
     }
     
     .welcome h1 {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
+        margin-bottom: 6px;
     }
     
     .welcome-subtitle {
-        font-size: 1rem;
-        margin-bottom: 40px;
+        font-size: 0.95rem;
+        margin-bottom: 24px;
     }
     
     .welcome-features {
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 10px;
         max-width: 100%;
     }
     
     .feature {
-        padding: 20px 16px;
+        padding: 16px 14px;
         flex-direction: row;
         justify-content: flex-start;
     }
@@ -1494,17 +1504,23 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 /* Extra small screens (iPhone SE, etc.) */
 @media (max-width: 375px) {
+    .welcome-logo-img {
+        width: 56px;
+        height: 56px;
+    }
+    
     .welcome h1 {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
     }
     
     .welcome-subtitle {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+        margin-bottom: 20px;
     }
     
     .feature {
-        padding: 16px 12px;
-        gap: 12px;
+        padding: 14px 12px;
+        gap: 10px;
     }
     
     .message {
