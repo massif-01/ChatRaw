@@ -15,8 +15,10 @@ const i18n = {
         knowledgeBase: 'Knowledge Base',
         kbEnabled: 'KB Enabled',
         uploadImage: 'Upload Image',
+        uploadDocument: 'Upload Document',
         image: 'Image',
         imageSelected: 'Image Selected',
+        documentAttached: 'Document Attached',
         parseUrl: 'Parse URL',
         enterUrl: 'Enter URL',
         parsing: 'Parsing...',
@@ -104,8 +106,10 @@ const i18n = {
         knowledgeBase: '知识库',
         kbEnabled: '知识库已开启',
         uploadImage: '上传图片',
+        uploadDocument: '上传文档',
         image: '图片',
         imageSelected: '已选择图片',
+        documentAttached: '已附加文档',
         parseUrl: '解析网页',
         enterUrl: '输入网址',
         parsing: '解析中...',
@@ -219,6 +223,10 @@ function app() {
         isParsingUrl: false,
         parsedUrl: null,  // { title, content, url }
         parsedUrlTitle: '',
+        
+        // Document attachment state
+        attachedDocument: null,  // { filename, content }
+        isUploadingDocument: false,
         
         // Data
         chats: [],
@@ -419,17 +427,35 @@ function app() {
             this.$nextTick(() => this.scrollToBottom());
             
             try {
+                // Combine web content and document content
+                let combinedContent = '';
+                let contentSource = '';
+                
+                if (this.parsedUrl) {
+                    combinedContent = this.parsedUrl.content;
+                    contentSource = this.parsedUrl.url;
+                }
+                
+                if (this.attachedDocument) {
+                    if (combinedContent) {
+                        combinedContent += '\n\n---\n\n';
+                    }
+                    combinedContent += this.attachedDocument.content;
+                    contentSource = contentSource ? contentSource + ', ' + this.attachedDocument.filename : this.attachedDocument.filename;
+                }
+                
                 const body = {
                     chat_id: this.currentChatId,
                     message: message,
                     use_rag: this.useRAG,
                     image_base64: this.uploadedImageBase64,
-                    web_content: this.parsedUrl ? this.parsedUrl.content : '',
-                    web_url: this.parsedUrl ? this.parsedUrl.url : ''
+                    web_content: combinedContent,
+                    web_url: contentSource
                 };
                 
                 this.removeUploadedImage();
                 this.removeParsedUrl();
+                this.removeAttachedDocument();
                 
                 if (this.settings.chat_settings.stream) {
                     await this.handleStreamResponse(body);
@@ -686,6 +712,47 @@ function app() {
         removeUploadedImage() {
             this.uploadedImage = null;
             this.uploadedImageBase64 = '';
+        },
+        
+        // Handle document upload for chat attachment
+        async handleDocumentUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            this.isUploadingDocument = true;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const res = await fetch('/api/upload/document', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    this.attachedDocument = {
+                        filename: data.filename,
+                        content: data.content
+                    };
+                    this.showToast(this.t('documentAttached') + ': ' + data.filename, 'success');
+                } else {
+                    this.showToast(this.t('uploadFailed') + ': ' + data.error, 'error');
+                }
+            } catch (e) {
+                this.showToast(this.t('uploadFailed') + ': ' + e.message, 'error');
+            } finally {
+                this.isUploadingDocument = false;
+            }
+            
+            event.target.value = '';
+        },
+        
+        // Remove attached document
+        removeAttachedDocument() {
+            this.attachedDocument = null;
         },
         
         // Toggle URL input popup

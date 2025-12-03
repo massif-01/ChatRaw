@@ -10,11 +10,17 @@
     <link rel="icon" id="favicon" href="data:,">
     <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/marked@9.1.6/marked.min.js"></script>
-    <script src="https://unpkg.com/highlight.js@11.9.0/lib/highlight.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/highlight.js@11.9.0/styles/github-dark.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=3.4">
+    <!-- highlight.js core + common languages only (~50KB vs ~500KB) -->
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/python.min.js"></script>
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/javascript.min.js"></script>
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/bash.min.js"></script>
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/json.min.js"></script>
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/sql.min.js"></script>
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/xml.min.js"></script>
+    <script src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/css.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css">
+    <link rel="stylesheet" href="styles.css?v=4.0">
 </head>
 <body x-data="app()" x-init="init()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
@@ -209,6 +215,18 @@
                         <span class="parsed-url-title" x-text="parsedUrlTitle"></span>
                         <button class="btn-remove-url" @click="removeParsedUrl()">×</button>
                     </div>
+                    
+                    <!-- Attached Document Preview -->
+                    <div class="attached-doc-preview" x-show="attachedDocument" x-cloak>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                        <span class="attached-doc-name" x-text="attachedDocument?.filename"></span>
+                        <button class="btn-remove-doc" @click="removeAttachedDocument()">×</button>
+                    </div>
 
                     <div class="input-wrapper">
                         <textarea 
@@ -236,6 +254,19 @@
                                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                                     <circle cx="8.5" cy="8.5" r="1.5"/>
                                     <polyline points="21 15 16 10 5 21"/>
+                                </svg>
+                            </label>
+                            <label class="btn-tool" :title="t('uploadDocument')" :class="{ 'active': attachedDocument }" style="z-index: 10; position: relative;">
+                                <input type="file" @change="handleDocumentUpload($event)" accept=".pdf,.docx,.doc,.txt,.md" style="display: none;" :disabled="isUploadingDocument">
+                                <svg x-show="!isUploadingDocument" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                </svg>
+                                <svg x-show="isUploadingDocument" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
                                 </svg>
                             </label>
                             <button class="btn-tool" @click="toggleUrlInput()" :title="t('parseUrl')" :class="{ 'active': parsedUrl }">
@@ -556,6 +587,6 @@
     <!-- Toast -->
     <div class="toast" x-show="toast.show" x-text="toast.message" :class="toast.type" x-transition></div>
 
-    <script src="app.js?v=3.8"></script>
+    <script src="app.js?v=4.0"></script>
 </body>
 </html>

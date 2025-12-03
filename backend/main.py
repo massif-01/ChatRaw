@@ -8,6 +8,8 @@ import json
 import uuid
 import asyncio
 import aiohttp
+import io
+import struct
 from datetime import datetime
 from typing import Optional, List, AsyncGenerator
 from contextlib import asynccontextmanager
@@ -19,6 +21,49 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
 import math
+
+# Document parsing
+try:
+    from pypdf import PdfReader
+    PDF_SUPPORT = True
+except ImportError:
+    PDF_SUPPORT = False
+
+try:
+    from docx import Document as DocxDocument
+    DOCX_SUPPORT = True
+except ImportError:
+    DOCX_SUPPORT = False
+
+# ============ Embedding Binary Utils ============
+
+def embedding_to_bytes(embedding: List[float]) -> bytes:
+    """Convert embedding list to binary format"""
+    return struct.pack(f'{len(embedding)}f', *embedding)
+
+def bytes_to_embedding(data: bytes) -> List[float]:
+    """Convert binary data back to embedding list"""
+    count = len(data) // 4  # 4 bytes per float
+    return list(struct.unpack(f'{count}f', data))
+
+# ============ Shared HTTP Session ============
+
+_http_session: Optional[aiohttp.ClientSession] = None
+
+async def get_http_session() -> aiohttp.ClientSession:
+    """Get or create shared HTTP session"""
+    global _http_session
+    if _http_session is None or _http_session.closed:
+        timeout = aiohttp.ClientTimeout(total=300, connect=10)
+        _http_session = aiohttp.ClientSession(timeout=timeout)
+    return _http_session
+
+async def close_http_session():
+    """Close shared HTTP session"""
+    global _http_session
+    if _http_session and not _http_session.closed:
+        await _http_session.close()
+        _http_session = None
 
 # ============ Models ============
 
@@ -93,12 +138,18 @@ class Message(BaseModel):
 class Database:
     def __init__(self, db_path: str):
         self.db_path = db_path
+        self._conn = None
         self.init_db()
     
     def get_conn(self):
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+        """Get reusable connection (singleton pattern for SQLite)"""
+        if self._conn is None:
+            self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            self._conn.row_factory = sqlite3.Row
+            # Enable WAL mode for better concurrent read performance
+            self._conn.execute("PRAGMA journal_mode=WAL")
+            self._conn.execute("PRAGMA synchronous=NORMAL")
+        return self._conn
     
     def init_db(self):
         conn = self.get_conn()
@@ -149,16 +200,51 @@ class Database:
                 id TEXT PRIMARY KEY,
                 document_id TEXT NOT NULL,
                 content TEXT NOT NULL,
-                embedding TEXT,
+                embedding BLOB,
                 created_at TEXT
             );
+            
+            -- Indexes for faster queries
+            CREATE INDEX IF NOT EXISTS idx_messages_chat_id ON messages(chat_id);
+            CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON document_chunks(document_id);
+            CREATE INDEX IF NOT EXISTS idx_chats_updated ON chats(updated_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_model_type ON model_configs(type);
         """)
         
         conn.commit()
         
+        # Migrate old JSON embeddings to binary format
+        self._migrate_embeddings(conn)
+        
         # Initialize defaults
         self._init_defaults(conn)
-        conn.close()
+    
+    def _migrate_embeddings(self, conn):
+        """Migrate old JSON embeddings to binary BLOB format"""
+        cursor = conn.cursor()
+        # Check if there are any text-based embeddings to migrate
+        cursor.execute("SELECT id, embedding FROM document_chunks WHERE embedding IS NOT NULL LIMIT 1")
+        row = cursor.fetchone()
+        if row and row["embedding"]:
+            # Check if it's JSON (starts with '[')
+            try:
+                data = row["embedding"]
+                if isinstance(data, str) and data.startswith('['):
+                    print("[DB] Migrating embeddings from JSON to binary format...")
+                    cursor.execute("SELECT id, embedding FROM document_chunks WHERE embedding IS NOT NULL")
+                    rows = cursor.fetchall()
+                    for r in rows:
+                        if isinstance(r["embedding"], str):
+                            try:
+                                emb_list = json.loads(r["embedding"])
+                                emb_bytes = embedding_to_bytes(emb_list)
+                                cursor.execute("UPDATE document_chunks SET embedding = ? WHERE id = ?", (emb_bytes, r["id"]))
+                            except:
+                                pass
+                    conn.commit()
+                    print(f"[DB] Migrated {len(rows)} embeddings to binary format")
+            except:
+                pass
     
     def _init_defaults(self, conn):
         cursor = conn.cursor()
@@ -190,11 +276,9 @@ class Database:
     
     # Settings
     def get_settings(self) -> Settings:
-        conn = self.get_conn()
-        cursor = conn.cursor()
+        cursor = self.get_conn().cursor()
         cursor.execute("SELECT value FROM settings WHERE key = ?", ("global",))
         row = cursor.fetchone()
-        conn.close()
         if row:
             return Settings.model_validate_json(row["value"])
         return Settings()
@@ -205,15 +289,12 @@ class Database:
         cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
                       ("global", settings.model_dump_json()))
         conn.commit()
-        conn.close()
     
     # Model configs
     def get_model_configs(self) -> List[ModelConfig]:
-        conn = self.get_conn()
-        cursor = conn.cursor()
+        cursor = self.get_conn().cursor()
         cursor.execute("SELECT * FROM model_configs")
         rows = cursor.fetchall()
-        conn.close()
         
         configs = []
         for row in rows:
@@ -232,11 +313,9 @@ class Database:
         return configs
     
     def get_model_by_type(self, model_type: str) -> Optional[ModelConfig]:
-        conn = self.get_conn()
-        cursor = conn.cursor()
+        cursor = self.get_conn().cursor()
         cursor.execute("SELECT * FROM model_configs WHERE type = ? LIMIT 1", (model_type,))
         row = cursor.fetchone()
-        conn.close()
         
         if row:
             cap = json.loads(row["capability"]) if row["capability"] else {}
@@ -267,7 +346,6 @@ class Database:
               config.context_length, config.max_output, config.type,
               json.dumps(config.capability.model_dump()), datetime.now().isoformat()))
         conn.commit()
-        conn.close()
         return config
     
     def delete_model_config(self, model_id: str):
@@ -275,15 +353,12 @@ class Database:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM model_configs WHERE id = ?", (model_id,))
         conn.commit()
-        conn.close()
     
     # Chats
     def get_chats(self) -> List[Chat]:
-        conn = self.get_conn()
-        cursor = conn.cursor()
+        cursor = self.get_conn().cursor()
         cursor.execute("SELECT * FROM chats ORDER BY updated_at DESC LIMIT 10")
         rows = cursor.fetchall()
-        conn.close()
         
         return [Chat(
             id=row["id"],
@@ -293,9 +368,14 @@ class Database:
         ) for row in rows]
     
     def create_chat(self, title: str = "New Chat") -> Chat:
-        # Cleanup old chats
         conn = self.get_conn()
         cursor = conn.cursor()
+        # Cleanup old chats and their messages
+        cursor.execute("""
+            DELETE FROM messages WHERE chat_id IN (
+                SELECT id FROM chats ORDER BY updated_at DESC LIMIT -1 OFFSET 9
+            )
+        """)
         cursor.execute("""
             DELETE FROM chats WHERE id IN (
                 SELECT id FROM chats ORDER BY updated_at DESC LIMIT -1 OFFSET 9
@@ -307,7 +387,6 @@ class Database:
         cursor.execute("INSERT INTO chats (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
                       (chat_id, title, now, now))
         conn.commit()
-        conn.close()
         
         return Chat(id=chat_id, title=title, created_at=now, updated_at=now)
     
@@ -317,7 +396,6 @@ class Database:
         cursor.execute("UPDATE chats SET title = ?, updated_at = ? WHERE id = ?",
                       (title, datetime.now().isoformat(), chat_id))
         conn.commit()
-        conn.close()
     
     def delete_chat(self, chat_id: str):
         conn = self.get_conn()
@@ -325,15 +403,12 @@ class Database:
         cursor.execute("DELETE FROM messages WHERE chat_id = ?", (chat_id,))
         cursor.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
         conn.commit()
-        conn.close()
     
     # Messages
     def get_messages(self, chat_id: str) -> List[Message]:
-        conn = self.get_conn()
-        cursor = conn.cursor()
+        cursor = self.get_conn().cursor()
         cursor.execute("SELECT * FROM messages WHERE chat_id = ? ORDER BY created_at ASC", (chat_id,))
         rows = cursor.fetchall()
-        conn.close()
         
         return [Message(
             id=row["id"],
@@ -353,17 +428,14 @@ class Database:
                       (msg_id, chat_id, role, content, now))
         cursor.execute("UPDATE chats SET updated_at = ? WHERE id = ?", (now, chat_id))
         conn.commit()
-        conn.close()
         
         return Message(id=msg_id, chat_id=chat_id, role=role, content=content, created_at=now)
     
     # Documents
     def get_documents(self):
-        conn = self.get_conn()
-        cursor = conn.cursor()
+        cursor = self.get_conn().cursor()
         cursor.execute("SELECT id, filename, created_at FROM documents ORDER BY created_at DESC")
         rows = cursor.fetchall()
-        conn.close()
         return [{"id": r["id"], "filename": r["filename"], "created_at": r["created_at"]} for r in rows]
     
     def save_document(self, filename: str, content: str) -> str:
@@ -373,7 +445,6 @@ class Database:
         cursor.execute("INSERT INTO documents (id, filename, content, created_at) VALUES (?, ?, ?, ?)",
                       (doc_id, filename, content, datetime.now().isoformat()))
         conn.commit()
-        conn.close()
         return doc_id
     
     def delete_document(self, doc_id: str):
@@ -382,29 +453,45 @@ class Database:
         cursor.execute("DELETE FROM document_chunks WHERE document_id = ?", (doc_id,))
         cursor.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
         conn.commit()
-        conn.close()
     
     def save_chunk(self, doc_id: str, content: str, embedding: List[float] = None):
+        """Save chunk with binary embedding"""
         chunk_id = str(uuid.uuid4())
         conn = self.get_conn()
         cursor = conn.cursor()
+        emb_data = embedding_to_bytes(embedding) if embedding else None
         cursor.execute("INSERT INTO document_chunks (id, document_id, content, embedding, created_at) VALUES (?, ?, ?, ?, ?)",
-                      (chunk_id, doc_id, content, json.dumps(embedding) if embedding else None, datetime.now().isoformat()))
+                      (chunk_id, doc_id, content, emb_data, datetime.now().isoformat()))
         conn.commit()
-        conn.close()
     
-    def get_chunks_with_embedding(self):
-        conn = self.get_conn()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, document_id, content, embedding FROM document_chunks WHERE embedding IS NOT NULL")
+    def get_chunks_with_embedding(self, limit: int = 500, offset: int = 0):
+        """Get chunks with pagination for memory efficiency"""
+        cursor = self.get_conn().cursor()
+        cursor.execute(
+            "SELECT id, document_id, content, embedding FROM document_chunks WHERE embedding IS NOT NULL LIMIT ? OFFSET ?",
+            (limit, offset)
+        )
         rows = cursor.fetchall()
-        conn.close()
         
         chunks = []
         for r in rows:
-            emb = json.loads(r["embedding"]) if r["embedding"] else []
+            emb_data = r["embedding"]
+            if emb_data:
+                # Handle both binary and legacy JSON format
+                if isinstance(emb_data, bytes):
+                    emb = bytes_to_embedding(emb_data)
+                else:
+                    emb = json.loads(emb_data) if isinstance(emb_data, str) else []
+            else:
+                emb = []
             chunks.append({"id": r["id"], "document_id": r["document_id"], "content": r["content"], "embedding": emb})
         return chunks
+    
+    def get_total_chunks_count(self) -> int:
+        """Get total count of chunks with embeddings"""
+        cursor = self.get_conn().cursor()
+        cursor.execute("SELECT COUNT(*) FROM document_chunks WHERE embedding IS NOT NULL")
+        return cursor.fetchone()[0]
 
 # ============ LLM Service ============
 
@@ -473,8 +560,8 @@ class LLMService:
         full_response = ""
         
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=300)) as resp:
+            session = await get_http_session()
+            async with session.post(url, json=payload, headers=headers) as resp:
                     if resp.status != 200:
                         error_text = await resp.text()
                         yield json.dumps({"error": f"API error ({resp.status}): {error_text}"})
@@ -580,23 +667,23 @@ class LLMService:
             "stream": False
         }
         
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=300)) as resp:
-                if resp.status != 200:
-                    error_text = await resp.text()
-                    raise HTTPException(status_code=500, detail=f"API error: {error_text}")
-                
-                data = await resp.json()
-                content = data["choices"][0]["message"]["content"]
-                
-                self.db.add_message(chat_id, "assistant", content)
-                
-                messages_count = len(self.db.get_messages(chat_id))
-                if messages_count <= 2:
-                    title = message[:30] + "..." if len(message) > 30 else message
-                    self.db.update_chat_title(chat_id, title)
-                
-                return {"content": content, "references": rag_references}
+        session = await get_http_session()
+        async with session.post(url, json=payload, headers=headers) as resp:
+            if resp.status != 200:
+                error_text = await resp.text()
+                raise HTTPException(status_code=500, detail=f"API error: {error_text}")
+            
+            data = await resp.json()
+            content = data["choices"][0]["message"]["content"]
+            
+            self.db.add_message(chat_id, "assistant", content)
+            
+            messages_count = len(self.db.get_messages(chat_id))
+            if messages_count <= 2:
+                title = message[:30] + "..." if len(message) > 30 else message
+                self.db.update_chat_title(chat_id, title)
+            
+            return {"content": content, "references": rag_references}
     
     async def get_embedding(self, text: str) -> List[float]:
         """Get embedding for text"""
@@ -613,16 +700,16 @@ class LLMService:
         payload = {"model": config.model_id, "input": text}
         
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=60)) as resp:
-                    if resp.status != 200:
-                        error_text = await resp.text()
-                        print(f"[Embedding] API error ({resp.status}): {error_text[:200]}")
-                        return []
-                    data = await resp.json()
-                    embedding = data["data"][0]["embedding"]
-                    print(f"[Embedding] Got embedding with {len(embedding)} dimensions")
-                    return embedding
+            session = await get_http_session()
+            async with session.post(url, json=payload, headers=headers) as resp:
+                if resp.status != 200:
+                    error_text = await resp.text()
+                    print(f"[Embedding] API error ({resp.status}): {error_text[:200]}")
+                    return []
+                data = await resp.json()
+                embedding = data["data"][0]["embedding"]
+                print(f"[Embedding] Got embedding with {len(embedding)} dimensions")
+                return embedding
         except Exception as e:
             print(f"[Embedding] Exception: {e}")
             return []
@@ -648,18 +735,18 @@ class LLMService:
         
         try:
             print(f"[Rerank] Calling rerank API with {len(documents)} documents")
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=60)) as resp:
-                    if resp.status != 200:
-                        error_text = await resp.text()
-                        print(f"[Rerank] API error ({resp.status}): {error_text[:200]}")
-                        return []
-                    
-                    data = await resp.json()
-                    # Handle different response formats
-                    results = data.get("results") or data.get("data") or []
-                    print(f"[Rerank] Got {len(results)} reranked results")
-                    return results
+            session = await get_http_session()
+            async with session.post(url, json=payload, headers=headers) as resp:
+                if resp.status != 200:
+                    error_text = await resp.text()
+                    print(f"[Rerank] API error ({resp.status}): {error_text[:200]}")
+                    return []
+                
+                data = await resp.json()
+                # Handle different response formats
+                results = data.get("results") or data.get("data") or []
+                print(f"[Rerank] Got {len(results)} reranked results")
+                return results
         except Exception as e:
             print(f"[Rerank] Exception: {e}")
             return []
@@ -672,18 +759,27 @@ class LLMService:
         if not query_embedding:
             return "", []
         
-        chunks = self.db.get_chunks_with_embedding()
-        if not chunks:
-            return "", []
-        
-        # Calculate similarities (first stage: embedding retrieval)
+        # Paginated loading for memory efficiency
         candidates = []
-        for chunk in chunks:
-            if not chunk["embedding"]:
-                continue
-            score = self.cosine_similarity(query_embedding, chunk["embedding"])
-            if score >= settings.rag_settings.score_threshold:
-                candidates.append({"content": chunk["content"], "score": round(score, 2)})
+        offset = 0
+        batch_size = 200
+        
+        while True:
+            chunks = self.db.get_chunks_with_embedding(limit=batch_size, offset=offset)
+            if not chunks:
+                break
+            
+            for chunk in chunks:
+                if not chunk["embedding"]:
+                    continue
+                score = self.cosine_similarity(query_embedding, chunk["embedding"])
+                if score >= settings.rag_settings.score_threshold:
+                    candidates.append({"content": chunk["content"], "score": round(score, 2)})
+            
+            offset += batch_size
+            # Early exit if we have enough high-scoring candidates
+            if len(candidates) >= 50:
+                break
         
         candidates.sort(key=lambda x: x["score"], reverse=True)
         
@@ -815,7 +911,16 @@ db = Database(os.path.join(DATA_DIR, "chatraw.db"))
 llm_service = LLMService(db)
 rag_service = RAGService(db, llm_service)
 
-app = FastAPI(title="ChatRaw")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """App lifecycle: startup and shutdown"""
+    print("🚀 Starting ChatRaw...")
+    yield
+    # Cleanup on shutdown
+    print("🛑 Shutting down ChatRaw...")
+    await close_http_session()
+
+app = FastAPI(title="ChatRaw", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -857,51 +962,51 @@ async def verify_model(config: ModelConfig):
         headers["Authorization"] = f"Bearer {config.api_key}"
     
     try:
-        async with aiohttp.ClientSession() as session:
-            if config.type == "chat":
-                payload = {
-                    "model": config.model_id,
-                    "messages": [{"role": "user", "content": "Say OK"}],
-                    "max_tokens": 5,
-                    "stream": False
-                }
-                async with session.post(f"{url}/chat/completions", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as resp:
-                    if resp.status == 200:
-                        return {"success": True}
-                    else:
-                        text = await resp.text()
-                        return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
-            elif config.type == "embedding":
-                payload = {"model": config.model_id, "input": "test"}
-                async with session.post(f"{url}/embeddings", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as resp:
-                    if resp.status == 200:
-                        return {"success": True}
-                    else:
-                        text = await resp.text()
-                        return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
-            else:  # rerank
-                payload = {
-                    "model": config.model_id,
-                    "query": "test query",
-                    "documents": ["test document 1", "test document 2"]
-                }
-                async with session.post(f"{url}/rerank", json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+        session = await get_http_session()
+        if config.type == "chat":
+            payload = {
+                "model": config.model_id,
+                "messages": [{"role": "user", "content": "Say OK"}],
+                "max_tokens": 5,
+                "stream": False
+            }
+            async with session.post(f"{url}/chat/completions", json=payload, headers=headers) as resp:
+                if resp.status == 200:
+                    return {"success": True}
+                else:
                     text = await resp.text()
-                    # Check if endpoint is actually supported
-                    if "Unexpected endpoint" in text or "not found" in text.lower() or "not supported" in text.lower():
-                        return {"success": False, "error": "Rerank not supported. LM Studio doesn't have /v1/rerank endpoint."}
-                    if resp.status == 200:
-                        # Try to parse response to verify it's a real rerank response
-                        try:
-                            data = json.loads(text)
-                            if "results" in data or "data" in data:
-                                return {"success": True}
-                            else:
-                                return {"success": False, "error": "Invalid rerank response format"}
-                        except:
-                            return {"success": False, "error": "Invalid rerank response"}
-                    else:
-                        return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
+                    return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
+        elif config.type == "embedding":
+            payload = {"model": config.model_id, "input": "test"}
+            async with session.post(f"{url}/embeddings", json=payload, headers=headers) as resp:
+                if resp.status == 200:
+                    return {"success": True}
+                else:
+                    text = await resp.text()
+                    return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
+        else:  # rerank
+            payload = {
+                "model": config.model_id,
+                "query": "test query",
+                "documents": ["test document 1", "test document 2"]
+            }
+            async with session.post(f"{url}/rerank", json=payload, headers=headers) as resp:
+                text = await resp.text()
+                # Check if endpoint is actually supported
+                if "Unexpected endpoint" in text or "not found" in text.lower() or "not supported" in text.lower():
+                    return {"success": False, "error": "Rerank not supported. LM Studio doesn't have /v1/rerank endpoint."}
+                if resp.status == 200:
+                    # Try to parse response to verify it's a real rerank response
+                    try:
+                        data = json.loads(text)
+                        if "results" in data or "data" in data:
+                            return {"success": True}
+                        else:
+                            return {"success": False, "error": "Invalid rerank response format"}
+                    except:
+                        return {"success": False, "error": "Invalid rerank response"}
+                else:
+                    return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -984,13 +1089,73 @@ async def chat(request: Request):
 async def get_documents():
     return db.get_documents()
 
+def parse_pdf(content: bytes) -> str:
+    """Parse PDF file content to text"""
+    if not PDF_SUPPORT:
+        raise ValueError("PDF support not available. Install pypdf.")
+    
+    try:
+        pdf_file = io.BytesIO(content)
+        reader = PdfReader(pdf_file)
+        text_parts = []
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                text_parts.append(text)
+        return "\n\n".join(text_parts)
+    except Exception as e:
+        raise ValueError(f"Failed to parse PDF: {str(e)}")
+
+def parse_docx(content: bytes) -> str:
+    """Parse DOCX file content to text"""
+    if not DOCX_SUPPORT:
+        raise ValueError("DOCX support not available. Install python-docx.")
+    
+    try:
+        docx_file = io.BytesIO(content)
+        doc = DocxDocument(docx_file)
+        text_parts = []
+        for para in doc.paragraphs:
+            if para.text.strip():
+                text_parts.append(para.text)
+        return "\n\n".join(text_parts)
+    except Exception as e:
+        raise ValueError(f"Failed to parse DOCX: {str(e)}")
+
+def parse_document_content(filename: str, content: bytes) -> str:
+    """Parse document based on file extension"""
+    ext = filename.lower().split('.')[-1] if '.' in filename else ''
+    
+    if ext == 'pdf':
+        return parse_pdf(content)
+    elif ext in ('docx', 'doc'):
+        if ext == 'doc':
+            raise ValueError("Old .doc format not supported. Please convert to .docx")
+        return parse_docx(content)
+    elif ext in ('txt', 'md', 'markdown', 'text'):
+        try:
+            return content.decode("utf-8")
+        except:
+            return content.decode("latin-1")
+    else:
+        # Try to decode as text
+        try:
+            return content.decode("utf-8")
+        except:
+            return content.decode("latin-1")
+
 @app.post("/api/documents")
 async def upload_document(file: UploadFile = File(...)):
     content = await file.read()
+    
+    # Parse document based on file type
     try:
-        text = content.decode("utf-8")
-    except:
-        text = content.decode("latin-1")
+        text = parse_document_content(file.filename, content)
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+    
+    if not text.strip():
+        return JSONResponse({"error": "No text content found in document"}, status_code=400)
     
     # Return streaming progress
     async def generate_progress():
@@ -1022,6 +1187,31 @@ async def upload_image(file: UploadFile = File(...)):
     content = await file.read()
     b64 = base64.b64encode(content).decode("utf-8")
     return {"success": True, "filename": file.filename, "base64": b64}
+
+@app.post("/api/upload/document")
+async def upload_document_for_chat(file: UploadFile = File(...)):
+    """Parse a document and return its content for chat attachment"""
+    content = await file.read()
+    
+    try:
+        text = parse_document_content(file.filename, content)
+    except ValueError as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=400)
+    
+    if not text.strip():
+        return JSONResponse({"success": False, "error": "No text content found in document"}, status_code=400)
+    
+    # Limit content length for chat context (max ~8000 chars)
+    max_length = 8000
+    if len(text) > max_length:
+        text = text[:max_length] + "...\n\n[内容已截断]"
+    
+    return {
+        "success": True,
+        "filename": file.filename,
+        "content": text,
+        "length": len(text)
+    }
 
 class ParseUrlRequest(BaseModel):
     url: str
@@ -1058,12 +1248,12 @@ async def parse_url(request: ParseUrlRequest):
             "Accept-Language": "en-US,en;q=0.5",
         }
         
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=True) as resp:
-                if resp.status != 200:
-                    return JSONResponse({"success": False, "error": f"Failed to fetch URL (HTTP {resp.status})"}, status_code=400)
-                
-                html = await resp.text()
+        session = await get_http_session()
+        async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=True) as resp:
+            if resp.status != 200:
+                return JSONResponse({"success": False, "error": f"Failed to fetch URL (HTTP {resp.status})"}, status_code=400)
+            
+            html = await resp.text()
         
         # Try to use trafilatura for content extraction
         try:

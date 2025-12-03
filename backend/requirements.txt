@@ -4,5 +4,7 @@ aiohttp>=3.9.1
 pydantic>=2.5.3
 python-multipart>=0.0.6
 trafilatura>=1.6.0
+pypdf>=4.0.0
+python-docx>=1.0.0
 
 
