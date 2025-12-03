@@ -1556,3 +1556,83 @@ input[type=range]::-webkit-slider-thumb:hover {
         gap: 8px;
     }
 }
+
+/* RAG References Bubble */
+.rag-references {
+    margin-top: 12px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 12px;
+}
+
+.rag-references-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-hover);
+    transition: var(--transition);
+    user-select: none;
+}
+
+.rag-references-header:hover {
+    background: var(--border-color);
+}
+
+.rag-references-header svg {
+    flex-shrink: 0;
+}
+
+.rag-references-header .chevron {
+    margin-left: auto;
+    transition: transform 0.2s ease;
+}
+
+.rag-references-header .chevron.expanded {
+    transform: rotate(180deg);
+}
+
+.rag-references-list {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.rag-reference-item {
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    font-size: 0.85rem;
+}
+
+.rag-reference-item .ref-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.rag-reference-item .ref-badge {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.rag-reference-item .ref-score {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.rag-reference-item .ref-content {
+    color: var(--text-secondary);
+    line-height: 1.5;
+    word-break: break-word;
+}

@@ -425,10 +425,11 @@ class LLMService:
         history = self.db.get_messages(chat_id)
         messages = [{"role": m.role, "content": m.content} for m in history]
         
-        # RAG context
+        # RAG context and references
         rag_context = ""
+        rag_references = []
         if use_rag:
-            rag_context = await self.build_rag_context(message)
+            rag_context, rag_references = await self.build_rag_context(message)
         
         # Web content context
         web_context = ""
@@ -515,6 +516,10 @@ class LLMService:
                     title = message[:30] + "..." if len(message) > 30 else message
                     self.db.update_chat_title(chat_id, title)
             
+            # Send references if RAG was used
+            if rag_references:
+                yield json.dumps({"references": rag_references})
+            
             yield json.dumps({"done": True})
             
         except asyncio.TimeoutError:
@@ -522,8 +527,8 @@ class LLMService:
         except Exception as e:
             yield json.dumps({"error": str(e)})
     
-    async def chat_non_stream(self, chat_id: str, message: str, use_rag: bool = False, image_base64: str = "", web_content: str = "", web_url: str = "") -> str:
-        """Non-streaming chat"""
+    async def chat_non_stream(self, chat_id: str, message: str, use_rag: bool = False, image_base64: str = "", web_content: str = "", web_url: str = "") -> dict:
+        """Non-streaming chat, returns dict with content and references"""
         config = self.db.get_model_by_type("chat")
         if not config or not config.api_url or not config.model_id:
             raise HTTPException(status_code=500, detail="Chat model not configured")
@@ -533,9 +538,11 @@ class LLMService:
         history = self.db.get_messages(chat_id)
         messages = [{"role": m.role, "content": m.content} for m in history]
         
+        # RAG context and references
         rag_context = ""
+        rag_references = []
         if use_rag:
-            rag_context = await self.build_rag_context(message)
+            rag_context, rag_references = await self.build_rag_context(message)
         
         # Web content context
         web_context = ""
@@ -589,7 +596,7 @@ class LLMService:
                     title = message[:30] + "..." if len(message) > 30 else message
                     self.db.update_chat_title(chat_id, title)
                 
-                return content
+                return {"content": content, "references": rag_references}
     
     async def get_embedding(self, text: str) -> List[float]:
         """Get embedding for text"""
@@ -620,17 +627,17 @@ class LLMService:
             print(f"[Embedding] Exception: {e}")
             return []
     
-    async def build_rag_context(self, query: str) -> str:
-        """Build RAG context from documents"""
+    async def build_rag_context(self, query: str) -> tuple:
+        """Build RAG context from documents, returns (context_string, references_list)"""
         settings = self.db.get_settings()
         
         query_embedding = await self.get_embedding(query)
         if not query_embedding:
-            return ""
+            return "", []
         
         chunks = self.db.get_chunks_with_embedding()
         if not chunks:
-            return ""
+            return "", []
         
         # Calculate similarities
         results = []
@@ -639,20 +646,22 @@ class LLMService:
                 continue
             score = self.cosine_similarity(query_embedding, chunk["embedding"])
             if score >= settings.rag_settings.score_threshold:
-                results.append({"content": chunk["content"], "score": score})
+                results.append({"content": chunk["content"], "score": round(score, 2)})
         
         results.sort(key=lambda x: x["score"], reverse=True)
         results = results[:settings.rag_settings.top_k]
         
         if not results:
-            return ""
+            return "", []
         
         context = "Here are relevant references:\n\n"
         for i, r in enumerate(results):
             context += f"[Reference {i+1}] (Relevance: {r['score']:.2f})\n{r['content']}\n\n"
         context += "Please answer based on the above references. If there's no relevant information, answer based on your knowledge.\n\n"
         
-        return context
+        # Return both context and references for frontend display
+        references = [{"content": r["content"], "score": r["score"]} for r in results]
+        return context, references
     
     @staticmethod
     def cosine_similarity(a: List[float], b: List[float]) -> float:
@@ -895,8 +904,8 @@ async def chat(request: Request):
         )
     else:
         # Non-streaming response
-        content = await llm_service.chat_non_stream(chat_id, message, use_rag, image_base64, web_content, web_url)
-        return {"chat_id": chat_id, "content": content}
+        result = await llm_service.chat_non_stream(chat_id, message, use_rag, image_base64, web_content, web_url)
+        return {"chat_id": chat_id, "content": result["content"], "references": result["references"]}
 
 @app.get("/api/documents")
 async def get_documents():

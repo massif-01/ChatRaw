@@ -150,6 +150,31 @@
                             </div>
                             <!-- Show actual content -->
                             <div x-show="msg.content" x-html="renderMarkdown(msg.content)"></div>
+                            
+                            <!-- RAG References -->
+                            <div class="rag-references" x-show="msg.references && msg.references.length > 0">
+                                <div class="rag-references-header" @click="msg.showRefs = !msg.showRefs">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                                    </svg>
+                                    <span x-text="t('ragReferences') + ' (' + (msg.references?.length || 0) + ')'"></span>
+                                    <svg class="chevron" :class="{ 'expanded': msg.showRefs }" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="6 9 12 15 18 9"/>
+                                    </svg>
+                                </div>
+                                <div class="rag-references-list" x-show="msg.showRefs" x-collapse>
+                                    <template x-for="(ref, refIdx) in msg.references" :key="refIdx">
+                                        <div class="rag-reference-item">
+                                            <div class="ref-header">
+                                                <span class="ref-badge" x-text="'#' + (refIdx + 1)"></span>
+                                                <span class="ref-score" x-text="t('relevance') + ': ' + (ref.score * 100).toFixed(0) + '%'"></span>
+                                            </div>
+                                            <div class="ref-content" x-text="ref.content.length > 200 ? ref.content.substring(0, 200) + '...' : ref.content"></div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </template>

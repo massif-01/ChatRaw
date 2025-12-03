@@ -24,6 +24,8 @@ const i18n = {
         parseFailed: 'Parse failed',
         urlPlaceholder: 'https://example.com/article',
         confirm: 'OK',
+        ragReferences: 'References',
+        relevance: 'Relevance',
         inputPlaceholder: 'Type a message... (Enter to send, Shift+Enter for new line)',
         modelConfig: 'Models',
         chatSettings: 'Chat',
@@ -111,6 +113,8 @@ const i18n = {
         parseFailed: '解析失败',
         urlPlaceholder: 'https://example.com/article',
         confirm: '确定',
+        ragReferences: '引用来源',
+        relevance: '相关度',
         inputPlaceholder: '输入消息... (Enter 发送, Shift+Enter 换行)',
         modelConfig: '模型配置',
         modelConfigDesc: '管理您的AI模型连接和参数',
@@ -458,7 +462,7 @@ function app() {
                 throw new Error(errText || 'Request failed');
             }
             
-            const assistantMsg = { role: 'assistant', content: '' };
+            const assistantMsg = { role: 'assistant', content: '', references: [] };
             this.messages.push(assistantMsg);
             const msgIndex = this.messages.length - 1;
             
@@ -494,6 +498,12 @@ function app() {
                             this.$nextTick(() => this.scrollToBottom());
                         }
                         
+                        if (parsed.references) {
+                            assistantMsg.references = parsed.references;
+                            this.messages[msgIndex] = { ...assistantMsg };
+                            this.$nextTick(() => this.scrollToBottom());
+                        }
+                        
                         if (parsed.error) {
                             assistantMsg.content = 'Error: ' + parsed.error;
                             this.messages[msgIndex] = { ...assistantMsg };
@@ -525,7 +535,8 @@ function app() {
             
             this.messages.push({
                 role: 'assistant',
-                content: data.content
+                content: data.content,
+                references: data.references || []
             });
             this.$nextTick(() => this.scrollToBottom());
         },
