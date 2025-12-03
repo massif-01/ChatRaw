@@ -282,10 +282,8 @@ function app() {
             await this.loadChats();
             await this.loadDocuments();
             this.applyTheme();
-            // Update favicon if logo is set
-            if (this.settings.ui_settings.logo_data) {
-                this.updateFavicon(this.settings.ui_settings.logo_data);
-            }
+            // Update favicon and title based on logo settings
+            this.updateFavicon(this.settings.ui_settings.logo_data);
         },
         
         // Apply theme
@@ -656,10 +654,14 @@ function app() {
         
         // Update favicon
         updateFavicon(dataUrl) {
+            const favicon = document.getElementById('favicon');
             if (dataUrl) {
-                document.getElementById('favicon').href = dataUrl;
-                document.title = this.settings.ui_settings.logo_text || 'ChatRaw';
+                favicon.href = dataUrl;
+            } else {
+                // Empty favicon when no logo is set
+                favicon.href = 'data:,';
             }
+            document.title = this.settings.ui_settings.logo_text || 'ChatRaw';
         },
         
         // Handle avatar upload
