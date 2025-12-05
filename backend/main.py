@@ -566,6 +566,16 @@ class LLMService:
             "stream": True
         }
         
+        # Enable thinking/reasoning mode if requested
+        # Different models use different parameters:
+        # - DeepSeek R1: enable_thinking + stream_options.include_reasoning
+        # - Qwen QwQ: enable_thinking
+        # - OpenAI o1: reasoning_effort (but o1 thinks by default)
+        # - GPTOSS/compatible APIs: enable_thinking
+        if use_thinking:
+            payload["enable_thinking"] = True
+            payload["stream_options"] = {"include_reasoning": True}
+        
         full_response = ""
         full_thinking = ""
         
@@ -696,6 +706,10 @@ class LLMService:
             "max_tokens": config.max_output,
             "stream": False
         }
+        
+        # Enable thinking/reasoning mode if requested
+        if use_thinking:
+            payload["enable_thinking"] = True
         
         session = await get_http_session()
         async with session.post(url, json=payload, headers=headers) as resp:

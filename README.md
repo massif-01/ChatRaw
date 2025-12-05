@@ -31,7 +31,7 @@ Existing open-source chat frontends are too heavy and complex. Many developers a
 - 📄 **Drag & Drop RAG** - Upload documents (PDF, DOCX, TXT, MD) for instant Q&A
 - 🔗 **URL Parser** - Parse web pages and use content as AI context
 - 🖼️ **Vision AI** - Multimodal image understanding
-- 🧠 **Thinking Mode** - Support reasoning models (DeepSeek-R1, Qwen, o1, etc.) with collapsible thinking process display
+- 🧠 **Thinking Mode** - Enable deep reasoning for models (DeepSeek-R1, Qwen, o1, etc.) with collapsible thinking process
 - 💬 **System Prompt** - Customizable system prompt for AI behavior control
 - 🌍 **i18n** - English & Chinese with one-click switch
 - 🔒 **Zero Registration** - Settings auto-saved locally
@@ -145,7 +145,7 @@ The input toolbar provides quick access to powerful features:
 
 | Button | Function |
 |:------:|----------|
-| 💡 | **Thinking Mode** - Enable reasoning display for models like DeepSeek-R1, Qwen, o1 |
+| 💡 | **Thinking Mode** - Enable deep reasoning for models (DeepSeek-R1, Qwen, o1, etc.) |
 | 📚 | **Knowledge Base** - Toggle RAG mode to search uploaded documents |
 | 🖼️ | **Image Upload** - Attach images for vision AI analysis |
 | 📄 | **Document Upload** - Attach documents as chat context |
@@ -169,7 +169,7 @@ The input toolbar provides quick access to powerful features:
 - 📄 **拖拽 RAG** - 支持 PDF、DOCX、TXT、MD 文档上传问答
 - 🔗 **网页解析** - 解析网页内容作为 AI 上下文辅助回答
 - 🖼️ **视觉理解** - 支持多模态模型图片理解
-- 🧠 **思考模式** - 支持推理模型（DeepSeek-R1、Qwen、o1等），可折叠显示思考过程
+- 🧠 **思考模式** - 启用模型深度推理（DeepSeek-R1、Qwen、o1等），可折叠显示思考过程
 - 💬 **系统提示词** - 可配置系统提示词，控制 AI 行为
 - 🌍 **多语言** - 中英文一键切换
 - 🔒 **零注册** - 无需登录，设置自动保存到本地
@@ -283,7 +283,7 @@ python main.py
 
 | 按钮 | 功能 |
 |:----:|------|
-| 💡 | **思考模式** - 开启推理模型（DeepSeek-R1、Qwen、o1等）的思考过程显示 |
+| 💡 | **思考模式** - 启用模型深度推理（DeepSeek-R1、Qwen、o1等） |
 | 📚 | **知识库** - 切换 RAG 模式，搜索已上传的文档 |
 | 🖼️ | **图片上传** - 附加图片进行视觉 AI 分析 |
 | 📄 | **文档上传** - 附加文档作为聊天上下文 |
