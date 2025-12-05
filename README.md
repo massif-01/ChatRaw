@@ -304,26 +304,6 @@ python main.py
 
 ---
 
-## 🔧 v1.5.0 New Features | 新功能
-
-**Thinking Mode | 思考模式:**
-- Support for reasoning models (DeepSeek-R1, Qwen, OpenAI o1, etc.) | 支持推理模型
-- Collapsible thinking process display | 可折叠显示思考过程
-- Compatible with `reasoning_content`, `reasoning`, `thinking` fields | 兼容多种模型字段
-
-**System Prompt | 系统提示词:**
-- Customizable system prompt in Model Settings | 可在模型配置中设置系统提示词
-- Collapsible configuration panel | 可折叠的配置面板
-- Automatically applied to all conversations | 自动应用于所有对话
-
-**Performance | 性能优化:**
-- HTTP connection pooling (30-50% faster API calls) | HTTP 连接池复用 (API 调用快 30-50%)
-- SQLite indexes for faster queries | SQLite 索引加速查询
-- Binary embedding storage (30% smaller DB) | 二进制向量存储 (数据库体积减少 30%)
-- Paginated RAG retrieval (50% less memory) | RAG 分页加载 (内存减少 50%)
-
----
-
 ## 📄 License
 
 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)
