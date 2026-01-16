@@ -11,7 +11,7 @@
   },
   "author": "ChatRaw",
   "homepage": "https://bocha.cn",
-  "icon": "logo.png",
+  "icon": "icon.png",
   "main": "main.js",
   "type": "search_provider",
   "hooks": ["before_send", "custom_settings"],

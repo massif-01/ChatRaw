@@ -19,6 +19,22 @@
       "folder": "lightweight-rag"
     },
     {
+      "id": "bocha-search",
+      "version": "1.1.0",
+      "name": {
+        "en": "Bocha Search",
+        "zh": "博查搜索"
+      },
+      "description": {
+        "en": "Web search, AI search, and semantic reranking powered by Bocha API",
+        "zh": "基于博查 API 的网络搜索、AI 搜索和语义重排"
+      },
+      "author": "ChatRaw",
+      "type": "web_search",
+      "downloads": 0,
+      "folder": "bocha-search"
+    },
+    {
       "id": "excel-parser",
       "version": "1.0.0",
       "name": {

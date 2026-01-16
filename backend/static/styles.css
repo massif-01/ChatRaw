@@ -2212,17 +2212,11 @@ input[type=range]::-webkit-slider-thumb:hover {
     margin-top: 8px;
 }
 
-/* Plugin Grid */
+/* Plugin Grid - One per row for all plugins */
 .plugin-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-}
-
-@media (max-width: 600px) {
-    .plugin-grid {
-        grid-template-columns: 1fr;
-    }
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 /* Plugin List - One per row for installed plugins */
