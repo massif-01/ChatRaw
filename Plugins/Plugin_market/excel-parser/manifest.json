@@ -1,0 +1,24 @@
+{
+  "id": "excel-parser",
+  "version": "1.0.0",
+  "name": {
+    "en": "Excel Parser",
+    "zh": "Excel 解析器"
+  },
+  "description": {
+    "en": "Parse Excel files (.xlsx, .xls) for AI reading. Supports multiple sheets.",
+    "zh": "解析 Excel 文件 (.xlsx, .xls) 供 AI 阅读。支持多工作表。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://github.com/massif-01/ChatRaw",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "document_parser",
+  "hooks": ["parse_document"],
+  "fileTypes": [".xlsx", ".xls", ".xlsm"],
+  "dependencies": {
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"
+  },
+  "settings": [],
+  "proxy": []
+}

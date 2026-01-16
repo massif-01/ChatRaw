@@ -1,0 +1,1015 @@
+# ChatRaw Plugin Development Guide
+
+[English](#english) | [中文](#中文)
+
+---
+
+<a name="english"></a>
+## English
+
+### Overview
+
+ChatRaw plugins extend the functionality of the application through a lightweight JavaScript-based architecture. Plugins run in the browser and can interact with the backend through a secure proxy API.
+
+### Plugin Structure
+
+A plugin consists of a folder with the following files:
+
+```
+your-plugin/
+├── manifest.json    # Plugin metadata (required)
+├── icon.png         # Plugin icon, 128x128px (required)
+└── main.js          # Plugin code (required)
+```
+
+### manifest.json
+
+```json
+{
+  "id": "your-plugin-id",
+  "version": "1.0.0",
+  "name": {
+    "en": "Your Plugin Name",
+    "zh": "你的插件名称"
+  },
+  "description": {
+    "en": "Brief description of your plugin",
+    "zh": "插件的简短描述"
+  },
+  "author": "Your Name",
+  "homepage": "https://github.com/your-repo",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "document_parser",
+  "hooks": ["parse_document"],
+  "fileTypes": [".xlsx", ".xls"],
+  "dependencies": {
+    "library-name": "https://cdn.example.com/library.min.js"
+  },
+  "settings": [
+    {
+      "id": "settingId",
+      "type": "select",
+      "options": ["option1", "option2"],
+      "default": "option1",
+      "label": {
+        "en": "Setting Label",
+        "zh": "设置标签"
+      }
+    }
+  ],
+  "customSettings": false,
+  "proxy": [
+    {
+      "id": "service-name",
+      "name": { "en": "Service Name", "zh": "服务名称" },
+      "description": { "en": "API key for service", "zh": "服务的 API 密钥" }
+    }
+  ]
+}
+```
+
+### Field Descriptions
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | Yes | Unique plugin identifier (lowercase, hyphens allowed) |
+| `version` | string | Yes | Semantic version (e.g., "1.0.0") |
+| `name` | object | Yes | Plugin name in multiple languages |
+| `description` | object | Yes | Plugin description in multiple languages |
+| `author` | string | Yes | Author name |
+| `homepage` | string | No | Project homepage URL |
+| `icon` | string | Yes | Icon filename (128x128 PNG, will be displayed with rounded corners) |
+| `main` | string | Yes | Main JavaScript file |
+| `type` | string | Yes | Plugin type (see below) |
+| `hooks` | array | Yes | List of hooks the plugin uses |
+| `fileTypes` | array | No | File extensions for document_parser type |
+| `dependencies` | object | No | External JS libraries (name: CDN URL) |
+| `settings` | array | No | Plugin settings schema (for standard settings UI) |
+| `customSettings` | boolean | No | Set to `true` for custom settings UI |
+| `proxy` | array | No | External API services requiring API keys |
+
+### Plugin Types
+
+| Type | Description | Available Hooks |
+|------|-------------|-----------------|
+| `document_parser` | Parse document files | `parse_document` |
+| `search_provider` | Web search service | `web_search`, `before_send` |
+| `rag_enhancer` | Enhance RAG pipeline | `pre_embedding`, `post_retrieval`, `before_send`, `custom_settings` |
+| `ui_extension` | Add UI elements | `toolbar_button`, `custom_action` |
+| `message_processor` | Process messages | `before_send`, `after_receive`, `transform_input`, `transform_output` |
+
+### Available Hooks
+
+| Hook | Description | Arguments | Return |
+|------|-------------|-----------|--------|
+| `parse_document` | Parse uploaded files | `(file, settings)` | `{ success, content }` |
+| `web_search` | Web search provider | `(query, settings)` | `{ success, results }` |
+| `pre_embedding` | Before text embedding | `(text, settings)` | `{ success, text }` |
+| `post_retrieval` | After RAG retrieval | `(results, settings)` | `{ success, results }` |
+| `before_send` | Before sending message | `(body)` | `{ success, body }` |
+| `after_receive` | After receiving response | `(message)` | `{ success, content }` |
+| `transform_input` | Transform user input | `(message)` | `{ success, content }` |
+| `transform_output` | Transform AI output | `(content)` | `{ success, content }` |
+| `toolbar_button` | Add toolbar button | `(context)` | `{ icon, label, onClick }` |
+| `file_preview` | Custom file preview | `(file)` | `{ success, html }` |
+| `custom_action` | Custom action handler | `(action, data)` | `{ success, result }` |
+| `custom_settings` | Custom settings UI | - | - |
+
+### Settings Types
+
+For standard settings UI (`customSettings: false`):
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `boolean` | Toggle switch | `{ "type": "boolean", "default": true }` |
+| `string` | Text input | `{ "type": "string", "default": "" }` |
+| `number` | Number input | `{ "type": "number", "default": 10, "min": 1, "max": 100 }` |
+| `select` | Dropdown | `{ "type": "select", "options": ["a", "b"], "default": "a" }` |
+| `password` | Password input | `{ "type": "password", "default": "" }` |
+
+### Custom Settings UI
+
+For complex plugins that need full control over settings UI, use `customSettings: true`.
+
+**manifest.json:**
+```json
+{
+  "hooks": ["before_send", "custom_settings"],
+  "customSettings": true,
+  "proxy": [
+    {
+      "id": "my-service",
+      "name": { "en": "API Key", "zh": "API 密钥" }
+    }
+  ]
+}
+```
+
+**main.js:**
+```javascript
+(function(ChatRaw) {
+    'use strict';
+    
+    const PLUGIN_ID = 'my-plugin';
+    const SERVICE_ID = 'my-service';
+    
+    // i18n support
+    const i18n = {
+        en: {
+            apiKeyLabel: 'API Key',
+            verify: 'Verify',
+            verifying: 'Verifying...',
+            verifySuccess: 'API Key is valid!',
+            verifyFailed: 'Verification failed',
+            save: 'Save',
+            cancel: 'Cancel',
+            settingsSaved: 'Settings saved'
+        },
+        zh: {
+            apiKeyLabel: 'API 密钥',
+            verify: '验证',
+            verifying: '验证中...',
+            verifySuccess: 'API Key 有效！',
+            verifyFailed: '验证失败',
+            save: '保存',
+            cancel: '取消',
+            settingsSaved: '设置已保存'
+        }
+    };
+    
+    function t(key) {
+        const lang = ChatRaw.utils?.getLanguage?.() || 'en';
+        return i18n[lang]?.[key] || i18n.en[key] || key;
+    }
+    
+    // Plugin settings (local state)
+    let pluginSettings = { option1: 'default' };
+    
+    // Load settings from backend
+    async function loadSettings() {
+        try {
+            const res = await fetch('/api/plugins');
+            if (res.ok) {
+                const plugins = await res.json();
+                const plugin = plugins.find(p => p.id === PLUGIN_ID);
+                if (plugin?.settings_values) {
+                    pluginSettings = { ...pluginSettings, ...plugin.settings_values };
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load settings:', e);
+        }
+    }
+    
+    // Save settings to backend
+    async function saveSettings() {
+        try {
+            const res = await fetch(`/api/plugins/${PLUGIN_ID}/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ settings: pluginSettings })
+            });
+            if (res.ok) {
+                ChatRaw.utils?.showToast?.(t('settingsSaved'), 'success');
+                return true;
+            }
+            return false;
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    // Save API key
+    async function saveApiKey(apiKey) {
+        const res = await fetch('/api/plugins/api-key', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ service_id: SERVICE_ID, api_key: apiKey })
+        });
+        return res.ok;
+    }
+    
+    // Check if API key is set
+    async function checkApiKeyStatus() {
+        try {
+            const res = await fetch('/api/plugins/api-keys');
+            if (res.ok) {
+                const data = await res.json();
+                return !!data.api_keys?.[SERVICE_ID];
+            }
+        } catch (e) {}
+        return false;
+    }
+    
+    // Verify API key by making a test request
+    async function verifyApiKey(apiKey) {
+        await saveApiKey(apiKey);
+        
+        const result = await ChatRaw.proxy.request({
+            serviceId: SERVICE_ID,
+            url: 'https://api.example.com/test',
+            method: 'POST',
+            body: { test: true }
+        });
+        
+        if (result.success) {
+            return { success: true };
+        } else {
+            await saveApiKey(''); // Clear invalid key
+            return { success: false, error: result.error };
+        }
+    }
+    
+    // Create settings UI HTML
+    function createSettingsUI() {
+        return `
+            <div style="padding:0;">
+                <div style="padding:20px 24px; border-bottom:1px solid var(--border-color);">
+                    <h3 style="margin:0 0 16px 0;">${t('apiKeyLabel')}</h3>
+                    <div style="display:flex; gap:12px;">
+                        <input type="password" id="my-api-key" class="input-minimal" 
+                            style="flex:1; padding:10px;">
+                        <button id="my-verify-btn" class="btn-primary" 
+                            onclick="window._myPlugin.verifyApiKey()"
+                            style="padding:10px 20px;">
+                            ${t('verify')}
+                        </button>
+                    </div>
+                    <div id="my-api-status" style="margin-top:10px;"></div>
+                </div>
+                
+                <div style="display:flex; justify-content:flex-end; gap:12px; padding:16px 24px;">
+                    <button class="btn-secondary" onclick="window._myPlugin.closeSettings()">
+                        ${t('cancel')}
+                    </button>
+                    <button class="btn-primary" onclick="window._myPlugin.saveAllSettings()">
+                        ${t('save')}
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Close settings modal
+    function closeSettings() {
+        const app = document.querySelector('[x-data]');
+        if (app?._x_dataStack) {
+            app._x_dataStack[0].showPluginSettings = false;
+        }
+    }
+    
+    // Save and close
+    async function saveAllSettings() {
+        const success = await saveSettings();
+        if (success) {
+            closeSettings();
+        }
+    }
+    
+    // Global API for UI event handlers
+    window._myPlugin = {
+        verifyApiKey: async () => {
+            const input = document.getElementById('my-api-key');
+            const btn = document.getElementById('my-verify-btn');
+            const status = document.getElementById('my-api-status');
+            
+            if (!input?.value.trim()) return;
+            
+            btn.textContent = t('verifying');
+            const result = await verifyApiKey(input.value.trim());
+            
+            if (result.success) {
+                status.innerHTML = `<span style="color:var(--success-color);">✓ ${t('verifySuccess')}</span>`;
+                input.value = '';
+            } else {
+                status.innerHTML = `<span style="color:var(--error-color);">✗ ${t('verifyFailed')}</span>`;
+            }
+            btn.textContent = t('verify');
+        },
+        closeSettings,
+        saveAllSettings
+    };
+    
+    // Inject UI when settings modal opens
+    function setupSettingsListener() {
+        window.addEventListener('plugin-settings-open', async (event) => {
+            if (event.detail?.pluginId === PLUGIN_ID) {
+                await loadSettings();
+                setTimeout(() => {
+                    const container = document.getElementById('plugin-custom-settings-area');
+                    if (container) {
+                        container.innerHTML = createSettingsUI();
+                    }
+                }, 100);
+            }
+        });
+    }
+    
+    // Initialize
+    loadSettings();
+    setupSettingsListener();
+    
+})(window.ChatRawPlugin);
+```
+
+### Proxy API (for external services)
+
+To protect API keys, use the proxy API for external service calls:
+
+#### JSON Request Proxy
+
+```javascript
+const response = await ChatRaw.proxy.request({
+    serviceId: 'your-service',  // Must match proxy.id in manifest
+    url: 'https://api.example.com/endpoint',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: { query: 'search term' }
+});
+```
+
+#### File Upload Proxy
+
+For services that require file uploads (e.g., Whisper, OCR):
+
+```javascript
+const response = await ChatRaw.proxy.upload(
+    file,           // File object
+    'whisper',      // service_id for API key lookup
+    'https://api.openai.com/v1/audio/transcriptions',
+    { model: 'whisper-1' },  // extra form fields
+    'file'          // file field name (default: 'file')
+);
+```
+
+The API key is stored securely on the backend and automatically added to requests.
+
+### Utils API
+
+Helper functions for plugin developers:
+
+```javascript
+// Load external script
+await ChatRaw.utils.loadScript('https://cdn.example.com/lib.js');
+
+// Show toast notification
+ChatRaw.utils.showToast('Operation completed', 'success');
+
+// Get current language ('en' or 'zh')
+const lang = ChatRaw.utils.getLanguage();
+
+// Translate key
+const text = ChatRaw.utils.t('settings');
+
+// Show progress indicator
+ChatRaw.utils.showProgress(50, 'Processing...');
+
+// Hide progress indicator
+ChatRaw.utils.hideProgress();
+
+// Get current chat ID
+const chatId = ChatRaw.utils.getCurrentChatId();
+
+// Get current messages
+const messages = ChatRaw.utils.getMessages();
+
+// Add a message to display
+ChatRaw.utils.addMessage('assistant', 'Hello from plugin!');
+```
+
+### Storage API
+
+Plugin-specific local storage (namespaced, 1MB limit per plugin):
+
+```javascript
+// Store data
+ChatRaw.storage.set('lastUsed', Date.now());
+ChatRaw.storage.set('preferences', { theme: 'dark' });
+
+// Retrieve data
+const lastUsed = ChatRaw.storage.get('lastUsed', 0);  // default: 0
+const prefs = ChatRaw.storage.get('preferences', {});
+
+// Remove data
+ChatRaw.storage.remove('lastUsed');
+
+// Clear all plugin storage
+ChatRaw.storage.clear();
+
+// Get all stored data
+const allData = ChatRaw.storage.getAll();
+```
+
+### Icon Requirements
+
+- Format: PNG
+- Size: 128x128 pixels
+- The icon will be displayed with iOS-style rounded corners (approximately 22% corner radius)
+- Use a transparent or solid background
+- Keep the design simple and recognizable at small sizes
+
+### Packaging for Distribution
+
+To distribute your plugin:
+
+1. **Prepare your plugin folder**:
+   ```
+   your-plugin/
+   ├── manifest.json    # Plugin metadata
+   ├── icon.png         # 128x128 PNG icon
+   └── main.js          # Plugin code
+   ```
+
+2. **Create a zip file** (exclude system files):
+   ```bash
+   # macOS/Linux
+   zip -r your-plugin.zip your-plugin/ -x "*.DS_Store" "*__MACOSX*"
+   
+   # Windows
+   # Use File Explorer: Right-click folder → Send to → Compressed (zipped) folder
+   ```
+
+3. **Verify your package**:
+   - Check zip file size (< 10MB recommended)
+   - Extract and verify folder structure
+   - Ensure manifest.json is valid JSON
+   - Test icon displays correctly (128x128 PNG)
+
+4. **Distribution options**:
+   - **Plugin Market**: Submit to `Plugin_market` repository
+   - **Local Upload**: Users drag and drop the zip file in plugin settings
+   - **Direct Download**: Host on GitHub releases or your website
+
+5. **Common issues**:
+   - ❌ Zip contains nested folders: `your-plugin.zip/your-plugin/your-plugin/manifest.json`
+   - ✅ Correct structure: `your-plugin.zip/your-plugin/manifest.json`
+   - ❌ Files outside plugin folder
+   - ✅ All files inside single plugin folder
+
+### Best Practices
+
+1. **Keep it lightweight**: Minimize dependencies and file sizes
+2. **Handle errors gracefully**: Always return proper error responses
+3. **Support both languages**: Provide both English and Chinese text in i18n
+4. **Test thoroughly**: Test with various file sizes and edge cases
+5. **Document your plugin**: Include usage instructions in description
+6. **API Key verification**: Always provide a "Verify" button for API keys
+7. **Save and close**: After successful save, automatically close the settings modal
+8. **Persist data properly**: 
+   - Use `POST /api/plugins/{id}/settings` to save plugin settings
+   - Use `POST /api/plugins/api-key` to save API keys
+   - Use `POST /api/models` to save model configurations (for RAG plugins)
+9. **Load data on open**: Always reload settings when the settings modal opens
+10. **Custom settings listener**: Use `plugin-settings-open` event to inject custom UI
+
+---
+
+<a name="中文"></a>
+## 中文
+
+### 概述
+
+ChatRaw 插件通过轻量级的 JavaScript 架构扩展应用功能。插件在浏览器中运行，可以通过安全的代理 API 与后端交互。
+
+### 插件结构
+
+一个插件由包含以下文件的文件夹组成：
+
+```
+your-plugin/
+├── manifest.json    # 插件元数据（必需）
+├── icon.png         # 插件图标，128x128像素（必需）
+└── main.js          # 插件代码（必需）
+```
+
+### manifest.json
+
+```json
+{
+  "id": "your-plugin-id",
+  "version": "1.0.0",
+  "name": {
+    "en": "Your Plugin Name",
+    "zh": "你的插件名称"
+  },
+  "description": {
+    "en": "Brief description of your plugin",
+    "zh": "插件的简短描述"
+  },
+  "author": "作者名称",
+  "homepage": "https://github.com/your-repo",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "document_parser",
+  "hooks": ["parse_document"],
+  "fileTypes": [".xlsx", ".xls"],
+  "dependencies": {
+    "library-name": "https://cdn.example.com/library.min.js"
+  },
+  "settings": [
+    {
+      "id": "settingId",
+      "type": "select",
+      "options": ["option1", "option2"],
+      "default": "option1",
+      "label": {
+        "en": "Setting Label",
+        "zh": "设置标签"
+      }
+    }
+  ],
+  "customSettings": false,
+  "proxy": [
+    {
+      "id": "service-name",
+      "name": { "en": "Service Name", "zh": "服务名称" },
+      "description": { "en": "API key for service", "zh": "服务的 API 密钥" }
+    }
+  ]
+}
+```
+
+### 字段说明
+
+| 字段 | 类型 | 必需 | 描述 |
+|------|------|------|------|
+| `id` | string | 是 | 唯一插件标识符（小写，可用连字符） |
+| `version` | string | 是 | 语义化版本（如 "1.0.0"） |
+| `name` | object | 是 | 多语言插件名称 |
+| `description` | object | 是 | 多语言插件描述 |
+| `author` | string | 是 | 作者名称 |
+| `homepage` | string | 否 | 项目主页 URL |
+| `icon` | string | 是 | 图标文件名（128x128 PNG，显示时带圆角） |
+| `main` | string | 是 | 主 JavaScript 文件 |
+| `type` | string | 是 | 插件类型（见下表） |
+| `hooks` | array | 是 | 插件使用的钩子列表 |
+| `fileTypes` | array | 否 | document_parser 类型的文件扩展名 |
+| `dependencies` | object | 否 | 外部 JS 库（名称: CDN URL） |
+| `settings` | array | 否 | 插件设置架构（用于标准设置 UI） |
+| `customSettings` | boolean | 否 | 设为 `true` 启用自定义设置 UI |
+| `proxy` | array | 否 | 需要 API Key 的外部服务 |
+
+### 插件类型
+
+| 类型 | 描述 | 可用钩子 |
+|------|------|----------|
+| `document_parser` | 解析文档文件 | `parse_document` |
+| `search_provider` | 网络搜索服务 | `web_search`, `before_send` |
+| `rag_enhancer` | 增强 RAG 流程 | `pre_embedding`, `post_retrieval`, `before_send`, `custom_settings` |
+| `ui_extension` | 添加 UI 元素 | `toolbar_button`, `custom_action` |
+| `message_processor` | 消息处理 | `before_send`, `after_receive`, `transform_input`, `transform_output` |
+
+### 可用钩子列表
+
+| 钩子 | 描述 | 参数 | 返回值 |
+|------|------|------|--------|
+| `parse_document` | 解析上传的文件 | `(file, settings)` | `{ success, content }` |
+| `web_search` | 网络搜索 | `(query, settings)` | `{ success, results }` |
+| `pre_embedding` | 文本嵌入前 | `(text, settings)` | `{ success, text }` |
+| `post_retrieval` | RAG 检索后 | `(results, settings)` | `{ success, results }` |
+| `before_send` | 发送消息前 | `(body)` | `{ success, body }` |
+| `after_receive` | 收到回复后 | `(message)` | `{ success, content }` |
+| `transform_input` | 转换用户输入 | `(message)` | `{ success, content }` |
+| `transform_output` | 转换 AI 输出 | `(content)` | `{ success, content }` |
+| `toolbar_button` | 添加工具栏按钮 | `(context)` | `{ icon, label, onClick }` |
+| `file_preview` | 自定义文件预览 | `(file)` | `{ success, html }` |
+| `custom_action` | 自定义操作 | `(action, data)` | `{ success, result }` |
+| `custom_settings` | 自定义设置 UI | - | - |
+
+### 设置类型
+
+用于标准设置 UI（`customSettings: false`）：
+
+| 类型 | 描述 | 示例 |
+|------|------|------|
+| `boolean` | 开关 | `{ "type": "boolean", "default": true }` |
+| `string` | 文本输入 | `{ "type": "string", "default": "" }` |
+| `number` | 数字输入 | `{ "type": "number", "default": 10, "min": 1, "max": 100 }` |
+| `select` | 下拉选择 | `{ "type": "select", "options": ["a", "b"], "default": "a" }` |
+| `password` | 密码输入 | `{ "type": "password", "default": "" }` |
+
+### 自定义设置 UI
+
+对于需要完全控制设置界面的复杂插件，使用 `customSettings: true`。
+
+**manifest.json:**
+```json
+{
+  "hooks": ["before_send", "custom_settings"],
+  "customSettings": true,
+  "proxy": [
+    {
+      "id": "my-service",
+      "name": { "en": "API Key", "zh": "API 密钥" }
+    }
+  ]
+}
+```
+
+**main.js:**
+```javascript
+(function(ChatRaw) {
+    'use strict';
+    
+    const PLUGIN_ID = 'my-plugin';
+    const SERVICE_ID = 'my-service';
+    
+    // i18n 支持
+    const i18n = {
+        en: {
+            apiKeyLabel: 'API Key',
+            verify: 'Verify',
+            verifying: 'Verifying...',
+            verifySuccess: 'API Key is valid!',
+            verifyFailed: 'Verification failed',
+            save: 'Save',
+            cancel: 'Cancel',
+            settingsSaved: 'Settings saved'
+        },
+        zh: {
+            apiKeyLabel: 'API 密钥',
+            verify: '验证',
+            verifying: '验证中...',
+            verifySuccess: 'API Key 有效！',
+            verifyFailed: '验证失败',
+            save: '保存',
+            cancel: '取消',
+            settingsSaved: '设置已保存'
+        }
+    };
+    
+    function t(key) {
+        const lang = ChatRaw.utils?.getLanguage?.() || 'en';
+        return i18n[lang]?.[key] || i18n.en[key] || key;
+    }
+    
+    // 插件设置（本地状态）
+    let pluginSettings = { option1: 'default' };
+    
+    // 从后端加载设置
+    async function loadSettings() {
+        try {
+            const res = await fetch('/api/plugins');
+            if (res.ok) {
+                const plugins = await res.json();
+                const plugin = plugins.find(p => p.id === PLUGIN_ID);
+                if (plugin?.settings_values) {
+                    pluginSettings = { ...pluginSettings, ...plugin.settings_values };
+                }
+            }
+        } catch (e) {
+            console.error('加载设置失败:', e);
+        }
+    }
+    
+    // 保存设置到后端
+    async function saveSettings() {
+        try {
+            const res = await fetch(`/api/plugins/${PLUGIN_ID}/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ settings: pluginSettings })
+            });
+            if (res.ok) {
+                ChatRaw.utils?.showToast?.(t('settingsSaved'), 'success');
+                return true;
+            }
+            return false;
+        } catch (e) {
+            return false;
+        }
+    }
+    
+    // 保存 API 密钥
+    async function saveApiKey(apiKey) {
+        const res = await fetch('/api/plugins/api-key', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ service_id: SERVICE_ID, api_key: apiKey })
+        });
+        return res.ok;
+    }
+    
+    // 检查 API 密钥是否已设置
+    async function checkApiKeyStatus() {
+        try {
+            const res = await fetch('/api/plugins/api-keys');
+            if (res.ok) {
+                const data = await res.json();
+                return !!data.api_keys?.[SERVICE_ID];
+            }
+        } catch (e) {}
+        return false;
+    }
+    
+    // 通过测试请求验证 API 密钥
+    async function verifyApiKey(apiKey) {
+        await saveApiKey(apiKey);
+        
+        const result = await ChatRaw.proxy.request({
+            serviceId: SERVICE_ID,
+            url: 'https://api.example.com/test',
+            method: 'POST',
+            body: { test: true }
+        });
+        
+        if (result.success) {
+            return { success: true };
+        } else {
+            await saveApiKey(''); // 清除无效密钥
+            return { success: false, error: result.error };
+        }
+    }
+    
+    // 创建设置 UI HTML
+    function createSettingsUI() {
+        return `
+            <div style="padding:0;">
+                <div style="padding:20px 24px; border-bottom:1px solid var(--border-color);">
+                    <h3 style="margin:0 0 16px 0;">${t('apiKeyLabel')}</h3>
+                    <div style="display:flex; gap:12px;">
+                        <input type="password" id="my-api-key" class="input-minimal" 
+                            style="flex:1; padding:10px;">
+                        <button id="my-verify-btn" class="btn-primary" 
+                            onclick="window._myPlugin.verifyApiKey()"
+                            style="padding:10px 20px;">
+                            ${t('verify')}
+                        </button>
+                    </div>
+                    <div id="my-api-status" style="margin-top:10px;"></div>
+                </div>
+                
+                <div style="display:flex; justify-content:flex-end; gap:12px; padding:16px 24px;">
+                    <button class="btn-secondary" onclick="window._myPlugin.closeSettings()">
+                        ${t('cancel')}
+                    </button>
+                    <button class="btn-primary" onclick="window._myPlugin.saveAllSettings()">
+                        ${t('save')}
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 关闭设置模态框
+    function closeSettings() {
+        const app = document.querySelector('[x-data]');
+        if (app?._x_dataStack) {
+            app._x_dataStack[0].showPluginSettings = false;
+        }
+    }
+    
+    // 保存并关闭
+    async function saveAllSettings() {
+        const success = await saveSettings();
+        if (success) {
+            closeSettings();
+        }
+    }
+    
+    // 全局 API 用于 UI 事件处理
+    window._myPlugin = {
+        verifyApiKey: async () => {
+            const input = document.getElementById('my-api-key');
+            const btn = document.getElementById('my-verify-btn');
+            const status = document.getElementById('my-api-status');
+            
+            if (!input?.value.trim()) return;
+            
+            btn.textContent = t('verifying');
+            const result = await verifyApiKey(input.value.trim());
+            
+            if (result.success) {
+                status.innerHTML = `<span style="color:var(--success-color);">✓ ${t('verifySuccess')}</span>`;
+                input.value = '';
+            } else {
+                status.innerHTML = `<span style="color:var(--error-color);">✗ ${t('verifyFailed')}</span>`;
+            }
+            btn.textContent = t('verify');
+        },
+        closeSettings,
+        saveAllSettings
+    };
+    
+    // 设置模态框打开时注入 UI
+    function setupSettingsListener() {
+        window.addEventListener('plugin-settings-open', async (event) => {
+            if (event.detail?.pluginId === PLUGIN_ID) {
+                await loadSettings();
+                setTimeout(() => {
+                    const container = document.getElementById('plugin-custom-settings-area');
+                    if (container) {
+                        container.innerHTML = createSettingsUI();
+                    }
+                }, 100);
+            }
+        });
+    }
+    
+    // 初始化
+    loadSettings();
+    setupSettingsListener();
+    
+})(window.ChatRawPlugin);
+```
+
+### 代理 API（用于外部服务）
+
+为保护 API 密钥，请使用代理 API 调用外部服务：
+
+#### JSON 请求代理
+
+```javascript
+const response = await ChatRaw.proxy.request({
+    serviceId: 'your-service',  // 必须与 manifest 中的 proxy.id 匹配
+    url: 'https://api.example.com/endpoint',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: { query: '搜索词' }
+});
+```
+
+#### 文件上传代理
+
+用于需要文件上传的服务（如 Whisper、OCR）：
+
+```javascript
+const response = await ChatRaw.proxy.upload(
+    file,           // File 对象
+    'whisper',      // service_id 用于查找 API 密钥
+    'https://api.openai.com/v1/audio/transcriptions',
+    { model: 'whisper-1' },  // 额外的表单字段
+    'file'          // 文件字段名（默认: 'file'）
+);
+```
+
+API 密钥安全存储在后端，会自动添加到请求中。
+
+### 工具 API
+
+为插件开发者提供的辅助函数：
+
+```javascript
+// 加载外部脚本
+await ChatRaw.utils.loadScript('https://cdn.example.com/lib.js');
+
+// 显示提示消息
+ChatRaw.utils.showToast('操作完成', 'success');
+
+// 获取当前语言 ('en' 或 'zh')
+const lang = ChatRaw.utils.getLanguage();
+
+// 翻译键值
+const text = ChatRaw.utils.t('settings');
+
+// 显示进度指示器
+ChatRaw.utils.showProgress(50, '处理中...');
+
+// 隐藏进度指示器
+ChatRaw.utils.hideProgress();
+
+// 获取当前会话 ID
+const chatId = ChatRaw.utils.getCurrentChatId();
+
+// 获取当前消息列表
+const messages = ChatRaw.utils.getMessages();
+
+// 添加消息到显示
+ChatRaw.utils.addMessage('assistant', '来自插件的问候！');
+```
+
+### 存储 API
+
+插件专用本地存储（命名空间隔离，每个插件限制 1MB）：
+
+```javascript
+// 存储数据
+ChatRaw.storage.set('lastUsed', Date.now());
+ChatRaw.storage.set('preferences', { theme: 'dark' });
+
+// 获取数据
+const lastUsed = ChatRaw.storage.get('lastUsed', 0);  // 默认值: 0
+const prefs = ChatRaw.storage.get('preferences', {});
+
+// 删除数据
+ChatRaw.storage.remove('lastUsed');
+
+// 清空所有插件存储
+ChatRaw.storage.clear();
+
+// 获取所有存储的数据
+const allData = ChatRaw.storage.getAll();
+```
+
+### 图标要求
+
+- 格式：PNG
+- 尺寸：128x128 像素
+- 图标将以 iOS 风格的圆角显示（约 22% 圆角半径）
+- 使用透明或纯色背景
+- 保持设计简洁，在小尺寸下仍可辨识
+
+### 打包分发
+
+分发你的插件：
+
+1. **准备插件文件夹**：
+   ```
+   your-plugin/
+   ├── manifest.json    # 插件元数据
+   ├── icon.png         # 128x128 PNG 图标
+   └── main.js          # 插件代码
+   ```
+
+2. **创建 zip 文件**（排除系统文件）：
+   ```bash
+   # macOS/Linux
+   zip -r your-plugin.zip your-plugin/ -x "*.DS_Store" "*__MACOSX*"
+   
+   # Windows
+   # 使用文件资源管理器：右键文件夹 → 发送到 → 压缩(zipped)文件夹
+   ```
+
+3. **验证打包结果**：
+   - 检查 zip 文件大小（建议 < 10MB）
+   - 解压并验证文件夹结构
+   - 确保 manifest.json 是有效的 JSON
+   - 测试图标显示正确（128x128 PNG）
+
+4. **分发方式**：
+   - **插件市场**：提交到 `Plugin_market` 仓库
+   - **本地上传**：用户在插件设置中拖放 zip 文件
+   - **直接下载**：托管在 GitHub releases 或你的网站
+
+5. **常见问题**：
+   - ❌ zip 包含嵌套文件夹：`your-plugin.zip/your-plugin/your-plugin/manifest.json`
+   - ✅ 正确结构：`your-plugin.zip/your-plugin/manifest.json`
+   - ❌ 文件在插件文件夹外
+   - ✅ 所有文件在单个插件文件夹内
+
+### 最佳实践
+
+1. **保持轻量**：最小化依赖和文件大小
+2. **优雅处理错误**：始终返回正确的错误响应
+3. **支持双语**：同时提供英文和中文文本（i18n）
+4. **充分测试**：测试各种文件大小和边界情况
+5. **文档完善**：在描述中包含使用说明
+6. **API Key 验证**：始终为 API Key 提供"验证"按钮
+7. **保存后关闭**：保存成功后自动关闭设置模态框
+8. **正确持久化数据**：
+   - 使用 `POST /api/plugins/{id}/settings` 保存插件设置
+   - 使用 `POST /api/plugins/api-key` 保存 API 密钥
+   - 使用 `POST /api/models` 保存模型配置（用于 RAG 插件）
+9. **打开时加载数据**：设置模态框打开时始终重新加载设置
+10. **自定义设置监听器**：使用 `plugin-settings-open` 事件注入自定义 UI
+
+---
+
+## License
+
+Plugins developed for ChatRaw should be compatible with the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+
+---
+
+Copyright © 2026 ChatRaw

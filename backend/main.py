@@ -79,7 +79,7 @@ def setup_logging():
 # Initialize logger
 logger = setup_logging()
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Request
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request, Form
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -169,7 +169,7 @@ class UISettings(BaseModel):
     logo_data: str = ""
     logo_text: str = "ChatRaw"
     subtitle: str = ""
-    theme_mode: str = "dark"
+    theme_mode: str = "light"
     user_avatar: str = ""
     assistant_avatar: str = ""
 
@@ -1489,6 +1489,28 @@ async def upload_document_for_chat(file: UploadFile = File(...)):
 class ParseUrlRequest(BaseModel):
     url: str
 
+# ============ Plugin Models ============
+
+class ProxyRequest(BaseModel):
+    """Request model for HTTP proxy"""
+    service_id: str
+    url: str
+    method: str = "POST"
+    headers: dict = {}
+    body: dict = {}
+
+class PluginInstallRequest(BaseModel):
+    """Request model for plugin installation"""
+    source_url: str
+
+class PluginSettingsUpdate(BaseModel):
+    """Request model for plugin settings update"""
+    settings: dict = {}
+
+class PluginToggleRequest(BaseModel):
+    """Request model for plugin enable/disable"""
+    enabled: bool
+
 @app.post("/api/parse-url")
 async def parse_url(request: ParseUrlRequest):
     """Parse web page content from URL"""
@@ -1572,6 +1594,732 @@ async def parse_url(request: ParseUrlRequest):
         return JSONResponse({"success": False, "error": f"Network error: {str(e)}"}, status_code=400)
     except Exception as e:
         return JSONResponse({"success": False, "error": f"Failed to parse URL: {str(e)}"}, status_code=500)
+
+# ============ Plugin Management ============
+
+PLUGINS_DIR = os.path.join(DATA_DIR, "plugins")
+PLUGINS_INSTALLED_DIR = os.path.join(PLUGINS_DIR, "installed")
+PLUGINS_CONFIG_FILE = os.path.join(PLUGINS_DIR, "config.json")
+
+# Plugin upload size limit (10MB)
+MAX_PLUGIN_SIZE = int(os.environ.get("MAX_PLUGIN_SIZE", str(10 * 1024 * 1024)))
+
+# Ensure plugin directories exist
+os.makedirs(PLUGINS_INSTALLED_DIR, exist_ok=True)
+
+# Simple file lock for config
+import threading
+_plugin_config_lock = threading.Lock()
+
+def validate_plugin_id(plugin_id: str) -> bool:
+    """Validate plugin ID to prevent path traversal attacks"""
+    if not plugin_id:
+        return False
+    # Only allow alphanumeric, dash, underscore
+    import re
+    if not re.match(r'^[a-zA-Z0-9_-]+$', plugin_id):
+        return False
+    # Prevent path traversal
+    if '..' in plugin_id or '/' in plugin_id or '\\' in plugin_id:
+        return False
+    return True
+
+def load_plugin_config() -> dict:
+    """Load plugin configuration from file (thread-safe)"""
+    with _plugin_config_lock:
+        if os.path.exists(PLUGINS_CONFIG_FILE):
+            try:
+                with open(PLUGINS_CONFIG_FILE, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error(f"Failed to load plugin config: {e}")
+        return {"plugins": {}, "api_keys": {}}
+
+def save_plugin_config(config: dict):
+    """Save plugin configuration to file (thread-safe)"""
+    with _plugin_config_lock:
+        try:
+            with open(PLUGINS_CONFIG_FILE, "w", encoding="utf-8") as f:
+                json.dump(config, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Failed to save plugin config: {e}")
+
+def get_installed_plugins() -> List[dict]:
+    """Get list of installed plugins with their config"""
+    plugins = []
+    config = load_plugin_config()
+    
+    if not os.path.exists(PLUGINS_INSTALLED_DIR):
+        return plugins
+    
+    for plugin_id in os.listdir(PLUGINS_INSTALLED_DIR):
+        plugin_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
+        manifest_path = os.path.join(plugin_dir, "manifest.json")
+        
+        if os.path.isdir(plugin_dir) and os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    manifest = json.load(f)
+                
+                # Merge with config
+                plugin_config = config.get("plugins", {}).get(plugin_id, {})
+                manifest["enabled"] = plugin_config.get("enabled", True)
+                manifest["settings_values"] = plugin_config.get("settings_values", {})
+                plugins.append(manifest)
+            except Exception as e:
+                logger.error(f"Failed to load plugin {plugin_id}: {e}")
+    
+    return plugins
+
+@app.get("/api/plugins")
+async def get_plugins():
+    """Get list of installed plugins"""
+    return get_installed_plugins()
+
+@app.post("/api/plugins/install")
+async def install_plugin(request: PluginInstallRequest):
+    """Install a plugin from URL"""
+    import zipfile
+    import shutil
+    import tempfile
+    
+    source_url = request.source_url.rstrip("/")
+    plugin_dir = None  # Track for cleanup on failure
+    
+    try:
+        session = await get_http_session()
+        
+        # Determine if it's a directory URL or zip URL
+        if source_url.endswith(".zip"):
+            # Download zip file with size limit
+            async with session.get(source_url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+                if resp.status != 200:
+                    return JSONResponse({"success": False, "error": f"Failed to download: HTTP {resp.status}"}, status_code=400)
+                
+                # Check content length if available
+                content_length = resp.headers.get('Content-Length')
+                if content_length and int(content_length) > MAX_PLUGIN_SIZE:
+                    return JSONResponse({"success": False, "error": f"Plugin too large (max {MAX_PLUGIN_SIZE // (1024*1024)}MB)"}, status_code=400)
+                
+                zip_content = await resp.read()
+                if len(zip_content) > MAX_PLUGIN_SIZE:
+                    return JSONResponse({"success": False, "error": f"Plugin too large (max {MAX_PLUGIN_SIZE // (1024*1024)}MB)"}, status_code=400)
+            
+            # Extract zip
+            with tempfile.TemporaryDirectory() as temp_dir:
+                zip_path = os.path.join(temp_dir, "plugin.zip")
+                with open(zip_path, "wb") as f:
+                    f.write(zip_content)
+                
+                try:
+                    with zipfile.ZipFile(zip_path, "r") as zf:
+                        # Check for zip bomb (total uncompressed size)
+                        total_size = sum(info.file_size for info in zf.infolist())
+                        if total_size > MAX_PLUGIN_SIZE * 10:  # 10x compression ratio limit
+                            return JSONResponse({"success": False, "error": "Plugin archive too large when extracted"}, status_code=400)
+                        zf.extractall(temp_dir)
+                except zipfile.BadZipFile:
+                    return JSONResponse({"success": False, "error": "Invalid zip file"}, status_code=400)
+                
+                # Find manifest.json
+                manifest_path = None
+                plugin_source_dir = None
+                for root, dirs, files in os.walk(temp_dir):
+                    if "manifest.json" in files:
+                        manifest_path = os.path.join(root, "manifest.json")
+                        plugin_source_dir = root
+                        break
+                
+                if not manifest_path:
+                    return JSONResponse({"success": False, "error": "No manifest.json found in zip"}, status_code=400)
+                
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    manifest = json.load(f)
+                
+                plugin_id = manifest.get("id")
+                if not plugin_id:
+                    return JSONResponse({"success": False, "error": "Plugin manifest missing 'id'"}, status_code=400)
+                
+                # Validate plugin ID
+                if not validate_plugin_id(plugin_id):
+                    return JSONResponse({"success": False, "error": "Invalid plugin ID (only alphanumeric, dash, underscore allowed)"}, status_code=400)
+                
+                # Copy to installed directory
+                plugin_dest_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
+                if os.path.exists(plugin_dest_dir):
+                    shutil.rmtree(plugin_dest_dir)
+                shutil.copytree(plugin_source_dir, plugin_dest_dir)
+        else:
+            # It's a GitHub raw directory URL, download individual files
+            # First get manifest.json
+            manifest_url = f"{source_url}/manifest.json"
+            async with session.get(manifest_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                if resp.status != 200:
+                    return JSONResponse({"success": False, "error": f"Failed to fetch manifest: HTTP {resp.status}"}, status_code=400)
+                try:
+                    manifest = await resp.json()
+                except Exception:
+                    return JSONResponse({"success": False, "error": "Invalid manifest.json format"}, status_code=400)
+            
+            plugin_id = manifest.get("id")
+            if not plugin_id:
+                return JSONResponse({"success": False, "error": "Plugin manifest missing 'id'"}, status_code=400)
+            
+            # Validate plugin ID
+            if not validate_plugin_id(plugin_id):
+                return JSONResponse({"success": False, "error": "Invalid plugin ID (only alphanumeric, dash, underscore allowed)"}, status_code=400)
+            
+            # Create plugin directory
+            plugin_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
+            os.makedirs(plugin_dir, exist_ok=True)
+            
+            # Save manifest
+            with open(os.path.join(plugin_dir, "manifest.json"), "w", encoding="utf-8") as f:
+                json.dump(manifest, f, ensure_ascii=False, indent=2)
+            
+            # Download main.js (required)
+            main_js = manifest.get("main", "main.js")
+            main_url = f"{source_url}/{main_js}"
+            async with session.get(main_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                if resp.status != 200:
+                    # Cleanup on failure
+                    if plugin_dir and os.path.exists(plugin_dir):
+                        shutil.rmtree(plugin_dir)
+                    return JSONResponse({"success": False, "error": f"Failed to download main.js: HTTP {resp.status}"}, status_code=400)
+                main_content = await resp.text()
+                with open(os.path.join(plugin_dir, main_js), "w", encoding="utf-8") as f:
+                    f.write(main_content)
+            
+            # Download icon (optional)
+            icon_file = manifest.get("icon", "icon.png")
+            icon_url = f"{source_url}/{icon_file}"
+            try:
+                async with session.get(icon_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status == 200:
+                        icon_content = await resp.read()
+                        with open(os.path.join(plugin_dir, icon_file), "wb") as f:
+                            f.write(icon_content)
+            except Exception:
+                pass  # Icon is optional
+        
+        # Add to config
+        config = load_plugin_config()
+        if "plugins" not in config:
+            config["plugins"] = {}
+        config["plugins"][plugin_id] = {"enabled": True, "settings_values": {}}
+        save_plugin_config(config)
+        
+        logger.info(f"Plugin installed: {plugin_id}")
+        return {"success": True, "plugin_id": plugin_id, "manifest": manifest}
+        
+    except Exception as e:
+        # Cleanup on unexpected error
+        if plugin_dir and os.path.exists(plugin_dir):
+            try:
+                import shutil
+                shutil.rmtree(plugin_dir)
+            except:
+                pass
+        logger.error(f"Plugin install error: {e}")
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+@app.post("/api/plugins/upload")
+async def upload_plugin(file: UploadFile = File(...)):
+    """Upload and install a plugin from zip file"""
+    import zipfile
+    import shutil
+    import tempfile
+    
+    if not file.filename or not file.filename.lower().endswith(".zip"):
+        return JSONResponse({"success": False, "error": "Only .zip files are supported"}, status_code=400)
+    
+    try:
+        content = await file.read()
+        
+        # Check file size
+        if len(content) > MAX_PLUGIN_SIZE:
+            return JSONResponse({"success": False, "error": f"Plugin too large (max {MAX_PLUGIN_SIZE // (1024*1024)}MB)"}, status_code=400)
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            zip_path = os.path.join(temp_dir, "plugin.zip")
+            with open(zip_path, "wb") as f:
+                f.write(content)
+            
+            try:
+                with zipfile.ZipFile(zip_path, "r") as zf:
+                    # Check for zip bomb
+                    total_size = sum(info.file_size for info in zf.infolist())
+                    if total_size > MAX_PLUGIN_SIZE * 10:
+                        return JSONResponse({"success": False, "error": "Plugin archive too large when extracted"}, status_code=400)
+                    zf.extractall(temp_dir)
+            except zipfile.BadZipFile:
+                return JSONResponse({"success": False, "error": "Invalid zip file"}, status_code=400)
+            
+            # Find manifest.json
+            manifest_path = None
+            plugin_source_dir = None
+            for root, dirs, files in os.walk(temp_dir):
+                if "manifest.json" in files:
+                    manifest_path = os.path.join(root, "manifest.json")
+                    plugin_source_dir = root
+                    break
+            
+            if not manifest_path:
+                return JSONResponse({"success": False, "error": "No manifest.json found in zip"}, status_code=400)
+            
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    manifest = json.load(f)
+            except json.JSONDecodeError:
+                return JSONResponse({"success": False, "error": "Invalid manifest.json format"}, status_code=400)
+            
+            plugin_id = manifest.get("id")
+            if not plugin_id:
+                return JSONResponse({"success": False, "error": "Plugin manifest missing 'id'"}, status_code=400)
+            
+            # Validate plugin ID
+            if not validate_plugin_id(plugin_id):
+                return JSONResponse({"success": False, "error": "Invalid plugin ID (only alphanumeric, dash, underscore allowed)"}, status_code=400)
+            
+            # Copy to installed directory
+            plugin_dest_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
+            if os.path.exists(plugin_dest_dir):
+                shutil.rmtree(plugin_dest_dir)
+            shutil.copytree(plugin_source_dir, plugin_dest_dir)
+        
+        # Add to config
+        config = load_plugin_config()
+        if "plugins" not in config:
+            config["plugins"] = {}
+        config["plugins"][plugin_id] = {"enabled": True, "settings_values": {}}
+        save_plugin_config(config)
+        
+        logger.info(f"Plugin uploaded: {plugin_id}")
+        return {"success": True, "plugin_id": plugin_id, "manifest": manifest}
+        
+    except Exception as e:
+        logger.error(f"Plugin upload error: {e}")
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+@app.delete("/api/plugins/{plugin_id}")
+async def uninstall_plugin(plugin_id: str):
+    """Uninstall a plugin"""
+    import shutil
+    
+    # Validate plugin ID
+    if not validate_plugin_id(plugin_id):
+        return JSONResponse({"success": False, "error": "Invalid plugin ID"}, status_code=400)
+    
+    plugin_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
+    
+    if not os.path.exists(plugin_dir):
+        return JSONResponse({"success": False, "error": "Plugin not found"}, status_code=404)
+    
+    try:
+        shutil.rmtree(plugin_dir)
+        
+        # Remove from config
+        config = load_plugin_config()
+        if "plugins" in config and plugin_id in config["plugins"]:
+            del config["plugins"][plugin_id]
+            save_plugin_config(config)
+        
+        logger.info(f"Plugin uninstalled: {plugin_id}")
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Plugin uninstall error: {e}")
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+@app.post("/api/plugins/{plugin_id}/toggle")
+async def toggle_plugin(plugin_id: str, request: PluginToggleRequest):
+    """Enable or disable a plugin"""
+    # Validate plugin ID
+    if not validate_plugin_id(plugin_id):
+        return JSONResponse({"success": False, "error": "Invalid plugin ID"}, status_code=400)
+    
+    plugin_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
+    
+    if not os.path.exists(plugin_dir):
+        return JSONResponse({"success": False, "error": "Plugin not found"}, status_code=404)
+    
+    config = load_plugin_config()
+    if "plugins" not in config:
+        config["plugins"] = {}
+    if plugin_id not in config["plugins"]:
+        config["plugins"][plugin_id] = {}
+    
+    config["plugins"][plugin_id]["enabled"] = request.enabled
+    save_plugin_config(config)
+    
+    return {"success": True, "enabled": request.enabled}
+
+@app.post("/api/plugins/{plugin_id}/settings")
+async def update_plugin_settings(plugin_id: str, request: PluginSettingsUpdate):
+    """Update plugin settings"""
+    # Validate plugin ID
+    if not validate_plugin_id(plugin_id):
+        return JSONResponse({"success": False, "error": "Invalid plugin ID"}, status_code=400)
+    
+    plugin_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
+    
+    if not os.path.exists(plugin_dir):
+        return JSONResponse({"success": False, "error": "Plugin not found"}, status_code=404)
+    
+    config = load_plugin_config()
+    if "plugins" not in config:
+        config["plugins"] = {}
+    if plugin_id not in config["plugins"]:
+        config["plugins"][plugin_id] = {}
+    
+    config["plugins"][plugin_id]["settings_values"] = request.settings
+    save_plugin_config(config)
+    
+    return {"success": True}
+
+@app.get("/api/plugins/{plugin_id}/main.js")
+async def get_plugin_js(plugin_id: str):
+    """Get plugin JavaScript file"""
+    # Validate plugin ID
+    if not validate_plugin_id(plugin_id):
+        return JSONResponse({"error": "Invalid plugin ID"}, status_code=400)
+    
+    plugin_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
+    manifest_path = os.path.join(plugin_dir, "manifest.json")
+    
+    if not os.path.exists(manifest_path):
+        return JSONResponse({"error": "Plugin not found"}, status_code=404)
+    
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        
+        main_file = manifest.get("main", "main.js")
+        # Prevent path traversal in main file name
+        main_file = os.path.basename(main_file)
+        main_path = os.path.join(plugin_dir, main_file)
+        
+        if not os.path.exists(main_path):
+            return JSONResponse({"error": "Plugin main.js not found"}, status_code=404)
+        
+        return FileResponse(main_path, media_type="application/javascript")
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/api/plugins/{plugin_id}/icon")
+async def get_plugin_icon(plugin_id: str):
+    """Get plugin icon"""
+    # Validate plugin ID
+    if not validate_plugin_id(plugin_id):
+        return JSONResponse({"error": "Invalid plugin ID"}, status_code=400)
+    
+    plugin_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
+    manifest_path = os.path.join(plugin_dir, "manifest.json")
+    
+    if not os.path.exists(manifest_path):
+        return JSONResponse({"error": "Plugin not found"}, status_code=404)
+    
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        
+        icon_file = manifest.get("icon", "icon.png")
+        # Prevent path traversal in icon file name
+        icon_file = os.path.basename(icon_file)
+        icon_path = os.path.join(plugin_dir, icon_file)
+        
+        if not os.path.exists(icon_path):
+            return JSONResponse({"error": "Icon not found"}, status_code=404)
+        
+        # Detect MIME type from extension
+        ext = icon_file.lower().split('.')[-1] if '.' in icon_file else 'png'
+        mime_types = {
+            'png': 'image/png',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'gif': 'image/gif',
+            'svg': 'image/svg+xml',
+            'webp': 'image/webp',
+            'ico': 'image/x-icon'
+        }
+        media_type = mime_types.get(ext, 'image/png')
+        
+        return FileResponse(icon_path, media_type=media_type)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/api/plugins/{plugin_id}/manifest")
+async def get_plugin_manifest(plugin_id: str):
+    """Get plugin manifest"""
+    # Validate plugin ID
+    if not validate_plugin_id(plugin_id):
+        return JSONResponse({"error": "Invalid plugin ID"}, status_code=400)
+    
+    plugin_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
+    manifest_path = os.path.join(plugin_dir, "manifest.json")
+    
+    if not os.path.exists(manifest_path):
+        return JSONResponse({"error": "Plugin not found"}, status_code=404)
+    
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        
+        # Merge with config
+        config = load_plugin_config()
+        plugin_config = config.get("plugins", {}).get(plugin_id, {})
+        manifest["enabled"] = plugin_config.get("enabled", True)
+        manifest["settings_values"] = plugin_config.get("settings_values", {})
+        
+        return manifest
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.post("/api/proxy/request")
+async def proxy_request(request: ProxyRequest):
+    """Generic HTTP proxy for plugins - protects API keys"""
+    from urllib.parse import urlparse
+    
+    # Validate URL
+    try:
+        parsed = urlparse(request.url)
+        if not parsed.scheme in ('http', 'https'):
+            return JSONResponse({"success": False, "error": "Only HTTP(S) URLs are allowed"}, status_code=400)
+        if not parsed.netloc:
+            return JSONResponse({"success": False, "error": "Invalid URL"}, status_code=400)
+        # Block internal/private networks (basic SSRF protection)
+        hostname = parsed.hostname.lower() if parsed.hostname else ''
+        if hostname in ('localhost', '127.0.0.1', '0.0.0.0', '::1') or hostname.startswith('192.168.') or hostname.startswith('10.') or hostname.startswith('172.'):
+            return JSONResponse({"success": False, "error": "Access to internal networks is not allowed"}, status_code=400)
+    except Exception:
+        return JSONResponse({"success": False, "error": "Invalid URL format"}, status_code=400)
+    
+    # Validate HTTP method
+    allowed_methods = {'GET', 'POST', 'PUT', 'DELETE', 'PATCH'}
+    if request.method.upper() not in allowed_methods:
+        return JSONResponse({"success": False, "error": f"Method {request.method} not allowed"}, status_code=400)
+    
+    config = load_plugin_config()
+    api_key = config.get("api_keys", {}).get(request.service_id)
+    
+    headers = {**request.headers}
+    if api_key:
+        # Add API key based on common patterns
+        if "Authorization" not in headers:
+            headers["Authorization"] = f"Bearer {api_key}"
+    
+    if "Content-Type" not in headers:
+        headers["Content-Type"] = "application/json"
+    
+    # Remove potentially dangerous headers
+    headers.pop("Host", None)
+    headers.pop("Cookie", None)
+    
+    try:
+        session = await get_http_session()
+        async with session.request(
+            method=request.method.upper(),
+            url=request.url,
+            headers=headers,
+            json=request.body if request.body else None,
+            timeout=aiohttp.ClientTimeout(total=30),
+            allow_redirects=False  # Prevent redirect-based attacks
+        ) as resp:
+            try:
+                data = await resp.json()
+            except:
+                text = await resp.text()
+                # Limit response size
+                data = {"raw": text[:50000] if len(text) > 50000 else text}
+            
+            if resp.status != 200:
+                return JSONResponse({"success": False, "error": data, "status": resp.status}, status_code=resp.status)
+            
+            return {"success": True, "data": data}
+    except asyncio.TimeoutError:
+        return JSONResponse({"success": False, "error": "Request timeout"}, status_code=504)
+    except aiohttp.ClientError as e:
+        logger.error(f"Proxy request client error: {e}")
+        return JSONResponse({"success": False, "error": f"Network error: {str(e)}"}, status_code=502)
+    except Exception as e:
+        logger.error(f"Proxy request error: {e}")
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+# Maximum file size for proxy upload (20MB)
+MAX_PROXY_UPLOAD_SIZE = int(os.environ.get("MAX_PROXY_UPLOAD_SIZE", str(20 * 1024 * 1024)))
+
+@app.post("/api/proxy/upload")
+async def proxy_upload(
+    file: UploadFile = File(...),
+    service_id: str = Form(...),
+    url: str = Form(...),
+    extra_fields: str = Form(default="{}"),
+    file_field_name: str = Form(default="file")
+):
+    """
+    Proxy file upload to external API (e.g., Whisper, OCR services).
+    Protects API keys by adding them server-side.
+    
+    Args:
+        file: The file to upload
+        service_id: Service identifier for API key lookup
+        url: Target URL to upload to
+        extra_fields: JSON string of additional form fields
+        file_field_name: Name of the file field in the multipart form (default: "file")
+    """
+    from urllib.parse import urlparse
+    import aiohttp
+    
+    # Validate URL
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ('http', 'https'):
+            return JSONResponse({"success": False, "error": "Only HTTP(S) URLs are allowed"}, status_code=400)
+        if not parsed.netloc:
+            return JSONResponse({"success": False, "error": "Invalid URL"}, status_code=400)
+        # Block internal/private networks (SSRF protection)
+        hostname = parsed.hostname.lower() if parsed.hostname else ''
+        if hostname in ('localhost', '127.0.0.1', '0.0.0.0', '::1') or hostname.startswith('192.168.') or hostname.startswith('10.') or hostname.startswith('172.'):
+            return JSONResponse({"success": False, "error": "Access to internal networks is not allowed"}, status_code=400)
+    except Exception:
+        return JSONResponse({"success": False, "error": "Invalid URL format"}, status_code=400)
+    
+    # Read and validate file size
+    try:
+        file_content = await file.read()
+        if len(file_content) > MAX_PROXY_UPLOAD_SIZE:
+            return JSONResponse({
+                "success": False, 
+                "error": f"File too large (max {MAX_PROXY_UPLOAD_SIZE // (1024*1024)}MB)"
+            }, status_code=400)
+    except Exception as e:
+        return JSONResponse({"success": False, "error": f"Failed to read file: {str(e)}"}, status_code=400)
+    
+    # Parse extra fields
+    try:
+        extra = json.loads(extra_fields) if extra_fields else {}
+        if not isinstance(extra, dict):
+            extra = {}
+    except json.JSONDecodeError:
+        extra = {}
+    
+    # Get API key
+    config = load_plugin_config()
+    api_key = config.get("api_keys", {}).get(service_id)
+    
+    # Build headers
+    headers = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    
+    try:
+        # Build multipart form data
+        form_data = aiohttp.FormData()
+        
+        # Add the file
+        form_data.add_field(
+            file_field_name,
+            file_content,
+            filename=file.filename or "upload",
+            content_type=file.content_type or "application/octet-stream"
+        )
+        
+        # Add extra fields
+        for key, value in extra.items():
+            if isinstance(value, (dict, list)):
+                form_data.add_field(key, json.dumps(value))
+            else:
+                form_data.add_field(key, str(value))
+        
+        # Send request
+        session = await get_http_session()
+        async with session.post(
+            url,
+            data=form_data,
+            headers=headers,
+            timeout=aiohttp.ClientTimeout(total=120),  # Longer timeout for file uploads
+            allow_redirects=False
+        ) as resp:
+            try:
+                data = await resp.json()
+            except:
+                text = await resp.text()
+                data = {"raw": text[:50000] if len(text) > 50000 else text}
+            
+            if resp.status != 200:
+                return JSONResponse({
+                    "success": False, 
+                    "error": data, 
+                    "status": resp.status
+                }, status_code=resp.status)
+            
+            return {"success": True, "data": data}
+            
+    except asyncio.TimeoutError:
+        return JSONResponse({"success": False, "error": "Upload timeout"}, status_code=504)
+    except aiohttp.ClientError as e:
+        logger.error(f"Proxy upload client error: {e}")
+        return JSONResponse({"success": False, "error": f"Network error: {str(e)}"}, status_code=502)
+    except Exception as e:
+        logger.error(f"Proxy upload error: {e}")
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+@app.get("/api/plugins/api-keys")
+async def get_api_keys():
+    """Get masked API keys for display (shows first 4 and last 4 chars)"""
+    try:
+        config = load_plugin_config()
+        api_keys = config.get("api_keys", {})
+        
+        # Return masked keys for display
+        masked = {}
+        for service_id, key in api_keys.items():
+            if key and len(key) > 10:
+                masked[service_id] = key[:4] + '*' * (len(key) - 8) + key[-4:]
+            elif key:
+                masked[service_id] = '*' * len(key)
+        
+        return {"api_keys": masked}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.post("/api/plugins/api-key")
+async def save_api_key(request: Request):
+    """Save API key for a service"""
+    import re
+    
+    try:
+        body = await request.json()
+        service_id = body.get("service_id")
+        api_key = body.get("api_key", "")
+        
+        if not service_id:
+            return JSONResponse({"success": False, "error": "service_id required"}, status_code=400)
+        
+        # Validate service_id format (alphanumeric, dash, underscore, dot)
+        if not re.match(r'^[a-zA-Z0-9_.-]+$', service_id):
+            return JSONResponse({"success": False, "error": "Invalid service_id format"}, status_code=400)
+        
+        # Limit service_id and api_key length
+        if len(service_id) > 100:
+            return JSONResponse({"success": False, "error": "service_id too long"}, status_code=400)
+        if len(api_key) > 500:
+            return JSONResponse({"success": False, "error": "api_key too long"}, status_code=400)
+        
+        config = load_plugin_config()
+        if "api_keys" not in config:
+            config["api_keys"] = {}
+        
+        if api_key:
+            config["api_keys"][service_id] = api_key
+        elif service_id in config["api_keys"]:
+            del config["api_keys"][service_id]
+        
+        save_plugin_config(config)
+        return {"success": True}
+    except json.JSONDecodeError:
+        return JSONResponse({"success": False, "error": "Invalid JSON"}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 # Static files - must be last
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

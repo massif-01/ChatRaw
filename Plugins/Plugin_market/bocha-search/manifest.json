@@ -1,0 +1,32 @@
+{
+  "id": "bocha-search",
+  "version": "1.1.0",
+  "name": {
+    "en": "Bocha Web Search",
+    "zh": "博查联网搜索"
+  },
+  "description": {
+    "en": "Enable web search to enhance AI responses with real-time information. Supports Web Search and AI Search modes.",
+    "zh": "启用联网搜索，用实时信息增强 AI 回答。支持通搜和 AI 搜两种模式。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://bocha.cn",
+  "icon": "logo.png",
+  "main": "main.js",
+  "type": "search_provider",
+  "hooks": ["before_send", "custom_settings"],
+  "customSettings": true,
+  "proxy": [
+    {
+      "id": "bocha",
+      "name": {
+        "en": "Bocha API Key",
+        "zh": "博查 API Key"
+      },
+      "description": {
+        "en": "Get your API key from bocha.cn",
+        "zh": "从 bocha.cn 获取您的 API Key"
+      }
+    }
+  ]
+}

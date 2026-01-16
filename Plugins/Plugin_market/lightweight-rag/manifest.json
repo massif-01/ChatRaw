@@ -1,0 +1,21 @@
+{
+  "id": "lightweight-rag",
+  "version": "1.0.0",
+  "name": {
+    "en": "Lightweight RAG Demo",
+    "zh": "轻量RAG演示"
+  },
+  "description": {
+    "en": "Knowledge base retrieval augmented generation. Upload documents to enhance AI responses with relevant context.",
+    "zh": "知识库检索增强生成。上传文档以增强 AI 回答的相关上下文。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://github.com/massif-01/ChatRaw",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "rag_enhancer",
+  "hooks": ["before_send", "custom_settings"],
+  "settings": [],
+  "proxy": [],
+  "customSettings": true
+}

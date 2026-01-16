@@ -8,6 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <title>ChatRaw</title>
     <link rel="icon" id="favicon" href="data:,">
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.13.3/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
     <script src="https://unpkg.com/marked@9.1.6/marked.min.js"></script>
     <!-- highlight.js core + common languages only (~50KB vs ~500KB) -->
@@ -80,6 +81,12 @@
         </button>
 
         <div class="sidebar-footer" x-show="!sidebarCollapsed">
+            <button class="btn-plugins" @click="showPlugins = true; loadPluginMarket()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                </svg>
+                <span x-text="t('plugins')"></span>
+            </button>
             <button class="btn-settings" @click="showSettings = true">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3"/>
@@ -89,6 +96,11 @@
             </button>
         </div>
         
+        <button class="btn-icon sidebar-plugins-collapsed" @click="showPlugins = true; loadPluginMarket()" x-show="sidebarCollapsed" :title="t('plugins')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+        </button>
         <button class="btn-icon sidebar-settings-collapsed" @click="showSettings = true" x-show="sidebarCollapsed" :title="t('settings')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="3"/>
@@ -129,18 +141,17 @@
                     </div>
                     <div class="feature">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-                            <polyline points="14 2 14 8 20 8"/>
+                            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
                         </svg>
-                        <span x-text="t('docRAG')"></span>
+                        <span x-text="t('pluginMarket')"></span>
                     </div>
                     <div class="feature">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                            <circle cx="8.5" cy="8.5" r="1.5"/>
-                            <polyline points="21 15 16 10 5 21"/>
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                            <line x1="8" y1="21" x2="16" y2="21"/>
+                            <line x1="12" y1="17" x2="12" y2="21"/>
                         </svg>
-                        <span x-text="t('visionAI')"></span>
+                        <span x-text="t('multiModel')"></span>
                     </div>
                 </div>
             </div>
@@ -275,16 +286,6 @@
                                     <div class="thinking-slider-handle"></div>
                                 </div>
                             </div>
-                            <!-- RAG Toggle -->
-                            <div class="rag-toggle" :class="{ 'active': useRAG }" @click="useRAG = !useRAG" :title="t('knowledgeBase')">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                                </svg>
-                                <div class="rag-slider">
-                                    <div class="rag-slider-handle"></div>
-                                </div>
-                            </div>
                             <label class="btn-tool" :title="t('uploadImage')" style="z-index: 10; position: relative;">
                                 <input type="file" @change="handleImageUpload($event)" accept="image/*" style="display: none;">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -361,11 +362,9 @@
                 <div class="settings-title" x-text="t('settings')"></div>
                 <div class="nav-item" :class="{ 'active': settingsTab === 'models' }" @click="settingsTab = 'models'" x-text="t('modelConfig')"></div>
                 <div class="nav-item" :class="{ 'active': settingsTab === 'chat' }" @click="settingsTab = 'chat'" x-text="t('chatSettings')"></div>
-                <div class="nav-item" :class="{ 'active': settingsTab === 'rag' }" @click="settingsTab = 'rag'" x-text="t('ragSettings')"></div>
                 <div class="nav-item" :class="{ 'active': settingsTab === 'ui' }" @click="settingsTab = 'ui'" x-text="t('uiSettings')"></div>
-                <div class="nav-item" :class="{ 'active': settingsTab === 'docs' }" @click="settingsTab = 'docs'" x-text="t('knowledgeBase')"></div>
                 <div class="settings-footer">
-                    © 2025 ChatRaw by massif-01, RMinte AI Technology Co., Ltd.<br>
+                    © 2026 ChatRaw by massif-01, RMinte AI Technology Co., Ltd.<br>
                     <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener" style="color: inherit; text-decoration: none; opacity: 0.7;" x-text="t('apacheLicense')"></a>
                 </div>
             </div>
@@ -382,7 +381,7 @@
                         </div>
                         
                         <template x-for="(model, index) in models" :key="model.id || index">
-                            <div class="model-card">
+                            <div class="model-card" x-show="model.type === 'chat'">
                                 <div class="model-header">
                                     <span class="model-badge" x-text="getModelTypeName(model.type)"></span>
                                     <div class="model-status" :class="model.status || 'unknown'">
@@ -439,38 +438,6 @@
                         </template>
                     </div>
                     
-                    <!-- RAG Settings Tab -->
-                    <div x-show="settingsTab === 'rag'">
-                        <div class="section-header">
-                            <h2 class="section-title" x-text="t('ragSettings')"></h2>
-                            <p class="section-desc" x-text="t('ragSettingsDesc')"></p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" x-text="t('chunkSize')"></label>
-                            <input type="number" class="input-minimal" x-model.number="settings.rag_settings.chunk_size" placeholder="500">
-                            <p class="form-sublabel" x-text="t('chunkSizeHint')"></p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" x-text="t('chunkOverlap')"></label>
-                            <input type="number" class="input-minimal" x-model.number="settings.rag_settings.chunk_overlap" placeholder="50">
-                            <p class="form-sublabel" x-text="t('chunkOverlapHint')"></p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Top K</label>
-                            <input type="number" class="input-minimal" x-model.number="settings.rag_settings.top_k" placeholder="3">
-                            <p class="form-sublabel" x-text="t('topKHint')"></p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label" x-text="t('scoreThreshold') + ': ' + settings.rag_settings.score_threshold"></label>
-                            <input type="range" min="0" max="1" step="0.05" x-model.number="settings.rag_settings.score_threshold">
-                            <p class="form-sublabel" x-text="t('scoreThresholdHint')"></p>
-                        </div>
-                    </div>
-
                     <!-- Chat Settings Tab -->
                     <div x-show="settingsTab === 'chat'">
                         <div class="section-header">
@@ -593,42 +560,6 @@
                         </div>
                     </div>
 
-                    <!-- Knowledge Base -->
-                    <div x-show="settingsTab === 'docs'">
-                        <div class="section-header">
-                            <h2 class="section-title" x-text="t('knowledgeBase')"></h2>
-                            <p class="section-desc" x-text="t('kbDesc')"></p>
-                        </div>
-
-                        <div class="upload-area" @click="$refs.fileInput.click()">
-                            <input type="file" x-ref="fileInput" @change="handleFileUpload($event)" accept=".txt,.md,.pdf,.doc,.docx" style="display: none;">
-                            <div style="font-size:2rem; margin-bottom:10px;">📄</div>
-                            <div x-text="t('uploadDocument')"></div>
-                        </div>
-                        
-                        <!-- Upload Progress -->
-                        <div class="upload-progress" x-show="uploadProgress.show" style="margin-top:20px; padding:16px; background:var(--bg-tertiary); border-radius:var(--radius-sm);">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.85rem;">
-                                <span x-text="uploadProgress.filename"></span>
-                                <span x-show="uploadProgress.status === 'chunking'">Chunking...</span>
-                                <span x-show="uploadProgress.status === 'embedding'" x-text="Math.round(uploadProgress.progress) + '%'"></span>
-                            </div>
-                            <div style="height:4px; background:var(--bg-hover); border-radius:2px; overflow:hidden;">
-                                <div style="height:100%; background:var(--text-primary); transition:width 0.2s;" :style="'width: ' + uploadProgress.progress + '%'"></div>
-                            </div>
-                        </div>
-
-                        <div class="documents-list" style="margin-top:20px;">
-                            <template x-for="doc in documents" :key="doc.id">
-                                <div class="nav-item" style="cursor:default; justify-content:space-between;">
-                                    <span x-text="doc.filename"></span>
-                                    <button class="btn-delete" style="opacity:1;" @click="deleteDocument(doc.id)">×</button>
-                                </div>
-                            </template>
-                            <div x-show="documents.length === 0" style="text-align:center; color:var(--text-muted); padding:20px;" x-text="t('noDocuments')"></div>
-                        </div>
-                    </div>
-
                 </div>
                 
                 <!-- Modal Actions Footer -->
@@ -640,9 +571,259 @@
         </div>
     </div>
 
+    <!-- Plugin Modal -->
+    <div class="modal-overlay" x-show="showPlugins" x-cloak @click.self="showPlugins = false" x-transition>
+        <div class="settings-modal plugin-modal">
+            <!-- Left Nav -->
+            <div class="settings-nav">
+                <div class="settings-title" x-text="t('plugins')"></div>
+                <div class="nav-item" :class="{ 'active': pluginTab === 'market' }" @click="pluginTab = 'market'; loadPluginMarket()" x-text="t('pluginMarket')"></div>
+                <div class="nav-item" :class="{ 'active': pluginTab === 'installed' }" @click="pluginTab = 'installed'" x-text="t('installedPlugins')"></div>
+                <div class="nav-item" :class="{ 'active': pluginTab === 'local' }" @click="pluginTab = 'local'" x-text="t('installLocalPlugin')"></div>
+                <div class="settings-footer">
+                    © 2026 ChatRaw by massif-01, RMinte AI Technology Co., Ltd.<br>
+                    <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener" style="color: inherit; text-decoration: none; opacity: 0.7;" x-text="t('apacheLicense')"></a>
+                </div>
+            </div>
+
+            <!-- Right Content -->
+            <div class="settings-content">
+                <div class="settings-scroll-area">
+                    
+                    <!-- Plugin Market Tab -->
+                    <div x-show="pluginTab === 'market'">
+                        <div class="section-header">
+                            <h2 class="section-title" x-text="t('pluginMarket')"></h2>
+                            <p class="section-desc" x-text="t('pluginMarketDesc')"></p>
+                        </div>
+                        
+                        <!-- Loading -->
+                        <div class="plugin-loading" x-show="pluginMarketLoading">
+                            <div class="spinner"></div>
+                            <span x-text="t('refreshingMarket')"></span>
+                        </div>
+                        
+                        <!-- Error -->
+                        <div class="plugin-error" x-show="pluginMarketError && !pluginMarketLoading">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <span x-text="t('networkError')"></span>
+                            <button class="btn-secondary" @click="loadPluginMarket()" x-text="t('retry')"></button>
+                        </div>
+                        
+                        <!-- Plugin Grid -->
+                        <div class="plugin-grid" x-show="!pluginMarketLoading && !pluginMarketError">
+                            <template x-for="plugin in marketPlugins" :key="plugin.id">
+                                <div class="plugin-card">
+                                    <img :src="'https://raw.githubusercontent.com/massif-01/ChatRaw/main/Plugins/Plugin_market/' + plugin.folder + '/icon.png'" 
+                                         class="plugin-icon" 
+                                         @error="$el.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect fill=%22%23666%22 width=%2224%22 height=%2224%22 rx=%224%22/></svg>'">
+                                    <div class="plugin-info">
+                                        <div class="plugin-name" x-text="plugin.name[lang] || plugin.name.en"></div>
+                                        <div class="plugin-version" x-text="'v' + plugin.version"></div>
+                                        <div class="plugin-desc" x-text="plugin.description[lang] || plugin.description.en"></div>
+                                    </div>
+                                    <div class="plugin-actions">
+                                        <button class="btn-primary btn-sm" 
+                                                @click="installPlugin(plugin)" 
+                                                :disabled="isPluginInstalled(plugin.id) || pluginInstalling === plugin.id"
+                                                x-text="pluginInstalling === plugin.id ? t('installing') : (isPluginInstalled(plugin.id) ? t('installed') : t('install'))">
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                            <div x-show="marketPlugins.length === 0" class="plugin-empty" x-text="t('noPluginsAvailable')"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Installed Plugins Tab -->
+                    <div x-show="pluginTab === 'installed'">
+                        <div class="section-header">
+                            <h2 class="section-title" x-text="t('installedPlugins')"></h2>
+                            <p class="section-desc" x-text="t('installedPluginsDesc')"></p>
+                        </div>
+                        
+                        <div class="plugin-list" x-show="installedPlugins.length > 0">
+                            <template x-for="plugin in installedPlugins" :key="plugin.id">
+                                <div class="plugin-card installed">
+                                    <img :src="'/api/plugins/' + encodeURIComponent(plugin.id) + '/icon'" 
+                                         class="plugin-icon"
+                                         @error="$el.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect fill=%22%23666%22 width=%2224%22 height=%2224%22 rx=%224%22/></svg>'">
+                                    <div class="plugin-info">
+                                        <div class="plugin-name" x-text="plugin.name?.[lang] || plugin.name?.en || plugin.name || plugin.id"></div>
+                                        <div class="plugin-version" x-text="'v' + (plugin.version || '1.0.0')"></div>
+                                        <div class="plugin-desc" x-text="plugin.description?.[lang] || plugin.description?.en || ''"></div>
+                                    </div>
+                                    <div class="plugin-actions">
+                                        <button class="btn-icon" @click="openPluginSettings(plugin)" :title="t('settings')">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="3"/>
+                                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                                            </svg>
+                                        </button>
+                                        <button class="btn-icon btn-icon-danger" @click="uninstallPlugin(plugin)" :title="t('uninstall')">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"/>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                                <line x1="10" y1="11" x2="10" y2="17"/>
+                                                <line x1="14" y1="11" x2="14" y2="17"/>
+                                            </svg>
+                                        </button>
+                                        <div class="toggle-switch" :class="{ 'checked': plugin.enabled }" @click="togglePlugin(plugin)">
+                                            <div class="toggle-handle"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        <div x-show="installedPlugins.length === 0" class="plugin-empty" x-text="t('noPluginsInstalled')"></div>
+                    </div>
+                    
+                    <!-- Install Local Plugin Tab -->
+                    <div x-show="pluginTab === 'local'">
+                        <div class="section-header">
+                            <h2 class="section-title" x-text="t('installLocalPlugin')"></h2>
+                            <p class="section-desc" x-text="t('installLocalPluginDesc')"></p>
+                        </div>
+                        
+                        <div class="upload-area plugin-upload" @click="$refs.pluginFileInput.click()">
+                            <input type="file" x-ref="pluginFileInput" @change="handlePluginUpload($event)" accept=".zip" style="display: none;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <div x-text="t('selectPluginZip')"></div>
+                        </div>
+                        
+                        <!-- Upload progress -->
+                        <div class="plugin-upload-progress" x-show="pluginUploading">
+                            <div class="spinner"></div>
+                            <span x-text="t('installing')"></span>
+                        </div>
+                        
+                        <div class="plugin-dev-guide">
+                            <a href="https://github.com/massif-01/ChatRaw/blob/main/Plugins/README.md" target="_blank" rel="noopener">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                    <polyline points="15 3 21 3 21 9"/>
+                                    <line x1="10" y1="14" x2="21" y2="3"/>
+                                </svg>
+                                <span x-text="t('pluginDevGuide')"></span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <!-- Modal Actions Footer -->
+                <div class="modal-actions-bar">
+                    <button class="btn-secondary" @click="showPlugins = false" x-text="t('close')"></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Plugin Settings Modal -->
+    <div class="modal-overlay" x-show="showPluginSettings" x-cloak @click.self="showPluginSettings = false" x-transition>
+        <div class="plugin-settings-modal" :class="{ 'custom-settings-modal': currentPluginSettings?.customSettings }">
+            <div class="plugin-settings-header" x-show="!currentPluginSettings?.customSettings">
+                <h3 x-text="currentPluginSettings?.name?.[lang] || currentPluginSettings?.name?.en || currentPluginSettings?.id || ''"></h3>
+            </div>
+            <div class="plugin-settings-content" :class="{ 'custom-settings-content': currentPluginSettings?.customSettings }">
+                <!-- Custom Settings Container (for plugins with customSettings: true) -->
+                <template x-if="currentPluginSettings?.customSettings">
+                    <div id="plugin-custom-settings-area" class="plugin-custom-settings">
+                        <div style="padding:20px; text-align:center; color:var(--text-muted);">Loading...</div>
+                    </div>
+                </template>
+                
+                <!-- Standard Settings (only when no customSettings) -->
+                <template x-if="!currentPluginSettings?.customSettings && currentPluginSettings?.settings?.length > 0">
+                    <div>
+                        <template x-for="setting in currentPluginSettings.settings" :key="setting.id">
+                            <div class="form-group">
+                                <label class="form-label" x-text="setting.label?.[lang] || setting.label?.en || setting.id"></label>
+                                
+                                <!-- Boolean -->
+                                <template x-if="setting.type === 'boolean'">
+                                    <div class="toggle-switch" :class="{ 'checked': pluginSettingsValues[setting.id] }" 
+                                         @click="pluginSettingsValues[setting.id] = !pluginSettingsValues[setting.id]">
+                                        <div class="toggle-handle"></div>
+                                    </div>
+                                </template>
+                                
+                                <!-- String -->
+                                <template x-if="setting.type === 'string'">
+                                    <input type="text" class="input-minimal" 
+                                           x-model="pluginSettingsValues[setting.id]" 
+                                           :placeholder="String(setting.default || '')">
+                                </template>
+                                
+                                <!-- Number -->
+                                <template x-if="setting.type === 'number'">
+                                    <input type="number" class="input-minimal" 
+                                           x-model.number="pluginSettingsValues[setting.id]"
+                                           :min="setting.min" :max="setting.max"
+                                           :placeholder="String(setting.default || '')">
+                                </template>
+                                
+                                <!-- Select -->
+                                <template x-if="setting.type === 'select'">
+                                    <select class="input-minimal" x-model="pluginSettingsValues[setting.id]">
+                                        <template x-for="opt in (setting.options || [])" :key="opt">
+                                            <option :value="opt" x-text="opt"></option>
+                                        </template>
+                                    </select>
+                                </template>
+                                
+                                <!-- Password -->
+                                <template x-if="setting.type === 'password'">
+                                    <input type="password" class="input-minimal" 
+                                           x-model="pluginSettingsValues[setting.id]"
+                                           placeholder="••••••••">
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+                
+                <!-- No Settings (only when no customSettings AND no standard settings) -->
+                <template x-if="!currentPluginSettings?.customSettings && (!currentPluginSettings?.settings || currentPluginSettings.settings.length === 0)">
+                    <div class="plugin-no-settings" x-text="t('noPluginSettings')"></div>
+                </template>
+                
+                <!-- Proxy/API Key settings (only for non-custom settings plugins) -->
+                <template x-if="!currentPluginSettings?.customSettings && currentPluginSettings && currentPluginSettings.proxy && currentPluginSettings.proxy.length > 0">
+                    <div class="plugin-proxy-settings">
+                        <h4 x-text="t('apiKeySettings')"></h4>
+                        <template x-for="proxy in currentPluginSettings.proxy" :key="proxy.id">
+                            <div class="form-group">
+                                <label class="form-label" x-text="proxy.name?.[lang] || proxy.name?.en || proxy.id"></label>
+                                <p class="form-sublabel" x-text="proxy.description?.[lang] || proxy.description?.en || ''"></p>
+                                <input type="text" class="input-minimal" 
+                                       x-model="pluginApiKeys[proxy.id]"
+                                       :placeholder="pluginApiKeys[proxy.id] ? '' : t('enterApiKey')"
+                                       @focus="if(pluginApiKeys[proxy.id]?.includes('*')) pluginApiKeys[proxy.id] = ''">
+                                <p class="form-hint" x-show="pluginApiKeys[proxy.id]?.includes('*')" x-text="t('apiKeySet')"></p>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+            <div class="plugin-settings-footer" x-show="!currentPluginSettings?.customSettings">
+                <button class="btn-secondary" @click="showPluginSettings = false" x-text="t('cancel')"></button>
+                <button class="btn-primary" @click="savePluginSettings()" x-text="t('save')"></button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" x-show="toast.show" x-text="toast.message" :class="toast.type" x-transition></div>
 
-    <script src="app.js?v=4.0"></script>
+    <script src="app.js?v=5.0"></script>
 </body>
 </html>

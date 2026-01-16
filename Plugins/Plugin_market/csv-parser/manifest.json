@@ -1,0 +1,24 @@
+{
+  "id": "csv-parser",
+  "version": "1.0.0",
+  "name": {
+    "en": "CSV Parser",
+    "zh": "CSV 解析器"
+  },
+  "description": {
+    "en": "Parse CSV/TSV files for AI reading. Auto-detects delimiters.",
+    "zh": "解析 CSV/TSV 文件供 AI 阅读。自动检测分隔符。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://github.com/massif-01/ChatRaw",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "document_parser",
+  "hooks": ["parse_document"],
+  "fileTypes": [".csv", ".tsv"],
+  "dependencies": {
+    "papaparse": "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"
+  },
+  "settings": [],
+  "proxy": []
+}

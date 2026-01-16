@@ -13,8 +13,7 @@ const i18n = {
         collapse: 'Collapse',
         defaultSubtitle: 'Minimalist AI Assistant, Ready to Use',
         fastResponse: 'Fast Response',
-        docRAG: 'Document RAG',
-        visionAI: 'Vision AI',
+        multiModel: 'Multi-Model',
         knowledgeBase: 'Knowledge Base',
         kbEnabled: 'KB Enabled',
         thinkingMode: 'Thinking Mode',
@@ -101,7 +100,38 @@ const i18n = {
         uploadAIAvatar: 'Upload AI Avatar',
         active: 'Active',
         error: 'Error',
-        apacheLicense: 'Apache 2.0 License'
+        apacheLicense: 'Apache 2.0 License',
+        // Plugin translations
+        plugins: 'Plugins',
+        pluginMarket: 'Plugin Market',
+        pluginMarketDesc: 'Browse and install plugins from the official market.',
+        installedPlugins: 'Installed',
+        installedPluginsDesc: 'Manage your installed plugins.',
+        installLocalPlugin: 'Install Local',
+        installLocalPluginDesc: 'Upload a plugin zip file to install.',
+        refreshingMarket: 'Refreshing plugin market...',
+        networkError: 'Please check network connection',
+        retry: 'Retry',
+        install: 'Install',
+        installed: 'Installed',
+        installing: 'Installing...',
+        installSuccess: 'Plugin installed successfully',
+        installFailed: 'Install failed',
+        uninstall: 'Uninstall',
+        uninstallSuccess: 'Plugin uninstalled',
+        uninstallFailed: 'Uninstall failed',
+        confirmUninstall: 'Are you sure you want to uninstall this plugin?',
+        pluginDisabled: 'Plugin disabled',
+        selectPluginZip: 'Click or drag to upload plugin (.zip)',
+        pluginDevGuide: 'Plugin Development Guide',
+        noPluginsAvailable: 'No plugins available',
+        noPluginsInstalled: 'No plugins installed yet',
+        noPluginSettings: 'This plugin has no settings.',
+        apiKeySettings: 'API Key Settings',
+        enterApiKey: 'Enter API Key',
+        apiKeySet: 'API Key is already set. Clear and enter new key to change.',
+        onlyZipSupported: 'Only .zip files are supported',
+        close: 'Close'
     },
     zh: {
         newChat: '新对话',
@@ -114,8 +144,7 @@ const i18n = {
         collapse: '收起',
         defaultSubtitle: '极简AI助手，开箱即用',
         fastResponse: '极速响应',
-        docRAG: '文档RAG',
-        visionAI: '视觉理解',
+        multiModel: '多模型支持',
         knowledgeBase: '知识库',
         kbEnabled: '知识库已开启',
         thinkingMode: '思考模式',
@@ -202,7 +231,38 @@ const i18n = {
         uploadAIAvatar: '上传 AI 头像',
         active: '活跃',
         error: '错误',
-        apacheLicense: 'Apache 2.0 协议'
+        apacheLicense: 'Apache 2.0 协议',
+        // Plugin translations
+        plugins: '插件',
+        pluginMarket: '插件市场',
+        pluginMarketDesc: '浏览并安装官方市场的插件',
+        installedPlugins: '已安装',
+        installedPluginsDesc: '管理已安装的插件',
+        installLocalPlugin: '本地安装',
+        installLocalPluginDesc: '上传插件 zip 文件进行安装',
+        refreshingMarket: '正在刷新插件市场...',
+        networkError: '请检查网络连接',
+        retry: '重试',
+        install: '安装',
+        installed: '已安装',
+        installing: '安装中...',
+        installSuccess: '插件安装成功',
+        installFailed: '安装失败',
+        uninstall: '卸载',
+        uninstallSuccess: '插件已卸载',
+        uninstallFailed: '卸载失败',
+        confirmUninstall: '确定要卸载此插件吗？',
+        pluginDisabled: '插件已禁用',
+        selectPluginZip: '点击或拖拽上传插件 (.zip)',
+        pluginDevGuide: '插件开发指南',
+        noPluginsAvailable: '暂无可用插件',
+        noPluginsInstalled: '暂未安装任何插件',
+        noPluginSettings: '此插件暂无可配置项',
+        apiKeySettings: 'API 密钥设置',
+        enterApiKey: '输入 API Key',
+        apiKeySet: 'API Key 已设置。清空后输入新密钥可更改。',
+        onlyZipSupported: '仅支持 .zip 文件',
+        close: '关闭'
     }
 };
 
@@ -251,6 +311,44 @@ function app() {
         attachedDocument: null,  // { filename, content }
         isUploadingDocument: false,
         
+        // Plugin state
+        showPlugins: false,
+        pluginTab: 'market',
+        marketPlugins: [],
+        installedPlugins: [],
+        pluginMarketLoading: false,
+        pluginMarketError: false,
+        pluginInstalling: null,
+        pluginUploading: false,
+        showPluginSettings: false,
+        currentPluginSettings: null,
+        pluginSettingsValues: {},
+        pluginApiKeys: {},
+        
+        // Plugin hooks system
+        pluginHooks: {
+            // Document/Content processing
+            parse_document: [],      // Parse uploaded documents
+            web_search: [],          // Web search providers
+            pre_embedding: [],       // Before embedding text
+            post_retrieval: [],      // After RAG retrieval
+            
+            // Message lifecycle
+            before_send: [],         // Before sending message to AI
+            after_receive: [],       // After receiving AI response
+            
+            // UI extensions
+            toolbar_button: [],      // Add toolbar buttons
+            file_preview: [],        // Custom file preview renderers
+            custom_action: [],       // Custom action handlers
+            custom_settings: [],     // Custom settings UI
+            
+            // Content transformation
+            transform_input: [],     // Transform user input
+            transform_output: [],    // Transform AI output before display
+        },
+        loadedPluginDeps: {},
+        
         // Data
         chats: [],
         messages: [],
@@ -273,7 +371,7 @@ function app() {
                 logo_data: '',
                 logo_text: 'ChatRaw',
                 subtitle: '',
-                theme_mode: 'dark',
+                theme_mode: 'light',
                 user_avatar: '',
                 assistant_avatar: ''
             }
@@ -313,9 +411,12 @@ function app() {
             await this.loadModels();
             await this.loadChats();
             await this.loadDocuments();
+            await this.loadInstalledPlugins();
             this.applyTheme();
             // Update favicon and title based on logo settings
             this.updateFavicon(this.settings.ui_settings.logo_data);
+            // Initialize plugin system
+            this.initPluginSystem();
         },
         
         // Apply theme
@@ -470,12 +571,18 @@ function app() {
         
         // Send message
         async sendMessage() {
-            const message = this.inputMessage.trim();
+            let message = this.inputMessage.trim();
             if (!message || this.isGenerating) return;
             
             this.inputMessage = '';
             this.isGenerating = true;
             this.abortController = new AbortController();
+            
+            // Call transform_input hooks to allow plugins to modify the input
+            const transformResult = await this.callHook('transform_input', message);
+            if (transformResult?.success && transformResult.content) {
+                message = transformResult.content;
+            }
             
             this.messages.push({
                 role: 'user',
@@ -501,7 +608,7 @@ function app() {
                     contentSource = contentSource ? contentSource + ', ' + this.attachedDocument.filename : this.attachedDocument.filename;
                 }
                 
-                const body = {
+                let body = {
                     chat_id: this.currentChatId,
                     message: message,
                     use_rag: this.useRAG,
@@ -511,6 +618,12 @@ function app() {
                     web_url: contentSource
                 };
                 
+                // Call before_send hooks to allow plugins to modify the request
+                const beforeSendResult = await this.callHook('before_send', body);
+                if (beforeSendResult?.success && beforeSendResult.body) {
+                    body = { ...body, ...beforeSendResult.body };
+                }
+                
                 this.removeUploadedImage();
                 this.removeParsedUrl();
                 this.removeAttachedDocument();
@@ -519,6 +632,16 @@ function app() {
                     await this.handleStreamResponse(body);
                 } else {
                     await this.handleNormalResponse(body);
+                }
+                
+                // Call after_receive hooks for post-processing
+                const lastMsg = this.messages[this.messages.length - 1];
+                if (lastMsg && lastMsg.role === 'assistant') {
+                    const afterResult = await this.callHook('after_receive', lastMsg);
+                    if (afterResult?.success && afterResult.content) {
+                        lastMsg.content = afterResult.content;
+                        this.messages[this.messages.length - 1] = { ...lastMsg };
+                    }
                 }
                 
                 await this.loadChats();
@@ -1142,6 +1265,629 @@ function app() {
             setTimeout(() => {
                 this.toast.show = false;
             }, 3000);
+        },
+        
+        // ============ Plugin System ============
+        
+        // Track which plugin registered which hooks
+        pluginHookRegistry: {},  // { pluginId: [{ hookName, handler }] }
+        
+        // Initialize plugin system
+        initPluginSystem() {
+            // Track current loading plugin
+            this._currentLoadingPlugin = null;
+            
+            // Reference to app instance for closures
+            const appInstance = this;
+
+            // Create global ChatRawPlugin object for plugins
+            window.ChatRawPlugin = {
+                // Hook system
+                hooks: {
+                    register: (hookName, handler) => this.registerHook(hookName, handler),
+                    // List available hooks
+                    available: () => Object.keys(this.pluginHooks)
+                },
+                
+                // Dependency loader
+                require: (depName) => this.loadedPluginDeps[depName],
+                
+                // Proxy API for external service calls
+                proxy: {
+                    // JSON request proxy
+                    request: (params) => this.proxyRequest(params),
+                    
+                    // File upload proxy (for services like Whisper, OCR)
+                    upload: async (file, serviceId, url, extraFields = {}, fileFieldName = 'file') => {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('service_id', serviceId);
+                        formData.append('url', url);
+                        formData.append('extra_fields', JSON.stringify(extraFields));
+                        formData.append('file_field_name', fileFieldName);
+                        
+                        try {
+                            const res = await fetch('/api/proxy/upload', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            return await res.json();
+                        } catch (e) {
+                            return { success: false, error: e.message };
+                        }
+                    }
+                },
+                
+                // Plugin settings
+                settings: (pluginId) => this.getPluginSettings(pluginId || this._currentLoadingPlugin),
+                
+                // Utility functions for plugin developers
+                utils: {
+                    // Load external script dynamically
+                    loadScript: (url) => appInstance.loadScript(url),
+                    
+                    // Show toast notification
+                    showToast: (message, type = '') => appInstance.showToast(message, type),
+                    
+                    // Get current language
+                    getLanguage: () => appInstance.lang,
+                    
+                    // Translate key (if exists in i18n)
+                    t: (key) => appInstance.t(key),
+                    
+                    // Show progress indicator (uses existing upload progress)
+                    showProgress: (percent, text = '') => {
+                        appInstance.uploadProgress = {
+                            show: true,
+                            filename: text,
+                            progress: percent,
+                            status: 'processing',
+                            current: percent,
+                            total: 100
+                        };
+                    },
+                    
+                    // Hide progress indicator
+                    hideProgress: () => {
+                        appInstance.uploadProgress = {
+                            show: false,
+                            filename: '',
+                            progress: 0,
+                            status: '',
+                            current: 0,
+                            total: 0
+                        };
+                    },
+                    
+                    // Get current chat ID
+                    getCurrentChatId: () => appInstance.currentChatId,
+                    
+                    // Get current messages
+                    getMessages: () => [...appInstance.messages],
+                    
+                    // Add a message to the current chat display
+                    addMessage: (role, content) => {
+                        appInstance.messages.push({ role, content });
+                        appInstance.$nextTick(() => appInstance.scrollToBottom());
+                    }
+                },
+                
+                // Plugin local storage (namespaced by plugin ID)
+                storage: {
+                    // Get value from plugin storage
+                    get: (key, defaultValue = null) => {
+                        const pluginId = appInstance._currentLoadingPlugin;
+                        if (!pluginId) {
+                            console.warn('[Plugin Storage] No plugin context');
+                            return defaultValue;
+                        }
+                        try {
+                            const storageKey = `chatraw_plugin_${pluginId}`;
+                            const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                            return key in data ? data[key] : defaultValue;
+                        } catch (e) {
+                            return defaultValue;
+                        }
+                    },
+                    
+                    // Set value in plugin storage
+                    set: (key, value) => {
+                        const pluginId = appInstance._currentLoadingPlugin;
+                        if (!pluginId) {
+                            console.warn('[Plugin Storage] No plugin context');
+                            return false;
+                        }
+                        try {
+                            const storageKey = `chatraw_plugin_${pluginId}`;
+                            const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                            data[key] = value;
+                            // Limit storage size per plugin (1MB)
+                            const serialized = JSON.stringify(data);
+                            if (serialized.length > 1024 * 1024) {
+                                console.warn('[Plugin Storage] Storage limit exceeded (1MB)');
+                                return false;
+                            }
+                            localStorage.setItem(storageKey, serialized);
+                            return true;
+                        } catch (e) {
+                            console.error('[Plugin Storage] Error:', e);
+                            return false;
+                        }
+                    },
+                    
+                    // Remove key from plugin storage
+                    remove: (key) => {
+                        const pluginId = appInstance._currentLoadingPlugin;
+                        if (!pluginId) return false;
+                        try {
+                            const storageKey = `chatraw_plugin_${pluginId}`;
+                            const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
+                            delete data[key];
+                            localStorage.setItem(storageKey, JSON.stringify(data));
+                            return true;
+                        } catch (e) {
+                            return false;
+                        }
+                    },
+                    
+                    // Clear all plugin storage
+                    clear: () => {
+                        const pluginId = appInstance._currentLoadingPlugin;
+                        if (!pluginId) return false;
+                        try {
+                            localStorage.removeItem(`chatraw_plugin_${pluginId}`);
+                            return true;
+                        } catch (e) {
+                            return false;
+                        }
+                    },
+                    
+                    // Get all plugin storage data
+                    getAll: () => {
+                        const pluginId = appInstance._currentLoadingPlugin;
+                        if (!pluginId) return {};
+                        try {
+                            const storageKey = `chatraw_plugin_${pluginId}`;
+                            return JSON.parse(localStorage.getItem(storageKey) || '{}');
+                        } catch (e) {
+                            return {};
+                        }
+                    }
+                }
+            };
+
+            // Load enabled plugins
+            this.loadEnabledPlugins();
+        },
+        
+        // Load installed plugins list
+        async loadInstalledPlugins() {
+            try {
+                const res = await fetch('/api/plugins');
+                if (res.ok) {
+                    this.installedPlugins = await res.json();
+                }
+            } catch (e) {
+                console.error('Failed to load installed plugins:', e);
+            }
+        },
+        
+        // Load enabled plugins' JS
+        async loadEnabledPlugins() {
+            for (const plugin of this.installedPlugins) {
+                if (plugin.enabled) {
+                    await this.loadPluginJS(plugin);
+                }
+            }
+        },
+        
+        // Load a plugin's JS file
+        async loadPluginJS(plugin) {
+            try {
+                // First load dependencies
+                if (plugin.dependencies) {
+                    for (const [name, url] of Object.entries(plugin.dependencies)) {
+                        if (!this.loadedPluginDeps[name]) {
+                            try {
+                                await this.loadScript(url);
+                                // Common library detection patterns
+                                if (name === 'xlsx' && window.XLSX) {
+                                    this.loadedPluginDeps[name] = window.XLSX;
+                                } else if (name === 'pdfjs' && window.pdfjsLib) {
+                                    this.loadedPluginDeps[name] = window.pdfjsLib;
+                                } else if (window[name]) {
+                                    this.loadedPluginDeps[name] = window[name];
+                                }
+                            } catch (depError) {
+                                console.error(`[Plugin] Failed to load dependency ${name} for ${plugin.id}:`, depError);
+                                // Continue loading other dependencies
+                            }
+                        }
+                    }
+                }
+                
+                // Set current loading plugin for hook registration
+                this._currentLoadingPlugin = plugin.id;
+                
+                // Then load the plugin main.js
+                const scriptUrl = `/api/plugins/${encodeURIComponent(plugin.id)}/main.js`;
+                await this.loadScript(scriptUrl);
+                
+                this._currentLoadingPlugin = null;
+                console.log(`[Plugin] Loaded: ${plugin.id}`);
+            } catch (e) {
+                this._currentLoadingPlugin = null;
+                console.error(`[Plugin] Failed to load ${plugin.id}:`, e);
+            }
+        },
+        
+        // Load external script
+        loadScript(url) {
+            return new Promise((resolve, reject) => {
+                // Check if already loaded
+                const existing = document.querySelector(`script[src="${url}"]`);
+                if (existing) {
+                    resolve();
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = url;
+                script.onload = resolve;
+                script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+                document.head.appendChild(script);
+            });
+        },
+        
+        // Register a hook handler
+        registerHook(hookName, handler) {
+            if (!this.pluginHooks[hookName]) {
+                console.warn(`[Plugin] Unknown hook: ${hookName}`);
+                return;
+            }
+            
+            // Add plugin ID to handler for tracking
+            const pluginId = this._currentLoadingPlugin;
+            const wrappedHandler = { ...handler, _pluginId: pluginId };
+            
+            this.pluginHooks[hookName].push(wrappedHandler);
+            this.pluginHooks[hookName].sort((a, b) => (b.priority || 0) - (a.priority || 0));
+            
+            // Track for later removal
+            if (pluginId) {
+                if (!this.pluginHookRegistry[pluginId]) {
+                    this.pluginHookRegistry[pluginId] = [];
+                }
+                this.pluginHookRegistry[pluginId].push({ hookName, handler: wrappedHandler });
+            }
+        },
+        
+        // Unregister all hooks for a plugin
+        unregisterPluginHooks(pluginId) {
+            const registrations = this.pluginHookRegistry[pluginId];
+            if (!registrations) return;
+            
+            for (const { hookName, handler } of registrations) {
+                const hooks = this.pluginHooks[hookName];
+                if (hooks) {
+                    const idx = hooks.indexOf(handler);
+                    if (idx !== -1) {
+                        hooks.splice(idx, 1);
+                    }
+                }
+            }
+            
+            delete this.pluginHookRegistry[pluginId];
+        },
+        
+        // Call hook handlers
+        async callHook(hookName, ...args) {
+            const handlers = this.pluginHooks[hookName] || [];
+            for (const handler of handlers) {
+                // Skip if plugin is disabled
+                if (handler._pluginId) {
+                    const plugin = this.installedPlugins.find(p => p.id === handler._pluginId);
+                    if (plugin && !plugin.enabled) continue;
+                }
+                
+                try {
+                    const result = await handler.handler(...args);
+                    if (result?.success) return result;
+                } catch (e) {
+                    console.error(`[Hook ${hookName}] Error:`, e);
+                }
+            }
+            return null;
+        },
+        
+        // Get plugin settings with defaults
+        getPluginSettings(pluginId) {
+            const plugin = this.installedPlugins.find(p => p.id === pluginId);
+            if (!plugin) return {};
+            
+            // Merge defaults with saved values
+            const defaults = {};
+            if (plugin.settings) {
+                for (const setting of plugin.settings) {
+                    defaults[setting.id] = setting.default;
+                }
+            }
+            
+            return { ...defaults, ...(plugin.settings_values || {}) };
+        },
+        
+        // Proxy request for plugins
+        async proxyRequest(params) {
+            try {
+                // Convert serviceId to service_id for backend compatibility
+                const body = {
+                    service_id: params.serviceId || params.service_id,
+                    url: params.url,
+                    method: params.method || 'POST',
+                    headers: params.headers || {},
+                    body: params.body || {}
+                };
+                
+                const res = await fetch('/api/proxy/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                return await res.json();
+            } catch (e) {
+                return { success: false, error: e.message };
+            }
+        },
+        
+        // Load plugin market
+        async loadPluginMarket() {
+            if (this.pluginMarketLoading) return;
+            
+            this.pluginMarketLoading = true;
+            this.pluginMarketError = false;
+            
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 5000);
+                
+                const res = await fetch(
+                    'https://raw.githubusercontent.com/massif-01/ChatRaw/main/Plugins/Plugin_market/index.json',
+                    { signal: controller.signal }
+                );
+                clearTimeout(timeout);
+                
+                if (!res.ok) throw new Error('Failed to fetch');
+                
+                const data = await res.json();
+                this.marketPlugins = data.plugins || [];
+            } catch (e) {
+                console.error('Failed to load plugin market:', e);
+                this.pluginMarketError = true;
+            } finally {
+                this.pluginMarketLoading = false;
+            }
+        },
+        
+        // Check if plugin is installed
+        isPluginInstalled(pluginId) {
+            return this.installedPlugins.some(p => p.id === pluginId);
+        },
+        
+        // Install plugin from market
+        async installPlugin(plugin) {
+            this.pluginInstalling = plugin.id;
+            
+            try {
+                const sourceUrl = `https://raw.githubusercontent.com/massif-01/ChatRaw/main/Plugins/Plugin_market/${plugin.folder}`;
+                
+                const res = await fetch('/api/plugins/install', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source_url: sourceUrl })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    this.showToast(this.t('installSuccess'), 'success');
+                    await this.loadInstalledPlugins();
+                    // Load the newly installed plugin
+                    const newPlugin = this.installedPlugins.find(p => p.id === plugin.id);
+                    if (newPlugin) {
+                        await this.loadPluginJS(newPlugin);
+                    }
+                } else {
+                    this.showToast(this.t('installFailed') + ': ' + data.error, 'error');
+                }
+            } catch (e) {
+                this.showToast(this.t('installFailed') + ': ' + e.message, 'error');
+            } finally {
+                this.pluginInstalling = null;
+            }
+        },
+        
+        // Handle local plugin upload
+        async handlePluginUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.endsWith('.zip')) {
+                this.showToast(this.t('onlyZipSupported'), 'error');
+                return;
+            }
+            
+            this.pluginUploading = true;
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const res = await fetch('/api/plugins/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    this.showToast(this.t('installSuccess'), 'success');
+                    await this.loadInstalledPlugins();
+                    // Load the newly installed plugin
+                    const newPlugin = this.installedPlugins.find(p => p.id === data.plugin_id);
+                    if (newPlugin) {
+                        await this.loadPluginJS(newPlugin);
+                    }
+                } else {
+                    this.showToast(this.t('installFailed') + ': ' + data.error, 'error');
+                }
+            } catch (e) {
+                this.showToast(this.t('installFailed') + ': ' + e.message, 'error');
+            } finally {
+                this.pluginUploading = false;
+                event.target.value = '';
+            }
+        },
+        
+        // Toggle plugin enabled/disabled
+        async togglePlugin(plugin) {
+            const newState = !plugin.enabled;
+            
+            try {
+                const res = await fetch(`/api/plugins/${encodeURIComponent(plugin.id)}/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: newState })
+                });
+                
+                if (res.ok) {
+                    plugin.enabled = newState;
+                    if (newState) {
+                        // Load plugin if enabled
+                        await this.loadPluginJS(plugin);
+                        this.showToast(this.t('settingsSaved'), 'success');
+                    } else {
+                        // Unregister hooks when disabled
+                        this.unregisterPluginHooks(plugin.id);
+                        this.showToast(this.t('pluginDisabled'), 'success');
+                    }
+                }
+            } catch (e) {
+                this.showToast(this.t('saveFailed'), 'error');
+            }
+        },
+        
+        // Open plugin settings
+        async openPluginSettings(plugin) {
+            this.currentPluginSettings = plugin;
+            
+            // Initialize settings with defaults, then override with saved values
+            const settingsValues = {};
+            if (plugin.settings) {
+                for (const setting of plugin.settings) {
+                    settingsValues[setting.id] = setting.default;
+                }
+            }
+            // Override with saved values
+            Object.assign(settingsValues, plugin.settings_values || {});
+            
+            this.pluginSettingsValues = settingsValues;
+            this.pluginApiKeys = {};
+            
+            // Load saved API keys (masked) for display
+            if (plugin.proxy && plugin.proxy.length > 0) {
+                try {
+                    const res = await fetch('/api/plugins/api-keys');
+                    if (res.ok) {
+                        const data = await res.json();
+                        const savedKeys = data.api_keys || {};
+                        for (const proxy of plugin.proxy) {
+                            if (savedKeys[proxy.id]) {
+                                this.pluginApiKeys[proxy.id] = savedKeys[proxy.id];
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to load API keys:', e);
+                }
+            }
+            
+            this.showPluginSettings = true;
+            
+            // Dispatch event for plugins with custom settings to inject their UI
+            if (plugin.customSettings) {
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('plugin-settings-open', {
+                        detail: { pluginId: plugin.id, customSettings: true }
+                    }));
+                }, 50);
+            }
+        },
+        
+        // Save plugin settings
+        async savePluginSettings() {
+            if (!this.currentPluginSettings) return;
+            
+            try {
+                // Save settings
+                const settingsRes = await fetch(`/api/plugins/${encodeURIComponent(this.currentPluginSettings.id)}/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ settings: this.pluginSettingsValues })
+                });
+                
+                if (!settingsRes.ok) {
+                    throw new Error('Failed to save settings');
+                }
+                
+                // Save API keys (only if user entered a new value, not the masked placeholder)
+                for (const [serviceId, apiKey] of Object.entries(this.pluginApiKeys)) {
+                    // Skip masked values (contain *) - user didn't change the key
+                    if (apiKey && !apiKey.includes('*')) {
+                        await fetch('/api/plugins/api-key', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ service_id: serviceId, api_key: apiKey })
+                        });
+                    }
+                }
+                
+                // Update local state
+                const plugin = this.installedPlugins.find(p => p.id === this.currentPluginSettings.id);
+                if (plugin) {
+                    plugin.settings_values = { ...this.pluginSettingsValues };
+                }
+                
+                this.showPluginSettings = false;
+                this.showToast(this.t('settingsSaved'), 'success');
+            } catch (e) {
+                this.showToast(this.t('saveFailed'), 'error');
+            }
+        },
+        
+        // Uninstall plugin
+        async uninstallPlugin(plugin) {
+            if (!plugin || !confirm(this.t('confirmUninstall'))) return;
+            
+            try {
+                // First unregister hooks
+                this.unregisterPluginHooks(plugin.id);
+                
+                const res = await fetch(`/api/plugins/${encodeURIComponent(plugin.id)}`, {
+                    method: 'DELETE'
+                });
+                
+                if (res.ok) {
+                    this.showPluginSettings = false;
+                    this.currentPluginSettings = null;
+                    this.showToast(this.t('uninstallSuccess'), 'success');
+                    await this.loadInstalledPlugins();
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    this.showToast(this.t('uninstallFailed') + (data.error ? ': ' + data.error : ''), 'error');
+                }
+            } catch (e) {
+                this.showToast(this.t('uninstallFailed'), 'error');
+            }
         }
     };
 }

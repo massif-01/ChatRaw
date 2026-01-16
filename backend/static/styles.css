@@ -173,6 +173,11 @@ body {
     color: var(--text-primary);
 }
 
+.btn-icon-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+}
+
 /* New Chat Button */
 .btn-new-chat {
     margin: 0 20px 20px;
@@ -2126,3 +2131,348 @@ input[type=range]::-webkit-slider-thumb:hover {
     line-height: 1.5;
     word-break: break-word;
 }
+
+/* ============ Plugin System Styles ============ */
+
+/* Plugin Button in Sidebar */
+.btn-plugins {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.btn-plugins:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.sidebar-plugins-collapsed {
+    position: absolute;
+    bottom: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Plugin Modal */
+.plugin-modal .settings-content {
+    min-height: 400px;
+}
+
+/* Plugin Loading */
+.plugin-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 16px;
+    color: var(--text-secondary);
+}
+
+.plugin-loading .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--text-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Plugin Error */
+.plugin-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 16px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.plugin-error svg {
+    opacity: 0.5;
+}
+
+.plugin-error .btn-secondary {
+    margin-top: 8px;
+}
+
+/* Plugin Grid */
+.plugin-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 600px) {
+    .plugin-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Plugin List - One per row for installed plugins */
+.plugin-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.plugin-list .plugin-card {
+    width: 100%;
+}
+
+.plugin-list .plugin-desc {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 400px;
+}
+
+/* Plugin Card - Compact horizontal layout */
+.plugin-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    transition: var(--transition);
+}
+
+.plugin-card:hover {
+    border-color: var(--text-muted);
+}
+
+.plugin-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: var(--bg-hover);
+    flex-shrink: 0;
+}
+
+.plugin-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.plugin-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.plugin-version {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.plugin-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.plugin-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.plugin-card.installed .plugin-actions {
+    justify-content: flex-end;
+}
+
+.btn-sm {
+    padding: 6px 16px;
+    font-size: 0.85rem;
+}
+
+/* Plugin Empty State */
+.plugin-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    grid-column: 1 / -1;
+}
+
+/* Plugin Upload Area */
+.plugin-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+    color: var(--text-secondary);
+    gap: 12px;
+}
+
+.plugin-upload:hover {
+    border-color: var(--text-muted);
+    background: var(--bg-hover);
+}
+
+.plugin-upload svg {
+    opacity: 0.5;
+}
+
+.plugin-upload-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px;
+    color: var(--text-secondary);
+}
+
+.plugin-upload-progress .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--text-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* Plugin Dev Guide Link */
+.plugin-dev-guide {
+    margin-top: 24px;
+    text-align: center;
+}
+
+.plugin-dev-guide a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.plugin-dev-guide a:hover {
+    color: var(--text-secondary);
+}
+
+/* Plugin Settings Modal */
+.plugin-settings-modal {
+    background: var(--bg-modal);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+}
+
+/* Custom Settings Modal - Larger size for complex UIs */
+.plugin-settings-modal.custom-settings-modal {
+    max-width: 600px;
+}
+
+.plugin-settings-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.plugin-settings-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.plugin-settings-content {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.plugin-settings-content.custom-settings-content {
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Plugin Custom Settings Container */
+.plugin-custom-settings {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.plugin-settings-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-danger {
+    background: var(--error-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-danger:hover {
+    opacity: 0.9;
+}
+
+.plugin-no-settings {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+
+.plugin-proxy-settings {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-color);
+}
+
+.plugin-proxy-settings h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+}
+

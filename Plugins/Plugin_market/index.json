@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0",
+  "updated": "2026-01-16",
+  "plugins": [
+    {
+      "id": "lightweight-rag",
+      "version": "1.0.0",
+      "name": {
+        "en": "Lightweight RAG Demo",
+        "zh": "轻量RAG演示"
+      },
+      "description": {
+        "en": "Knowledge base retrieval augmented generation",
+        "zh": "知识库检索增强生成"
+      },
+      "author": "ChatRaw",
+      "type": "rag_enhancer",
+      "downloads": 0,
+      "folder": "lightweight-rag"
+    },
+    {
+      "id": "excel-parser",
+      "version": "1.0.0",
+      "name": {
+        "en": "Excel Parser",
+        "zh": "Excel 解析器"
+      },
+      "description": {
+        "en": "Parse Excel files (.xlsx, .xls) for RAG knowledge base",
+        "zh": "解析 Excel 文件（.xlsx, .xls）用于 RAG 知识库"
+      },
+      "author": "ChatRaw",
+      "type": "document_parser",
+      "downloads": 0,
+      "folder": "excel-parser"
+    },
+    {
+      "id": "csv-parser",
+      "version": "1.0.0",
+      "name": {
+        "en": "CSV Parser",
+        "zh": "CSV 解析器"
+      },
+      "description": {
+        "en": "Parse CSV/TSV files for RAG knowledge base with multiple output formats",
+        "zh": "解析 CSV/TSV 文件用于 RAG 知识库，支持多种输出格式"
+      },
+      "author": "ChatRaw",
+      "type": "document_parser",
+      "downloads": 0,
+      "folder": "csv-parser"
+    }
+  ]
+}

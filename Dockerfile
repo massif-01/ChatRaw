@@ -12,9 +12,10 @@ RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.pytho
 # Copy application
 COPY backend/main.py .
 COPY backend/static ./static
+COPY Plugins ./Plugins
 
 # Create data directory
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data /app/data/plugins
 
 # Environment
 ENV PORT=51111
