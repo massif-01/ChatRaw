@@ -853,9 +853,10 @@ function app() {
             return canvas.toDataURL('image/webp').startsWith('data:image/webp');
         },
         
-        // Compress image using Canvas API, target ~2MB
-        async compressImage(file, targetSizeMB = 2) {
-            const targetSize = targetSizeMB * 1024 * 1024;
+        // Compress image using Canvas API, target 500KB, max 1120px long edge
+        async compressImage(file, targetSizeMB = 0.5) {
+            const targetSize = targetSizeMB * 1024 * 1024; // 500KB default
+            const maxLongEdge = 1120; // Maximum long edge dimension
             
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -873,6 +874,14 @@ function app() {
                     const originalWidth = width;
                     const originalHeight = height;
                     
+                    // Resize to max 1120px on long edge while maintaining aspect ratio
+                    const longEdge = Math.max(width, height);
+                    if (longEdge > maxLongEdge) {
+                        const ratio = maxLongEdge / longEdge;
+                        width = Math.round(width * ratio);
+                        height = Math.round(height * ratio);
+                    }
+                    
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     
@@ -888,38 +897,45 @@ function app() {
                         });
                     };
                     
-                    // Try compression with different settings until under target size
-                    const qualityLevels = [0.85, 0.75, 0.65, 0.55, 0.45, 0.35];
-                    const scaleLevels = [1.0, 0.8, 0.6, 0.5, 0.4, 0.3];
+                    // Try compression with different quality levels until under target size
+                    const qualityLevels = [0.92, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25];
                     
                     let bestBlob = null;
                     
-                    // First, limit max dimension to 4096
-                    if (width > 4096 || height > 4096) {
-                        const ratio = Math.min(4096 / width, 4096 / height);
-                        width = Math.round(width * ratio);
-                        height = Math.round(height * ratio);
+                    // Try different quality levels with the resized dimensions
+                    for (const quality of qualityLevels) {
+                        const blob = await createBlob(width, height, quality);
+                        if (blob && blob.size <= targetSize) {
+                            bestBlob = blob;
+                            break;
+                        }
+                        // Keep the smallest one we've seen
+                        if (!bestBlob || (blob && blob.size < bestBlob.size)) {
+                            bestBlob = blob;
+                        }
                     }
                     
-                    // Try different quality and scale combinations
-                    for (const scale of scaleLevels) {
-                        const w = Math.round(width * scale);
-                        const h = Math.round(height * scale);
-                        
-                        for (const quality of qualityLevels) {
-                            const blob = await createBlob(w, h, quality);
-                            if (blob && blob.size <= targetSize) {
-                                bestBlob = blob;
+                    // If still too large, try scaling down further
+                    if (bestBlob && bestBlob.size > targetSize) {
+                        const scaleLevels = [0.9, 0.8, 0.7, 0.6, 0.5];
+                        for (const scale of scaleLevels) {
+                            const w = Math.round(width * scale);
+                            const h = Math.round(height * scale);
+                            
+                            for (const quality of qualityLevels) {
+                                const blob = await createBlob(w, h, quality);
+                                if (blob && blob.size <= targetSize) {
+                                    bestBlob = blob;
+                                    break;
+                                }
+                                if (blob && blob.size < bestBlob.size) {
+                                    bestBlob = blob;
+                                }
+                            }
+                            
+                            if (bestBlob && bestBlob.size <= targetSize) {
                                 break;
                             }
-                            // Keep the smallest one we've seen
-                            if (!bestBlob || (blob && blob.size < bestBlob.size)) {
-                                bestBlob = blob;
-                            }
-                        }
-                        
-                        if (bestBlob && bestBlob.size <= targetSize) {
-                            break;
                         }
                     }
                     
