@@ -421,21 +421,25 @@
             .mm-model-item {
                 display: flex;
                 align-items: center;
-                padding: 12px;
+                padding: 11px;
                 margin-bottom: 4px;
                 border-radius: 8px;
                 cursor: pointer;
-                transition: background 0.2s;
+                transition: all 0.2s;
                 gap: 10px;
+                border: 1px solid transparent;
+                background: transparent;
             }
             .mm-model-item:hover {
                 background: var(--bg-hover);
             }
             .mm-model-item.selected {
-                background: var(--text-primary);
+                background: var(--bg-primary);
+                border: 1px solid var(--text-primary);
             }
             .mm-model-item.selected .mm-model-name {
-                color: var(--bg-primary);
+                color: var(--text-primary);
+                font-weight: 500;
             }
             .mm-model-toggle {
                 flex-shrink: 0;
