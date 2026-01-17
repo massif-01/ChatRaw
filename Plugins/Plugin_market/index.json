@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updated": "2026-01-16",
+  "updated": "2026-01-17",
   "plugins": [
     {
       "id": "lightweight-rag",
@@ -81,6 +81,22 @@
       "type": "document_parser",
       "downloads": 0,
       "folder": "csv-parser"
+    },
+    {
+      "id": "multi-model-manager",
+      "version": "1.0.0",
+      "name": {
+        "en": "Multi-Model Manager",
+        "zh": "多模型管理"
+      },
+      "description": {
+        "en": "Manage multiple AI models and switch between them quickly",
+        "zh": "管理多个 AI 模型配置，快速切换使用"
+      },
+      "author": "ChatRaw",
+      "type": "model_manager",
+      "downloads": 0,
+      "folder": "multi-model-manager"
     }
   ]
 }

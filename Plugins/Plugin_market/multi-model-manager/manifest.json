@@ -1,0 +1,21 @@
+{
+  "id": "multi-model-manager",
+  "version": "1.0.0",
+  "name": {
+    "en": "Multi-Model Manager",
+    "zh": "多模型管理"
+  },
+  "description": {
+    "en": "Manage multiple AI models and switch between them quickly. Supports backup and auto-restore of original config.",
+    "zh": "管理多个 AI 模型配置，快速切换使用。支持备份和自动恢复原配置。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://github.com/massif-01/ChatRaw",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "model_manager",
+  "hooks": ["custom_settings"],
+  "customSettings": true,
+  "settings": [],
+  "proxy": []
+}
