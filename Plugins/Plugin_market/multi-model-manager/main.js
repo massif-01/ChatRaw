@@ -359,6 +359,8 @@
                 height: 100%;
                 min-height: 400px;
                 gap: 0;
+                border-radius: 12px;
+                overflow: hidden;
             }
             .mm-sidebar {
                 width: 200px;
@@ -367,6 +369,7 @@
                 display: flex;
                 flex-direction: column;
                 background: var(--bg-secondary);
+                border-radius: 12px 0 0 12px;
             }
             .mm-sidebar-header {
                 padding: 16px;
@@ -375,8 +378,8 @@
             .mm-add-btn {
                 width: 100%;
                 padding: 10px 16px;
-                background: var(--primary-color);
-                color: white;
+                background: #3b82f6;
+                color: #ffffff;
                 border: none;
                 border-radius: 8px;
                 cursor: pointer;
@@ -388,7 +391,10 @@
                 transition: background 0.2s;
             }
             .mm-add-btn:hover {
-                background: var(--primary-hover);
+                background: #2563eb;
+            }
+            .mm-add-btn svg {
+                stroke: #ffffff;
             }
             .mm-model-list {
                 flex: 1;
@@ -409,11 +415,10 @@
                 background: var(--hover-bg);
             }
             .mm-model-item.selected {
-                background: var(--primary-color);
-                color: white;
+                background: #3b82f6;
             }
             .mm-model-item.selected .mm-model-name {
-                color: white;
+                color: #ffffff;
             }
             .mm-model-toggle {
                 flex-shrink: 0;
@@ -433,12 +438,14 @@
                 flex-shrink: 0;
             }
             .mm-model-status.active {
-                background: var(--success-color);
+                background: #22c55e;
             }
             .mm-content {
                 flex: 1;
                 padding: 24px;
                 overflow-y: auto;
+                background: var(--bg-primary);
+                border-radius: 0 12px 12px 0;
             }
             .mm-empty {
                 display: flex;
@@ -515,8 +522,8 @@
             .mm-btn-primary {
                 flex: 1;
                 padding: 12px 20px;
-                background: var(--primary-color);
-                color: white;
+                background: #3b82f6;
+                color: #ffffff;
                 border: none;
                 border-radius: 8px;
                 cursor: pointer;
@@ -524,7 +531,7 @@
                 transition: background 0.2s;
             }
             .mm-btn-primary:hover {
-                background: var(--primary-hover);
+                background: #2563eb;
             }
             .mm-btn-primary:disabled {
                 opacity: 0.6;
@@ -533,16 +540,16 @@
             .mm-btn-danger {
                 padding: 12px 20px;
                 background: transparent;
-                color: var(--error-color);
-                border: 1px solid var(--error-color);
+                color: #ef4444;
+                border: 1px solid #ef4444;
                 border-radius: 8px;
                 cursor: pointer;
                 font-size: 14px;
                 transition: all 0.2s;
             }
             .mm-btn-danger:hover {
-                background: var(--error-color);
-                color: white;
+                background: #ef4444;
+                color: #ffffff;
             }
             .mm-verify-msg {
                 margin-top: 12px;
@@ -552,23 +559,23 @@
             }
             .mm-verify-msg.success {
                 background: rgba(34, 197, 94, 0.1);
-                color: var(--success-color);
+                color: #22c55e;
             }
             .mm-verify-msg.error {
                 background: rgba(239, 68, 68, 0.1);
-                color: var(--error-color);
+                color: #ef4444;
             }
             .mm-toggle {
                 position: relative;
                 width: 36px;
                 height: 20px;
-                background: var(--border-color);
+                background: #d1d5db;
                 border-radius: 10px;
                 cursor: pointer;
                 transition: background 0.2s;
             }
             .mm-toggle.checked {
-                background: var(--success-color);
+                background: #22c55e;
             }
             .mm-toggle-handle {
                 position: absolute;
