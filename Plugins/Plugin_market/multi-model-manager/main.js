@@ -118,7 +118,8 @@
     // ============ Storage Functions ============
     async function loadPluginData() {
         try {
-            const saved = await ChatRaw.storage?.get?.(PLUGIN_ID);
+            // Pass PLUGIN_ID explicitly to work after plugin loading completes
+            const saved = ChatRaw.storage?.get?.(PLUGIN_ID, null, PLUGIN_ID);
             if (saved) {
                 pluginData = { ...pluginData, ...saved };
             }
@@ -130,8 +131,13 @@
     
     async function savePluginData() {
         try {
-            await ChatRaw.storage?.set?.(PLUGIN_ID, pluginData);
-            console.log('[MultiModel] Saved plugin data');
+            // Pass PLUGIN_ID explicitly to work after plugin loading completes
+            const success = ChatRaw.storage?.set?.(PLUGIN_ID, pluginData, PLUGIN_ID);
+            if (success) {
+                console.log('[MultiModel] Saved plugin data');
+            } else {
+                console.error('[MultiModel] Failed to save plugin data');
+            }
         } catch (e) {
             console.error('[MultiModel] Failed to save plugin data:', e);
         }

@@ -421,26 +421,32 @@ ChatRaw.utils.addMessage('assistant', 'Hello from plugin!');
 
 ### Storage API
 
-Plugin-specific local storage (namespaced, 1MB limit per plugin):
+Plugin-specific local storage (namespaced, 1MB limit per plugin).
+
+**Important**: When calling storage methods after plugin initialization (e.g., in button click handlers, settings UI), you must pass `pluginId` as the last argument:
 
 ```javascript
-// Store data
-ChatRaw.storage.set('lastUsed', Date.now());
-ChatRaw.storage.set('preferences', { theme: 'dark' });
+const PLUGIN_ID = 'my-plugin';
 
-// Retrieve data
-const lastUsed = ChatRaw.storage.get('lastUsed', 0);  // default: 0
-const prefs = ChatRaw.storage.get('preferences', {});
+// Store data - pass pluginId as third argument
+ChatRaw.storage.set('lastUsed', Date.now(), PLUGIN_ID);
+ChatRaw.storage.set('preferences', { theme: 'dark' }, PLUGIN_ID);
 
-// Remove data
-ChatRaw.storage.remove('lastUsed');
+// Retrieve data - pass pluginId as third argument
+const lastUsed = ChatRaw.storage.get('lastUsed', 0, PLUGIN_ID);
+const prefs = ChatRaw.storage.get('preferences', {}, PLUGIN_ID);
 
-// Clear all plugin storage
-ChatRaw.storage.clear();
+// Remove data - pass pluginId as second argument
+ChatRaw.storage.remove('lastUsed', PLUGIN_ID);
 
-// Get all stored data
-const allData = ChatRaw.storage.getAll();
+// Clear all plugin storage - pass pluginId as argument
+ChatRaw.storage.clear(PLUGIN_ID);
+
+// Get all stored data - pass pluginId as argument
+const allData = ChatRaw.storage.getAll(PLUGIN_ID);
 ```
+
+**Note**: The `pluginId` parameter is optional during plugin initialization (when `_currentLoadingPlugin` is set), but required when called later (e.g., in event handlers).
 
 ### Icon Requirements
 
@@ -923,26 +929,32 @@ ChatRaw.utils.addMessage('assistant', '来自插件的问候！');
 
 ### 存储 API
 
-插件专用本地存储（命名空间隔离，每个插件限制 1MB）：
+插件专用本地存储（命名空间隔离，每个插件限制 1MB）。
+
+**重要**：在插件初始化完成后调用存储方法（如按钮点击处理、设置界面中），必须传递 `pluginId` 作为最后一个参数：
 
 ```javascript
-// 存储数据
-ChatRaw.storage.set('lastUsed', Date.now());
-ChatRaw.storage.set('preferences', { theme: 'dark' });
+const PLUGIN_ID = 'my-plugin';
 
-// 获取数据
-const lastUsed = ChatRaw.storage.get('lastUsed', 0);  // 默认值: 0
-const prefs = ChatRaw.storage.get('preferences', {});
+// 存储数据 - pluginId 作为第三个参数
+ChatRaw.storage.set('lastUsed', Date.now(), PLUGIN_ID);
+ChatRaw.storage.set('preferences', { theme: 'dark' }, PLUGIN_ID);
 
-// 删除数据
-ChatRaw.storage.remove('lastUsed');
+// 获取数据 - pluginId 作为第三个参数
+const lastUsed = ChatRaw.storage.get('lastUsed', 0, PLUGIN_ID);
+const prefs = ChatRaw.storage.get('preferences', {}, PLUGIN_ID);
 
-// 清空所有插件存储
-ChatRaw.storage.clear();
+// 删除数据 - pluginId 作为第二个参数
+ChatRaw.storage.remove('lastUsed', PLUGIN_ID);
 
-// 获取所有存储的数据
-const allData = ChatRaw.storage.getAll();
+// 清空所有插件存储 - pluginId 作为参数
+ChatRaw.storage.clear(PLUGIN_ID);
+
+// 获取所有存储的数据 - pluginId 作为参数
+const allData = ChatRaw.storage.getAll(PLUGIN_ID);
 ```
+
+**注意**：`pluginId` 参数在插件初始化期间是可选的，但在事件处理器等后续调用中是必需的。
 
 ### 图标要求
 

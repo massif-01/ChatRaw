@@ -1389,16 +1389,18 @@ function app() {
                 },
                 
                 // Plugin local storage (namespaced by plugin ID)
+                // All methods accept an optional pluginId parameter for use after plugin loading
                 storage: {
                     // Get value from plugin storage
-                    get: (key, defaultValue = null) => {
-                        const pluginId = appInstance._currentLoadingPlugin;
-                        if (!pluginId) {
-                            console.warn('[Plugin Storage] No plugin context');
+                    // Usage: ChatRaw.storage.get(key, defaultValue, pluginId)
+                    get: (key, defaultValue = null, pluginId = null) => {
+                        const pid = pluginId || appInstance._currentLoadingPlugin;
+                        if (!pid) {
+                            console.warn('[Plugin Storage] No plugin context - pass pluginId as third argument');
                             return defaultValue;
                         }
                         try {
-                            const storageKey = `chatraw_plugin_${pluginId}`;
+                            const storageKey = `chatraw_plugin_${pid}`;
                             const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
                             return key in data ? data[key] : defaultValue;
                         } catch (e) {
@@ -1407,14 +1409,15 @@ function app() {
                     },
                     
                     // Set value in plugin storage
-                    set: (key, value) => {
-                        const pluginId = appInstance._currentLoadingPlugin;
-                        if (!pluginId) {
-                            console.warn('[Plugin Storage] No plugin context');
+                    // Usage: ChatRaw.storage.set(key, value, pluginId)
+                    set: (key, value, pluginId = null) => {
+                        const pid = pluginId || appInstance._currentLoadingPlugin;
+                        if (!pid) {
+                            console.warn('[Plugin Storage] No plugin context - pass pluginId as third argument');
                             return false;
                         }
                         try {
-                            const storageKey = `chatraw_plugin_${pluginId}`;
+                            const storageKey = `chatraw_plugin_${pid}`;
                             const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
                             data[key] = value;
                             // Limit storage size per plugin (1MB)
@@ -1432,11 +1435,12 @@ function app() {
                     },
                     
                     // Remove key from plugin storage
-                    remove: (key) => {
-                        const pluginId = appInstance._currentLoadingPlugin;
-                        if (!pluginId) return false;
+                    // Usage: ChatRaw.storage.remove(key, pluginId)
+                    remove: (key, pluginId = null) => {
+                        const pid = pluginId || appInstance._currentLoadingPlugin;
+                        if (!pid) return false;
                         try {
-                            const storageKey = `chatraw_plugin_${pluginId}`;
+                            const storageKey = `chatraw_plugin_${pid}`;
                             const data = JSON.parse(localStorage.getItem(storageKey) || '{}');
                             delete data[key];
                             localStorage.setItem(storageKey, JSON.stringify(data));
@@ -1447,11 +1451,12 @@ function app() {
                     },
                     
                     // Clear all plugin storage
-                    clear: () => {
-                        const pluginId = appInstance._currentLoadingPlugin;
-                        if (!pluginId) return false;
+                    // Usage: ChatRaw.storage.clear(pluginId)
+                    clear: (pluginId = null) => {
+                        const pid = pluginId || appInstance._currentLoadingPlugin;
+                        if (!pid) return false;
                         try {
-                            localStorage.removeItem(`chatraw_plugin_${pluginId}`);
+                            localStorage.removeItem(`chatraw_plugin_${pid}`);
                             return true;
                         } catch (e) {
                             return false;
@@ -1459,11 +1464,12 @@ function app() {
                     },
                     
                     // Get all plugin storage data
-                    getAll: () => {
-                        const pluginId = appInstance._currentLoadingPlugin;
-                        if (!pluginId) return {};
+                    // Usage: ChatRaw.storage.getAll(pluginId)
+                    getAll: (pluginId = null) => {
+                        const pid = pluginId || appInstance._currentLoadingPlugin;
+                        if (!pid) return {};
                         try {
-                            const storageKey = `chatraw_plugin_${pluginId}`;
+                            const storageKey = `chatraw_plugin_${pid}`;
                             return JSON.parse(localStorage.getItem(storageKey) || '{}');
                         } catch (e) {
                             return {};
