@@ -1087,6 +1087,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if request.url.path in ["/health", "/ready"] or not request.url.path.startswith("/api"):
             return await call_next(request)
         
+        # Skip rate limiting for plugin static files (lib/, icon, main.js)
+        # These are static assets that shouldn't count against API limits
+        if "/lib/" in request.url.path or request.url.path.endswith("/icon") or request.url.path.endswith("/main.js"):
+            return await call_next(request)
+        
         ip = self._get_client_ip(request)
         now = time_module.time()
         
