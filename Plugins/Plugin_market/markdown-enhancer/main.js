@@ -649,8 +649,21 @@
         // Clone to avoid modifying original
         const clone = element.cloneNode(true);
         
-        // Remove copy buttons and containers from clone
-        clone.querySelectorAll('.code-copy-btn, .message-copy-btn, .message-copy-container').forEach(el => el.remove());
+        // Remove all non-content elements
+        clone.querySelectorAll([
+            '.code-copy-btn',
+            '.message-copy-btn', 
+            '.message-copy-container',
+            '.thinking-block',      // Thinking process section
+            '.thinking-header',
+            '.thinking-content',
+            '.rag-references',      // RAG references section
+            '.rag-references-header',
+            '.rag-references-list',
+            '.typing-indicator',    // Typing indicator
+            '.mermaid-container',   // Mermaid diagrams (keep code representation)
+            'svg'                   // Remove SVG icons
+        ].join(', ')).forEach(el => el.remove());
         
         // Convert KaTeX back to text (approximate)
         clone.querySelectorAll('.katex-block').forEach(el => {
@@ -666,8 +679,11 @@
             }
         });
         
-        // Get text content
-        return clone.textContent || clone.innerText || '';
+        // Get text content and clean up whitespace
+        let text = clone.textContent || clone.innerText || '';
+        // Collapse multiple newlines/spaces into single ones
+        text = text.replace(/\n{3,}/g, '\n\n').trim();
+        return text;
     }
     
     // ============ Main Processing Function ============
