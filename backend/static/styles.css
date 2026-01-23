@@ -2418,7 +2418,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 .plugin-settings-content.custom-settings-content {
     padding: 0;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 /* Plugin Custom Settings Container */

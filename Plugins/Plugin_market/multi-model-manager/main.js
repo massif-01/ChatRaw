@@ -116,14 +116,22 @@
     let verifyingModelId = null;
     
     // ============ Storage Functions ============
+    // Use backend API for persistent storage (survives Docker restarts with volume)
     async function loadPluginData() {
         try {
-            // Pass PLUGIN_ID explicitly to work after plugin loading completes
-            const saved = ChatRaw.storage?.get?.(PLUGIN_ID, null, PLUGIN_ID);
-            if (saved) {
-                pluginData = { ...pluginData, ...saved };
+            const res = await fetch('/api/plugins');
+            if (res.ok) {
+                const plugins = await res.json();
+                const plugin = plugins.find(p => p.id === PLUGIN_ID);
+                if (plugin?.settings_values) {
+                    // settings_values contains our pluginData
+                    pluginData = { 
+                        models: plugin.settings_values.models || [],
+                        originalConfig: plugin.settings_values.originalConfig || null
+                    };
+                }
             }
-            console.log('[MultiModel] Loaded plugin data:', pluginData);
+            console.log('[MultiModel] Loaded plugin data from backend:', pluginData);
         } catch (e) {
             console.error('[MultiModel] Failed to load plugin data:', e);
         }
@@ -131,15 +139,21 @@
     
     async function savePluginData() {
         try {
-            // Pass PLUGIN_ID explicitly to work after plugin loading completes
-            const success = ChatRaw.storage?.set?.(PLUGIN_ID, pluginData, PLUGIN_ID);
-            if (success) {
-                console.log('[MultiModel] Saved plugin data');
+            const res = await fetch(`/api/plugins/${encodeURIComponent(PLUGIN_ID)}/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ settings: pluginData })
+            });
+            if (res.ok) {
+                console.log('[MultiModel] Saved plugin data to backend');
+                return true;
             } else {
-                console.error('[MultiModel] Failed to save plugin data');
+                console.error('[MultiModel] Failed to save plugin data:', res.status);
+                return false;
             }
         } catch (e) {
             console.error('[MultiModel] Failed to save plugin data:', e);
+            return false;
         }
     }
     

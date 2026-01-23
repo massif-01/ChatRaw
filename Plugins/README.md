@@ -509,6 +509,14 @@ To distribute your plugin:
    - Use `POST /api/models` to save model configurations (for RAG plugins)
 9. **Load data on open**: Always reload settings when the settings modal opens
 10. **Custom settings listener**: Use `plugin-settings-open` event to inject custom UI
+11. **Choose the right storage method**:
+
+| Storage Method | Location | After Docker Restart | Use Case |
+|----------------|----------|---------------------|----------|
+| `ChatRaw.storage` | Browser localStorage | **Preserved** (independent of Docker) | Temporary preferences, UI state |
+| `POST /api/plugins/{id}/settings` | Server `data/plugins/config.json` | **Preserved** (requires Docker volume) | Core configs, model data |
+
+> **Important**: If your plugin configuration needs to persist across Docker container restarts (with volume mount), you **must** use the backend API `POST /api/plugins/{id}/settings` instead of `ChatRaw.storage`. The localStorage-based Storage API only persists in the user's browser.
 
 ---
 
@@ -1017,6 +1025,14 @@ const allData = ChatRaw.storage.getAll(PLUGIN_ID);
    - 使用 `POST /api/models` 保存模型配置（用于 RAG 插件）
 9. **打开时加载数据**：设置模态框打开时始终重新加载设置
 10. **自定义设置监听器**：使用 `plugin-settings-open` 事件注入自定义 UI
+11. **选择正确的存储方式**：
+
+| 存储方式 | 存储位置 | Docker 重启后 | 适用场景 |
+|---------|---------|--------------|---------|
+| `ChatRaw.storage` | 浏览器 localStorage | **保留**（与 Docker 无关） | 临时偏好、UI 状态 |
+| `POST /api/plugins/{id}/settings` | 服务器 `data/plugins/config.json` | **保留**（需挂载 Docker volume） | 核心配置、模型数据 |
+
+> **重要提示**：如果你的插件配置需要在 Docker 容器重启后保留（通过 volume 挂载），**必须**使用后端 API `POST /api/plugins/{id}/settings`，而不是 `ChatRaw.storage`。基于 localStorage 的存储 API 仅在用户浏览器中持久化。
 
 ---
 
