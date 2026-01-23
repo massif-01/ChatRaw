@@ -160,17 +160,6 @@
         }
     }
 
-    function cleanupPluginArtifacts() {
-        // Remove plugin-injected styles
-        const styleEl = document.getElementById('markdown-enhancer-styles');
-        if (styleEl) styleEl.remove();
-        // Remove copy buttons
-        document.querySelectorAll('.message-copy-container').forEach(el => el.remove());
-        document.querySelectorAll('.code-copy-btn').forEach(el => el.remove());
-        // Remove Mermaid global styles if any
-        removeMermaidHeadStyles();
-    }
-    
     async function initExtraLanguages() {
         if (extraLangsLoaded || !window.hljs) return;
         
@@ -517,136 +506,8 @@
         }
     }
     
-    // ============ Message Copy Button ============
-    // Track elements that need copy button recheck when streaming ends
-    const pendingCopyButtonChecks = new WeakSet();
-    
-    function addMessageCopyButton(element) {
-        // Normalize targets for message-content elements
-        const targets = [];
-        if (element?.classList?.contains('message-content')) {
-            targets.push(element);
-        } else if (element?.classList?.contains('message')) {
-            const content = element.querySelector('.message-content');
-            if (content) targets.push(content);
-        } else {
-            element.querySelectorAll?.('.message.assistant .message-content').forEach(el => targets.push(el));
-        }
-        
-        for (const content of targets) {
-            const msg = content.closest('.message');
-            if (!msg || !msg.classList.contains('assistant')) continue;
-            // Skip if already has copy button
-            if (content.querySelector('.message-copy-container')) continue;
-            
-            // Check if message is still streaming (has typing indicator visible)
-            // Alpine.js x-show sets display: none when hidden
-            const typingIndicator = msg?.querySelector('.typing-indicator');
-            if (typingIndicator) {
-                const computedStyle = window.getComputedStyle(typingIndicator);
-                if (computedStyle.display !== 'none') {
-                    // Typing indicator is visible, message is still streaming
-                    // Schedule a recheck for later
-                    if (!pendingCopyButtonChecks.has(content)) {
-                        pendingCopyButtonChecks.add(content);
-                        setTimeout(() => {
-                            pendingCopyButtonChecks.delete(content);
-                            addMessageCopyButton(content);
-                        }, 1000);
-                    }
-                    continue;
-                }
-            }
-            
-            // Check if content is empty or very short (likely still loading)
-            const textLength = content.textContent?.trim().length || 0;
-            if (textLength < 10) continue;
-            
-            // Create container at bottom left of message
-            const container = document.createElement('div');
-            container.className = 'message-copy-container';
-            
-            const btn = document.createElement('button');
-            btn.className = 'message-copy-btn';
-            btn.title = t('copyMessage');
-            btn.innerHTML = `
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-            `;
-            
-            btn.onclick = async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // Get the text content from the message
-                const textContent = getMessageTextContent(content);
-                
-                try {
-                    await navigator.clipboard.writeText(textContent);
-                    btn.innerHTML = `
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                    `;
-                    btn.classList.add('copied');
-                    setTimeout(() => {
-                        btn.innerHTML = `
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                            </svg>
-                        `;
-                        btn.classList.remove('copied');
-                    }, 2000);
-                } catch (err) {
-                    console.error('[MarkdownEnhancer] Message copy failed:', err);
-                }
-            };
-            
-            container.appendChild(btn);
-            content.appendChild(container);
-        }
-    }
-    
-    function getMessageTextContent(element) {
-        // 排除法：遍历 message-content 的直接子元素
-        // 跳过所有已知的 UI 元素，剩下的就是内容 div
-        for (const child of element.children) {
-            if (child.tagName !== 'DIV') continue;
-            // 跳过所有已知的 UI 元素
-            if (child.classList.contains('thinking-block')) continue;
-            if (child.classList.contains('rag-references')) continue;
-            if (child.classList.contains('typing-indicator')) continue;
-            if (child.classList.contains('message-copy-container')) continue;
-            
-            // 这个就是内容 div
-            const clone = child.cloneNode(true);
-            clone.querySelectorAll('.code-copy-btn, svg').forEach(el => el.remove());
-            
-            // 处理 KaTeX，还原为 LaTeX 源码
-            clone.querySelectorAll('.katex-block').forEach(el => {
-                const annotation = el.querySelector('annotation[encoding="application/x-tex"]');
-                if (annotation) {
-                    el.textContent = '$$' + annotation.textContent + '$$';
-                }
-            });
-            clone.querySelectorAll('.katex-inline').forEach(el => {
-                const annotation = el.querySelector('annotation[encoding="application/x-tex"]');
-                if (annotation) {
-                    el.textContent = '$' + annotation.textContent + '$';
-                }
-            });
-            
-            return (clone.textContent || '').trim();
-        }
-        return '';
-    }
-    
     // ============ Main Processing Function ============
     async function processElement(element) {
-        if (!pluginEnabled) return;
         // Load dependencies if needed
         if (settings.enableKatex !== false) {
             await initKatex();
@@ -659,16 +520,14 @@
             await initExtraLanguages();
         }
         
-        // Process in order: Mermaid first (replaces pre blocks), then KaTeX, then copy buttons
+        // Process in order: Mermaid first (replaces pre blocks), then KaTeX, then code copy buttons
         await processMermaidInElement(element);
         processKatexInElement(element);
         addCodeCopyButtons(element);
-        addMessageCopyButton(element);
     }
     
     // ============ Content Stability Detection ============
     function scheduleProcessing(element) {
-        if (!pluginEnabled) return;
         // Use element or a unique identifier as key
         const key = element;
         
@@ -689,7 +548,7 @@
     
     // ============ MutationObserver Setup ============
     function initObserver() {
-        if (observerInitialized || !pluginEnabled) return;
+        if (observerInitialized) return;
         
         injectStyles();
         
@@ -747,15 +606,6 @@
             }
         }
         
-        // Also ensure copy buttons are added to existing completed messages
-        setTimeout(() => {
-            document.querySelectorAll('.message.assistant .message-content').forEach(content => {
-                if (!content.querySelector('.message-copy-container')) {
-                    addMessageCopyButton(content);
-                }
-            });
-        }, 1500);
-        
         mainObserver = observer;
         observerInitialized = true;
         console.log('[MarkdownEnhancer] Observer initialized with content stability detection');
@@ -769,36 +619,6 @@
         observerInitialized = false;
     }
 
-    function initHeadStyleGuard() {
-        if (headStyleObserver) return;
-        headStyleObserver = new MutationObserver(() => {
-            removeMermaidHeadStyles();
-        });
-        headStyleObserver.observe(document.head, { childList: true, subtree: true });
-    }
-
-    async function refreshPluginState() {
-        try {
-            const res = await fetch('/api/plugins');
-            if (!res.ok) return;
-            const plugins = await res.json();
-            const plugin = plugins.find(p => p.id === PLUGIN_ID);
-            const enabled = plugin?.enabled !== false;
-            if (enabled !== pluginEnabled) {
-                pluginEnabled = enabled;
-                if (!pluginEnabled) {
-                    stopObserver();
-                    cleanupPluginArtifacts();
-                } else {
-                    injectStyles();
-                    initObserver();
-                }
-            }
-        } catch (e) {
-            // ignore transient errors
-        }
-    }
-    
     // ============ Load Settings ============
     async function loadSettings() {
         try {
@@ -809,7 +629,6 @@
                 if (plugin?.settings_values) {
                     settings = plugin.settings_values;
                 }
-                pluginEnabled = plugin?.enabled !== false;
             }
         } catch (e) {
             console.error('[MarkdownEnhancer] Failed to load settings:', e);
@@ -819,14 +638,7 @@
     // ============ Initialize ============
     async function init() {
         await loadSettings();
-        initHeadStyleGuard();
-        if (pluginEnabled) {
-            initObserver();
-        } else {
-            cleanupPluginArtifacts();
-        }
-        // Note: removed periodic polling to avoid rate limiting issues
-        // Users should reload the page after toggling plugin state
+        initObserver();
         console.log('[MarkdownEnhancer] Plugin initialized');
     }
     
