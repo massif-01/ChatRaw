@@ -631,7 +631,9 @@ button.onclick = async () => {
     - Plugins with `lib/` directory are auto-installed on container startup
     - Online installation only downloads `main.js`, `manifest.json`, `icon.png`
     - The `lib/` directory is automatically copied from the bundled version in Docker image
-    - Plugin static files (`/lib/`, `/icon`, `/main.js`) are excluded from API rate limiting
+    - All plugin-related requests are excluded from API rate limiting:
+      - Static files: `/lib/`, `/icon`, `/main.js`
+      - Plugin metadata: `/api/plugins`, `/api/plugins/*`
 
 14. **Use Shadow DOM for style isolation**:
     - Third-party libraries (like Mermaid) may inject global CSS that pollutes other elements
@@ -1287,7 +1289,9 @@ button.onclick = async () => {
     - 带有 `lib/` 目录的插件会在容器启动时自动安装
     - 在线安装只会下载 `main.js`、`manifest.json`、`icon.png`
     - `lib/` 目录会从 Docker 镜像中的预打包版本自动复制
-    - 插件静态文件（`/lib/`、`/icon`、`/main.js`）不受 API 请求限流影响
+    - 所有插件相关请求不受 API 请求限流影响：
+      - 静态文件：`/lib/`、`/icon`、`/main.js`
+      - 插件元数据：`/api/plugins`、`/api/plugins/*`
 
 14. **使用 Shadow DOM 隔离样式**：
     - 第三方库（如 Mermaid）可能注入全局 CSS 污染其他元素
