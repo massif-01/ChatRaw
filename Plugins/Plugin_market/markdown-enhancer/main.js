@@ -441,26 +441,18 @@
             // Render asynchronously
             try {
                 const { svg } = await window.mermaid.render(`${id}-svg`, code);
-                container.innerHTML = svg;
+                container.innerHTML = '';
                 container.classList.remove('mermaid-loading');
                 container.classList.add('mermaid-rendered');
                 
-                // CRITICAL: Remove all <style> tags from SVG to prevent CSS pollution
-                const svgElement = container.querySelector('svg');
-                if (svgElement) {
-                    const styleElements = svgElement.querySelectorAll('style');
-                    styleElements.forEach(styleEl => {
-                        console.log('[MarkdownEnhancer] Removing Mermaid style tag to prevent CSS pollution');
-                        styleEl.remove();
-                    });
-                    
-                    // Also remove any foreign objects that might contain styles
-                    const foreignObjects = svgElement.querySelectorAll('foreignObject');
-                    foreignObjects.forEach(fo => {
-                        const foStyles = fo.querySelectorAll('style');
-                        foStyles.forEach(s => s.remove());
-                    });
-                }
+                // Use Shadow DOM to completely isolate Mermaid SVG styles
+                // This prevents any CSS pollution to the main document
+                const shadowHost = document.createElement('div');
+                shadowHost.className = 'mermaid-shadow-host';
+                shadowHost.style.cssText = 'display: flex; justify-content: center; width: 100%;';
+                const shadow = shadowHost.attachShadow({ mode: 'closed' });
+                shadow.innerHTML = svg;
+                container.appendChild(shadowHost);
             } catch (e) {
                 console.error('[MarkdownEnhancer] Mermaid render error:', e);
                 container.className = 'mermaid-error-container';
@@ -524,12 +516,15 @@
             if (content.querySelector('.message-copy-container')) continue;
             
             // Check if message is still streaming (has typing indicator visible)
+            // Alpine.js x-show sets display: none when hidden
             const msg = content.closest('.message');
             const typingIndicator = msg?.querySelector('.typing-indicator');
-            if (typingIndicator && typingIndicator.style.display !== 'none' && 
-                !typingIndicator.hasAttribute('style')) {
-                // Typing indicator exists and may be visible, skip for now
-                continue;
+            if (typingIndicator) {
+                const computedStyle = window.getComputedStyle(typingIndicator);
+                if (computedStyle.display !== 'none') {
+                    // Typing indicator is visible, message is still streaming
+                    continue;
+                }
             }
             
             // Check if content is empty or very short (likely still loading)

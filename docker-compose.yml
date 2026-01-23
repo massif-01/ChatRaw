@@ -1,6 +1,6 @@
 services:
   chatraw:
-    image: massif01/chatraw:2.1.0
+    image: massif01/chatraw:2.0.3
     container_name: chatraw
     ports:
       - "51111:51111"

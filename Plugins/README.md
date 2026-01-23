@@ -627,6 +627,37 @@ button.onclick = async () => {
 
 > **Important**: If your plugin configuration needs to persist across Docker container restarts (with volume mount), you **must** use the backend API `POST /api/plugins/{id}/settings` instead of `ChatRaw.storage`. The localStorage-based Storage API only persists in the user's browser.
 
+13. **Offline plugins with bundled dependencies**:
+    - Plugins with `lib/` directory are auto-installed on container startup
+    - Online installation only downloads `main.js`, `manifest.json`, `icon.png`
+    - The `lib/` directory is automatically copied from the bundled version in Docker image
+    - Plugin static files (`/lib/`, `/icon`, `/main.js`) are excluded from API rate limiting
+
+14. **Use Shadow DOM for style isolation**:
+    - Third-party libraries (like Mermaid) may inject global CSS that pollutes other elements
+    - Use Shadow DOM to completely isolate their styles:
+    ```javascript
+    const shadowHost = document.createElement('div');
+    const shadow = shadowHost.attachShadow({ mode: 'closed' });
+    shadow.innerHTML = thirdPartyContent;
+    container.appendChild(shadowHost);
+    ```
+
+15. **Detect message streaming completion**:
+    - Use `window.getComputedStyle()` to check typing-indicator visibility
+    - Alpine.js `x-show` sets `display: none` when hidden
+    ```javascript
+    const typingIndicator = msg.querySelector('.typing-indicator');
+    if (typingIndicator) {
+        const style = window.getComputedStyle(typingIndicator);
+        if (style.display !== 'none') {
+            // Message is still streaming, wait
+            return;
+        }
+    }
+    ```
+    - Use content stability detection (debounce ~800ms) to ensure streaming is complete
+
 ---
 
 <a name="中文"></a>
@@ -1251,6 +1282,37 @@ button.onclick = async () => {
 | `POST /api/plugins/{id}/settings` | 服务器 `data/plugins/config.json` | **保留**（需挂载 Docker volume） | 核心配置、模型数据 |
 
 > **重要提示**：如果你的插件配置需要在 Docker 容器重启后保留（通过 volume 挂载），**必须**使用后端 API `POST /api/plugins/{id}/settings`，而不是 `ChatRaw.storage`。基于 localStorage 的存储 API 仅在用户浏览器中持久化。
+
+13. **离线插件与打包依赖**：
+    - 带有 `lib/` 目录的插件会在容器启动时自动安装
+    - 在线安装只会下载 `main.js`、`manifest.json`、`icon.png`
+    - `lib/` 目录会从 Docker 镜像中的预打包版本自动复制
+    - 插件静态文件（`/lib/`、`/icon`、`/main.js`）不受 API 请求限流影响
+
+14. **使用 Shadow DOM 隔离样式**：
+    - 第三方库（如 Mermaid）可能注入全局 CSS 污染其他元素
+    - 使用 Shadow DOM 完全隔离其样式：
+    ```javascript
+    const shadowHost = document.createElement('div');
+    const shadow = shadowHost.attachShadow({ mode: 'closed' });
+    shadow.innerHTML = thirdPartyContent;
+    container.appendChild(shadowHost);
+    ```
+
+15. **检测消息流式输出完成**：
+    - 使用 `window.getComputedStyle()` 检查 typing-indicator 可见性
+    - Alpine.js 的 `x-show` 隐藏时会设置 `display: none`
+    ```javascript
+    const typingIndicator = msg.querySelector('.typing-indicator');
+    if (typingIndicator) {
+        const style = window.getComputedStyle(typingIndicator);
+        if (style.display !== 'none') {
+            // 消息仍在流式输出，等待
+            return;
+        }
+    }
+    ```
+    - 使用内容稳定性检测（防抖 ~800ms）确保流式输出完成
 
 ---
 
