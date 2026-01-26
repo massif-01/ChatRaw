@@ -152,8 +152,8 @@ ChatRaw features a complete **plugin system** to extend functionality:
 
 [perf-desktop]: assets/lighthouse-desktop.png
 [perf-mobile]: assets/lighthouse-mobile.png
-[perf-desktop-report]: docs/lighthouse/desktop.html
-[perf-mobile-report]: docs/lighthouse/mobile.html
+[perf-desktop-report]: https://htmlpreview.github.io/?https://github.com/massif-01/ChatRaw/blob/main/docs/lighthouse/desktop.html
+[perf-mobile-report]: https://htmlpreview.github.io/?https://github.com/massif-01/ChatRaw/blob/main/docs/lighthouse/mobile.html
 
 ---
 
