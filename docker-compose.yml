@@ -2,6 +2,7 @@ services:
   chatraw:
     image: massif01/chatraw:latest
     container_name: chatraw
+    platform: linux/amd64
     ports:
       - "51111:51111"
     volumes:
