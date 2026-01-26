@@ -136,6 +136,22 @@ ChatRaw features a complete **plugin system** to extend functionality:
 
 ---
 
+## ⚡️ Performance
+
+> **Note**: Performance tests conducted using Google Lighthouse on production deployment
+
+|                    Desktop                    |                    Mobile                    |
+| :-------------------------------------------: | :------------------------------------------: |
+|     ![Desktop Performance][perf-desktop]      |     ![Mobile Performance][perf-mobile]       |
+| [📑 Lighthouse Report][perf-desktop-report]   | [📑 Lighthouse Report][perf-mobile-report]   |
+
+[perf-desktop]: assets/lighthouse-desktop.png
+[perf-mobile]: assets/lighthouse-mobile.png
+[perf-desktop-report]: docs/lighthouse/desktop.html
+[perf-mobile-report]: docs/lighthouse/mobile.html
+
+---
+
 ## 🚀 Quick Start
 
 ### Option 1: Docker (Recommended)
@@ -434,6 +450,17 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 - 一键打包分发
 
 📖 **插件开发指南**: [Plugins/README.md](Plugins/README.md)
+
+---
+
+## ⚡️ 性能测试
+
+> **说明**: 使用 Google Lighthouse 对生产环境部署进行性能测试
+
+|                    桌面端                     |                    移动端                     |
+| :-------------------------------------------: | :-------------------------------------------: |
+|     ![桌面端性能][perf-desktop]               |     ![移动端性能][perf-mobile]                |
+| [📑 Lighthouse 测试报告][perf-desktop-report] | [📑 Lighthouse 测试报告][perf-mobile-report]  |
 
 ---
 
