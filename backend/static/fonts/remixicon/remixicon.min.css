@@ -1,0 +1,28 @@
+/* RemixIcon Subset - Only icons used by ChatRaw (~1KB vs 20KB) */
+@font-face{font-family:"remixicon";src:url('remixicon.eot?t=1769685282643');src:url('remixicon.eot?t=1769685282643#iefix') format('embedded-opentype'),url("remixicon.woff2?t=1769685282643") format("woff2"),url("remixicon.woff?t=1769685282643") format("woff"),url('remixicon.ttf?t=1769685282643') format('truetype');font-display:swap}
+[class^="ri-"],[class*=" ri-"]{font-family:'remixicon'!important;font-style:normal;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+.ri-add-line:before{content:"\ea13"}
+.ri-arrow-down-s-line:before{content:"\ea4e"}
+.ri-arrow-left-s-line:before{content:"\ea64"}
+.ri-arrow-right-s-line:before{content:"\ea6e"}
+.ri-close-circle-fill:before{content:"\eb96"}
+.ri-close-line:before{content:"\eb99"}
+.ri-computer-line:before{content:"\ebca"}
+.ri-delete-bin-line:before{content:"\ec2a"}
+.ri-error-warning-line:before{content:"\eca1"}
+.ri-external-link-line:before{content:"\ecaf"}
+.ri-file-text-line:before{content:"\ed0f"}
+.ri-flashlight-line:before{content:"\ed3d"}
+.ri-image-line:before{content:"\ee4b"}
+.ri-lightbulb-line:before{content:"\eea9"}
+.ri-link:before{content:"\eeb2"}
+.ri-loader-4-line:before{content:"\eec6"}
+.ri-menu-line:before{content:"\ef3e"}
+.ri-message-3-line:before{content:"\ef46"}
+.ri-robot-2-line:before{content:"\f3d8"}
+.ri-send-plane-2-line:before{content:"\f0d8"}
+.ri-settings-3-line:before{content:"\f0e6"}
+.ri-stop-circle-line:before{content:"\f19f"}
+.ri-tools-line:before{content:"\f21b"}
+.ri-upload-2-line:before{content:"\f24a"}
+.ri-user-3-line:before{content:"\f256"}

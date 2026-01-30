@@ -1054,7 +1054,7 @@ CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*")  # Comma-separated origins or
 
 # Rate limiting configuration
 RATE_LIMIT_ENABLED = os.environ.get("RATE_LIMIT_ENABLED", "true").lower() == "true"
-RATE_LIMIT_REQUESTS = int(os.environ.get("RATE_LIMIT_REQUESTS", "60"))  # requests per window
+RATE_LIMIT_REQUESTS = int(os.environ.get("RATE_LIMIT_REQUESTS", "120"))  # requests per window (increased for dev)
 RATE_LIMIT_WINDOW = int(os.environ.get("RATE_LIMIT_WINDOW", "60"))  # window in seconds
 
 # File upload limits (in bytes)
@@ -1157,6 +1157,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Security headers middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        # Security headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        # Note: CSP with strict script-src is not compatible with Alpine.js (requires unsafe-eval)
+        # If you need CSP, consider using Alpine.js CSP build: https://alpinejs.dev/advanced/csp
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 # ============ API Routes ============
 
 @app.get("/health")
@@ -1182,9 +1197,39 @@ async def readiness_check():
     except Exception as e:
         return JSONResponse({"status": "not_ready", "reason": str(e)}, status_code=503)
 
+@app.get("/fonts/{path:path}")
+async def fonts(path: str):
+    """Serve font files with long-term caching for optimal performance"""
+    try:
+        font_path = os.path.join("static", "fonts", path)
+        if not os.path.exists(font_path):
+            raise HTTPException(status_code=404, detail="Font file not found")
+        
+        return FileResponse(
+            font_path,
+            headers={
+                "Cache-Control": "public, max-age=31536000, immutable",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error serving font file: {str(e)}")
+        raise HTTPException(status_code=404, detail="Font file not found")
+
 @app.get("/api/settings")
-async def get_settings():
-    return db.get_settings().model_dump()
+async def get_settings(include_logo: bool = False):
+    """Get settings. By default excludes logo_data for faster initial load."""
+    settings = db.get_settings().model_dump()
+    if not include_logo:
+        # Exclude large logo_data from initial load for better LCP
+        settings['ui_settings']['logo_data'] = '' if settings['ui_settings'].get('logo_data') else ''
+    return settings
+
+@app.get("/api/settings/logo")
+async def get_settings_logo():
+    """Get logo_data separately for lazy loading."""
+    settings = db.get_settings()
+    return {"logo_data": settings.ui_settings.logo_data}
 
 @app.post("/api/settings")
 async def save_settings(settings: Settings):

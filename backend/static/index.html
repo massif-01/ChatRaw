@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="ChatRaw - A minimalist, fast, and powerful AI chat interface with multi-model support, plugin marketplace, and advanced features like RAG and thinking mode.">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
@@ -11,16 +12,22 @@
     
     <!-- Performance: DNS Prefetch & Preconnect for CDN -->
     <link rel="dns-prefetch" href="https://unpkg.com">
-    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com" crossorigin="anonymous">
     
     <!-- Performance: Preload Critical Resources -->
-    <link rel="preload" href="styles.css?v=5.0" as="style">
-    <link rel="preload" href="app.js?v=5.0" as="script">
-    <link rel="preload" href="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" as="script" crossorigin>
-    <link rel="preload" href="https://unpkg.com/marked@9.1.6/marked.min.js" as="script" crossorigin>
+    <link rel="preload" href="fonts/remixicon/remixicon.woff2?t=1769685282643" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="styles.min.css?v=5.3" as="style">
+    <link rel="preload" href="app.min.js?v=5.3" as="script">
+    <link rel="preload" href="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" as="script" crossorigin="anonymous">
+    <link rel="preload" href="https://unpkg.com/marked@9.1.6/marked.min.js" as="script" crossorigin="anonymous">
     
     <!-- Critical CSS: Inline for faster first paint -->
     <style>
+        /* RemixIcon - Inline to avoid render blocking */
+        @font-face{font-family:"remixicon";src:url('fonts/remixicon/remixicon.woff2?t=1769685282643') format("woff2"),url('fonts/remixicon/remixicon.woff?t=1769685282643') format("woff");font-display:optional}
+        [class^="ri-"],[class*=" ri-"]{font-family:'remixicon'!important;font-style:normal;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+        .ri-add-line:before{content:"\ea13"}.ri-arrow-down-s-line:before{content:"\ea4e"}.ri-arrow-left-s-line:before{content:"\ea64"}.ri-arrow-right-s-line:before{content:"\ea6e"}.ri-close-circle-fill:before{content:"\eb96"}.ri-close-line:before{content:"\eb99"}.ri-computer-line:before{content:"\ebca"}.ri-delete-bin-line:before{content:"\ec2a"}.ri-error-warning-line:before{content:"\eca1"}.ri-external-link-line:before{content:"\ecaf"}.ri-file-text-line:before{content:"\ed0f"}.ri-flashlight-line:before{content:"\ed3d"}.ri-image-line:before{content:"\ee4b"}.ri-lightbulb-line:before{content:"\eea9"}.ri-link:before{content:"\eeb2"}.ri-loader-4-line:before{content:"\eec6"}.ri-menu-line:before{content:"\ef3e"}.ri-message-3-line:before{content:"\ef46"}.ri-robot-2-line:before{content:"\f3d8"}.ri-send-plane-2-line:before{content:"\f0d8"}.ri-settings-3-line:before{content:"\f0e6"}.ri-stop-circle-line:before{content:"\f19f"}.ri-tools-line:before{content:"\f21b"}.ri-upload-2-line:before{content:"\f24a"}.ri-user-3-line:before{content:"\f256"}
+        
         :root {
             --bg-primary: #ffffff;
             --bg-secondary: #f9f9f9;
@@ -125,18 +132,11 @@
     </style>
     
     <!-- External Scripts -->
-    <script defer src="https://unpkg.com/@alpinejs/collapse@3.13.3/dist/cdn.min.js"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
-    <script defer src="https://unpkg.com/marked@9.1.6/marked.min.js"></script>
-    <!-- highlight.js core + common languages only (~50KB vs ~500KB) -->
-    <script defer src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
-    <script defer src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/python.min.js"></script>
-    <script defer src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/javascript.min.js"></script>
-    <script defer src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/bash.min.js"></script>
-    <script defer src="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/json.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css"></noscript>
-    <link rel="stylesheet" href="styles.css?v=5.0">
+    <script src="https://unpkg.com/marked@9.1.6/marked.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.13.3/dist/cdn.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" crossorigin="anonymous"></script>
+    <!-- highlight.js is lazy-loaded in app.min.js when needed -->
+    <link rel="stylesheet" href="styles.min.css?v=5.3">
 </head>
 <body x-data="app()" x-init="init()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
@@ -150,77 +150,53 @@
                 <span class="logo-text" x-text="settings.ui_settings.logo_text || 'JustChat'"></span>
             </div>
             <button class="btn-icon" @click="sidebarCollapsed = !sidebarCollapsed" :title="sidebarCollapsed ? t('expand') : t('collapse')">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="15 18 9 12 15 6" x-show="!sidebarCollapsed"></polyline>
-                    <polyline points="9 18 15 12 9 6" x-show="sidebarCollapsed"></polyline>
-                </svg>
+                <i class="ri-arrow-left-s-line" x-show="!sidebarCollapsed"></i>
+                <i class="ri-arrow-right-s-line" x-show="sidebarCollapsed"></i>
             </button>
         </div>
         
         <button class="btn-new-chat" @click="createNewChat()" x-show="!sidebarCollapsed">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
-            </svg>
+            <i class="ri-add-line"></i>
             <span x-text="t('newChat')"></span>
         </button>
         
         <button class="btn-new-chat-collapsed" @click="createNewChat()" x-show="sidebarCollapsed" :title="t('newChat')" :aria-label="t('newChat')">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
-            </svg>
+            <i class="ri-add-line"></i>
         </button>
 
         <div class="chat-list" x-show="!sidebarCollapsed">
             <template x-for="chat in chats" :key="chat.id">
                 <div class="chat-item" :class="{ 'active': currentChatId === chat.id }" @click="selectChat(chat.id)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
+                    <i class="ri-message-3-line"></i>
                     <span class="chat-title" x-text="chat.title"></span>
                     <button class="btn-delete" @click.stop="deleteChat(chat.id)" :title="t('delete')">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
+                        <i class="ri-close-line"></i>
                     </button>
                 </div>
             </template>
         </div>
         
         <button class="btn-clear-all" x-show="!sidebarCollapsed && chats.length > 0" @click="clearAllChats()" :title="t('clearAllChats')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
+            <i class="ri-delete-bin-line"></i>
             <span x-text="t('clearAllChats')"></span>
         </button>
 
         <div class="sidebar-footer" x-show="!sidebarCollapsed">
             <button class="btn-plugins" @click="showPlugins = true; loadPluginMarket()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-                </svg>
+                <i class="ri-tools-line"></i>
                 <span x-text="t('plugins')"></span>
             </button>
             <button class="btn-settings" @click="showSettings = true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                </svg>
+                <i class="ri-settings-3-line"></i>
                 <span x-text="t('settings')"></span>
             </button>
         </div>
         
         <button class="btn-icon sidebar-plugins-collapsed" @click="showPlugins = true; loadPluginMarket()" x-show="sidebarCollapsed" :title="t('plugins')">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-            </svg>
+            <i class="ri-tools-line"></i>
         </button>
         <button class="btn-icon sidebar-settings-collapsed" @click="showSettings = true" x-show="sidebarCollapsed" :title="t('settings')">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
+            <i class="ri-settings-3-line"></i>
         </button>
     </aside>
 
@@ -229,44 +205,32 @@
         <!-- Mobile Header -->
         <div class="mobile-header" x-show="sidebarCollapsed">
             <button class="btn-icon" @click="sidebarCollapsed = false">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="3" y1="12" x2="21" y2="12"></line>
-                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                    <line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
+                <i class="ri-menu-line"></i>
             </button>
             <span class="mobile-title">ChatRaw</span>
         </div>
 
         <div class="chat-container">
-            <!-- Welcome -->
+            <!-- Welcome - Pre-rendered for LCP optimization -->
             <div class="welcome" x-show="messages.length === 0">
                 <div class="welcome-logo">
                     <img x-show="settings.ui_settings.logo_data" :src="settings.ui_settings.logo_data" alt="Logo" class="welcome-logo-img" width="80" height="80">
                 </div>
-                <h1 x-text="settings.ui_settings.logo_text || 'JustChat'"></h1>
-                <p class="welcome-subtitle" x-text="settings.ui_settings.subtitle || t('defaultSubtitle')"></p>
+                <h1 x-text="settings.ui_settings.logo_text || 'ChatRaw'">ChatRaw</h1>
+                <p class="welcome-subtitle" x-text="settings.ui_settings.subtitle || t('defaultSubtitle')">Your minimalist AI assistant</p>
                 
                 <div class="welcome-features">
                     <div class="feature">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                        </svg>
-                        <span x-text="t('fastResponse')"></span>
+                        <i class="ri-flashlight-line"></i>
+                        <span x-text="t('fastResponse')">Fast Response</span>
                     </div>
                     <div class="feature">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-                        </svg>
-                        <span x-text="t('pluginMarket')"></span>
+                        <i class="ri-tools-line"></i>
+                        <span x-text="t('pluginMarket')">Plugin Market</span>
                     </div>
                     <div class="feature">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                            <line x1="8" y1="21" x2="16" y2="21"/>
-                            <line x1="12" y1="17" x2="12" y2="21"/>
-                        </svg>
-                        <span x-text="t('multiModel')"></span>
+                        <i class="ri-computer-line"></i>
+                        <span x-text="t('multiModel')">Multi-Model</span>
                     </div>
                 </div>
             </div>
@@ -278,10 +242,10 @@
                         <div class="message-avatar" :class="msg.role">
                             <!-- User avatar -->
                             <img x-show="msg.role === 'user' && settings.ui_settings.user_avatar" :src="settings.ui_settings.user_avatar" alt="User" width="36" height="36" style="width:100%; height:100%; object-fit:cover;">
-                            <svg x-show="msg.role === 'user' && !settings.ui_settings.user_avatar" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <i class="ri-user-3-line" x-show="msg.role === 'user' && !settings.ui_settings.user_avatar"></i>
                             <!-- AI avatar -->
                             <img x-show="msg.role === 'assistant' && settings.ui_settings.assistant_avatar" :src="settings.ui_settings.assistant_avatar" alt="AI" width="36" height="36" style="width:100%; height:100%; object-fit:cover;">
-                            <span x-show="msg.role === 'assistant' && !settings.ui_settings.assistant_avatar">AI</span>
+                            <i class="ri-robot-2-line" x-show="msg.role === 'assistant' && !settings.ui_settings.assistant_avatar"></i>
                         </div>
                         <div class="message-content">
                             <!-- Show typing indicator for empty assistant message while generating -->
@@ -291,14 +255,9 @@
                             <!-- Thinking/Reasoning Block -->
                             <div class="thinking-block" x-show="msg.thinking && msg.thinking.length > 0">
                                 <div class="thinking-header" @click="msg.showThinking = !msg.showThinking">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
-                                        <path d="M9 21h6"/>
-                                    </svg>
+                                    <i class="ri-lightbulb-line"></i>
                                     <span x-text="t('thinkingProcess')"></span>
-                                    <svg class="chevron" :class="{ 'expanded': msg.showThinking }" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="6 9 12 15 18 9"/>
-                                    </svg>
+                                    <i class="ri-arrow-down-s-line chevron" :class="{ 'expanded': msg.showThinking }"></i>
                                 </div>
                                 <div class="thinking-content" x-show="msg.showThinking" x-collapse>
                                     <div x-html="renderMarkdown(msg.thinking)"></div>
@@ -311,14 +270,9 @@
                             <!-- RAG References -->
                             <div class="rag-references" x-show="msg.references && msg.references.length > 0">
                                 <div class="rag-references-header" @click="msg.showRefs = !msg.showRefs">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                                    </svg>
+                                    <i class="ri-file-text-line"></i>
                                     <span x-text="t('ragReferences') + ' (' + (msg.references?.length || 0) + ')'"></span>
-                                    <svg class="chevron" :class="{ 'expanded': msg.showRefs }" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="6 9 12 15 18 9"/>
-                                    </svg>
+                                    <i class="ri-arrow-down-s-line chevron" :class="{ 'expanded': msg.showRefs }"></i>
                                 </div>
                                 <div class="rag-references-list" x-show="msg.showRefs" x-collapse>
                                     <template x-for="(ref, refIdx) in msg.references" :key="refIdx">
@@ -339,7 +293,7 @@
                 <div class="message assistant" x-show="isGenerating && (!messages.length || messages[messages.length-1].role !== 'assistant')">
                     <div class="message-avatar assistant">
                         <img x-show="settings.ui_settings.assistant_avatar" :src="settings.ui_settings.assistant_avatar" alt="AI" width="36" height="36" style="width:100%; height:100%; object-fit:cover;">
-                        <span x-show="!settings.ui_settings.assistant_avatar">AI</span>
+                        <i class="ri-robot-2-line" x-show="!settings.ui_settings.assistant_avatar"></i>
                     </div>
                     <div class="message-content">
                         <div class="typing-indicator">
@@ -354,29 +308,21 @@
                 <div class="input-container-inner">
                     <div class="uploaded-image-preview" x-show="uploadedImage">
                         <img :src="uploadedImage ? 'data:image/jpeg;base64,' + uploadedImageBase64 : ''" alt="Preview" width="60" height="60">
-                        <button class="btn-delete" @click="removeUploadedImage()" aria-label="Remove image" style="opacity:1; position:absolute; top:-10px; right:-10px; background:var(--error-color); color:white; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center;">×</button>
+                        <button class="btn-delete" @click="removeUploadedImage()" aria-label="Remove image" style="opacity:1; position:absolute; top:-10px; right:-10px; background:var(--error-color); color:white; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center;"><i class="ri-close-circle-fill"></i></button>
                     </div>
                     
                     <!-- Parsed URL Preview -->
                     <div class="parsed-url-preview" x-show="parsedUrl" x-cloak>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                        </svg>
+                        <i class="ri-link"></i>
                         <span class="parsed-url-title" x-text="parsedUrlTitle"></span>
-                        <button class="btn-remove-url" @click="removeParsedUrl()" aria-label="Remove URL">×</button>
+                        <button class="btn-remove-url" @click="removeParsedUrl()" aria-label="Remove URL"><i class="ri-close-circle-fill"></i></button>
                     </div>
                     
                     <!-- Attached Document Preview -->
                     <div class="attached-doc-preview" x-show="attachedDocument" x-cloak>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                        </svg>
+                        <i class="ri-file-text-line"></i>
                         <span class="attached-doc-name" x-text="attachedDocument?.filename"></span>
-                        <button class="btn-remove-doc" @click="removeAttachedDocument()" aria-label="Remove document">×</button>
+                        <button class="btn-remove-doc" @click="removeAttachedDocument()" aria-label="Remove document"><i class="ri-close-circle-fill"></i></button>
                     </div>
 
                     <div class="input-wrapper">
@@ -392,41 +338,22 @@
                         <div class="input-toolbar">
                             <!-- Thinking Mode Toggle -->
                             <div class="thinking-toggle" :class="{ 'active': useThinking }" @click="useThinking = !useThinking" :title="t('thinkingMode')">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
-                                    <path d="M9 21h6"/>
-                                    <path d="M10 24h4"/>
-                                </svg>
+                                <i class="ri-lightbulb-line"></i>
                                 <div class="thinking-slider">
                                     <div class="thinking-slider-handle"></div>
                                 </div>
                             </div>
                             <label class="btn-tool" :title="t('uploadImage')" style="z-index: 10; position: relative;">
                                 <input type="file" @change="handleImageUpload($event)" accept="image/*" style="display: none;">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                                    <polyline points="21 15 16 10 5 21"/>
-                                </svg>
+                                <i class="ri-image-line"></i>
                             </label>
                             <label class="btn-tool" :title="t('uploadDocument')" :class="{ 'active': attachedDocument }" style="z-index: 10; position: relative;">
                                 <input type="file" @change="handleDocumentUpload($event)" accept=".pdf,.docx,.doc,.txt,.md" style="display: none;" :disabled="isUploadingDocument">
-                                <svg x-show="!isUploadingDocument" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                    <polyline points="14 2 14 8 20 8"/>
-                                    <line x1="16" y1="13" x2="8" y2="13"/>
-                                    <line x1="16" y1="17" x2="8" y2="17"/>
-                                </svg>
-                                <svg x-show="isUploadingDocument" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <path d="M12 6v6l4 2"/>
-                                </svg>
+                                <i class="ri-file-text-line" x-show="!isUploadingDocument"></i>
+                                <i class="ri-loader-4-line spin" x-show="isUploadingDocument"></i>
                             </label>
                             <button class="btn-tool" @click="toggleUrlInput()" :title="t('parseUrl')" :class="{ 'active': parsedUrl }">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                                </svg>
+                                <i class="ri-link"></i>
                             </button>
                             
                             <!-- URL Input Popup -->
@@ -452,16 +379,11 @@
 
                         <!-- Send Button -->
                         <button class="btn-send" x-show="!isGenerating" @click="sendMessage()" :disabled="!inputMessage.trim()" :aria-label="t('send')">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="22" y1="2" x2="11" y2="13"/>
-                                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                            </svg>
+                            <i class="ri-send-plane-2-line"></i>
                         </button>
                         <!-- Stop Button -->
                         <button class="btn-stop" x-show="isGenerating" @click="stopGeneration()" :title="t('stopGeneration')">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="6" y="6" width="12" height="12" rx="2"/>
-                            </svg>
+                            <i class="ri-stop-circle-line"></i>
                         </button>
                     </div>
                 </div>
@@ -633,7 +555,7 @@
                                     <input type="file" @change="handleLogoUpload($event)" accept="image/*" style="display: none;">
                                     <span x-text="t('uploadLogo')"></span>
                                 </label>
-                                <button class="btn-delete" x-show="settings.ui_settings.logo_data" @click="settings.ui_settings.logo_data = ''" aria-label="Remove logo" style="opacity:1; width:32px; height:32px; border:1px solid var(--border-color); flex-shrink:0;">×</button>
+                                <button class="btn-delete" x-show="settings.ui_settings.logo_data" @click="settings.ui_settings.logo_data = ''" aria-label="Remove logo" style="opacity:1; width:32px; height:32px; border:1px solid var(--border-color); flex-shrink:0;"><i class="ri-close-circle-fill"></i></button>
                                 <input type="text" x-model="settings.ui_settings.logo_text" placeholder="JustChat" class="input-minimal" style="flex:1; min-width:0;">
                             </div>
                         </div>
@@ -652,7 +574,7 @@
                                 <div style="display:flex; align-items:center; gap:12px;">
                                     <div class="avatar-preview" style="width:40px; height:40px; border-radius:50%; background:var(--bg-tertiary); overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                                         <img x-show="settings.ui_settings.user_avatar" :src="settings.ui_settings.user_avatar" alt="User" width="40" height="40" style="width:100%; height:100%; object-fit:cover;">
-                                        <svg x-show="!settings.ui_settings.user_avatar" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                        <i class="ri-user-3-line" x-show="!settings.ui_settings.user_avatar"></i>
                                     </div>
                                     <label class="btn-secondary" style="margin:0;">
                                         <input type="file" @change="handleAvatarUpload($event, 'user')" accept="image/*" style="display: none;">
@@ -664,7 +586,7 @@
                                 <div style="display:flex; align-items:center; gap:12px;">
                                     <div class="avatar-preview" style="width:40px; height:40px; border-radius:50%; background:var(--text-primary); color:var(--bg-primary); overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                                         <img x-show="settings.ui_settings.assistant_avatar" :src="settings.ui_settings.assistant_avatar" alt="AI" width="40" height="40" style="width:100%; height:100%; object-fit:cover;">
-                                        <span x-show="!settings.ui_settings.assistant_avatar" style="font-weight:bold; font-size:14px;">AI</span>
+                                        <i class="ri-robot-2-line" x-show="!settings.ui_settings.assistant_avatar" style="font-size:20px;"></i>
                                     </div>
                                     <label class="btn-secondary" style="margin:0;">
                                         <input type="file" @change="handleAvatarUpload($event, 'assistant')" accept="image/*" style="display: none;">
@@ -720,11 +642,7 @@
                         
                         <!-- Error -->
                         <div class="plugin-error" x-show="pluginMarketError && !pluginMarketLoading">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="12" y1="8" x2="12" y2="12"></line>
-                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                            </svg>
+                            <i class="ri-error-warning-line" style="font-size: 24px;"></i>
                             <span x-text="t('networkError')"></span>
                             <button class="btn-secondary" @click="loadPluginMarket()" x-text="t('retry')"></button>
                         </div>
@@ -736,7 +654,7 @@
                                     <img :src="'https://raw.githubusercontent.com/massif-01/ChatRaw/main/Plugins/Plugin_market/' + plugin.folder + '/icon.png'" 
                                          class="plugin-icon" 
                                          width="48" height="48"
-                                         @error="$el.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect fill=%22%23666%22 width=%2224%22 height=%2224%22 rx=%224%22/></svg>'">
+                                         @error="$el.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22><path d=%22M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z%22/></svg>'">
                                     <div class="plugin-info">
                                         <div class="plugin-name" x-text="plugin.name[lang] || plugin.name.en"></div>
                                         <div class="plugin-version" x-text="'v' + plugin.version"></div>
@@ -768,7 +686,7 @@
                                     <img :src="'/api/plugins/' + encodeURIComponent(plugin.id) + '/icon'" 
                                          class="plugin-icon"
                                          width="48" height="48"
-                                         @error="$el.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><rect fill=%22%23666%22 width=%2224%22 height=%2224%22 rx=%224%22/></svg>'">
+                                         @error="$el.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22><path d=%22M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z%22/></svg>'">
                                     <div class="plugin-info">
                                         <div class="plugin-name" x-text="plugin.name?.[lang] || plugin.name?.en || plugin.name || plugin.id"></div>
                                         <div class="plugin-version" x-text="'v' + (plugin.version || '1.0.0')"></div>
@@ -776,18 +694,10 @@
                                     </div>
                                     <div class="plugin-actions">
                                         <button class="btn-icon" @click="openPluginSettings(plugin)" :title="t('settings')">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <circle cx="12" cy="12" r="3"/>
-                                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                                            </svg>
+                                            <i class="ri-settings-3-line"></i>
                                         </button>
                                         <button class="btn-icon btn-icon-danger" @click="uninstallPlugin(plugin)" :title="t('uninstall')">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <polyline points="3 6 5 6 21 6"/>
-                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                                <line x1="10" y1="11" x2="10" y2="17"/>
-                                                <line x1="14" y1="11" x2="14" y2="17"/>
-                                            </svg>
+                                            <i class="ri-delete-bin-line"></i>
                                         </button>
                                         <div class="toggle-switch" :class="{ 'checked': plugin.enabled }" @click="togglePlugin(plugin)">
                                             <div class="toggle-handle"></div>
@@ -808,11 +718,7 @@
                         
                         <div class="upload-area plugin-upload" @click="$refs.pluginFileInput.click()">
                             <input type="file" x-ref="pluginFileInput" @change="handlePluginUpload($event)" accept=".zip" style="display: none;">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="17 8 12 3 7 8"/>
-                                <line x1="12" y1="3" x2="12" y2="15"/>
-                            </svg>
+                            <i class="ri-upload-2-line" style="font-size: 48px;"></i>
                             <div x-text="t('selectPluginZip')"></div>
                         </div>
                         
@@ -824,11 +730,7 @@
                         
                         <div class="plugin-dev-guide">
                             <a href="https://github.com/massif-01/ChatRaw/blob/main/Plugins/README.md" target="_blank" rel="noopener">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                                    <polyline points="15 3 21 3 21 9"/>
-                                    <line x1="10" y1="14" x2="21" y2="3"/>
-                                </svg>
+                                <i class="ri-external-link-line"></i>
                                 <span x-text="t('pluginDevGuide')"></span>
                             </a>
                         </div>
@@ -941,6 +843,6 @@
     <!-- Toast -->
     <div class="toast" x-show="toast.show" x-text="toast.message" :class="toast.type" x-transition></div>
 
-    <script src="app.js?v=5.0"></script>
+    <script src="app.min.js?v=5.3"></script>
 </body>
 </html>

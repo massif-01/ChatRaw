@@ -1,5 +1,53 @@
 // JustChat - Minimalist AI Chat Application
 
+// Lazy load highlight.js for better performance
+let hljsLoaded = false;
+let hljsLoading = false;
+
+async function loadHighlightJS() {
+    if (hljsLoaded || hljsLoading) return;
+    hljsLoading = true;
+    
+    try {
+        // Load CSS
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css';
+        document.head.appendChild(link);
+        
+        // Load core
+        await loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js');
+        
+        // Load common languages in parallel
+        await Promise.all([
+            loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/python.min.js'),
+            loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/javascript.min.js'),
+            loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/bash.min.js'),
+            loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/json.min.js')
+        ]);
+        
+        hljsLoaded = true;
+        
+        // Re-highlight any existing code blocks
+        document.querySelectorAll('pre code:not(.hljs)').forEach(block => {
+            hljs.highlightElement(block);
+        });
+    } catch (e) {
+        console.warn('Failed to load highlight.js:', e);
+    }
+    hljsLoading = false;
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
 // i18n translations
 const i18n = {
     en: {
@@ -266,15 +314,26 @@ const i18n = {
     }
 };
 
-// Configure marked.js
+// Configure marked.js with lazy-loaded highlight.js
 marked.setOptions({
     highlight: function(code, lang) {
-        if (lang && hljs.getLanguage(lang)) {
-            try {
-                return hljs.highlight(code, { language: lang }).value;
-            } catch (e) {}
+        // Trigger lazy load of highlight.js
+        if (!hljsLoaded && !hljsLoading) {
+            loadHighlightJS();
         }
-        return hljs.highlightAuto(code).value;
+        
+        // If hljs is available, use it
+        if (typeof hljs !== 'undefined') {
+            if (lang && hljs.getLanguage(lang)) {
+                try {
+                    return hljs.highlight(code, { language: lang }).value;
+                } catch (e) {}
+            }
+            return hljs.highlightAuto(code).value;
+        }
+        
+        // Return escaped code if hljs not loaded yet
+        return code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
     },
     breaks: true,
     gfm: true
@@ -413,8 +472,7 @@ function app() {
             await this.loadDocuments();
             await this.loadInstalledPlugins();
             this.applyTheme();
-            // Update favicon and title based on logo settings
-            this.updateFavicon(this.settings.ui_settings.logo_data);
+            // Note: favicon is updated by loadLogo() which is called from loadSettings()
             // Initialize plugin system
             this.initPluginSystem();
         },
@@ -441,8 +499,26 @@ function app() {
                         this.settings.ui_settings = { ...this.settings.ui_settings, ...data.ui_settings };
                     }
                 }
+                // Lazy load logo after initial settings (for better LCP)
+                this.loadLogo();
             } catch (e) {
                 console.error('Failed to load settings:', e);
+            }
+        },
+        
+        // Lazy load logo separately for better performance
+        async loadLogo() {
+            try {
+                const res = await fetch('/api/settings/logo');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.logo_data) {
+                        this.settings.ui_settings.logo_data = data.logo_data;
+                        this.updateFavicon(data.logo_data);
+                    }
+                }
+            } catch (e) {
+                // Logo loading is non-critical, fail silently
             }
         },
         

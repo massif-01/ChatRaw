@@ -24,3 +24,7 @@ Thumbs.db
 
 # Docker
 .docker/
+
+# Node.js
+node_modules/
+package-lock.json
