@@ -8,7 +8,7 @@
 
 *Fast, Lightweight, Extensible | 快速、轻量、可扩展*
 
-![Lighthouse Performance](https://img.shields.io/badge/Lighthouse-100%2F100-brightgreen?logo=lighthouse)
+![Lighthouse Performance](https://img.shields.io/badge/Lighthouse-100%2F100%2F100%2F100-brightgreen?logo=lighthouse)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)
@@ -146,9 +146,9 @@ ChatRaw features a complete **plugin system** to extend functionality:
 |     ![Desktop Performance][perf-desktop]      |     ![Mobile Performance][perf-mobile]       |
 | [📑 Lighthouse Report][perf-desktop-report]   | [📑 Lighthouse Report][perf-mobile-report]   |
 
-**Desktop**: Performance 100 | Accessibility 96 | Best Practices 91 | SEO 91
+**Desktop**: Performance 100 | Accessibility 100 | Best Practices 100 | SEO 100
 
-**Mobile**: Performance 91 | Accessibility 93 | Best Practices 96 | SEO 91
+**Mobile**: Performance 100 | Accessibility 100 | Best Practices 100 | SEO 100
 
 [perf-desktop]: assets/lighthouse-desktop.png
 [perf-mobile]: assets/lighthouse-mobile.png
@@ -163,10 +163,10 @@ ChatRaw features a complete **plugin system** to extend functionality:
 
 ```bash
 # Pull image
-docker pull massif01/chatraw:2.0.4
+docker pull massif01/chatraw:latest
 
 # Run container
-docker run -d -p 51111:51111 -v chatraw-data:/app/data massif01/chatraw:2.0.4
+docker run -d -p 51111:51111 -v chatraw-data:/app/data massif01/chatraw:latest
 ```
 
 Or use docker-compose:
@@ -225,10 +225,10 @@ If you're upgrading from v1.x:
 docker stop chatraw && docker rm chatraw
 
 # Pull new image
-docker pull massif01/chatraw:2.0.4
+docker pull massif01/chatraw:latest
 
 # Run new container (data persists in volume)
-docker run -d -p 51111:51111 -v chatraw-data:/app/data massif01/chatraw:2.0.4
+docker run -d -p 51111:51111 -v chatraw-data:/app/data massif01/chatraw:latest
 ```
 
 Or with docker-compose:
@@ -467,9 +467,9 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 |     ![桌面端性能][perf-desktop]               |     ![移动端性能][perf-mobile]                |
 | [📑 Lighthouse 测试报告][perf-desktop-report] | [📑 Lighthouse 测试报告][perf-mobile-report]  |
 
-**桌面端**: 性能 100 | 无障碍 96 | 最佳做法 91 | SEO 91
+**桌面端**: 性能 100 | 无障碍 100 | 最佳做法 100 | SEO 100
 
-**移动端**: 性能 91 | 无障碍 93 | 最佳做法 96 | SEO 91
+**移动端**: 性能 100 | 无障碍 100 | 最佳做法 100 | SEO 100
 
 ---
 
@@ -479,10 +479,10 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 
 ```bash
 # 拉取镜像
-docker pull massif01/chatraw:2.0.4
+docker pull massif01/chatraw:latest
 
 # 运行容器
-docker run -d -p 51111:51111 -v chatraw-data:/app/data massif01/chatraw:2.0.4
+docker run -d -p 51111:51111 -v chatraw-data:/app/data massif01/chatraw:latest
 ```
 
 或使用 docker-compose：
@@ -541,10 +541,10 @@ docker pull ghcr.io/massif-01/chatraw:latest
 docker stop chatraw && docker rm chatraw
 
 # 拉取新镜像
-docker pull massif01/chatraw:2.0.4
+docker pull massif01/chatraw:latest
 
 # 运行新容器（数据持久化在卷中）
-docker run -d -p 51111:51111 -v chatraw-data:/app/data massif01/chatraw:2.0.4
+docker run -d -p 51111:51111 -v chatraw-data:/app/data massif01/chatraw:latest
 ```
 
 或使用 docker-compose：
