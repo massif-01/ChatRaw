@@ -859,6 +859,7 @@ body {
     border: none;
     background: var(--text-primary);
     color: var(--bg-primary);
+    font-size: 20px;
     cursor: pointer;
     border-radius: var(--radius-sm);
     display: flex;
@@ -888,6 +889,7 @@ body {
     border: none;
     background: var(--error-color);
     color: white;
+    font-size: 20px;
     cursor: pointer;
     border-radius: var(--radius-sm);
     display: flex;
@@ -1747,11 +1749,13 @@ input[type=range]::-webkit-slider-thumb:hover {
         left: 12px;
     }
     
-    .btn-send {
+    .btn-send,
+    .btn-stop {
         width: 36px;
         height: 36px;
         bottom: 10px;
         right: 10px;
+        font-size: 18px;
     }
     
     .uploaded-image-preview {
