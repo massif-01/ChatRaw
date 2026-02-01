@@ -1370,10 +1370,11 @@ async def chat(request: Request):
         
         return StreamingResponse(
             generate(), 
-            media_type="text/plain",
+            media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no"
+                "X-Accel-Buffering": "no",
+                "Content-Encoding": "identity"
             }
         )
     else:
