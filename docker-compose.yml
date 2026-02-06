@@ -2,9 +2,9 @@ services:
   chatraw:
     image: docker.io/massif01/chatraw:latest
     container_name: chatraw
-    platform: linux/amd64
-    ports:
-      - "51111:51111"
+    # Use host network mode to access LAN services (e.g., local LLM on 192.168.x.x)
+    # 使用 host 网络模式以访问局域网服务（如本地部署的 LLM）
+    network_mode: host
     volumes:
       - chatraw_data:/app/data
     environment:
