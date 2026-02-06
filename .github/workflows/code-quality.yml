@@ -1,0 +1,180 @@
+name: Code Quality Check
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [ opened, synchronize, reopened ]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  super-linter:
+    name: Super Linter
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full git history for better analysis
+
+      - name: Run Super Linter
+        id: super-linter
+        uses: super-linter/super-linter@v6
+        continue-on-error: true
+        env:
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 只验证 PR 中改动的文件（不检查整个代码库）
+          VALIDATE_ALL_CODEBASE: false
+          # 启用的语言检查
+          VALIDATE_PYTHON_BLACK: true
+          VALIDATE_PYTHON_FLAKE8: true
+          VALIDATE_PYTHON_PYLINT: true
+          VALIDATE_JAVASCRIPT_STANDARD: true
+          VALIDATE_JAVASCRIPT_ES: true
+          VALIDATE_JSON: true
+          VALIDATE_YAML: true
+          VALIDATE_DOCKERFILE_HADOLINT: true
+          VALIDATE_MARKDOWN: true
+          VALIDATE_BASH: true
+          VALIDATE_CSS: true
+          VALIDATE_HTML: true
+          # Python 配置
+          PYTHON_BLACK_CONFIG_FILE: .python-black
+          PYTHON_FLAKE8_CONFIG_FILE: .flake8
+          # 忽略的目录
+          FILTER_REGEX_EXCLUDE: ".*(node_modules|.venv|venv|__pycache__|.git|dist|build|*.min.js|*.min.css).*"
+
+      - name: Post Super Linter Summary to PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const status = '${{ steps.super-linter.outcome }}';
+            const icon = status === 'success' ? '✅' : '❌';
+            
+            let message = `## ${icon} Super Linter Results\n\n`;
+            
+            if (status === 'success') {
+              message += '**All code quality checks passed!** 🎉\n\n';
+              message += 'Your code meets the project standards for:\n';
+              message += '- Python (Black, Flake8, Pylint)\n';
+              message += '- JavaScript (ESLint)\n';
+              message += '- Markdown, YAML, JSON\n';
+              message += '- Dockerfile (Hadolint)\n';
+            } else {
+              message += '**Some code quality issues were found.**\n\n';
+              message += 'Please review the detailed checks below or check the [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more information.\n\n';
+              message += '### Quick Fixes:\n';
+              message += '```bash\n';
+              message += '# Python formatting\n';
+              message += 'black backend/\n\n';
+              message += '# JavaScript linting\n';
+              message += 'npx eslint --fix backend/static/**/*.js\n\n';
+              message += '# Check locally\n';
+              message += './scripts/pre-commit-check.sh\n';
+              message += '```\n';
+            }
+            
+            message += '\n---\n';
+            message += '*💡 Tip: Run `./scripts/pre-commit-check.sh` locally before pushing to catch issues early!*';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
+  reviewdog-eslint:
+    name: ReviewDog - ESLint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install --save-dev eslint
+          
+      - name: Run ESLint with ReviewDog
+        uses: reviewdog/action-eslint@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          eslint_flags: 'backend/static/**/*.js Plugins/**/*.js'
+          fail_on_error: false
+          filter_mode: added
+
+  reviewdog-flake8:
+    name: ReviewDog - Flake8
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Run Flake8 with ReviewDog
+        uses: reviewdog/action-flake8@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          fail_on_error: false
+          filter_mode: added
+          flake8_args: '--max-line-length=120 --ignore=E203,W503'
+
+  reviewdog-hadolint:
+    name: ReviewDog - Hadolint (Dockerfile)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Hadolint with ReviewDog
+        uses: reviewdog/action-hadolint@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          fail_on_error: false
+          filter_mode: added
+
+  reviewdog-markdownlint:
+    name: ReviewDog - Markdownlint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Markdownlint with ReviewDog
+        uses: reviewdog/action-markdownlint@v0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          fail_on_error: false
+          filter_mode: added
+          markdownlint_flags: '--disable MD013 MD033 MD041'

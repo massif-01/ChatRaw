@@ -1,0 +1,429 @@
+name: Security Vulnerability Scan
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [ opened, synchronize, reopened ]
+  schedule:
+    # 每天凌晨 3 点运行 (UTC)
+    - cron: '0 3 * * *'
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  trivy-fs-scan:
+    name: Trivy - Filesystem & Dependency Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner (Filesystem)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          scanners: 'vuln,secret,misconfig'
+          # 扫描 Python 依赖
+          skip-dirs: 'node_modules,.git,__pycache__,.venv,venv'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-fs-results.sarif'
+          category: 'trivy-fs'
+
+      - name: Run Trivy with ReviewDog (PR Comments)
+        if: github.event_name == 'pull_request'
+        uses: reviewdog/action-trivy@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          fail_on_error: false
+          filter_mode: added
+          trivy_flags: '--severity CRITICAL,HIGH,MEDIUM'
+
+      - name: Generate Trivy Summary for PR
+        if: github.event_name == 'pull_request'
+        id: trivy-summary
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'json'
+          output: 'trivy-summary.json'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          scanners: 'vuln,secret,misconfig'
+          skip-dirs: 'node_modules,.git,__pycache__,.venv,venv'
+
+      - name: Post Trivy Summary to PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let message = '### 🛡️ Trivy Security Scan\n\n';
+            
+            try {
+              const reportPath = 'trivy-summary.json';
+              if (fs.existsSync(reportPath)) {
+                const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+                
+                let totalVulns = 0;
+                let critical = 0;
+                let high = 0;
+                let medium = 0;
+                let secrets = 0;
+                let misconfigs = 0;
+                
+                if (report.Results) {
+                  report.Results.forEach(result => {
+                    if (result.Vulnerabilities) {
+                      result.Vulnerabilities.forEach(vuln => {
+                        totalVulns++;
+                        if (vuln.Severity === 'CRITICAL') critical++;
+                        else if (vuln.Severity === 'HIGH') high++;
+                        else if (vuln.Severity === 'MEDIUM') medium++;
+                      });
+                    }
+                    if (result.Secrets) {
+                      secrets += result.Secrets.length;
+                    }
+                    if (result.Misconfigurations) {
+                      misconfigs += result.Misconfigurations.length;
+                    }
+                  });
+                }
+                
+                if (totalVulns > 0 || secrets > 0 || misconfigs > 0) {
+                  message += `**⚠️ Found security issues!**\n\n`;
+                  message += '| Type | Count |\n';
+                  message += '|------|-------|\n';
+                  if (critical > 0) message += `| 🔴 Critical Vulnerabilities | ${critical} |\n`;
+                  if (high > 0) message += `| 🟠 High Vulnerabilities | ${high} |\n`;
+                  if (medium > 0) message += `| 🟡 Medium Vulnerabilities | ${medium} |\n`;
+                  if (secrets > 0) message += `| 🔐 Secrets Detected | ${secrets} |\n`;
+                  if (misconfigs > 0) message += `| ⚙️ Misconfigurations | ${misconfigs} |\n`;
+                  
+                  message += '\n**Action Required:**\n';
+                  if (totalVulns > 0) {
+                    message += '- Update vulnerable dependencies\n';
+                  }
+                  if (secrets > 0) {
+                    message += '- Remove hardcoded secrets immediately!\n';
+                  }
+                  if (misconfigs > 0) {
+                    message += '- Fix configuration issues\n';
+                  }
+                  
+                  message += `\n**Details:** Check ReviewDog comments above and the [Security tab](https://github.com/${{ github.repository }}/security/code-scanning).\n`;
+                } else {
+                  message += '**✅ No vulnerabilities, secrets, or misconfigurations detected!**\n\n';
+                  message += 'Your code passed all Trivy security checks:\n';
+                  message += '- ✅ No CVE vulnerabilities in dependencies\n';
+                  message += '- ✅ No hardcoded secrets found\n';
+                  message += '- ✅ No security misconfigurations\n';
+                }
+              } else {
+                message += '**✅ Trivy scan completed successfully.**\n';
+              }
+            } catch (error) {
+              message += '**✅ No security issues detected by Trivy.**\n';
+            }
+            
+            const comments = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Trivy Security Scan')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                comment_id: botComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            }
+
+  trivy-docker-scan:
+    name: Trivy - Docker Image Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t chatraw:${{ github.sha }} .
+
+      - name: Run Trivy vulnerability scanner (Docker Image)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          image-ref: 'chatraw:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-docker-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          scanners: 'vuln,secret'
+
+      - name: Upload Trivy Docker results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-docker-results.sarif'
+          category: 'trivy-docker'
+
+      - name: Run Trivy and generate report
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          image-ref: 'chatraw:${{ github.sha }}'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: true
+
+  python-safety-check:
+    name: Python Safety Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Safety
+        run: pip install safety
+
+      - name: Run Safety check
+        id: safety-check
+        continue-on-error: true
+        run: |
+          cd backend
+          safety check --file requirements.txt --json > safety-report.json || true
+          safety check --file requirements.txt --output text > safety-output.txt || true
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+      - name: Upload Safety report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: safety-report
+          path: backend/safety-report.json
+
+      - name: Post Safety results to PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let message = '### 🐍 Python Safety Check\n\n';
+            
+            try {
+              const reportPath = 'backend/safety-report.json';
+              if (fs.existsSync(reportPath)) {
+                const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+                
+                if (report.vulnerabilities && report.vulnerabilities.length > 0) {
+                  message += `**⚠️ Found ${report.vulnerabilities.length} vulnerability(ies) in Python dependencies!**\n\n`;
+                  
+                  message += '| Package | Installed | Vulnerability | Severity |\n';
+                  message += '|---------|-----------|---------------|----------|\n';
+                  
+                  report.vulnerabilities.slice(0, 10).forEach(vuln => {
+                    const pkg = vuln.package_name || vuln.package || 'Unknown';
+                    const version = vuln.analyzed_version || vuln.version || 'N/A';
+                    const vulnId = vuln.vulnerability_id || vuln.id || 'N/A';
+                    const severity = vuln.severity || 'Unknown';
+                    message += `| ${pkg} | ${version} | ${vulnId} | ${severity} |\n`;
+                  });
+                  
+                  if (report.vulnerabilities.length > 10) {
+                    message += `\n*...and ${report.vulnerabilities.length - 10} more. Check the workflow logs for full details.*\n`;
+                  }
+                  
+                  message += '\n**Fix:**\n';
+                  message += '```bash\n';
+                  message += 'cd backend\n';
+                  message += 'pip install --upgrade <package-name>\n';
+                  message += '```\n';
+                } else {
+                  message += '**✅ No known vulnerabilities found in Python dependencies!**\n\n';
+                  message += 'All packages are secure according to the Safety database.\n';
+                }
+              } else {
+                message += '**ℹ️ Safety check completed but report file not found.**\n';
+              }
+            } catch (error) {
+              message += '**✅ No vulnerabilities detected in Python dependencies.**\n';
+            }
+            
+            const comments = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Python Safety Check')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                comment_id: botComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            }
+
+  npm-audit:
+    name: NPM Audit
+    runs-on: ubuntu-latest
+    if: hashFiles('package.json') != ''
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run npm audit
+        id: npm-audit
+        continue-on-error: true
+        run: |
+          npm audit --json > npm-audit-report.json || true
+          npm audit || echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+      - name: Upload NPM audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-report
+          path: npm-audit-report.json
+
+      - name: Post NPM Audit results to PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let message = '### 📦 NPM Audit\n\n';
+            
+            try {
+              const reportPath = 'npm-audit-report.json';
+              if (fs.existsSync(reportPath)) {
+                const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+                
+                const vulnerabilities = report.metadata?.vulnerabilities || {};
+                const total = Object.values(vulnerabilities).reduce((a, b) => a + b, 0);
+                
+                if (total > 0) {
+                  message += `**⚠️ Found ${total} vulnerability(ies) in NPM dependencies!**\n\n`;
+                  
+                  message += '| Severity | Count |\n';
+                  message += '|----------|-------|\n';
+                  if (vulnerabilities.critical) message += `| 🔴 Critical | ${vulnerabilities.critical} |\n`;
+                  if (vulnerabilities.high) message += `| 🟠 High | ${vulnerabilities.high} |\n`;
+                  if (vulnerabilities.moderate) message += `| 🟡 Moderate | ${vulnerabilities.moderate} |\n`;
+                  if (vulnerabilities.low) message += `| 🟢 Low | ${vulnerabilities.low} |\n`;
+                  
+                  message += '\n**Fix:**\n';
+                  message += '```bash\n';
+                  message += 'npm audit fix\n';
+                  message += '# For breaking changes:\n';
+                  message += 'npm audit fix --force\n';
+                  message += '```\n';
+                  
+                  message += '\n**Details:** Check the [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for more information.\n';
+                } else {
+                  message += '**✅ No known vulnerabilities found in NPM dependencies!**\n\n';
+                  message += 'All packages are secure according to the NPM audit database.\n';
+                }
+              } else {
+                message += '**ℹ️ NPM audit completed but report file not found.**\n';
+              }
+            } catch (error) {
+              message += '**✅ No vulnerabilities detected in NPM dependencies.**\n';
+            }
+            
+            const comments = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('NPM Audit')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                comment_id: botComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            }

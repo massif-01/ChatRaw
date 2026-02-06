@@ -11,7 +11,18 @@
 ![Lighthouse Performance](https://img.shields.io/badge/Lighthouse-100%2F100%2F100%2F100-brightgreen?logo=lighthouse)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)
+
+![Code Quality](https://github.com/massif-01/ChatRaw/actions/workflows/code-quality.yml/badge.svg)
+![CodeQL](https://github.com/massif-01/ChatRaw/actions/workflows/codeql-analysis.yml/badge.svg)
+![Security Scan](https://github.com/massif-01/ChatRaw/actions/workflows/security-scan.yml/badge.svg)
+
+![Docker Pulls](https://img.shields.io/docker/pulls/massif01/chatraw?logo=docker)
+![Memory](https://img.shields.io/badge/Memory-~60MB-green?logo=microsoftedge)
+![Startup](https://img.shields.io/badge/Startup-Seconds-brightgreen?logo=rocket)
+![OpenAI Compatible](https://img.shields.io/badge/OpenAI-Compatible-412991?logo=openai)
 
 [English](#english) | [中文](#中文)
 

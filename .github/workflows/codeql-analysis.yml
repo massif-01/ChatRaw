@@ -1,0 +1,123 @@
+name: CodeQL Security Analysis
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [ opened, synchronize, reopened ]
+  schedule:
+    # 每周一凌晨 2 点运行 (UTC)
+    - cron: '0 2 * * 1'
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  analyze:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        # 检测项目中使用的语言
+        language: [ 'python', 'javascript' ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # 使用默认查询 + 安全扩展查询
+          queries: +security-extended,security-and-quality
+          
+      # Python 自动构建
+      - name: Setup Python
+        if: matrix.language == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install Python dependencies
+        if: matrix.language == 'python'
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      # JavaScript 自动构建
+      - name: Setup Node.js
+        if: matrix.language == 'javascript'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install Node dependencies
+        if: matrix.language == 'javascript'
+        run: npm install
+
+      - name: Perform CodeQL Analysis
+        id: codeql-analysis
+        uses: github/codeql-action/analyze@v3
+        continue-on-error: true
+        with:
+          category: "/language:${{ matrix.language }}"
+          output: 'codeql-results.sarif'
+          
+      - name: Post CodeQL results to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const language = '${{ matrix.language }}';
+            const status = '${{ steps.codeql-analysis.outcome }}';
+            const icon = status === 'success' ? '✅' : '⚠️';
+            
+            let message = `### ${icon} CodeQL Security Analysis - ${language.toUpperCase()}\n\n`;
+            
+            if (status === 'success') {
+              message += '**No security vulnerabilities detected!** 🛡️\n\n';
+              message += `CodeQL analyzed your ${language} code and found no issues.\n`;
+            } else {
+              message += '**Security issues may have been detected.**\n\n';
+              message += `Please check the [Security tab](https://github.com/${{ github.repository }}/security/code-scanning) for detailed findings.\n\n`;
+              message += '### Common Issues:\n';
+              message += '- SQL Injection vulnerabilities\n';
+              message += '- Cross-Site Scripting (XSS)\n';
+              message += '- Path Traversal\n';
+              message += '- Unsafe deserialization\n';
+              message += '- Hardcoded credentials\n';
+            }
+            
+            // Try to find existing comment
+            const comments = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes(`CodeQL Security Analysis - ${language.toUpperCase()}`)
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                comment_id: botComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            }

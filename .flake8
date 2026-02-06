@@ -1,0 +1,23 @@
+[flake8]
+# Python 代码风格配置
+max-line-length = 120
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    env,
+    node_modules,
+    dist,
+    build,
+    *.egg-info,
+    .tox
+
+# 忽略特定错误
+# E203: whitespace before ':'
+# W503: line break before binary operator
+# E501: line too long (handled by max-line-length)
+ignore = E203, W503
+
+# 每个文件最大复杂度
+max-complexity = 10

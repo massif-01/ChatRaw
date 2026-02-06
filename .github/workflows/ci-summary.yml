@@ -1,0 +1,155 @@
+name: CI Results Summary
+
+on:
+  workflow_run:
+    workflows: ["Code Quality Check", "CodeQL Security Analysis", "Security Vulnerability Scan"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  summary:
+    name: Post Final Summary
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    
+    steps:
+      - name: Get PR number
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = github.event.workflow_run.pull_requests[0]?.number;
+            if (prNumber) {
+              core.setOutput('number', prNumber);
+              return prNumber;
+            }
+            return null;
+
+      - name: Wait for all workflows
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Wait a bit for other workflows to complete
+            await new Promise(resolve => setTimeout(resolve, 10000));
+
+      - name: Create Final Summary
+        if: steps.pr.outputs.number
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.pr.outputs.number }};
+            
+            // Get all workflow runs for this PR
+            const { data: runs } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event: 'pull_request',
+              per_page: 50
+            });
+            
+            // Filter runs for this PR's head SHA
+            const prRuns = runs.workflow_runs.filter(run => 
+              run.head_sha === github.event.workflow_run.head_sha &&
+              ['Code Quality Check', 'CodeQL Security Analysis', 'Security Vulnerability Scan'].includes(run.name)
+            );
+            
+            // Count statuses
+            let completed = 0;
+            let success = 0;
+            let failure = 0;
+            let cancelled = 0;
+            
+            const workflowStatus = {};
+            
+            prRuns.forEach(run => {
+              if (run.status === 'completed') {
+                completed++;
+                if (run.conclusion === 'success') {
+                  success++;
+                  workflowStatus[run.name] = '✅';
+                } else if (run.conclusion === 'failure') {
+                  failure++;
+                  workflowStatus[run.name] = '❌';
+                } else if (run.conclusion === 'cancelled') {
+                  cancelled++;
+                  workflowStatus[run.name] = '⏭️';
+                } else {
+                  workflowStatus[run.name] = '⚠️';
+                }
+              } else {
+                workflowStatus[run.name] = '🔄';
+              }
+            });
+            
+            // Create summary message
+            let message = `## 📊 CI/CD Pipeline - Final Summary\n\n`;
+            
+            const allPassed = failure === 0 && completed === prRuns.length;
+            
+            if (allPassed) {
+              message += `### 🎉 All Checks Passed!\n\n`;
+              message += `Congratulations! Your PR has passed all automated checks.\n\n`;
+            } else if (completed < prRuns.length) {
+              message += `### 🔄 Checks In Progress\n\n`;
+              message += `Some checks are still running. This summary will be updated.\n\n`;
+            } else {
+              message += `### ⚠️ Some Checks Failed\n\n`;
+              message += `Please review the failures and push fixes.\n\n`;
+            }
+            
+            message += `| Workflow | Status | Result |\n`;
+            message += `|----------|--------|--------|\n`;
+            message += `| Code Quality Check | ${workflowStatus['Code Quality Check'] || '🔄'} | Style & Linting |\n`;
+            message += `| CodeQL Security Analysis | ${workflowStatus['CodeQL Security Analysis'] || '🔄'} | Security Vulnerabilities |\n`;
+            message += `| Security Vulnerability Scan | ${workflowStatus['Security Vulnerability Scan'] || '🔄'} | Dependencies & Secrets |\n`;
+            
+            message += `\n---\n\n`;
+            message += `**Summary:** ${success} passed, ${failure} failed, ${cancelled} cancelled, ${prRuns.length - completed} in progress\n\n`;
+            
+            if (allPassed) {
+              message += `### ✅ Ready for Review\n\n`;
+              message += `Your PR is ready for human review. A maintainer will review your changes soon.\n`;
+            } else if (failure > 0) {
+              message += `### 🔧 Next Steps\n\n`;
+              message += `1. Review the detailed comments from each tool above\n`;
+              message += `2. Fix the reported issues\n`;
+              message += `3. Run \`./scripts/pre-commit-check.sh\` locally to verify\n`;
+              message += `4. Push your fixes - checks will run automatically\n`;
+            }
+            
+            message += `\n---\n`;
+            message += `*🤖 This is an automated summary. Check individual tool comments above for details.*\n`;
+            message += `*📝 Last updated: ${new Date().toUTCString()}*`;
+            
+            // Find and update existing summary comment
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const summaryComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('CI/CD Pipeline - Final Summary')
+            );
+            
+            if (summaryComment) {
+              await github.rest.issues.updateComment({
+                comment_id: summaryComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            }

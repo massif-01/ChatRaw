@@ -1,0 +1,114 @@
+name: CI Status Check
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [ opened, synchronize, reopened ]
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  # 等待所有关键检查完成
+  all-checks:
+    name: All CI Checks Status
+    runs-on: ubuntu-latest
+    needs: []
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: CI Status Summary
+        run: |
+          echo "## ✅ CI Pipeline Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All automated checks have been triggered:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 **Code Quality**: Super Linter + ReviewDog" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔐 **Security Analysis**: CodeQL (Python + JavaScript)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🛡️ **Vulnerability Scan**: Trivy (Dependencies + Docker)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 **Dependency Review**: Safety + NPM Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check individual workflow results for details." >> $GITHUB_STEP_SUMMARY
+
+      - name: Create Initial PR Comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const message = `## 🤖 CI/CD Pipeline - Automated Checks
+            
+            Thank you for your contribution! The following automated checks are now running on your PR:
+            
+            ### 📋 Check Status
+            
+            | Category | Tool | Status | Details |
+            |----------|------|--------|---------|
+            | **🔍 Code Quality** | Super Linter | 🔄 Running... | Style & syntax checks |
+            | **🔍 Code Quality** | ESLint | 🔄 Running... | JavaScript linting |
+            | **🔍 Code Quality** | Flake8 | 🔄 Running... | Python linting |
+            | **🔍 Code Quality** | Hadolint | 🔄 Running... | Dockerfile linting |
+            | **🔍 Code Quality** | Markdownlint | 🔄 Running... | Markdown formatting |
+            | **🔐 Security** | CodeQL (Python) | 🔄 Running... | Code security analysis |
+            | **🔐 Security** | CodeQL (JavaScript) | 🔄 Running... | Code security analysis |
+            | **🛡️ Dependencies** | Trivy | 🔄 Running... | CVE vulnerability scan |
+            | **🛡️ Dependencies** | Safety | 🔄 Running... | Python packages |
+            | **🛡️ Dependencies** | NPM Audit | 🔄 Running... | NPM packages |
+            | **📝 Review** | Dependency Review | 🔄 Running... | Dependency changes |
+            
+            ---
+            
+            ### 📚 What happens next?
+            
+            1. **Code Review Comments**: ReviewDog will add inline comments on any issues found in your code
+            2. **Security Alerts**: Security findings will appear in the [Security tab](https://github.com/${{ github.repository }}/security)
+            3. **Individual Reports**: Each tool will post its own summary comment below
+            4. **Overall Status**: Check the "Checks" tab for pass/fail status
+            
+            ### 🛠️ If checks fail:
+            
+            **Code Quality Issues:**
+            \`\`\`bash
+            # Run locally before pushing
+            ./scripts/pre-commit-check.sh
+            
+            # Quick fixes
+            black backend/                              # Python formatting
+            npx eslint --fix backend/static/**/*.js     # JavaScript fixes
+            \`\`\`
+            
+            **Security/Dependency Issues:**
+            - Check the detailed comments below
+            - Review the Security tab for vulnerabilities
+            - Update packages: \`pip install --upgrade <package>\` or \`npm audit fix\`
+            
+            ---
+            
+            *💡 Tip: All checks are fully automated and free. They run on every push to help maintain code quality and security.*
+            
+            *⏱️ Estimated completion time: 5-8 minutes*
+            `;
+            
+            // Check if initial comment already exists
+            const comments = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const existingComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('CI/CD Pipeline - Automated Checks')
+            );
+            
+            if (!existingComment) {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: message
+              });
+            }
