@@ -175,6 +175,8 @@ Or use docker-compose:
 docker-compose up -d
 ```
 
+> **Note**: To access LAN services (e.g., local LLM on 192.168.x.x), use `docker-compose` or add `--network host` to docker run.
+
 Access: http://localhost:51111
 
 ### Option 2: From Source
@@ -484,6 +486,8 @@ docker run -d -p 51111:51111 -v chatraw-data:/app/data massif01/chatraw:latest
 ```bash
 docker-compose up -d
 ```
+
+> **提示**：如需访问局域网服务（如本地 LLM 192.168.x.x），请使用 `docker-compose` 或添加 `--network host` 参数。
 
 访问：http://localhost:51111
 
