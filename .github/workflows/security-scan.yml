@@ -246,7 +246,7 @@ jobs:
           echo "exit_code=$?" >> $GITHUB_OUTPUT
 
       - name: Upload Safety report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: safety-report
@@ -349,7 +349,7 @@ jobs:
           npm audit || echo "exit_code=$?" >> $GITHUB_OUTPUT
 
       - name: Upload NPM audit report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: npm-audit-report
