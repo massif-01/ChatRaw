@@ -388,6 +388,7 @@ function app() {
         pluginHooks: {
             // Document/Content processing
             parse_document: [],      // Parse uploaded documents
+            parse_url: [],           // Parse web URL (url_parser plugins)
             web_search: [],          // Web search providers
             pre_embedding: [],       // Before embedding text
             post_retrieval: [],      // After RAG retrieval
@@ -1195,22 +1196,61 @@ function app() {
             }
         },
         
-        // Parse URL
+        // Parse URL (try url_parser plugin first, then fallback to built-in)
         async parseUrl() {
             const url = this.urlInputValue.trim();
             if (!url) return;
-            
+
             this.isParsingUrl = true;
-            
+
             try {
-                const res = await fetch('/api/parse-url', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
-                });
-                
-                const data = await res.json();
-                
+                let data = null;
+                const parseUrlHandlers = this.pluginHooks.parse_url || [];
+                let urlParserPluginId = null;
+                for (const h of parseUrlHandlers) {
+                    if (h._pluginId) {
+                        const p = this.installedPlugins.find(x => x.id === h._pluginId);
+                        if (p && p.enabled) {
+                            urlParserPluginId = p.id;
+                            break;
+                        }
+                    }
+                }
+
+                if (urlParserPluginId) {
+                    const settings = this.getPluginSettings(urlParserPluginId);
+                    const parserMode = settings.parser_mode || 'browser';
+
+                    if (parserMode === 'browser') {
+                        const rawRes = await fetch('/api/fetch-raw-url', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ url })
+                        });
+                        const rawData = await rawRes.json();
+                        if (rawData.success && rawData.html != null) {
+                            const result = await this.callHook('parse_url', url, rawData.html, settings);
+                            if (result?.success && result.title != null && result.content != null) {
+                                data = { success: true, title: result.title, content: result.content, url: url };
+                            }
+                        }
+                    } else {
+                        const result = await this.callHook('parse_url', url, null, settings);
+                        if (result?.success && result.title != null && result.content != null) {
+                            data = { success: true, title: result.title, content: result.content, url: url };
+                        }
+                    }
+                }
+
+                if (!data) {
+                    const res = await fetch('/api/parse-url', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url })
+                    });
+                    data = await res.json();
+                }
+
                 if (data.success) {
                     this.parsedUrl = {
                         title: data.title,
@@ -1222,7 +1262,7 @@ function app() {
                     this.urlInputValue = '';
                     this.showToast(this.t('urlAttached') + ': ' + data.title, 'success');
                 } else {
-                    this.showToast(this.t('parseFailed') + ': ' + data.error, 'error');
+                    this.showToast(this.t('parseFailed') + ': ' + (data.error || 'Unknown error'), 'error');
                 }
             } catch (e) {
                 this.showToast(this.t('parseFailed') + ': ' + e.message, 'error');

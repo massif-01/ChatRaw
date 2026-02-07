@@ -89,46 +89,14 @@ ChatRaw features a complete **plugin system** to extend functionality:
 
 ### Official Plugins
 
-#### Lightweight RAG Demo
-- Knowledge base management and retrieval
-- Embedding model configuration
-- Reranking model optimization
-- Document chunking and vectorization
-
-#### Bocha Search
-- Web search
-- AI-powered intelligent search
-- Agent search mode
-- Semantic reranking
-
-#### Excel Parser
-- Support for .xlsx, .xls, .xlsm formats
-- Automatic table recognition
-- One-click install, no configuration needed
-
-#### CSV Parser
-- CSV/TSV file parsing
-- Multiple output formats
-- Lightweight implementation
-
-#### Tavily Search
-- Web search with AI-generated answers
-- Advanced search (basic/advanced/fast/ultra-fast)
-- Image search and topic filtering
-- Time range and domain control
-
-#### Multi-Model Manager
-- Manage multiple AI model configurations
-- Quick switching between models
-- Backup and auto-restore original config
-- Display names and activation toggles
-
-#### Markdown Renderer Plus
-- KaTeX math formulas ($...$ and $$...$$)
-- Mermaid diagrams (flowcharts, sequence, etc.)
-- Code copy buttons for all code blocks
-- Extended syntax highlighting (15+ languages)
-- Fully offline - all dependencies bundled
+- **Lightweight RAG Demo** — Knowledge base retrieval
+- **Bocha Search** — Web / AI search
+- **Tavily Search** — Web search with AI answers
+- **Excel Parser** — Parse .xlsx/.xls for chat
+- **CSV Parser** — Parse CSV/TSV for chat
+- **Enhanced Web Parsing** — Parse web pages (browser / Firecrawl / Jina)
+- **Multi-Model Manager** — Manage and switch models
+- **Markdown Renderer Plus** — Math (KaTeX), Mermaid, code copy, offline
 
 ### Plugin Development
 - Complete development documentation
@@ -406,46 +374,14 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 
 ### 官方插件
 
-#### 轻量 RAG 演示
-- 知识库管理与检索
-- 嵌入模型配置
-- 重排模型优化
-- 文档切片与向量化
-
-#### 博查搜索
-- Web 通搜
-- AI 智能搜索
-- Agent 搜索模式
-- 语义重排
-
-#### Excel 解析器
-- 支持 .xlsx, .xls, .xlsm 格式
-- 自动表格识别
-- 一键安装，无需配置
-
-#### CSV 解析器
-- CSV/TSV 文件解析
-- 多种输出格式
-- 轻量级实现
-
-#### Tavily 搜索
-- Web 搜索并提供 AI 生成答案
-- 高级搜索（基础/高级/快速/超快速）
-- 图片搜索和主题筛选
-- 时间范围与域名控制
-
-#### 多模型管理
-- 管理多个 AI 模型配置
-- 快速切换模型使用
-- 备份与自动恢复原配置
-- 显示名称与激活开关
-
-#### Markdown 渲染增强
-- KaTeX 数学公式（$...$ 和 $$...$$）
-- Mermaid 图表（流程图、时序图等）
-- 代码块复制按钮
-- 扩展语法高亮（15+ 语言）
-- 完全离线可用 - 所有依赖已打包
+- **轻量 RAG 演示** — 知识库检索
+- **博查搜索** — Web / AI 搜索
+- **Tavily 搜索** — Web 搜索 + AI 答案
+- **Excel 解析器** — 解析 .xlsx/.xls 供对话使用
+- **CSV 解析器** — 解析 CSV/TSV 供对话使用
+- **增强网页解析** — 解析网页（浏览器 / Firecrawl / Jina）
+- **多模型管理** — 管理并切换模型
+- **Markdown 渲染增强** — 数学公式、Mermaid、代码复制，离线可用
 
 ### 插件开发
 - 完整的开发文档

@@ -99,6 +99,7 @@ your-plugin/
 | Type | Description | Available Hooks |
 |------|-------------|-----------------|
 | `document_parser` | Parse document files | `parse_document` |
+| `url_parser` | Parse web page URL to content | `parse_url`, `custom_settings` |
 | `search_provider` | Web search service | `web_search`, `before_send` |
 | `rag_enhancer` | Enhance RAG pipeline | `pre_embedding`, `post_retrieval`, `before_send`, `custom_settings` |
 | `ui_extension` | Add UI elements | `toolbar_button`, `custom_action` |
@@ -110,6 +111,7 @@ your-plugin/
 | Hook | Description | Arguments | Return |
 |------|-------------|-----------|--------|
 | `parse_document` | Parse uploaded files | `(file, settings)` | `{ success, content }` |
+| `parse_url` | Parse web page URL to content | `(url, html, settings)` — `html` is set in browser mode, `null` in API mode | `{ success, title?, content?, error? }` |
 | `web_search` | Web search provider | `(query, settings)` | `{ success, results }` |
 | `pre_embedding` | Before text embedding | `(text, settings)` | `{ success, text }` |
 | `post_retrieval` | After RAG retrieval | `(results, settings)` | `{ success, results }` |
@@ -757,6 +759,7 @@ your-plugin/
 | 类型 | 描述 | 可用钩子 |
 |------|------|----------|
 | `document_parser` | 解析文档文件 | `parse_document` |
+| `url_parser` | 解析网页 URL 为正文 | `parse_url`, `custom_settings` |
 | `search_provider` | 网络搜索服务 | `web_search`, `before_send` |
 | `rag_enhancer` | 增强 RAG 流程 | `pre_embedding`, `post_retrieval`, `before_send`, `custom_settings` |
 | `ui_extension` | 添加 UI 元素 | `toolbar_button`, `custom_action` |
@@ -768,6 +771,7 @@ your-plugin/
 | 钩子 | 描述 | 参数 | 返回值 |
 |------|------|------|--------|
 | `parse_document` | 解析上传的文件 | `(file, settings)` | `{ success, content }` |
+| `parse_url` | 解析网页 URL 为正文 | `(url, html, settings)` — 浏览器模式下有 html，API 模式下为 null | `{ success, title?, content?, error? }` |
 | `web_search` | 网络搜索 | `(query, settings)` | `{ success, results }` |
 | `pre_embedding` | 文本嵌入前 | `(text, settings)` | `{ success, text }` |
 | `post_retrieval` | RAG 检索后 | `(results, settings)` | `{ success, results }` |

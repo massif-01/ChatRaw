@@ -1571,6 +1571,47 @@ class PluginToggleRequest(BaseModel):
     """Request model for plugin enable/disable"""
     enabled: bool
 
+
+@app.post("/api/fetch-raw-url")
+async def fetch_raw_url(request: ParseUrlRequest):
+    """Fetch raw HTML from URL (no content extraction). Used by url_parser plugins."""
+    from urllib.parse import urlparse
+
+    url = request.url.strip()
+
+    if not url:
+        return JSONResponse({"success": False, "error": "URL is required"}, status_code=400)
+
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+
+    try:
+        parsed = urlparse(url)
+        if not parsed.netloc:
+            return JSONResponse({"success": False, "error": "Invalid URL"}, status_code=400)
+    except Exception:
+        return JSONResponse({"success": False, "error": "Invalid URL format"}, status_code=400)
+
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+        }
+        session = await get_http_session()
+        async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=True) as resp:
+            if resp.status != 200:
+                return JSONResponse({"success": False, "error": f"Failed to fetch URL (HTTP {resp.status})"}, status_code=400)
+            html = await resp.text()
+        return {"success": True, "html": html, "url": url}
+    except asyncio.TimeoutError:
+        return JSONResponse({"success": False, "error": "Request timeout - page took too long to load"}, status_code=400)
+    except aiohttp.ClientError as e:
+        return JSONResponse({"success": False, "error": f"Network error: {str(e)}"}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
 @app.post("/api/parse-url")
 async def parse_url(request: ParseUrlRequest):
     """Parse web page content from URL"""

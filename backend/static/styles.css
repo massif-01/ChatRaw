@@ -2322,6 +2322,13 @@ input[type=range]::-webkit-slider-thumb:hover {
     justify-content: flex-end;
 }
 
+/* Plugin card settings/delete icons: same size as sidebar settings icon (.btn-icon 36×36) */
+.plugin-card .plugin-actions .btn-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+}
+
 .btn-sm {
     padding: 6px 16px;
     font-size: 0.85rem;

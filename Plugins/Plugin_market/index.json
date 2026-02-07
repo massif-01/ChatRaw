@@ -113,6 +113,22 @@
       "type": "message_processor",
       "downloads": 0,
       "folder": "markdown-enhancer"
+    },
+    {
+      "id": "web-parser",
+      "version": "1.0.0",
+      "name": {
+        "en": "Enhanced Web Parsing",
+        "zh": "增强网页解析"
+      },
+      "description": {
+        "en": "Parse web pages for chat context. Choose browser parsing, Firecrawl API, or Jina Reader.",
+        "zh": "将网页解析为聊天上下文。可选浏览器解析、Firecrawl API 或 Jina Reader。"
+      },
+      "author": "ChatRaw",
+      "type": "url_parser",
+      "downloads": 0,
+      "folder": "web-parser"
     }
   ]
 }

@@ -1,0 +1,31 @@
+{
+  "id": "web-parser",
+  "version": "1.0.0",
+  "name": {
+    "en": "Enhanced Web Parsing",
+    "zh": "增强网页解析"
+  },
+  "description": {
+    "en": "Parse web pages for chat context. Choose browser parsing (no API key), Firecrawl API, or Jina Reader.",
+    "zh": "将网页解析为聊天上下文。可选浏览器解析（无需 API Key）、Firecrawl API 或 Jina Reader。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://github.com/massif-01/ChatRaw",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "url_parser",
+  "hooks": ["parse_url", "custom_settings"],
+  "customSettings": true,
+  "proxy": [
+    {
+      "id": "firecrawl",
+      "name": { "en": "Firecrawl API Key", "zh": "Firecrawl API Key" },
+      "description": { "en": "Get API key from firecrawl.dev", "zh": "从 firecrawl.dev 获取 API Key" }
+    },
+    {
+      "id": "jina",
+      "name": { "en": "Jina Reader API Key", "zh": "Jina Reader API Key" },
+      "description": { "en": "Optional. Get from jina.ai for higher rate limit", "zh": "可选。从 jina.ai 获取以提高限额" }
+    }
+  ]
+}
