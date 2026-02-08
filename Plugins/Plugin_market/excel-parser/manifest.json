@@ -1,13 +1,13 @@
 {
   "id": "excel-parser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": {
-    "en": "Excel Parser",
-    "zh": "Excel 解析器"
+    "en": "Excel Parser Pro",
+    "zh": "Excel 增强解析器"
   },
   "description": {
-    "en": "Parse Excel files (.xlsx, .xls) for AI reading. Supports multiple sheets.",
-    "zh": "解析 Excel 文件 (.xlsx, .xls) 供 AI 阅读。支持多工作表。"
+    "en": "Advanced Excel parser with formula, date, number format support. Offline-ready with bundled SheetJS.",
+    "zh": "增强版 Excel 解析器，支持公式、日期、数字格式化。内置 SheetJS 库，离线可用。"
   },
   "author": "ChatRaw",
   "homepage": "https://github.com/massif-01/ChatRaw",
@@ -15,10 +15,74 @@
   "main": "main.js",
   "type": "document_parser",
   "hooks": ["parse_document"],
-  "fileTypes": [".xlsx", ".xls", ".xlsm"],
+  "fileTypes": [".xlsx", ".xls", ".xlsm", ".xlsb", ".csv"],
   "dependencies": {
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"
+    "xlsx": "/api/plugins/excel-parser/lib/xlsx.full.min.js"
   },
-  "settings": [],
+  "settings": [
+    {
+      "id": "max_rows",
+      "type": "number",
+      "label": {
+        "en": "Max Rows",
+        "zh": "最大行数"
+      },
+      "description": {
+        "en": "Maximum number of rows to parse per sheet",
+        "zh": "每个工作表最大解析行数"
+      },
+      "default": 1000,
+      "min": 100,
+      "max": 10000
+    },
+    {
+      "id": "max_cols",
+      "type": "number",
+      "label": {
+        "en": "Max Columns",
+        "zh": "最大列数"
+      },
+      "description": {
+        "en": "Maximum number of columns to parse per sheet",
+        "zh": "每个工作表最大解析列数"
+      },
+      "default": 50,
+      "min": 10,
+      "max": 200
+    },
+    {
+      "id": "date_format",
+      "type": "select",
+      "label": {
+        "en": "Date Format",
+        "zh": "日期格式"
+      },
+      "description": {
+        "en": "Format for date values in the output",
+        "zh": "输出中日期值的格式"
+      },
+      "default": "YYYY-MM-DD",
+      "options": [
+        { "value": "YYYY-MM-DD", "label": "2024-01-15" },
+        { "value": "YYYY/MM/DD", "label": "2024/01/15" },
+        { "value": "DD/MM/YYYY", "label": "15/01/2024" },
+        { "value": "MM/DD/YYYY", "label": "01/15/2024" },
+        { "value": "YYYY年MM月DD日", "label": "2024年01月15日" }
+      ]
+    },
+    {
+      "id": "include_empty_rows",
+      "type": "boolean",
+      "label": {
+        "en": "Include Empty Rows",
+        "zh": "包含空行"
+      },
+      "description": {
+        "en": "Whether to include completely empty rows in output",
+        "zh": "是否在输出中包含完全空白的行"
+      },
+      "default": false
+    }
+  ],
   "proxy": []
 }

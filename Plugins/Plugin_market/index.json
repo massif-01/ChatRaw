@@ -129,6 +129,22 @@
       "type": "url_parser",
       "downloads": 0,
       "folder": "web-parser"
+    },
+    {
+      "id": "toolbar-extension-demo",
+      "version": "1.0.0",
+      "name": {
+        "en": "Toolbar Extension Demo",
+        "zh": "扩展插件开发 DEMO"
+      },
+      "description": {
+        "en": "Demonstrates toolbar button extension API: button registration, active/loading states, and fullscreen modal.",
+        "zh": "展示工具栏按钮扩展 API：按钮注册、激活态/加载态、全屏模态框等功能。"
+      },
+      "author": "ChatRaw",
+      "type": "demo",
+      "downloads": 0,
+      "folder": "toolbar-extension-demo"
     }
   ]
 }

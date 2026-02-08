@@ -97,10 +97,14 @@ ChatRaw features a complete **plugin system** to extend functionality:
 - **Enhanced Web Parsing** — Parse web pages (browser / Firecrawl / Jina)
 - **Multi-Model Manager** — Manage and switch models
 - **Markdown Renderer Plus** — Math (KaTeX), Mermaid, code copy, offline
+- **Toolbar Extension Demo** — Demo plugin showcasing UI Extension API
+
+### Toolbar Extension
+> Plugins can add custom buttons to the input toolbar with active/loading states, overflow menu for many buttons, and fullscreen modal for complex interactions.
 
 ### Plugin Development
 - Complete development documentation
-- Rich hook system
+- Rich hook system (including new UI Extension API)
 - Custom settings UI
 - One-click packaging and distribution
 
@@ -288,7 +292,7 @@ Contributions are welcome! Please submit issues or pull requests.
 
 Apache License 2.0
 
-© 2026 ChatRaw by massif-01, RMinte AI Technology Co., Ltd.
+© 2026 ChatRaw by massif-01, RMinte® AI Technology Co., Ltd.
 
 ---
 
@@ -382,10 +386,14 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 - **增强网页解析** — 解析网页（浏览器 / Firecrawl / Jina）
 - **多模型管理** — 管理并切换模型
 - **Markdown 渲染增强** — 数学公式、Mermaid、代码复制，离线可用
+- **工具栏扩展演示** — 展示 UI 扩展 API 的演示插件
+
+### 工具栏扩展
+> 插件可以在输入框工具栏添加自定义按钮，支持激活态/加载态、按钮溢出折叠菜单，以及全屏模态框实现复杂交互。
 
 ### 插件开发
 - 完整的开发文档
-- 丰富的 Hook 系统
+- 丰富的 Hook 系统（包含全新 UI 扩展 API）
 - 自定义设置界面
 - 一键打包分发
 
@@ -568,7 +576,7 @@ python main.py
 
 Apache License 2.0
 
-© 2026 ChatRaw by massif-01, RMinte AI Technology Co., Ltd.
+© 2026 ChatRaw by massif-01, RMinte® AI Technology Co., Ltd.
 
 ---
 

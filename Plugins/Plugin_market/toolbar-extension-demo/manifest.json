@@ -1,0 +1,17 @@
+{
+  "id": "toolbar-extension-demo",
+  "version": "1.0.0",
+  "name": {
+    "en": "Toolbar Extension Demo",
+    "zh": "扩展插件开发 DEMO"
+  },
+  "description": {
+    "en": "Demonstrates the new toolbar button extension API, including button registration, active/loading states, and fullscreen modal features.",
+    "zh": "展示新版工具栏按钮扩展 API 的使用方法，包括按钮注册、激活态/加载态、全屏模态框等功能。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://github.com/massif-01/ChatRaw",
+  "main": "main.js",
+  "type": "demo",
+  "hooks": ["plugin_load"]
+}

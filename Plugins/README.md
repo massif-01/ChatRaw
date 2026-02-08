@@ -441,6 +441,146 @@ const messages = ChatRaw.utils.getMessages();
 ChatRaw.utils.addMessage('assistant', 'Hello from plugin!');
 ```
 
+### Toolbar Button Extension API
+
+Plugins can add custom buttons to the input toolbar using the `ChatRawPlugin.ui` API. Buttons support active and loading states, and plugins can open a fullscreen modal for complex interactions.
+
+#### Register a Toolbar Button
+
+> **Important**: Toolbar buttons must be registered **immediately when your plugin script loads** (inside your IIFE), not inside a hook callback. The plugin context (`_currentLoadingPlugin`) is only available during script execution.
+
+```javascript
+ChatRawPlugin.ui.registerToolbarButton({
+    id: 'my-button',           // Required: unique button ID within your plugin
+    icon: 'ri-search-line',    // Required: RemixIcon class (must start with ri-)
+    label: {                   // Required: multi-language tooltip
+        en: 'Search',
+        zh: '搜索'
+    },
+    onClick: async (button) => {  // Required: click handler
+        // button contains current state: { id, active, loading, ... }
+        console.log('Button clicked!');
+    },
+    order: 10                  // Optional: sort order (default: 100, lower = first)
+});
+```
+
+**Icon Requirements**: All button icons **must** use [RemixIcon](https://remixicon.com/) (format: `ri-xxx-line` or `ri-xxx-fill`). Invalid icons will cause registration to fail.
+
+#### Set Button State
+
+```javascript
+// Set active state (e.g., feature is enabled)
+ChatRawPlugin.ui.setButtonState('my-button', { active: true });
+
+// Set loading state (e.g., processing)
+ChatRawPlugin.ui.setButtonState('my-button', { loading: true });
+
+// Set multiple states at once
+ChatRawPlugin.ui.setButtonState('my-button', { active: true, loading: false });
+
+// Reset all states
+ChatRawPlugin.ui.setButtonState('my-button', { active: false, loading: false });
+```
+
+#### Unregister a Button
+
+```javascript
+// Remove a button (usually not needed, automatic on plugin disable)
+ChatRawPlugin.ui.unregisterToolbarButton('my-button');
+```
+
+#### Open Fullscreen Modal
+
+```javascript
+// Open a fullscreen modal with custom HTML content
+ChatRawPlugin.ui.openFullscreenModal({
+    content: `
+        <div style="padding: 40px; text-align: center;">
+            <h2>My Plugin</h2>
+            <p>This is a fullscreen modal!</p>
+            <button onclick="ChatRawPlugin.ui.closeFullscreenModal()" 
+                    class="btn-primary" style="margin-top: 20px;">
+                Close
+            </button>
+        </div>
+    `,
+    closable: true,           // Optional: allow ESC/background click to close (default: true)
+    onClose: () => {          // Optional: callback when modal closes
+        console.log('Modal closed');
+    }
+});
+
+// Simple usage with just HTML string
+ChatRawPlugin.ui.openFullscreenModal('<div>Simple content</div>');
+```
+
+#### Close Fullscreen Modal
+
+```javascript
+ChatRawPlugin.ui.closeFullscreenModal();
+```
+
+#### Button Overflow
+
+When more than 5 plugin buttons are registered, additional buttons are automatically moved to a "More" dropdown menu.
+
+#### Lifecycle Management
+
+When a plugin is disabled or uninstalled:
+- All toolbar buttons registered by that plugin are automatically removed
+- If the plugin has an open fullscreen modal, it is automatically closed
+
+#### Complete Example
+
+```javascript
+(function(ChatRaw) {
+    'use strict';
+    
+    const PLUGIN_ID = 'demo-plugin';
+    
+    // Track toggle state
+    let isEnabled = false;
+    
+    // Register a toggle button
+    ChatRaw.ui.registerToolbarButton({
+        id: 'toggle-feature',
+        icon: 'ri-toggle-line',
+        label: { en: 'Toggle Feature', zh: '切换功能' },
+        order: 50,
+        onClick: async (btn) => {
+            isEnabled = !isEnabled;
+            ChatRaw.ui.setButtonState('toggle-feature', { active: isEnabled }, PLUGIN_ID);
+            ChatRaw.utils.showToast(isEnabled ? 'Feature enabled' : 'Feature disabled');
+        }
+    });
+    
+    // Register a button that opens a modal
+    ChatRaw.ui.registerToolbarButton({
+        id: 'open-panel',
+        icon: 'ri-window-line',
+        label: { en: 'Open Panel', zh: '打开面板' },
+        order: 60,
+        onClick: async (btn) => {
+            ChatRaw.ui.openFullscreenModal({
+                content: `
+                    <div style="padding:40px; max-width:600px; margin:0 auto;">
+                        <h2 style="margin-bottom:20px;">Plugin Panel</h2>
+                        <p>Configure your plugin settings here.</p>
+                        <button onclick="ChatRawPlugin.ui.closeFullscreenModal()" 
+                                class="btn-primary" style="margin-top:20px;">
+                            Close
+                        </button>
+                    </div>
+                `,
+                closable: true
+            });
+        }
+    });
+    
+})(window.ChatRawPlugin);
+```
+
 ### Storage API
 
 Plugin-specific local storage (namespaced, 1MB limit per plugin).
@@ -661,6 +801,78 @@ button.onclick = async () => {
     }
     ```
     - Use content stability detection (debounce ~800ms) to ensure streaming is complete
+
+### Common Pitfalls
+
+Watch out for these common mistakes:
+
+1. **Wrong IIFE pattern**: Always use the parameter-passing pattern for cleaner code:
+
+```javascript
+// ❌ Wrong - direct global access
+(function() {
+    window.ChatRawPlugin.hooks.register(...);
+})();
+
+// ✅ Correct - pass as parameter
+(function(ChatRaw) {
+    if (!ChatRaw || !ChatRaw.hooks) {
+        console.error('[YourPlugin] ChatRawPlugin not available');
+        return;
+    }
+    ChatRaw.hooks.register(...);
+})(window.ChatRawPlugin);
+```
+
+2. **Wrong API method names**: Use the correct method names:
+
+```javascript
+// ❌ Wrong - getLang doesn't exist
+const lang = ChatRaw.utils?.getLang?.() || 'en';
+
+// ✅ Correct - use getLanguage
+const lang = ChatRaw.utils?.getLanguage?.() || 'en';
+```
+
+3. **Missing optional chaining**: Always use `?.` for potentially undefined methods:
+
+```javascript
+// ❌ Risky - may throw error if utils is undefined
+ChatRaw.utils.showToast('Message', 'info');
+
+// ✅ Safe - handles undefined gracefully
+ChatRaw.utils?.showToast?.('Message', 'info');
+```
+
+4. **Missing safety check**: Always verify ChatRawPlugin is available at startup (see #1 above).
+
+5. **Icon format for toolbar buttons**: Must use RemixIcon format (`ri-xxx-line` or `ri-xxx-fill`):
+
+```javascript
+// ❌ Wrong - will be rejected
+icon: 'fa-home'        // FontAwesome
+icon: 'mdi-home'       // Material Design Icons
+icon: 'icon-home'      // Custom class
+
+// ✅ Correct - RemixIcon format
+icon: 'ri-home-line'   // Line style
+icon: 'ri-home-fill'   // Fill style
+```
+
+6. **Registering toolbar buttons in hook callbacks**: Buttons must be registered immediately when the script loads, not inside hooks:
+
+```javascript
+// ❌ Wrong - hook callback runs after _currentLoadingPlugin is cleared
+ChatRaw.hooks.register('before_send', () => {
+    ChatRaw.ui.registerToolbarButton({ ... });  // Will fail!
+});
+
+// ✅ Correct - register immediately in IIFE
+(function(ChatRaw) {
+    // Register buttons here, during script load
+    ChatRaw.ui.registerToolbarButton({ ... });  // Works!
+})(window.ChatRawPlugin);
+```
 
 ---
 
@@ -1101,6 +1313,146 @@ const messages = ChatRaw.utils.getMessages();
 ChatRaw.utils.addMessage('assistant', '来自插件的问候！');
 ```
 
+### 工具栏按钮扩展 API
+
+插件可以使用 `ChatRawPlugin.ui` API 在输入框工具栏添加自定义按钮。按钮支持激活态和加载态，插件还可以打开全屏模态框实现复杂交互。
+
+#### 注册工具栏按钮
+
+> **重要提示**：工具栏按钮必须在**插件脚本加载时立即注册**（在 IIFE 内部），而不是在 hook 回调中注册。插件上下文（`_currentLoadingPlugin`）仅在脚本执行期间可用。
+
+```javascript
+ChatRawPlugin.ui.registerToolbarButton({
+    id: 'my-button',           // 必填：插件内唯一的按钮 ID
+    icon: 'ri-search-line',    // 必填：RemixIcon 类名（必须以 ri- 开头）
+    label: {                   // 必填：多语言提示文本
+        en: 'Search',
+        zh: '搜索'
+    },
+    onClick: async (button) => {  // 必填：点击回调
+        // button 包含当前状态: { id, active, loading, ... }
+        console.log('按钮被点击！');
+    },
+    order: 10                  // 可选：排序权重（默认：100，越小越靠前）
+});
+```
+
+**图标要求**：所有按钮图标**必须**使用 [RemixIcon](https://remixicon.com/)（格式：`ri-xxx-line` 或 `ri-xxx-fill`）。无效图标会导致注册失败。
+
+#### 设置按钮状态
+
+```javascript
+// 设置激活态（如功能已开启）
+ChatRawPlugin.ui.setButtonState('my-button', { active: true });
+
+// 设置加载态（如正在处理）
+ChatRawPlugin.ui.setButtonState('my-button', { loading: true });
+
+// 同时设置多个状态
+ChatRawPlugin.ui.setButtonState('my-button', { active: true, loading: false });
+
+// 重置所有状态
+ChatRawPlugin.ui.setButtonState('my-button', { active: false, loading: false });
+```
+
+#### 注销按钮
+
+```javascript
+// 移除按钮（通常不需要，插件禁用时会自动清理）
+ChatRawPlugin.ui.unregisterToolbarButton('my-button');
+```
+
+#### 打开全屏模态框
+
+```javascript
+// 打开带自定义 HTML 内容的全屏模态框
+ChatRawPlugin.ui.openFullscreenModal({
+    content: `
+        <div style="padding: 40px; text-align: center;">
+            <h2>我的插件</h2>
+            <p>这是一个全屏模态框！</p>
+            <button onclick="ChatRawPlugin.ui.closeFullscreenModal()" 
+                    class="btn-primary" style="margin-top: 20px;">
+                关闭
+            </button>
+        </div>
+    `,
+    closable: true,           // 可选：是否允许 ESC/点击背景关闭（默认：true）
+    onClose: () => {          // 可选：模态框关闭时的回调
+        console.log('模态框已关闭');
+    }
+});
+
+// 简单用法：直接传入 HTML 字符串
+ChatRawPlugin.ui.openFullscreenModal('<div>简单内容</div>');
+```
+
+#### 关闭全屏模态框
+
+```javascript
+ChatRawPlugin.ui.closeFullscreenModal();
+```
+
+#### 按钮溢出处理
+
+当注册超过 5 个插件按钮时，多余的按钮会自动折叠到「更多」下拉菜单中。
+
+#### 生命周期管理
+
+当插件被禁用或卸载时：
+- 该插件注册的所有工具栏按钮会自动移除
+- 如果该插件打开了全屏模态框，会自动关闭
+
+#### 完整示例
+
+```javascript
+(function(ChatRaw) {
+    'use strict';
+    
+    const PLUGIN_ID = 'demo-plugin';
+    
+    // 追踪开关状态
+    let isEnabled = false;
+    
+    // 注册一个切换按钮
+    ChatRaw.ui.registerToolbarButton({
+        id: 'toggle-feature',
+        icon: 'ri-toggle-line',
+        label: { en: 'Toggle Feature', zh: '切换功能' },
+        order: 50,
+        onClick: async (btn) => {
+            isEnabled = !isEnabled;
+            ChatRaw.ui.setButtonState('toggle-feature', { active: isEnabled }, PLUGIN_ID);
+            ChatRaw.utils.showToast(isEnabled ? '功能已开启' : '功能已关闭');
+        }
+    });
+    
+    // 注册一个打开模态框的按钮
+    ChatRaw.ui.registerToolbarButton({
+        id: 'open-panel',
+        icon: 'ri-window-line',
+        label: { en: 'Open Panel', zh: '打开面板' },
+        order: 60,
+        onClick: async (btn) => {
+            ChatRaw.ui.openFullscreenModal({
+                content: `
+                    <div style="padding:40px; max-width:600px; margin:0 auto;">
+                        <h2 style="margin-bottom:20px;">插件面板</h2>
+                        <p>在此配置插件设置。</p>
+                        <button onclick="ChatRawPlugin.ui.closeFullscreenModal()" 
+                                class="btn-primary" style="margin-top:20px;">
+                            关闭
+                        </button>
+                    </div>
+                `,
+                closable: true
+            });
+        }
+    });
+    
+})(window.ChatRawPlugin);
+```
+
 ### 存储 API
 
 插件专用本地存储（命名空间隔离，每个插件限制 1MB）。
@@ -1321,6 +1673,78 @@ button.onclick = async () => {
     }
     ```
     - 使用内容稳定性检测（防抖 ~800ms）确保流式输出完成
+
+### 常见陷阱
+
+开发时请注意避免以下常见错误：
+
+1. **错误的 IIFE 模式**：始终使用参数传递模式以获得更清晰的代码：
+
+```javascript
+// ❌ 错误 - 直接访问全局变量
+(function() {
+    window.ChatRawPlugin.hooks.register(...);
+})();
+
+// ✅ 正确 - 作为参数传递
+(function(ChatRaw) {
+    if (!ChatRaw || !ChatRaw.hooks) {
+        console.error('[YourPlugin] ChatRawPlugin 不可用');
+        return;
+    }
+    ChatRaw.hooks.register(...);
+})(window.ChatRawPlugin);
+```
+
+2. **错误的 API 方法名**：请使用正确的方法名：
+
+```javascript
+// ❌ 错误 - getLang 方法不存在
+const lang = ChatRaw.utils?.getLang?.() || 'en';
+
+// ✅ 正确 - 使用 getLanguage
+const lang = ChatRaw.utils?.getLanguage?.() || 'en';
+```
+
+3. **缺少可选链操作符**：对于可能未定义的方法，始终使用 `?.`：
+
+```javascript
+// ❌ 有风险 - 如果 utils 未定义会报错
+ChatRaw.utils.showToast('消息', 'info');
+
+// ✅ 安全 - 优雅处理未定义情况
+ChatRaw.utils?.showToast?.('消息', 'info');
+```
+
+4. **缺少安全检查**：始终在启动时验证 ChatRawPlugin 是否可用（见上方第 1 条）。
+
+5. **工具栏按钮图标格式**：必须使用 RemixIcon 格式（`ri-xxx-line` 或 `ri-xxx-fill`）：
+
+```javascript
+// ❌ 错误 - 会被拒绝
+icon: 'fa-home'        // FontAwesome
+icon: 'mdi-home'       // Material Design Icons
+icon: 'icon-home'      // 自定义类名
+
+// ✅ 正确 - RemixIcon 格式
+icon: 'ri-home-line'   // 线条样式
+icon: 'ri-home-fill'   // 填充样式
+```
+
+6. **在 hook 回调中注册工具栏按钮**：按钮必须在脚本加载时立即注册，不能在 hook 中注册：
+
+```javascript
+// ❌ 错误 - hook 回调执行时 _currentLoadingPlugin 已被清除
+ChatRaw.hooks.register('before_send', () => {
+    ChatRaw.ui.registerToolbarButton({ ... });  // 会失败！
+});
+
+// ✅ 正确 - 在 IIFE 中立即注册
+(function(ChatRaw) {
+    // 在这里注册按钮，脚本加载期间
+    ChatRaw.ui.registerToolbarButton({ ... });  // 正常工作！
+})(window.ChatRawPlugin);
+```
 
 ---
 

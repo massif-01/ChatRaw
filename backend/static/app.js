@@ -384,6 +384,17 @@ function app() {
         pluginSettingsValues: {},
         pluginApiKeys: {},
         
+        // Plugin toolbar extension state
+        pluginToolbarButtons: [],  // [{fullId, pluginId, id, icon, label, onClick, order, active, loading}]
+        showPluginMoreMenu: false,
+        pluginFullscreenModal: {
+            show: false,
+            content: '',
+            closable: true,
+            onClose: null,
+            pluginId: null
+        },
+        
         // Plugin hooks system
         pluginHooks: {
             // Document/Content processing
@@ -1124,35 +1135,85 @@ function app() {
             
             this.isUploadingDocument = true;
             
-            const formData = new FormData();
-            formData.append('file', file);
-            
             try {
-                const res = await fetch('/api/upload/document', {
-                    method: 'POST',
-                    body: formData
-                });
+                // Check if any plugin can handle this file type
+                const ext = '.' + (file.name.split('.').pop() || '').toLowerCase();
+                const parseDocHandlers = this.pluginHooks.parse_document || [];
                 
-                if (!res.ok) {
-                    const text = await res.text();
-                    try {
-                        const data = JSON.parse(text);
-                        throw new Error(data.error || `HTTP ${res.status}`);
-                    } catch {
-                        throw new Error(`HTTP ${res.status}: ${text.substring(0, 100)}`);
+                let pluginHandled = false;
+                
+                // Try to find a plugin that can parse this file type
+                for (const handler of parseDocHandlers) {
+                    // Skip if plugin is disabled
+                    if (handler._pluginId) {
+                        const plugin = this.installedPlugins.find(p => p.id === handler._pluginId);
+                        if (!plugin || !plugin.enabled) continue;
+                    }
+                    
+                    // Check if this handler supports the file type
+                    const supportedTypes = handler.fileTypes || [];
+                    if (supportedTypes.includes(ext) || supportedTypes.includes(ext.toLowerCase())) {
+                        try {
+                            // Get plugin settings if available
+                            const settings = handler._pluginId ? this.getPluginSettings(handler._pluginId) : {};
+                            
+                            // Call the plugin handler to parse the file
+                            const result = await handler.handler(file, settings);
+                            
+                            if (result?.success && result.content) {
+                                // Plugin successfully parsed the file
+                                this.attachedDocument = {
+                                    filename: file.name,
+                                    content: result.content
+                                };
+                                this.showToast(this.t('documentAttached') + ': ' + file.name, 'success');
+                                pluginHandled = true;
+                                break;
+                            } else if (result?.error) {
+                                // Plugin returned an error
+                                this.showToast(this.t('uploadFailed') + ': ' + result.error, 'error');
+                                pluginHandled = true;
+                                break;
+                            }
+                            // If result is null/undefined or not success, continue to try other handlers or fallback
+                        } catch (pluginError) {
+                            console.error(`[Plugin ${handler._pluginId}] Parse error:`, pluginError);
+                            // Continue to try other handlers or fallback to backend
+                        }
                     }
                 }
                 
-                const data = await res.json();
-                
-                if (data.success) {
-                    this.attachedDocument = {
-                        filename: data.filename,
-                        content: data.content
-                    };
-                    this.showToast(this.t('documentAttached') + ': ' + data.filename, 'success');
-                } else {
-                    this.showToast(this.t('uploadFailed') + ': ' + (data.error || 'Unknown error'), 'error');
+                // If no plugin handled the file, fall back to backend
+                if (!pluginHandled) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    const res = await fetch('/api/upload/document', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!res.ok) {
+                        const text = await res.text();
+                        try {
+                            const data = JSON.parse(text);
+                            throw new Error(data.error || `HTTP ${res.status}`);
+                        } catch {
+                            throw new Error(`HTTP ${res.status}: ${text.substring(0, 100)}`);
+                        }
+                    }
+                    
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        this.attachedDocument = {
+                            filename: data.filename,
+                            content: data.content
+                        };
+                        this.showToast(this.t('documentAttached') + ': ' + data.filename, 'success');
+                    } else {
+                        this.showToast(this.t('uploadFailed') + ': ' + (data.error || 'Unknown error'), 'error');
+                    }
                 }
             } catch (e) {
                 console.error('Document upload error:', e);
@@ -1414,6 +1475,62 @@ function app() {
             }, 3000);
         },
         
+        // ============ Plugin Toolbar Extension ============
+        
+        // Get sorted plugin buttons (only from enabled plugins)
+        getSortedPluginButtons() {
+            return [...this.pluginToolbarButtons]
+                .filter(btn => {
+                    // Only show buttons from enabled plugins
+                    const plugin = this.installedPlugins?.find(p => p.id === btn.pluginId);
+                    return plugin?.enabled !== false;
+                })
+                .sort((a, b) => (a.order || 100) - (b.order || 100));
+        },
+        
+        // Computed: Visible plugin buttons (max 5)
+        get visiblePluginButtons() {
+            return this.getSortedPluginButtons().slice(0, 5);
+        },
+        
+        // Computed: Hidden plugin buttons (overflow into "More" menu)
+        get hiddenPluginButtons() {
+            return this.getSortedPluginButtons().slice(5);
+        },
+        
+        // Get localized button label
+        getPluginButtonLabel(btn) {
+            const lang = this.lang || 'en';
+            return btn.label?.[lang] || btn.label?.en || btn.id;
+        },
+        
+        // Handle plugin button click
+        async handlePluginButtonClick(btn) {
+            if (btn.loading) return;
+            try {
+                await btn.onClick?.(btn);
+            } catch (error) {
+                console.error(`[Plugin ${btn.pluginId}] Button click error:`, error);
+                // Reset loading state on error
+                btn.loading = false;
+            }
+        },
+        
+        // Close plugin fullscreen modal
+        closePluginFullscreenModal() {
+            if (this.pluginFullscreenModal.onClose) {
+                try {
+                    this.pluginFullscreenModal.onClose();
+                } catch (e) {
+                    console.error('[Plugin] Modal onClose error:', e);
+                }
+            }
+            this.pluginFullscreenModal.show = false;
+            this.pluginFullscreenModal.content = '';
+            this.pluginFullscreenModal.onClose = null;
+            this.pluginFullscreenModal.pluginId = null;
+        },
+        
         // ============ Plugin System ============
         
         // Track which plugin registered which hooks
@@ -1605,6 +1722,114 @@ function app() {
                         } catch (e) {
                             return {};
                         }
+                    }
+                },
+                
+                // UI Extension API for toolbar buttons and fullscreen modal
+                ui: {
+                    // Register a toolbar button
+                    // config: { id, icon, label, onClick, order? }, pluginId (optional)
+                    registerToolbarButton: (config, pluginIdOverride = null) => {
+                        const pluginId = pluginIdOverride || appInstance._currentLoadingPlugin || config.pluginId;
+                        if (!pluginId) {
+                            console.warn('[Plugin UI] Cannot register button: unknown plugin');
+                            return false;
+                        }
+                        
+                        // Validate icon format - must be RemixIcon (ri-xxx)
+                        if (!config.icon || !/^ri-[a-z0-9-]+$/.test(config.icon)) {
+                            console.warn(`[Plugin ${pluginId}] Invalid icon format. Must be RemixIcon (ri-xxx-xxx)`);
+                            return false;
+                        }
+                        
+                        if (!config.id || !config.onClick) {
+                            console.warn(`[Plugin ${pluginId}] Button requires id and onClick`);
+                            return false;
+                        }
+                        
+                        const fullId = `${pluginId}:${config.id}`;
+                        const existingIndex = appInstance.pluginToolbarButtons.findIndex(b => b.fullId === fullId);
+                        
+                        const buttonConfig = {
+                            fullId,
+                            pluginId,
+                            id: config.id,
+                            icon: config.icon,
+                            label: config.label || { en: config.id },
+                            onClick: config.onClick,
+                            order: config.order ?? 100,
+                            active: false,
+                            loading: false
+                        };
+                        
+                        if (existingIndex >= 0) {
+                            // Update existing button
+                            appInstance.pluginToolbarButtons[existingIndex] = buttonConfig;
+                        } else {
+                            // Add new button
+                            appInstance.pluginToolbarButtons.push(buttonConfig);
+                        }
+                        
+                        return true;
+                    },
+                    
+                    // Unregister a toolbar button
+                    unregisterToolbarButton: (buttonId, pluginId = null) => {
+                        const pid = pluginId || appInstance._currentLoadingPlugin;
+                        if (!pid) return false;
+                        
+                        const fullId = `${pid}:${buttonId}`;
+                        const index = appInstance.pluginToolbarButtons.findIndex(b => b.fullId === fullId);
+                        if (index >= 0) {
+                            appInstance.pluginToolbarButtons.splice(index, 1);
+                            return true;
+                        }
+                        return false;
+                    },
+                    
+                    // Set button state (active/loading)
+                    setButtonState: (buttonId, state, pluginId = null) => {
+                        const pid = pluginId || appInstance._currentLoadingPlugin;
+                        if (!pid) return false;
+                        
+                        const fullId = `${pid}:${buttonId}`;
+                        const button = appInstance.pluginToolbarButtons.find(b => b.fullId === fullId);
+                        if (button) {
+                            if (state.active !== undefined) button.active = state.active;
+                            if (state.loading !== undefined) button.loading = state.loading;
+                            return true;
+                        }
+                        return false;
+                    },
+                    
+                    // Open fullscreen modal
+                    // options: { content, closable?, onClose? } or just HTML string, pluginId (optional)
+                    openFullscreenModal: (options, pluginIdOverride = null) => {
+                        const pluginId = pluginIdOverride || appInstance._currentLoadingPlugin || options?.pluginId;
+                        
+                        // Support simple string content
+                        if (typeof options === 'string') {
+                            options = { content: options };
+                        }
+                        
+                        if (!options?.content) {
+                            console.warn('[Plugin UI] Cannot open modal: empty content');
+                            return false;
+                        }
+                        
+                        appInstance.pluginFullscreenModal = {
+                            show: true,
+                            content: options.content,
+                            closable: options.closable !== false,
+                            onClose: options.onClose || null,
+                            pluginId
+                        };
+                        return true;
+                    },
+                    
+                    // Close fullscreen modal
+                    closeFullscreenModal: () => {
+                        appInstance.closePluginFullscreenModal();
                     }
                 }
             };
@@ -1921,6 +2146,17 @@ function app() {
                     } else {
                         // Unregister hooks when disabled
                         this.unregisterPluginHooks(plugin.id);
+                        
+                        // Clean up toolbar buttons registered by this plugin
+                        this.pluginToolbarButtons = this.pluginToolbarButtons.filter(
+                            btn => btn.pluginId !== plugin.id
+                        );
+                        
+                        // If this plugin has a fullscreen modal open, close it
+                        if (this.pluginFullscreenModal.pluginId === plugin.id) {
+                            this.closePluginFullscreenModal();
+                        }
+                        
                         this.showToast(this.t('pluginDisabled'), 'success');
                     }
                 }
@@ -2024,6 +2260,16 @@ function app() {
             try {
                 // First unregister hooks
                 this.unregisterPluginHooks(plugin.id);
+                
+                // Clean up toolbar buttons registered by this plugin
+                this.pluginToolbarButtons = this.pluginToolbarButtons.filter(
+                    btn => btn.pluginId !== plugin.id
+                );
+                
+                // If this plugin has a fullscreen modal open, close it
+                if (this.pluginFullscreenModal.pluginId === plugin.id) {
+                    this.closePluginFullscreenModal();
+                }
                 
                 const res = await fetch(`/api/plugins/${encodeURIComponent(plugin.id)}`, {
                     method: 'DELETE'

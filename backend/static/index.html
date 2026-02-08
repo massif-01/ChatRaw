@@ -16,8 +16,8 @@
     
     <!-- Performance: Preload Critical Resources -->
     <link rel="preload" href="fonts/remixicon/remixicon.woff2?t=1769685282643" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="styles.min.css?v=5.4" as="style">
-    <link rel="preload" href="app.min.js?v=5.4" as="script">
+    <link rel="preload" href="styles.min.css?v=5.5" as="style">
+    <link rel="preload" href="app.min.js?v=5.6" as="script">
     <link rel="preload" href="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" as="script" crossorigin="anonymous">
     <link rel="preload" href="https://unpkg.com/marked@9.1.6/marked.min.js" as="script" crossorigin="anonymous">
     
@@ -136,7 +136,8 @@
     <script defer src="https://unpkg.com/@alpinejs/collapse@3.13.3/dist/cdn.min.js" crossorigin="anonymous"></script>
     <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" crossorigin="anonymous"></script>
     <!-- highlight.js is lazy-loaded in app.min.js when needed -->
-    <link rel="stylesheet" href="styles.min.css?v=5.4">
+    <link rel="stylesheet" href="fonts/remixicon/remixicon.css">
+    <link rel="stylesheet" href="styles.min.css?v=5.5">
 </head>
 <body x-data="app()" x-init="init()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
@@ -356,6 +357,44 @@
                                 <i class="ri-link"></i>
                             </button>
                             
+                            <!-- Plugin Toolbar Buttons Extension Area -->
+                            <div class="plugin-toolbar-area" x-show="pluginToolbarButtons.length > 0" x-cloak>
+                                <div class="plugin-toolbar-divider"></div>
+                                
+                                <!-- Visible buttons (max 5) -->
+                                <template x-for="btn in visiblePluginButtons" :key="btn.fullId">
+                                    <button 
+                                        class="btn-tool plugin-btn" 
+                                        :class="{ 'active': btn.active, 'loading': btn.loading }"
+                                        :title="getPluginButtonLabel(btn)"
+                                        @click="handlePluginButtonClick(btn)"
+                                        :disabled="btn.loading">
+                                        <i :class="btn.loading ? 'ri-loader-4-line spin' : btn.icon"></i>
+                                    </button>
+                                </template>
+                                
+                                <!-- More menu (shown when > 5 buttons) -->
+                                <div class="plugin-more-dropdown" x-show="hiddenPluginButtons.length > 0" x-cloak>
+                                    <button class="btn-tool" @click="showPluginMoreMenu = !showPluginMoreMenu" :title="t('plugins')">
+                                        <i class="ri-more-2-fill"></i>
+                                    </button>
+                                    <div class="plugin-more-menu" 
+                                         x-show="showPluginMoreMenu" 
+                                         x-cloak
+                                         x-transition
+                                         @click.outside="showPluginMoreMenu = false">
+                                        <template x-for="btn in hiddenPluginButtons" :key="btn.fullId">
+                                            <div class="plugin-more-item" 
+                                                 :class="{ 'active': btn.active, 'loading': btn.loading }"
+                                                 @click="handlePluginButtonClick(btn); showPluginMoreMenu = false">
+                                                <i :class="btn.loading ? 'ri-loader-4-line spin' : btn.icon"></i>
+                                                <span x-text="getPluginButtonLabel(btn)"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- URL Input Popup -->
                             <div class="url-input-popup" x-show="showUrlInput" x-cloak @click.outside="cancelUrlInput()">
                                 <div class="url-input-header" x-text="t('enterUrl')"></div>
@@ -401,7 +440,7 @@
                 <div class="nav-item" :class="{ 'active': settingsTab === 'chat' }" @click="settingsTab = 'chat'" x-text="t('chatSettings')"></div>
                 <div class="nav-item" :class="{ 'active': settingsTab === 'ui' }" @click="settingsTab = 'ui'" x-text="t('uiSettings')"></div>
                 <div class="settings-footer">
-                    © 2026 ChatRaw by massif-01, RMinte AI Technology Co., Ltd.<br>
+                    © 2026 ChatRaw by massif-01, RMinte® AI Technology Co., Ltd.<br>
                     <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener" style="color: inherit; text-decoration: none; opacity: 0.7;" x-text="t('apacheLicense')"></a>
                 </div>
             </div>
@@ -618,7 +657,7 @@
                 <div class="nav-item" :class="{ 'active': pluginTab === 'installed' }" @click="pluginTab = 'installed'" x-text="t('installedPlugins')"></div>
                 <div class="nav-item" :class="{ 'active': pluginTab === 'local' }" @click="pluginTab = 'local'" x-text="t('installLocalPlugin')"></div>
                 <div class="settings-footer">
-                    © 2026 ChatRaw by massif-01, RMinte AI Technology Co., Ltd.<br>
+                    © 2026 ChatRaw by massif-01, RMinte® AI Technology Co., Ltd.<br>
                     <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener" style="color: inherit; text-decoration: none; opacity: 0.7;" x-text="t('apacheLicense')"></a>
                 </div>
             </div>
@@ -840,9 +879,19 @@
         </div>
     </div>
 
+    <!-- Plugin Fullscreen Modal -->
+    <div class="modal-overlay plugin-fullscreen-modal" 
+         x-show="pluginFullscreenModal.show" 
+         x-cloak
+         x-transition
+         @click.self="pluginFullscreenModal.closable && closePluginFullscreenModal()"
+         @keydown.escape.window="pluginFullscreenModal.show && pluginFullscreenModal.closable && closePluginFullscreenModal()">
+        <div class="plugin-fullscreen-content" x-html="pluginFullscreenModal.content"></div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" x-show="toast.show" x-text="toast.message" :class="toast.type" x-transition></div>
 
-    <script src="app.min.js?v=5.4"></script>
+    <script src="app.min.js?v=5.6"></script>
 </body>
 </html>

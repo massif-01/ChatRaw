@@ -2496,3 +2496,151 @@ input[type=range]::-webkit-slider-thumb:hover {
     margin-bottom: 16px;
 }
 
+/* ============ Plugin Toolbar Extension Area ============ */
+
+/* Plugin Toolbar Area Container */
+.plugin-toolbar-area {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.plugin-toolbar-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border-color);
+    margin: 0 4px;
+}
+
+/* Plugin Button Active State */
+.btn-tool.plugin-btn.active {
+    background: var(--text-primary);
+    color: var(--bg-primary);
+}
+
+.btn-tool.plugin-btn.active:hover {
+    opacity: 0.9;
+}
+
+/* Plugin Button Loading State */
+.btn-tool.plugin-btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+/* Plugin More Dropdown */
+.plugin-more-dropdown {
+    position: relative;
+}
+
+.plugin-more-menu {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    margin-bottom: 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    min-width: 180px;
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.plugin-more-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.plugin-more-item:first-child {
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.plugin-more-item:last-child {
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.plugin-more-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.plugin-more-item.active {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+}
+
+.plugin-more-item.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.plugin-more-item i {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.plugin-more-item span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Plugin Fullscreen Modal */
+.plugin-fullscreen-modal {
+    z-index: 1000;
+}
+
+.plugin-fullscreen-content {
+    width: 100%;
+    max-width: 900px;
+    max-height: 90vh;
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+}
+
+/* Mobile: Plugin Toolbar */
+@media (max-width: 768px) {
+    .plugin-toolbar-area {
+        gap: 2px;
+    }
+    
+    .plugin-toolbar-divider {
+        margin: 0 2px;
+    }
+    
+    .plugin-fullscreen-content {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        border: none;
+    }
+    
+    .plugin-more-menu {
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 200px;
+    }
+}
+
+/* Tablet: Plugin Toolbar */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .btn-tool.plugin-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
