@@ -35,7 +35,7 @@ jobs:
           skip-dirs: 'node_modules,.git,__pycache__,.venv,venv'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-fs-results.sarif'
@@ -191,7 +191,7 @@ jobs:
           scanners: 'vuln,secret'
 
       - name: Upload Trivy Docker results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-docker-results.sarif'
