@@ -16,8 +16,8 @@
     
     <!-- Performance: Preload Critical Resources -->
     <link rel="preload" href="fonts/remixicon/remixicon.woff2?t=1769685282643" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="styles.min.css?v=5.5" as="style">
-    <link rel="preload" href="app.min.js?v=5.6" as="script">
+    <link rel="preload" href="styles.min.css?v=6.0" as="style">
+    <link rel="preload" href="app.min.js?v=6.0" as="script">
     <link rel="preload" href="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" as="script" crossorigin="anonymous">
     <link rel="preload" href="https://unpkg.com/marked@9.1.6/marked.min.js" as="script" crossorigin="anonymous">
     
@@ -26,22 +26,31 @@
         /* RemixIcon - Inline to avoid render blocking */
         @font-face{font-family:"remixicon";src:url('fonts/remixicon/remixicon.woff2?t=1769685282643') format("woff2"),url('fonts/remixicon/remixicon.woff?t=1769685282643') format("woff");font-display:optional}
         [class^="ri-"],[class*=" ri-"]{font-family:'remixicon'!important;font-style:normal;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-        .ri-add-line:before{content:"\ea13"}.ri-arrow-down-s-line:before{content:"\ea4e"}.ri-arrow-left-s-line:before{content:"\ea64"}.ri-arrow-right-s-line:before{content:"\ea6e"}.ri-close-circle-fill:before{content:"\eb96"}.ri-close-line:before{content:"\eb99"}.ri-computer-line:before{content:"\ebca"}.ri-delete-bin-line:before{content:"\ec2a"}.ri-error-warning-line:before{content:"\eca1"}.ri-external-link-line:before{content:"\ecaf"}.ri-file-text-line:before{content:"\ed0f"}.ri-flashlight-line:before{content:"\ed3d"}.ri-image-line:before{content:"\ee4b"}.ri-lightbulb-line:before{content:"\eea9"}.ri-link:before{content:"\eeb2"}.ri-loader-4-line:before{content:"\eec6"}.ri-menu-line:before{content:"\ef3e"}.ri-message-3-line:before{content:"\ef46"}.ri-robot-2-line:before{content:"\f3d8"}.ri-send-plane-2-line:before{content:"\f0d8"}.ri-settings-3-line:before{content:"\f0e6"}.ri-stop-circle-line:before{content:"\f19f"}.ri-tools-line:before{content:"\f21b"}.ri-upload-2-line:before{content:"\f24a"}.ri-user-3-line:before{content:"\f256"}
+        .ri-add-line:before{content:"\ea13"}.ri-arrow-down-s-line:before{content:"\ea4e"}.ri-arrow-left-s-line:before{content:"\ea64"}.ri-arrow-right-s-line:before{content:"\ea6e"}.ri-close-circle-fill:before{content:"\eb96"}.ri-close-line:before{content:"\eb99"}.ri-computer-line:before{content:"\ebca"}.ri-delete-bin-line:before{content:"\ec2a"}.ri-error-warning-line:before{content:"\eca1"}.ri-external-link-line:before{content:"\ecaf"}.ri-file-text-line:before{content:"\ed0f"}.ri-flashlight-line:before{content:"\ed3d"}.ri-image-line:before{content:"\ee4b"}.ri-lightbulb-line:before{content:"\eea9"}.ri-link:before{content:"\eeb2"}.ri-loader-4-line:before{content:"\eec6"}.ri-menu-line:before{content:"\ef3e"}.ri-message-3-line:before{content:"\ef46"}.ri-robot-2-line:before{content:"\f3d8"}.ri-send-plane-2-line:before{content:"\f0d8"}.ri-settings-3-line:before{content:"\f0e6"}.ri-stop-circle-line:before{content:"\f19f"}.ri-tools-line:before{content:"\f21b"}.ri-upload-2-line:before{content:"\f24a"}.ri-user-3-line:before{content:"\f256"}.ri-file-copy-line:before{content:"\ecd5"}.ri-check-line:before{content:"\eb7b"}
         
         :root {
-            --bg-primary: #ffffff;
+            --background: 0 0% 100%;
+            --foreground: 0 0% 0%;
+            --muted: 0 0% 94.1%;
+            --muted-foreground: 0 0% 40%;
+            --accent: 0 0% 95.3%;
+            --border: 0 0% 89.8%;
+            --ring: 0 0% 0%;
+            --destructive: 0 84.2% 60.2%;
+            --success: 142.1 76.2% 36.3%;
+            --bg-primary: hsl(var(--background));
             --bg-secondary: #f9f9f9;
-            --bg-tertiary: #f0f0f0;
-            --bg-hover: #f3f3f3;
-            --text-primary: #000000;
-            --text-secondary: #666666;
-            --text-muted: #999999;
-            --border-color: #e5e5e5;
-            --border-focus: #000000;
-            --accent-color: #000000;
-            --on-accent: #ffffff;
-            --success-color: #22c55e;
-            --error-color: #ef4444;
+            --bg-tertiary: hsl(var(--muted));
+            --bg-hover: hsl(var(--accent));
+            --text-primary: hsl(var(--foreground));
+            --text-secondary: hsl(var(--muted-foreground));
+            --text-muted: #6b6b6b;
+            --border-color: hsl(var(--border));
+            --border-focus: hsl(var(--foreground));
+            --accent-color: hsl(var(--foreground));
+            --on-accent: hsl(var(--background));
+            --success-color: hsl(var(--success));
+            --error-color: hsl(var(--destructive));
             --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
             --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
@@ -51,27 +60,28 @@
             --radius-full: 9999px;
             --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
             --font-mono: ui-monospace, 'SF Mono', Menlo, Monaco, 'Courier New', monospace;
-            --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            --ease: cubic-bezier(0.16, 1, 0.3, 1);
+            --duration-normal: 200ms;
+            --transition: all var(--duration-normal) var(--ease);
         }
         [data-theme="dark"] {
-            --bg-primary: #000000;
+            --background: 0 0% 0%;
+            --foreground: 0 0% 100%;
+            --muted: 0 0% 8.6%;
+            --muted-foreground: 0 0% 62.7%;
+            --accent: 0 0% 10.2%;
+            --border: 0 0% 15.7%;
             --bg-secondary: #0a0a0a;
-            --bg-tertiary: #161616;
-            --bg-hover: #1a1a1a;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --text-muted: #555555;
-            --border-color: #222222;
-            --border-focus: #ffffff;
-            --accent-color: #ffffff;
-            --on-accent: #000000;
-            --shadow-sm: none;
-            --shadow-md: none;
+            --text-muted: #737373;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
             --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.7);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { height: 100%; overflow: hidden; }
+        html { height: 100%; height: 100dvh; overflow: hidden; }
         body {
+            height: 100%; height: -webkit-fill-available; height: 100dvh;
+            overflow: hidden;
             font-family: var(--font-main);
             background: var(--bg-primary);
             color: var(--text-primary);
@@ -137,7 +147,7 @@
     <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" crossorigin="anonymous"></script>
     <!-- highlight.js is lazy-loaded in app.min.js when needed -->
     <link rel="stylesheet" href="fonts/remixicon/remixicon.css">
-    <link rel="stylesheet" href="styles.min.css?v=5.5">
+    <link rel="stylesheet" href="styles.min.css?v=6.0">
 </head>
 <body x-data="app()" x-init="init()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
@@ -150,7 +160,7 @@
                 <img x-show="settings.ui_settings.logo_data" :src="settings.ui_settings.logo_data" alt="Logo" class="logo-img" width="32" height="32">
                 <span class="logo-text" x-text="settings.ui_settings.logo_text || 'JustChat'"></span>
             </div>
-            <button class="btn-icon" @click="sidebarCollapsed = !sidebarCollapsed" :title="sidebarCollapsed ? t('expand') : t('collapse')">
+            <button class="btn-icon" @click="sidebarCollapsed = !sidebarCollapsed" :title="sidebarCollapsed ? t('expand') : t('collapse')" :aria-expanded="String(!sidebarCollapsed)" aria-label="Toggle sidebar">
                 <i class="ri-arrow-left-s-line" x-show="!sidebarCollapsed"></i>
                 <i class="ri-arrow-right-s-line" x-show="sidebarCollapsed"></i>
             </button>
@@ -237,15 +247,15 @@
             </div>
 
             <!-- Messages -->
-            <div class="messages" x-ref="messagesContainer">
+            <div class="messages" x-ref="messagesContainer" aria-live="polite">
                 <template x-for="(msg, index) in messages" :key="index">
                     <div class="message" :class="msg.role">
                         <div class="message-avatar" :class="msg.role">
                             <!-- User avatar -->
-                            <img x-show="msg.role === 'user' && settings.ui_settings.user_avatar" :src="settings.ui_settings.user_avatar" alt="User" width="36" height="36" style="width:100%; height:100%; object-fit:cover;">
+                            <img x-show="msg.role === 'user' && settings.ui_settings.user_avatar" :src="settings.ui_settings.user_avatar" alt="User" width="36" height="36" class="avatar-img">
                             <i class="ri-user-3-line" x-show="msg.role === 'user' && !settings.ui_settings.user_avatar"></i>
                             <!-- AI avatar -->
-                            <img x-show="msg.role === 'assistant' && settings.ui_settings.assistant_avatar" :src="settings.ui_settings.assistant_avatar" alt="AI" width="36" height="36" style="width:100%; height:100%; object-fit:cover;">
+                            <img x-show="msg.role === 'assistant' && settings.ui_settings.assistant_avatar" :src="settings.ui_settings.assistant_avatar" alt="AI" width="36" height="36" class="avatar-img">
                             <i class="ri-robot-2-line" x-show="msg.role === 'assistant' && !settings.ui_settings.assistant_avatar"></i>
                         </div>
                         <div class="message-content">
@@ -255,7 +265,7 @@
                             </div>
                             <!-- Thinking/Reasoning Block -->
                             <div class="thinking-block" x-show="msg.thinking && msg.thinking.length > 0">
-                                <div class="thinking-header" @click="msg.showThinking = !msg.showThinking">
+                                <div class="thinking-header" @click="msg.showThinking = !msg.showThinking" role="button" :aria-expanded="msg.showThinking">
                                     <i class="ri-lightbulb-line"></i>
                                     <span x-text="t('thinkingProcess')"></span>
                                     <i class="ri-arrow-down-s-line chevron" :class="{ 'expanded': msg.showThinking }"></i>
@@ -268,9 +278,18 @@
                             <!-- Show actual content -->
                             <div x-show="msg.content" x-html="renderMarkdown(msg.content)"></div>
                             
+                            <!-- Message Actions (assistant only) -->
+                            <div class="message-actions" x-show="msg.role === 'assistant' && msg.content && !isGenerating">
+                                <button class="btn-copy"
+                                        @click="copyMessage(msg.content, $event)"
+                                        :title="t('copyMessage')">
+                                    <i class="ri-file-copy-line"></i>
+                                </button>
+                            </div>
+                            
                             <!-- RAG References -->
                             <div class="rag-references" x-show="msg.references && msg.references.length > 0">
-                                <div class="rag-references-header" @click="msg.showRefs = !msg.showRefs">
+                                <div class="rag-references-header" @click="msg.showRefs = !msg.showRefs" role="button" :aria-expanded="msg.showRefs">
                                     <i class="ri-file-text-line"></i>
                                     <span x-text="t('ragReferences') + ' (' + (msg.references?.length || 0) + ')'"></span>
                                     <i class="ri-arrow-down-s-line chevron" :class="{ 'expanded': msg.showRefs }"></i>
@@ -293,7 +312,7 @@
                 
                 <div class="message assistant" x-show="isGenerating && (!messages.length || messages[messages.length-1].role !== 'assistant')">
                     <div class="message-avatar assistant">
-                        <img x-show="settings.ui_settings.assistant_avatar" :src="settings.ui_settings.assistant_avatar" alt="AI" width="36" height="36" style="width:100%; height:100%; object-fit:cover;">
+                        <img x-show="settings.ui_settings.assistant_avatar" :src="settings.ui_settings.assistant_avatar" alt="AI" width="36" height="36" class="avatar-img">
                         <i class="ri-robot-2-line" x-show="!settings.ui_settings.assistant_avatar"></i>
                     </div>
                     <div class="message-content">
@@ -309,7 +328,7 @@
                 <div class="input-container-inner">
                     <div class="uploaded-image-preview" x-show="uploadedImage">
                         <img :src="uploadedImage ? 'data:image/jpeg;base64,' + uploadedImageBase64 : ''" alt="Preview" width="60" height="60">
-                        <button class="btn-delete" @click="removeUploadedImage()" aria-label="Remove image" style="opacity:1; position:absolute; top:-10px; right:-10px; background:var(--error-color); color:white; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center;"><i class="ri-close-circle-fill"></i></button>
+                        <button class="btn-delete-overlay" @click="removeUploadedImage()" aria-label="Remove image"><i class="ri-close-circle-fill"></i></button>
                     </div>
                     
                     <!-- Parsed URL Preview -->
@@ -344,12 +363,12 @@
                                     <div class="thinking-slider-handle"></div>
                                 </div>
                             </div>
-                            <label class="btn-tool" :title="t('uploadImage')" style="z-index: 10; position: relative;">
-                                <input type="file" @change="handleImageUpload($event)" accept="image/*" style="display: none;">
+                            <label class="btn-tool btn-tool-upload" :title="t('uploadImage')">
+                                <input type="file" @change="handleImageUpload($event)" accept="image/*" class="file-input-hidden">
                                 <i class="ri-image-line"></i>
                             </label>
-                            <label class="btn-tool" :title="t('uploadDocument')" :class="{ 'active': attachedDocument }" style="z-index: 10; position: relative;">
-                                <input type="file" @change="handleDocumentUpload($event)" :accept="getDocumentAcceptTypes()" style="display: none;" :disabled="isUploadingDocument">
+                            <label class="btn-tool btn-tool-upload" :title="t('uploadDocument')" :class="{ 'active': attachedDocument }">
+                                <input type="file" @change="handleDocumentUpload($event)" :accept="getDocumentAcceptTypes()" class="file-input-hidden" :disabled="isUploadingDocument">
                                 <i class="ri-file-text-line" x-show="!isUploadingDocument"></i>
                                 <i class="ri-loader-4-line spin" x-show="isUploadingDocument"></i>
                             </label>
@@ -431,17 +450,17 @@
     </main>
 
     <!-- New Settings Modal -->
-    <div class="modal-overlay" x-show="showSettings" x-cloak @click.self="showSettings = false" x-transition>
+    <div class="modal-overlay" x-show="showSettings" x-cloak @click.self="showSettings = false" @keydown.escape.window="showSettings && (showSettings = false)" x-transition role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
         <div class="settings-modal">
             <!-- Left Nav -->
-            <div class="settings-nav">
-                <div class="settings-title" x-text="t('settings')"></div>
-                <div class="nav-item" :class="{ 'active': settingsTab === 'models' }" @click="settingsTab = 'models'" x-text="t('modelConfig')"></div>
-                <div class="nav-item" :class="{ 'active': settingsTab === 'chat' }" @click="settingsTab = 'chat'" x-text="t('chatSettings')"></div>
-                <div class="nav-item" :class="{ 'active': settingsTab === 'ui' }" @click="settingsTab = 'ui'" x-text="t('uiSettings')"></div>
+            <div class="settings-nav" role="tablist" aria-label="Settings navigation">
+                <div class="settings-title" id="settings-modal-title" x-text="t('settings')"></div>
+                <div class="nav-item" role="tab" :aria-selected="settingsTab === 'models'" :class="{ 'active': settingsTab === 'models' }" @click="settingsTab = 'models'" x-text="t('modelConfig')"></div>
+                <div class="nav-item" role="tab" :aria-selected="settingsTab === 'chat'" :class="{ 'active': settingsTab === 'chat' }" @click="settingsTab = 'chat'" x-text="t('chatSettings')"></div>
+                <div class="nav-item" role="tab" :aria-selected="settingsTab === 'ui'" :class="{ 'active': settingsTab === 'ui' }" @click="settingsTab = 'ui'" x-text="t('uiSettings')"></div>
                 <div class="settings-footer">
                     © 2026 ChatRaw by massif-01, RMinte® AI Technology Co., Ltd.<br>
-                    <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener" style="color: inherit; text-decoration: none; opacity: 0.7;" x-text="t('apacheLicense')"></a>
+                    <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener" class="settings-footer-link" x-text="t('apacheLicense')"></a>
                 </div>
             </div>
 
@@ -461,8 +480,8 @@
                                 <div class="model-header">
                                     <span class="model-badge" x-text="getModelTypeName(model.type)"></span>
                                     <div class="model-status" :class="model.status || 'unknown'">
-                                        <span x-show="model.status === 'success'" style="color:var(--success-color)" x-text="'● ' + t('active')"></span>
-                                        <span x-show="model.status === 'error'" style="color:var(--error-color)" x-text="'● ' + t('error')"></span>
+                                        <span x-show="model.status === 'success'" class="status-success" x-text="'● ' + t('active')"></span>
+                                        <span x-show="model.status === 'error'" class="status-error" x-text="'● ' + t('error')"></span>
                                     </div>
                                 </div>
                                 
@@ -483,15 +502,15 @@
 
                                 <div class="form-group" x-show="model.type === 'chat'">
                                     <label class="form-label" x-text="t('capabilities')"></label>
-                                    <div class="checkbox-group" style="display:flex; gap:20px; margin-top:8px;">
-                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.95rem; cursor:pointer;">
-                                            <input type="checkbox" x-model="model.capability.vision" style="width:16px; height:16px;"> <span x-text="t('vision')"></span>
+                                    <div class="checkbox-group">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" x-model="model.capability.vision"> <span x-text="t('vision')"></span>
                                         </label>
-                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.95rem; cursor:pointer;">
-                                            <input type="checkbox" x-model="model.capability.reasoning" style="width:16px; height:16px;"> <span x-text="t('reasoning')"></span>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" x-model="model.capability.reasoning"> <span x-text="t('reasoning')"></span>
                                         </label>
-                                        <label style="display:flex; align-items:center; gap:8px; font-size:0.95rem; cursor:pointer;">
-                                            <input type="checkbox" x-model="model.capability.tools" style="width:16px; height:16px;"> <span x-text="t('tools')"></span>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" x-model="model.capability.tools"> <span x-text="t('tools')"></span>
                                         </label>
                                     </div>
                                 </div>
@@ -506,10 +525,10 @@
                                     <input type="number" class="input-minimal" x-model.number="model.max_output" placeholder="4096">
                                 </div>
 
-                                <button class="btn-primary" style="width:100%" @click="saveAndVerifyModel(model, index)" :disabled="model.status === 'loading'">
+                                <button class="btn-primary btn-full-width" @click="saveAndVerifyModel(model, index)" :disabled="model.status === 'loading'">
                                     <span x-text="model.status === 'loading' ? t('verifying') : t('saveAndVerify')"></span>
                                 </button>
-                                <div x-show="model.verifyMessage" style="margin-top:10px; font-size:0.85rem;" :style="{ color: model.status === 'success' ? 'var(--success-color)' : 'var(--error-color)' }" x-text="model.verifyMessage"></div>
+                                <div class="model-verify-msg" x-show="model.verifyMessage" :class="model.status === 'success' ? 'status-success' : 'status-error'" x-text="model.verifyMessage"></div>
                             </div>
                         </template>
                     </div>
@@ -527,29 +546,29 @@
                                     <label class="form-label" x-text="t('streamOutput')"></label>
                                     <span class="form-sublabel" x-text="t('streamHint')"></span>
                                 </div>
-                                <div class="toggle-switch" :class="{ 'checked': settings.chat_settings.stream }" @click="settings.chat_settings.stream = !settings.chat_settings.stream">
-                                    <div class="toggle-handle"></div>
-                                </div>
+                                <button role="switch" :aria-checked="settings.chat_settings.stream" class="toggle-switch" :class="{ 'checked': settings.chat_settings.stream }" @click="settings.chat_settings.stream = !settings.chat_settings.stream">
+                                    <span class="toggle-handle"></span>
+                                </button>
                             </div>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Temperature: <span x-text="settings.chat_settings.temperature"></span></label>
                             <input type="range" min="0" max="2" step="0.1" x-model.number="settings.chat_settings.temperature">
-                            <span class="form-sublabel" style="margin-top:8px;" x-text="t('temperatureHint')"></span>
+                            <span class="form-sublabel form-sublabel-inline" x-text="t('temperatureHint')"></span>
                         </div>
 
                         <!-- Top P Slider Restored -->
                         <div class="form-group">
                             <label class="form-label">Top P: <span x-text="settings.chat_settings.top_p"></span></label>
                             <input type="range" min="0" max="1" step="0.05" x-model.number="settings.chat_settings.top_p">
-                            <span class="form-sublabel" style="margin-top:8px;" x-text="t('topPHint')"></span>
+                            <span class="form-sublabel form-sublabel-inline" x-text="t('topPHint')"></span>
                         </div>
 
                         <!-- System Prompt -->
                         <div class="form-group">
                             <label class="form-label" x-text="t('systemPrompt')"></label>
-                            <span class="form-sublabel" style="margin-bottom:12px; display:block;" x-text="t('systemPromptHint')"></span>
+                            <span class="form-sublabel form-sublabel-block" x-text="t('systemPromptHint')"></span>
                             <textarea 
                                 class="system-prompt-textarea" 
                                 x-model="settings.chat_settings.system_prompt"
@@ -566,7 +585,7 @@
                             <p class="section-desc" x-text="t('uiSettingsDesc')"></p>
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 40px;">
+                        <div class="form-group form-group-lg">
                             <label class="form-label" x-text="t('theme')"></label>
                             <div class="theme-grid">
                                 <div class="theme-option" :class="{ 'active': settings.ui_settings.theme_mode === 'light' }" @click="settings.ui_settings.theme_mode = 'light'; applyTheme()">
@@ -578,7 +597,7 @@
                             </div>
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 40px;">
+                        <div class="form-group form-group-lg">
                             <label class="form-label" x-text="t('language')"></label>
                             <div class="theme-grid">
                                 <div class="theme-option" :class="{ 'active': lang === 'en' }" @click="setLanguage('en')">English</div>
@@ -586,49 +605,49 @@
                             </div>
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 40px;">
+                        <div class="form-group form-group-lg">
                             <label class="form-label" x-text="t('logoName')"></label>
-                            <div class="logo-upload-area" style="display:flex; align-items:center; gap:12px; flex-wrap:nowrap;">
-                                <img x-show="settings.ui_settings.logo_data" :src="settings.ui_settings.logo_data" alt="Logo" class="logo-preview" width="48" height="48" style="width:48px; height:48px; min-width:48px; border-radius:var(--radius-sm); object-fit:cover; border:1px solid var(--border-color); flex-shrink:0;">
-                                <label class="btn-secondary" style="margin:0; white-space:nowrap; flex-shrink:0;">
-                                    <input type="file" @change="handleLogoUpload($event)" accept="image/*" style="display: none;">
+                            <div class="logo-upload-area upload-row">
+                                <img x-show="settings.ui_settings.logo_data" :src="settings.ui_settings.logo_data" alt="Logo" class="logo-preview-img" width="48" height="48">
+                                <label class="btn-secondary btn-compact">
+                                    <input type="file" @change="handleLogoUpload($event)" accept="image/*" class="file-input-hidden">
                                     <span x-text="t('uploadLogo')"></span>
                                 </label>
-                                <button class="btn-delete" x-show="settings.ui_settings.logo_data" @click="settings.ui_settings.logo_data = ''" aria-label="Remove logo" style="opacity:1; width:32px; height:32px; border:1px solid var(--border-color); flex-shrink:0;"><i class="ri-close-circle-fill"></i></button>
-                                <input type="text" x-model="settings.ui_settings.logo_text" placeholder="JustChat" class="input-minimal" style="flex:1; min-width:0;">
+                                <button class="btn-delete btn-delete-inline" x-show="settings.ui_settings.logo_data" @click="settings.ui_settings.logo_data = ''" aria-label="Remove logo"><i class="ri-close-circle-fill"></i></button>
+                                <input type="text" x-model="settings.ui_settings.logo_text" placeholder="JustChat" class="input-minimal input-flex">
                             </div>
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 40px;">
+                        <div class="form-group form-group-lg">
                             <label class="form-label" x-text="t('subtitle')"></label>
                             <input type="text" x-model="settings.ui_settings.subtitle" :placeholder="t('defaultSubtitle')" class="input-minimal">
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 40px;">
+                        <div class="form-group form-group-lg">
                             <label class="form-label" x-text="t('avatars')"></label>
                             
                             <!-- Avatars Row -->
-                            <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+                            <div class="avatars-row">
                                 <!-- User Avatar -->
-                                <div style="display:flex; align-items:center; gap:12px;">
-                                    <div class="avatar-preview" style="width:40px; height:40px; border-radius:50%; background:var(--bg-tertiary); overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                        <img x-show="settings.ui_settings.user_avatar" :src="settings.ui_settings.user_avatar" alt="User" width="40" height="40" style="width:100%; height:100%; object-fit:cover;">
+                                <div class="avatar-group">
+                                    <div class="avatar-preview-user">
+                                        <img x-show="settings.ui_settings.user_avatar" :src="settings.ui_settings.user_avatar" alt="User" width="40" height="40" class="avatar-img">
                                         <i class="ri-user-3-line" x-show="!settings.ui_settings.user_avatar"></i>
                                     </div>
-                                    <label class="btn-secondary" style="margin:0;">
-                                        <input type="file" @change="handleAvatarUpload($event, 'user')" accept="image/*" style="display: none;">
+                                    <label class="btn-secondary btn-compact">
+                                        <input type="file" @change="handleAvatarUpload($event, 'user')" accept="image/*" class="file-input-hidden">
                                         <span x-text="t('uploadUserAvatar')"></span>
                                     </label>
                                 </div>
 
                                 <!-- AI Avatar -->
-                                <div style="display:flex; align-items:center; gap:12px;">
-                                    <div class="avatar-preview" style="width:40px; height:40px; border-radius:50%; background:var(--text-primary); color:var(--bg-primary); overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                                        <img x-show="settings.ui_settings.assistant_avatar" :src="settings.ui_settings.assistant_avatar" alt="AI" width="40" height="40" style="width:100%; height:100%; object-fit:cover;">
-                                        <i class="ri-robot-2-line" x-show="!settings.ui_settings.assistant_avatar" style="font-size:20px;"></i>
+                                <div class="avatar-group">
+                                    <div class="avatar-preview-assistant">
+                                        <img x-show="settings.ui_settings.assistant_avatar" :src="settings.ui_settings.assistant_avatar" alt="AI" width="40" height="40" class="avatar-img">
+                                        <i class="ri-robot-2-line" x-show="!settings.ui_settings.assistant_avatar"></i>
                                     </div>
-                                    <label class="btn-secondary" style="margin:0;">
-                                        <input type="file" @change="handleAvatarUpload($event, 'assistant')" accept="image/*" style="display: none;">
+                                    <label class="btn-secondary btn-compact">
+                                        <input type="file" @change="handleAvatarUpload($event, 'assistant')" accept="image/*" class="file-input-hidden">
                                         <span x-text="t('uploadAIAvatar')"></span>
                                     </label>
                                 </div>
@@ -648,17 +667,17 @@
     </div>
 
     <!-- Plugin Modal -->
-    <div class="modal-overlay" x-show="showPlugins" x-cloak @click.self="showPlugins = false" x-transition>
+    <div class="modal-overlay" x-show="showPlugins" x-cloak @click.self="showPlugins = false" @keydown.escape.window="showPlugins && (showPlugins = false)" x-transition role="dialog" aria-modal="true" aria-labelledby="plugins-modal-title">
         <div class="settings-modal plugin-modal">
             <!-- Left Nav -->
-            <div class="settings-nav">
-                <div class="settings-title" x-text="t('plugins')"></div>
-                <div class="nav-item" :class="{ 'active': pluginTab === 'market' }" @click="pluginTab = 'market'; loadPluginMarket()" x-text="t('pluginMarket')"></div>
-                <div class="nav-item" :class="{ 'active': pluginTab === 'installed' }" @click="pluginTab = 'installed'" x-text="t('installedPlugins')"></div>
-                <div class="nav-item" :class="{ 'active': pluginTab === 'local' }" @click="pluginTab = 'local'" x-text="t('installLocalPlugin')"></div>
+            <div class="settings-nav" role="tablist" aria-label="Plugin navigation">
+                <div class="settings-title" id="plugins-modal-title" x-text="t('plugins')"></div>
+                <div class="nav-item" role="tab" :aria-selected="pluginTab === 'market'" :class="{ 'active': pluginTab === 'market' }" @click="pluginTab = 'market'; loadPluginMarket()" x-text="t('pluginMarket')"></div>
+                <div class="nav-item" role="tab" :aria-selected="pluginTab === 'installed'" :class="{ 'active': pluginTab === 'installed' }" @click="pluginTab = 'installed'" x-text="t('installedPlugins')"></div>
+                <div class="nav-item" role="tab" :aria-selected="pluginTab === 'local'" :class="{ 'active': pluginTab === 'local' }" @click="pluginTab = 'local'" x-text="t('installLocalPlugin')"></div>
                 <div class="settings-footer">
                     © 2026 ChatRaw by massif-01, RMinte® AI Technology Co., Ltd.<br>
-                    <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener" style="color: inherit; text-decoration: none; opacity: 0.7;" x-text="t('apacheLicense')"></a>
+                    <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener" class="settings-footer-link" x-text="t('apacheLicense')"></a>
                 </div>
             </div>
 
@@ -681,7 +700,7 @@
                         
                         <!-- Error -->
                         <div class="plugin-error" x-show="pluginMarketError && !pluginMarketLoading">
-                            <i class="ri-error-warning-line" style="font-size: 24px;"></i>
+                            <i class="ri-error-warning-line icon-lg"></i>
                             <span x-text="t('networkError')"></span>
                             <button class="btn-secondary" @click="loadPluginMarket()" x-text="t('retry')"></button>
                         </div>
@@ -738,9 +757,9 @@
                                         <button class="btn-icon btn-icon-danger" @click="uninstallPlugin(plugin)" :title="t('uninstall')">
                                             <i class="ri-delete-bin-line"></i>
                                         </button>
-                                        <div class="toggle-switch" :class="{ 'checked': plugin.enabled }" @click="togglePlugin(plugin)">
-                                            <div class="toggle-handle"></div>
-                                        </div>
+                                        <button role="switch" :aria-checked="plugin.enabled" class="toggle-switch" :class="{ 'checked': plugin.enabled }" @click="togglePlugin(plugin)">
+                                            <span class="toggle-handle"></span>
+                                        </button>
                                     </div>
                                 </div>
                             </template>
@@ -756,8 +775,8 @@
                         </div>
                         
                         <div class="upload-area plugin-upload" @click="$refs.pluginFileInput.click()">
-                            <input type="file" x-ref="pluginFileInput" @change="handlePluginUpload($event)" accept=".zip" style="display: none;">
-                            <i class="ri-upload-2-line" style="font-size: 48px;"></i>
+                            <input type="file" x-ref="pluginFileInput" @change="handlePluginUpload($event)" accept=".zip" class="file-input-hidden">
+                            <i class="ri-upload-2-line icon-xl"></i>
                             <div x-text="t('selectPluginZip')"></div>
                         </div>
                         
@@ -795,7 +814,7 @@
                 <!-- Custom Settings Container (for plugins with customSettings: true) -->
                 <template x-if="currentPluginSettings?.customSettings">
                     <div id="plugin-custom-settings-area" class="plugin-custom-settings">
-                        <div style="padding:20px; text-align:center; color:var(--text-muted);">Loading...</div>
+                        <div class="plugin-loading-text">Loading...</div>
                     </div>
                 </template>
                 
@@ -808,10 +827,10 @@
                                 
                                 <!-- Boolean -->
                                 <template x-if="setting.type === 'boolean'">
-                                    <div class="toggle-switch" :class="{ 'checked': pluginSettingsValues[setting.id] }" 
+                                    <button role="switch" :aria-checked="pluginSettingsValues[setting.id]" class="toggle-switch" :class="{ 'checked': pluginSettingsValues[setting.id] }" 
                                          @click="pluginSettingsValues[setting.id] = !pluginSettingsValues[setting.id]">
-                                        <div class="toggle-handle"></div>
-                                    </div>
+                                        <span class="toggle-handle"></span>
+                                    </button>
                                 </template>
                                 
                                 <!-- String -->
@@ -892,6 +911,6 @@
     <!-- Toast -->
     <div class="toast" x-show="toast.show" x-text="toast.message" :class="toast.type" x-transition></div>
 
-    <script src="app.min.js?v=5.6"></script>
+    <script src="app.min.js?v=6.0"></script>
 </body>
 </html>

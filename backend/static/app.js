@@ -81,6 +81,8 @@ const i18n = {
         confirm: 'OK',
         ragReferences: 'References',
         relevance: 'Relevance',
+        copyMessage: 'Copy',
+        copied: 'Copied!',
         inputPlaceholder: 'Type a message... (Enter to send, Shift+Enter for new line)',
         modelConfig: 'Models',
         chatSettings: 'Chat',
@@ -212,6 +214,8 @@ const i18n = {
         confirm: '确定',
         ragReferences: '引用来源',
         relevance: '相关度',
+        copyMessage: '复制',
+        copied: '已复制',
         inputPlaceholder: '输入消息... (Enter 发送, Shift+Enter 换行)',
         modelConfig: '模型配置',
         modelConfigDesc: '管理您的AI模型连接和参数',
@@ -1441,6 +1445,35 @@ function app() {
                 
             } catch (e) {
                 this.showToast(this.t('saveFailed') + ': ' + e.message, 'error');
+            }
+        },
+        
+        // Copy assistant message content (raw markdown text only)
+        async copyMessage(content, event) {
+            if (!content) return;
+            try {
+                await navigator.clipboard.writeText(content);
+                // Visual feedback: icon swap
+                const btn = event.currentTarget;
+                const icon = btn.querySelector('i');
+                const originalClass = icon.className;
+                icon.className = 'ri-check-line';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    icon.className = originalClass;
+                    btn.classList.remove('copied');
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers / HTTP context
+                const textarea = document.createElement('textarea');
+                textarea.value = content;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                this.showToast(this.t('copied') || 'Copied!');
             }
         },
         
