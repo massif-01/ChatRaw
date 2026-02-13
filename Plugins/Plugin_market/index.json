@@ -52,7 +52,7 @@
     },
     {
       "id": "excel-parser",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "name": {
         "en": "Excel Parser Pro",
         "zh": "Excel 增强解析器"

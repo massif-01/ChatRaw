@@ -25,7 +25,7 @@ your-plugin/
     └── library.min.css
 ```
 
-**Local Dependencies (lib/ directory)**: For fully offline plugins, you can bundle dependencies locally instead of loading from CDN. Files in the `lib/` directory are served via `/api/plugins/{plugin_id}/lib/{filename}`. Subdirectories are supported (e.g., `lib/fonts/`).
+**Local Dependencies (lib/ directory)**: For fully offline plugins, you can bundle dependencies locally instead of loading from CDN. Files in the `lib/` directory are served via `/api/plugins/{plugin_id}/lib/{filename}`. Subdirectories are supported (e.g., `lib/fonts/`). When users install from the plugin market, lib files referenced in manifest `dependencies` (format: `/api/plugins/{plugin_id}/lib/{filename}`) are automatically downloaded. **Ensure your `lib/` folder is committed to the repository.**
 
 ### manifest.json
 
@@ -959,7 +959,7 @@ your-plugin/
     └── library.min.css
 ```
 
-**本地依赖 (lib/ 目录)**：对于需要完全离线运行的插件，可以将依赖库打包到本地，而不是从 CDN 加载。`lib/` 目录下的文件通过 `/api/plugins/{plugin_id}/lib/{filename}` 提供访问。支持子目录（如 `lib/fonts/`）。
+**本地依赖 (lib/ 目录)**：对于需要完全离线运行的插件，可以将依赖库打包到本地，而不是从 CDN 加载。`lib/` 目录下的文件通过 `/api/plugins/{plugin_id}/lib/{filename}` 提供访问。支持子目录（如 `lib/fonts/`）。从插件市场安装时，manifest 中 `dependencies` 引用的 lib 文件（格式：`/api/plugins/{plugin_id}/lib/{filename}`）会自动下载。**请确保将 `lib/` 目录提交到仓库。**
 
 ### manifest.json
 

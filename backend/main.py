@@ -1710,7 +1710,13 @@ MAX_PLUGIN_SIZE = int(os.environ.get("MAX_PLUGIN_SIZE", str(10 * 1024 * 1024)))
 os.makedirs(PLUGINS_INSTALLED_DIR, exist_ok=True)
 
 # Auto-install bundled plugins with lib/ directory (offline dependencies)
-BUNDLED_PLUGINS_DIR = os.path.join(os.path.dirname(__file__), "Plugins", "Plugin_market")
+# Resolve path: Docker has /app/Plugins, local dev has Plugins at project root (sibling of backend/)
+_backend_dir = os.path.dirname(os.path.abspath(__file__))
+_candidates = [
+    os.path.join(_backend_dir, "Plugins", "Plugin_market"),
+    os.path.abspath(os.path.join(_backend_dir, "..", "Plugins", "Plugin_market")),
+]
+BUNDLED_PLUGINS_DIR = next((p for p in _candidates if os.path.exists(p)), _candidates[0])
 
 def auto_install_bundled_plugins():
     """Auto-copy lib/ directory for installed plugins with offline dependencies
@@ -1959,6 +1965,27 @@ async def install_plugin(request: PluginInstallRequest):
                             f.write(icon_content)
             except Exception:
                 pass  # Icon is optional
+            
+            # Download lib/ files for dependencies (e.g. /api/plugins/excel-parser/lib/xlsx.full.min.js -> lib/xlsx.full.min.js)
+            deps = manifest.get("dependencies") or {}
+            lib_prefix = f"/api/plugins/{plugin_id}/lib/"
+            for dep_name, dep_url in deps.items():
+                if isinstance(dep_url, str) and dep_url.startswith(lib_prefix):
+                    lib_path = dep_url[len(lib_prefix):].strip("/")
+                    if not lib_path or ".." in lib_path:
+                        continue
+                    lib_url = f"{source_url}/lib/{lib_path}"
+                    try:
+                        async with session.get(lib_url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+                            if resp.status == 200:
+                                lib_target = os.path.join(plugin_dir, "lib", lib_path)
+                                os.makedirs(os.path.dirname(lib_target), exist_ok=True)
+                                content = await resp.read()
+                                with open(lib_target, "wb") as f:
+                                    f.write(content)
+                                logger.info(f"Downloaded lib for {plugin_id}: {lib_path}")
+                    except Exception as e:
+                        logger.warning(f"Failed to download lib {lib_path} for {plugin_id}: {e}")
         
         # Add to config
         config = load_plugin_config()

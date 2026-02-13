@@ -11,7 +11,7 @@
  * - Multi-sheet support with statistics
  * - Offline-ready with bundled SheetJS
  * 
- * @version 1.0.1
+ * @version 1.0.2
  * @author ChatRaw
  * @license Apache-2.0
  */
@@ -672,6 +672,6 @@
     });
     
     // Log successful initialization
-    console.log('[ExcelParser Pro] Plugin loaded successfully (v1.0.1)');
+    console.log('[ExcelParser Pro] Plugin loaded successfully (v1.0.2)');
     
 })(window.ChatRawPlugin);
