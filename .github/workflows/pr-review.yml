@@ -1,6 +1,16 @@
 name: PR Review
 
 on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'backend/**/*.py'
+      - 'backend/requirements.txt'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.github/workflows/**'
+      - '.github/scripts/**'
   pull_request_target:
     branches: [main]
     types: [opened, synchronize, reopened]
@@ -10,6 +20,7 @@ on:
       - 'Dockerfile'
       - 'docker-compose.yml'
       - '.github/workflows/**'
+      - '.github/scripts/**'
   workflow_dispatch:
 
 permissions:

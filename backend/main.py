@@ -1,7 +1,7 @@
 """
 ChatRaw - Minimalist AI Chat Interface
 Python + FastAPI Backend
-CI test: verify automation workflows.
+CI test: verify automation workflows (trigger AI review).
 """
 
 import os
