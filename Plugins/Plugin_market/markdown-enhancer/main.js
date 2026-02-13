@@ -128,12 +128,11 @@
             await loadScript(`${LIB_BASE}/mermaid.min.js`);
             
             if (window.mermaid) {
-                // Initialize mermaid with sandbox mode for style isolation
+                // Initialize mermaid (loose required for Unicode; sandbox uses btoa which fails on Chinese/etc.)
                 window.mermaid.initialize({
                     startOnLoad: false,
                     theme: theme === 'dark' ? 'dark' : theme,
-                    // Use sandbox for maximum isolation (iframe-based rendering)
-                    securityLevel: 'sandbox',
+                    securityLevel: 'loose',
                     fontFamily: 'inherit',
                     // Disable flowchart htmlLabels to prevent CSS issues
                     flowchart: {
