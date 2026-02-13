@@ -416,7 +416,13 @@
             
             pre.dataset.mermaidProcessed = 'true';
             
-            const code = codeBlock.textContent.trim();
+            let code = codeBlock.textContent.trim();
+            // Wrap node labels containing % in quotes to fix Mermaid parse error (PCT token)
+            // e.g. I[税率: (A+B) × 8% = 6,804.0] -> I["税率: (A+B) × 8% = 6,804.0"]
+            code = code.replace(/\[(?!\")([^\]]*%[^\]]*)\]/g, (_, label) => {
+                const escaped = label.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                return `["${escaped}"]`;
+            });
             const id = `mermaid-${Date.now()}-${mermaidCounter++}`;
             
             // Create container
@@ -432,7 +438,8 @@
             try {
                 // Mermaid may inject global styles into document.head during render(). Capture and relocate them.
                 const headStylesBefore = new Set(Array.from(document.head.querySelectorAll('style')));
-                const { svg } = await window.mermaid.render(`${id}-svg`, code);
+                // Pass container as 3rd arg so Mermaid injects errors there, not into document.body
+                const { svg } = await window.mermaid.render(`${id}-svg`, code, container);
                 const newHeadStyles = Array.from(document.head.querySelectorAll('style'))
                     .filter(el => !headStylesBefore.has(el));
 

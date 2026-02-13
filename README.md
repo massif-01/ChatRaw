@@ -139,7 +139,7 @@ ChatRaw features a complete **plugin system** to extend functionality:
 
 **Prerequisites**: [Docker](https://docs.docker.com/get-docker/) installed.
 
-Docker images are published to **Docker Hub**. To get the **latest** image (not a cached old one), always run `docker pull` with the tag you want before creating the container. Use `:latest` for the current release, or a version tag (e.g. `v2.1.2`) from [Releases](https://github.com/massif-01/ChatRaw/releases) for a fixed version.
+Docker images are published to **Docker Hub** and **GitHub Container Registry**. To get the **latest** image (not a cached old one), always run `docker pull` with the tag you want before creating the container. Use `:latest` for the current release, or a version tag (e.g. `v2.1.2`) from [Releases](https://github.com/massif-01/ChatRaw/releases) for a fixed version.
 
 **Supported platforms**: linux/amd64 (Intel/AMD), linux/arm64 (Apple Silicon, Raspberry Pi 4/5).
 
@@ -208,6 +208,7 @@ python main.py
 | Source | Pull command |
 |--------|----------------|
 | Docker Hub | `docker pull massif01/chatraw:latest` |
+| GitHub Container Registry | `docker pull ghcr.io/massif-01/chatraw:latest` |
 
 Use the same tag for a specific version, e.g. `massif01/chatraw:v2.1.2` (see [Releases](https://github.com/massif-01/ChatRaw/releases)).
 
@@ -444,7 +445,7 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 
 **前置条件**：已安装 [Docker](https://docs.docker.com/get-docker/)。
 
-镜像发布在 **Docker Hub**。若想用**最新**镜像（避免用到本地缓存的旧镜像），在创建容器前请先执行一次 `docker pull`。使用 `:latest` 表示当前最新版本；如需固定版本，可使用 [Releases](https://github.com/massif-01/ChatRaw/releases) 中的版本号标签（如 `v2.1.2`）。
+镜像发布在 **Docker Hub** 和 **GitHub Container Registry**。若想用**最新**镜像（避免用到本地缓存的旧镜像），在创建容器前请先执行一次 `docker pull`。使用 `:latest` 表示当前最新版本；如需固定版本，可使用 [Releases](https://github.com/massif-01/ChatRaw/releases) 中的版本号标签（如 `v2.1.2`）。
 
 **支持平台**：linux/amd64（Intel/AMD）、linux/arm64（Apple Silicon、树莓派 4/5）。
 
@@ -513,6 +514,7 @@ python main.py
 | 来源 | 拉取命令 |
 |------|----------|
 | Docker Hub | `docker pull massif01/chatraw:latest` |
+| GitHub Container Registry | `docker pull ghcr.io/massif-01/chatraw:latest` |
 
 需要固定版本时使用相同标签格式，例如 `massif01/chatraw:v2.1.2`，版本号见 [Releases](https://github.com/massif-01/ChatRaw/releases)。
 
