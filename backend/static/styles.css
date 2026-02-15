@@ -721,6 +721,10 @@ select:focus:not(:focus-visible),
     transition: opacity var(--duration-fast) ease;
 }
 
+.message-actions-plugin-slot {
+    display: contents;
+}
+
 .message:hover .message-actions {
     opacity: 1;
 }
@@ -1623,7 +1627,7 @@ select:focus:not(:focus-visible),
     color: var(--text-muted);
 }
 
-/* Toggle Switch */
+/* Toggle Switch - compact size (36x20) for plugin-style consistency */
 .toggle-row {
     display: flex;
     justify-content: space-between;
@@ -1635,8 +1639,8 @@ select:focus:not(:focus-visible),
 
 .toggle-switch {
     position: relative;
-    width: 48px;
-    height: 28px;
+    width: 36px;
+    height: 20px;
     background: var(--bg-tertiary);
     border: none;
     border-radius: 99px;
@@ -1656,8 +1660,8 @@ select:focus:not(:focus-visible),
     position: absolute;
     top: 2px;
     left: 2px;
-    width: 24px;
-    height: 24px;
+    width: 16px;
+    height: 16px;
     background: var(--bg-primary);
     border-radius: 50%;
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1665,7 +1669,7 @@ select:focus:not(:focus-visible),
 }
 
 .toggle-switch.checked .toggle-handle {
-    transform: translateX(20px);
+    transform: translateX(16px);
 }
 
 /* Range Slider */
@@ -2557,7 +2561,11 @@ input[type=range]::-webkit-slider-thumb:hover {
     transform: translateX(-50%);
 }
 
-/* Plugin Modal */
+/* Plugin Modal - wider for 2-col grid */
+.plugin-modal.settings-modal {
+    width: 1200px;
+}
+
 .plugin-modal .settings-content {
     min-height: 400px;
 }
@@ -2606,11 +2614,45 @@ input[type=range]::-webkit-slider-thumb:hover {
     margin-top: 8px;
 }
 
-/* Plugin Grid - One per row for all plugins */
-.plugin-grid {
+/* Plugin Market Header with Search */
+.plugin-market-header {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.plugin-market-header .section-header {
+    margin-bottom: 0;
+}
+
+.plugin-market-search-wrap {
+    position: relative;
+    flex-shrink: 0;
+    width: 200px;
+}
+
+.plugin-market-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1rem;
+    pointer-events: none;
+}
+
+.plugin-market-search {
+    width: 100%;
+    padding: 10px 12px 10px 36px;
+}
+
+/* Plugin Grid - 2 columns for market */
+.plugin-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
 }
 
 /* Plugin List - One per row for installed plugins */
@@ -2647,6 +2689,98 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 .plugin-card:hover {
     border-color: var(--text-muted);
+}
+
+/* Plugin Card - Market (horizontal row: logo | title+version | buttons) */
+.plugin-card-market {
+    flex-direction: row;
+    align-items: center;
+    padding: 10px 14px;
+}
+
+.plugin-card-market .plugin-icon-market {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+.plugin-card-market-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.plugin-name-market {
+    font-size: 0.92rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.plugin-actions-market {
+    flex-shrink: 0;
+}
+
+.plugin-card-market .plugin-actions-market .btn-icon-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+}
+
+/* Plugin info popover */
+.plugin-info-wrap {
+    position: relative;
+}
+
+.plugin-info-popover {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    min-width: 240px;
+    max-width: 320px;
+    padding: 12px 14px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 50;
+}
+
+.plugin-info-popover-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.plugin-info-popover-version {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.plugin-info-popover-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+    .plugin-market-header {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .plugin-market-search-wrap {
+        width: 100%;
+    }
+    
+    .plugin-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .plugin-icon {
@@ -2787,7 +2921,7 @@ input[type=range]::-webkit-slider-thumb:hover {
     background: var(--bg-modal);
     border-radius: var(--radius-lg);
     width: 90%;
-    max-width: 500px;
+    max-width: 600px;
     max-height: 80vh;
     display: flex;
     flex-direction: column;
@@ -2797,7 +2931,8 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 /* Custom Settings Modal - Larger size for complex UIs */
 .plugin-settings-modal.custom-settings-modal {
-    max-width: 600px;
+    max-width: 960px;
+    width: 95%;
 }
 
 .plugin-settings-header {

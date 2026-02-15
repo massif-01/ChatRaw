@@ -26,7 +26,7 @@
         /* RemixIcon - Inline to avoid render blocking */
         @font-face{font-family:"remixicon";src:url('fonts/remixicon/remixicon.woff2?t=1769685282643') format("woff2"),url('fonts/remixicon/remixicon.woff?t=1769685282643') format("woff");font-display:optional}
         [class^="ri-"],[class*=" ri-"]{font-family:'remixicon'!important;font-style:normal;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-        .ri-add-line:before{content:"\ea13"}.ri-arrow-down-s-line:before{content:"\ea4e"}.ri-arrow-left-s-line:before{content:"\ea64"}.ri-arrow-right-s-line:before{content:"\ea6e"}.ri-close-circle-fill:before{content:"\eb96"}.ri-close-line:before{content:"\eb99"}.ri-computer-line:before{content:"\ebca"}.ri-delete-bin-line:before{content:"\ec2a"}.ri-error-warning-line:before{content:"\eca1"}.ri-external-link-line:before{content:"\ecaf"}.ri-file-text-line:before{content:"\ed0f"}.ri-flashlight-line:before{content:"\ed3d"}.ri-image-line:before{content:"\ee4b"}.ri-lightbulb-line:before{content:"\eea9"}.ri-link:before{content:"\eeb2"}.ri-loader-4-line:before{content:"\eec6"}.ri-menu-line:before{content:"\ef3e"}.ri-message-3-line:before{content:"\ef46"}.ri-robot-2-line:before{content:"\f3d8"}.ri-send-plane-2-line:before{content:"\f0d8"}.ri-settings-3-line:before{content:"\f0e6"}.ri-stop-circle-line:before{content:"\f19f"}.ri-tools-line:before{content:"\f21b"}.ri-upload-2-line:before{content:"\f24a"}.ri-user-3-line:before{content:"\f256"}.ri-file-copy-line:before{content:"\ecd5"}.ri-check-line:before{content:"\eb7b"}
+        .ri-add-line:before{content:"\ea13"}.ri-arrow-down-s-line:before{content:"\ea4e"}.ri-arrow-left-s-line:before{content:"\ea64"}.ri-arrow-right-s-line:before{content:"\ea6e"}.ri-close-circle-fill:before{content:"\eb96"}.ri-close-line:before{content:"\eb99"}.ri-computer-line:before{content:"\ebca"}.ri-delete-bin-line:before{content:"\ec2a"}.ri-error-warning-line:before{content:"\eca1"}.ri-external-link-line:before{content:"\ecaf"}.ri-file-text-line:before{content:"\ed0f"}.ri-flashlight-line:before{content:"\ed3d"}.ri-image-line:before{content:"\ee4b"}.ri-lightbulb-line:before{content:"\eea9"}.ri-link:before{content:"\eeb2"}.ri-loader-4-line:before{content:"\eec6"}.ri-menu-line:before{content:"\ef3e"}.ri-message-3-line:before{content:"\ef46"}.ri-robot-2-line:before{content:"\f3d8"}.ri-send-plane-2-line:before{content:"\f0d8"}.ri-settings-3-line:before{content:"\f0e6"}.ri-stop-circle-line:before{content:"\f19f"}.ri-tools-line:before{content:"\f21b"}.ri-upload-2-line:before{content:"\f24a"}.ri-user-3-line:before{content:"\f256"}.ri-file-copy-line:before{content:"\ecd5"}.ri-check-line:before{content:"\eb7b"}.ri-information-line:before{content:"\ee59"}.ri-download-2-line:before{content:"\ec54"}.ri-search-line:before{content:"\f0d1"}
         
         :root {
             --background: 0 0% 100%;
@@ -285,6 +285,7 @@
                                         :title="t('copyMessage')">
                                     <i class="ri-file-copy-line"></i>
                                 </button>
+                                <div class="message-actions-plugin-slot" :data-msg-index="index"></div>
                             </div>
                             
                             <!-- RAG References -->
@@ -687,9 +688,19 @@
                     
                     <!-- Plugin Market Tab -->
                     <div x-show="pluginTab === 'market'">
-                        <div class="section-header">
-                            <h2 class="section-title" x-text="t('pluginMarket')"></h2>
-                            <p class="section-desc" x-text="t('pluginMarketDesc')"></p>
+                        <div class="plugin-market-header">
+                            <div class="section-header">
+                                <h2 class="section-title" x-text="t('pluginMarket')"></h2>
+                                <p class="section-desc" x-text="t('pluginMarketDesc')"></p>
+                            </div>
+                            <div class="plugin-market-search-wrap">
+                                <i class="ri-search-line plugin-market-search-icon"></i>
+                                <input type="text" 
+                                       class="plugin-market-search input-minimal" 
+                                       :placeholder="t('searchPlugins')"
+                                       x-model="pluginMarketSearch"
+                                       aria-label="Search plugins">
+                            </div>
                         </div>
                         
                         <!-- Loading -->
@@ -707,27 +718,42 @@
                         
                         <!-- Plugin Grid -->
                         <div class="plugin-grid" x-show="!pluginMarketLoading && !pluginMarketError">
-                            <template x-for="plugin in marketPlugins" :key="plugin.id">
-                                <div class="plugin-card">
+                            <template x-for="plugin in filteredMarketPlugins" :key="plugin.id">
+                                <div class="plugin-card plugin-card-market" x-data="{ infoOpen: false }" @click.outside="infoOpen = false">
                                     <img :src="'https://raw.githubusercontent.com/massif-01/ChatRaw/main/Plugins/Plugin_market/' + plugin.folder + '/icon.png'" 
-                                         class="plugin-icon" 
-                                         width="48" height="48"
+                                         class="plugin-icon plugin-icon-market" 
+                                         width="36" height="36"
                                          @error="$el.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22><path d=%22M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z%22/></svg>'">
-                                    <div class="plugin-info">
-                                        <div class="plugin-name" x-text="plugin.name[lang] || plugin.name.en"></div>
-                                        <div class="plugin-version" x-text="'v' + plugin.version"></div>
-                                        <div class="plugin-desc" x-text="plugin.description[lang] || plugin.description.en"></div>
+                                    <div class="plugin-card-market-body">
+                                        <span class="plugin-name plugin-name-market" x-text="plugin.name[lang] || plugin.name.en"></span>
                                     </div>
-                                    <div class="plugin-actions">
-                                        <button class="btn-primary btn-sm" 
+                                    <div class="plugin-actions plugin-actions-market">
+                                        <div class="plugin-info-wrap">
+                                            <button class="btn-icon btn-icon-sm" 
+                                                    @click="infoOpen = !infoOpen"
+                                                    :aria-expanded="infoOpen"
+                                                    aria-label="Plugin info">
+                                                <i class="ri-information-line"></i>
+                                            </button>
+                                            <div class="plugin-info-popover" x-show="infoOpen" x-cloak x-transition>
+                                                <div class="plugin-info-popover-title" x-text="plugin.name[lang] || plugin.name.en"></div>
+                                                <div class="plugin-info-popover-version" x-text="'v' + plugin.version"></div>
+                                                <div class="plugin-info-popover-desc" x-text="plugin.description[lang] || plugin.description.en"></div>
+                                            </div>
+                                        </div>
+                                        <button class="btn-icon btn-icon-sm" 
                                                 @click="installPlugin(plugin)" 
                                                 :disabled="isPluginInstalled(plugin.id) || pluginInstalling === plugin.id"
-                                                x-text="pluginInstalling === plugin.id ? t('installing') : (isPluginInstalled(plugin.id) ? t('installed') : t('install'))">
+                                                :title="pluginInstalling === plugin.id ? t('installing') : (isPluginInstalled(plugin.id) ? t('installed') : t('install'))"
+                                                aria-label="Install plugin">
+                                            <i class="ri-loader-4-line spin" x-show="pluginInstalling === plugin.id"></i>
+                                            <i class="ri-check-line" x-show="isPluginInstalled(plugin.id) && pluginInstalling !== plugin.id"></i>
+                                            <i class="ri-download-2-line" x-show="!isPluginInstalled(plugin.id) && pluginInstalling !== plugin.id"></i>
                                         </button>
                                     </div>
                                 </div>
                             </template>
-                            <div x-show="marketPlugins.length === 0" class="plugin-empty" x-text="t('noPluginsAvailable')"></div>
+                            <div x-show="filteredMarketPlugins.length === 0" class="plugin-empty" x-text="t('noPluginsAvailable')"></div>
                         </div>
                     </div>
                     
@@ -738,23 +764,34 @@
                             <p class="section-desc" x-text="t('installedPluginsDesc')"></p>
                         </div>
                         
-                        <div class="plugin-list" x-show="installedPlugins.length > 0">
+                        <div class="plugin-grid" x-show="installedPlugins.length > 0">
                             <template x-for="plugin in installedPlugins" :key="plugin.id">
-                                <div class="plugin-card installed">
+                                <div class="plugin-card plugin-card-market" x-data="{ infoOpen: false }" @click.outside="infoOpen = false">
                                     <img :src="'/api/plugins/' + encodeURIComponent(plugin.id) + '/icon'" 
-                                         class="plugin-icon"
-                                         width="48" height="48"
+                                         class="plugin-icon plugin-icon-market"
+                                         width="36" height="36"
                                          @error="$el.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22><path d=%22M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z%22/></svg>'">
-                                    <div class="plugin-info">
-                                        <div class="plugin-name" x-text="plugin.name?.[lang] || plugin.name?.en || plugin.name || plugin.id"></div>
-                                        <div class="plugin-version" x-text="'v' + (plugin.version || '1.0.0')"></div>
-                                        <div class="plugin-desc" x-text="plugin.description?.[lang] || plugin.description?.en || ''"></div>
+                                    <div class="plugin-card-market-body">
+                                        <span class="plugin-name plugin-name-market" x-text="plugin.name?.[lang] || plugin.name?.en || plugin.name || plugin.id"></span>
                                     </div>
-                                    <div class="plugin-actions">
-                                        <button class="btn-icon" @click="openPluginSettings(plugin)" :title="t('settings')">
+                                    <div class="plugin-actions plugin-actions-market">
+                                        <div class="plugin-info-wrap">
+                                            <button class="btn-icon btn-icon-sm" 
+                                                    @click="infoOpen = !infoOpen"
+                                                    :aria-expanded="infoOpen"
+                                                    aria-label="Plugin info">
+                                                <i class="ri-information-line"></i>
+                                            </button>
+                                            <div class="plugin-info-popover" x-show="infoOpen" x-cloak x-transition>
+                                                <div class="plugin-info-popover-title" x-text="plugin.name?.[lang] || plugin.name?.en || plugin.name || plugin.id"></div>
+                                                <div class="plugin-info-popover-version" x-text="'v' + (plugin.version || '1.0.0')"></div>
+                                                <div class="plugin-info-popover-desc" x-text="plugin.description?.[lang] || plugin.description?.en || ''"></div>
+                                            </div>
+                                        </div>
+                                        <button class="btn-icon btn-icon-sm" @click="openPluginSettings(plugin)" :title="t('settings')">
                                             <i class="ri-settings-3-line"></i>
                                         </button>
-                                        <button class="btn-icon btn-icon-danger" @click="uninstallPlugin(plugin)" :title="t('uninstall')">
+                                        <button class="btn-icon btn-icon-sm btn-icon-danger" @click="uninstallPlugin(plugin)" :title="t('uninstall')">
                                             <i class="ri-delete-bin-line"></i>
                                         </button>
                                         <button role="switch" :aria-checked="plugin.enabled" class="toggle-switch" :class="{ 'checked': plugin.enabled }" @click="togglePlugin(plugin)">
@@ -763,8 +800,8 @@
                                     </div>
                                 </div>
                             </template>
+                            <div x-show="installedPlugins.length === 0" class="plugin-empty" x-text="t('noPluginsInstalled')"></div>
                         </div>
-                        <div x-show="installedPlugins.length === 0" class="plugin-empty" x-text="t('noPluginsInstalled')"></div>
                     </div>
                     
                     <!-- Install Local Plugin Tab -->
@@ -774,7 +811,8 @@
                             <p class="section-desc" x-text="t('installLocalPluginDesc')"></p>
                         </div>
                         
-                        <div class="upload-area plugin-upload" @click="$refs.pluginFileInput.click()">
+                        <div class="upload-area plugin-upload" @click="$refs.pluginFileInput.click()"
+                            @dragover.prevent @drop.prevent="handlePluginDrop($event)">
                             <input type="file" x-ref="pluginFileInput" @change="handlePluginUpload($event)" accept=".zip" class="file-input-hidden">
                             <i class="ri-upload-2-line icon-xl"></i>
                             <div x-text="t('selectPluginZip')"></div>

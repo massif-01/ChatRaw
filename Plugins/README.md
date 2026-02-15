@@ -434,6 +434,26 @@ var(--radius-lg)   /* 16px */   var(--radius-full) /* 9999px */
 
 No extra work is needed for dark mode -- using these variables ensures your plugin looks correct in both themes.
 
+#### Reusable UI Classes
+
+Custom settings plugins can use these host app classes for consistent styling (inject into `#plugin-custom-settings-area`, not Shadow DOM):
+
+| Class | Usage |
+|-------|-------|
+| `input-minimal` | Text, number, password inputs |
+| `btn-primary` | Primary action button |
+| `btn-secondary` | Secondary/cancel button |
+| `form-group` | Form field wrapper (label + control) |
+| `form-label` | Label for form fields |
+| `toggle-switch` | Boolean toggle (36×20 compact). Add `checked` class when on. Use with inner `<span class="toggle-handle"></span> |
+
+**Toggle example** (for boolean in custom settings):
+```html
+<button role="switch" aria-checked="true" class="toggle-switch checked" onclick="...">
+    <span class="toggle-handle"></span>
+</button>
+```
+
 ### Proxy API (for external services)
 
 To protect API keys, use the proxy API for external service calls:
@@ -710,15 +730,51 @@ To distribute your plugin:
    - Test icon displays correctly (128x128 PNG)
 
 4. **Distribution options**:
-   - **Plugin Market**: Submit to `Plugin_market` repository
+   - **Plugin Market**: Submit to `Plugin_market` repository (see below for index.json registration)
    - **Local Upload**: Users drag and drop the zip file in plugin settings
    - **Direct Download**: Host on GitHub releases or your website
+
+#### Plugin Market: index.json Registration
+
+To appear in the built-in **Plugin Market** tab, your plugin must be registered in `Plugins/Plugin_market/index.json`. This file is the market catalog: the frontend fetches it to display the list of installable plugins.
+
+**Steps**:
+1. Place your plugin folder under `Plugins/Plugin_market/` (e.g. `Plugins/Plugin_market/my-plugin/`).
+2. Add an entry to the `plugins` array in `index.json`:
+
+```json
+{
+  "id": "my-plugin",
+  "version": "1.0.0",
+  "name": { "en": "My Plugin", "zh": "我的插件" },
+  "description": { "en": "Brief description", "zh": "简短描述" },
+  "author": "Your Name",
+  "type": "message_processor",
+  "downloads": 0,
+  "folder": "my-plugin"
+}
+```
+
+**Required fields**:
+
+| Field | Description |
+|-------|-------------|
+| `id` | Must match `manifest.json` |
+| `version` | Semantic version |
+| `name` | Object with `en` and `zh` keys |
+| `description` | Object with `en` and `zh` keys |
+| `author` | Author name |
+| `type` | Plugin type (see manifest.json types) |
+| `folder` | Directory name under `Plugin_market/` |
+
+Install URL is built as: `https://raw.githubusercontent.com/{repo}/main/Plugins/Plugin_market/{folder}`. Without an index.json entry, the plugin will not appear in the market.
 
 5. **Common issues**:
    - Wrong: Zip contains nested folders: `your-plugin.zip/your-plugin/your-plugin/manifest.json`
    - Correct structure: `your-plugin.zip/your-plugin/manifest.json`
    - Wrong: Files outside plugin folder
    - Correct: All files inside single plugin folder
+   - After re-uploading an updated plugin: do a hard refresh (Ctrl+Shift+R / Cmd+Shift+R) so the browser fetches the new main.js instead of using a cached version.
 
 ### Advanced: Local Dependencies and CSS Loading
 
@@ -803,6 +859,123 @@ ChatRawPlugin.hooks.register('after_receive', {
 - The hook receives the full message object including `role`, `content`, `thinking`, etc.
 - Multiple plugins can register the same hook; the first one returning `success: true` wins
 
+### Advanced: Injecting UI into Message Actions
+
+Plugins can add buttons (e.g., Export) next to the Copy button on assistant messages by injecting into `.message-actions-plugin-slot` or `.message-actions`. The host app uses Alpine.js `x-for` for message rendering; DOM nodes may be recycled during re-renders.
+
+**Key practices**:
+
+1. **Inject synchronously** when you find the target element. Avoid `setTimeout`—by the time the callback runs, Alpine may have recycled the node.
+2. **Verify element is in document** before injecting: `if (!document.body.contains(actionsEl)) return;`
+3. **Use polling as fallback**: `setInterval(processAllMessageActions, 1500)` to re-scan and inject into newly rendered messages.
+4. **Combine MutationObserver + polling**: Observe `.messages` for `childList` changes, then process immediately (sync) plus run delayed passes at 50–500ms and a 1.5s interval.
+5. **Target**: `.message-actions` for assistant messages; inject into `.message-actions-plugin-slot` when present, otherwise into `.message-actions` itself.
+
+**Reference**: See `Plugins/Plugin_market/enhanced-export/main.js` for a working implementation.
+
+### Example: Content Visualization Plugin (Mindmap Renderer)
+
+The `mindmap-renderer` plugin demonstrates a complete pattern for rendering rich content (mindmaps) from AI responses. It combines `after_receive` hook for content detection with `MutationObserver` for DOM-based rendering.
+
+#### Key Architecture
+
+1. **Content Detection** (`after_receive` hook): Detect structured content (Markdown headings, JSON, Mermaid syntax) and wrap in code blocks for later rendering
+2. **DOM Rendering** (`MutationObserver`): Watch for rendered code blocks and replace with interactive visualizations
+3. **Multiple Format Support**: Parse various JSON structures, Markdown outlines, and Mermaid mindmap syntax
+4. **Bundled Library**: Include Markmap library in `lib/` for offline use
+
+#### manifest.json
+
+```json
+{
+  "id": "mindmap-renderer",
+  "type": "message_processor",
+  "hooks": ["after_receive"],
+  "dependencies": {
+    "markmap": "/api/plugins/mindmap-renderer/lib/markmap-bundle.min.js"
+  }
+}
+```
+
+#### Key Implementation Patterns
+
+**1. MutationObserver for DOM rendering:**
+
+```javascript
+const observer = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+        if (m.type === 'childList') {
+            for (const node of m.addedNodes) {
+                if (node.nodeType === 1) {
+                    const contents = node.classList?.contains('message-content')
+                        ? [node] : node.querySelectorAll?.('.message-content') || [];
+                    for (const el of contents) processContent(el);
+                }
+            }
+        }
+    }
+});
+observer.observe(document.querySelector('.messages'), { childList: true, subtree: true });
+```
+
+**2. SVG Export (avoiding tainted canvas):**
+
+```javascript
+function downloadSvg(svg, filename) {
+    const svgClone = svg.cloneNode(true);
+    svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    
+    // Add white background
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('width', '100%');
+    rect.setAttribute('height', '100%');
+    rect.setAttribute('fill', '#ffffff');
+    svgClone.insertBefore(rect, svgClone.firstChild);
+
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgClone);
+    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+    
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+```
+
+> **Note**: Using Canvas `toBlob()` with SVG containing `foreignObject` elements will fail with "Tainted canvas" error. Export as SVG directly instead.
+
+**3. Creating SVG with correct namespace:**
+
+```javascript
+// Correct: use createElementNS for SVG elements
+const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+svg.setAttribute('width', '800');
+svg.setAttribute('height', '500');
+
+// Wrong: createElement creates HTML element, not SVG
+const svg = document.createElement('svg');  // May not render correctly
+```
+
+**4. Flexible JSON parsing for multiple formats:**
+
+```javascript
+// Support various mindmap JSON formats
+const NODE_TEXT_KEYS = ['title', 'label', 'text', 'name', 'topic', 'center'];
+const NODE_CHILDREN_KEYS = ['children', 'subBranches', 'branches', 'nodes'];
+
+function getNodeText(n) {
+    if (typeof n === 'string') return n;
+    for (const key of NODE_TEXT_KEYS) {
+        if (n[key]) return n[key];
+    }
+    return '';
+}
+```
+
+**Reference**: See `Plugins/Plugin_market/mindmap-renderer/main.js` for the full implementation.
+
 ### Best Practices
 
 1. **Keep it lightweight**: Minimize dependencies and file sizes
@@ -878,6 +1051,36 @@ button.onclick = async () => {
 
 16. **No emoji**: Do **not** use emoji anywhere in your plugin (code, UI, toasts, modal content, manifest). Plugins that use emoji will not pass review.
 
+17. **Defer UI updates from async callbacks**: When calling `showToast` or `setButtonState` from within browser API callbacks (e.g., SpeechRecognition, WebSocket, `fetch`, permission prompts), wrap them in `setTimeout(..., 0)` to avoid Alpine.js transition errors (`TypeError: u is not a function`):
+    ```javascript
+    // Wrong - may cause Alpine transition errors when called from non-Alpine callback
+    recognition.onerror = (event) => {
+        ChatRaw.utils?.showToast?.(msg, 'error');
+        ChatRaw.ui.setButtonState('my-btn', { active: false }, PLUGIN_ID);
+    };
+
+    // Correct - defer to next event loop tick
+    recognition.onerror = (event) => {
+        setTimeout(() => {
+            ChatRaw.utils?.showToast?.(msg, 'error');
+            ChatRaw.ui.setButtonState('my-btn', { active: false }, PLUGIN_ID);
+        }, 0);
+    };
+    ```
+
+18. **Append text to input**: To programmatically append text to the conversation input (e.g., voice input, autocomplete), select the textarea and dispatch `input` for Alpine's x-model to sync:
+    ```javascript
+    function appendToInput(text) {
+        const textarea = document.querySelector('.input-wrapper textarea');
+        if (!textarea) return;
+        const existing = textarea.value || '';
+        const sep = existing && !existing.endsWith(' ') ? ' ' : '';
+        textarea.value = existing + sep + text;
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    ```
+    When calling from async callbacks (e.g., SpeechRecognition `onresult`), wrap in `setTimeout(..., 0)` per #17.
+
 ### Common Pitfalls
 
 Watch out for these common mistakes:
@@ -951,6 +1154,18 @@ ChatRaw.hooks.register('before_send', () => {
 ```
 
 7. **No emoji**: Do **not** use emoji anywhere in your plugin — not in code, UI labels, toast messages, modal content, manifest `name`/`description`, or any user-facing text. Plugins that use emoji will not pass review.
+
+8. **Regex in arrow functions — parse ambiguity**: A regex literal like `/^#{2,6}\s+/` directly in an arrow function `l => /^#{2,6}\s+/.test(l)` may be misparsed by some engines as division instead of a regex, causing `SyntaxError: missing ) after argument list`. Wrap the regex in parentheses to disambiguate:
+
+```javascript
+// Wrong - may cause SyntaxError in some browsers
+arr.filter(l => /^#{2,6}\s+/.test(l))
+
+// Correct - parentheses ensure regex is parsed correctly
+arr.filter(l => (/^#{2,6}\s+/).test(l))
+```
+
+9. **DOM injection with setTimeout in reactive frameworks**: In Alpine.js (x-for, x-show), DOM nodes can be recycled. If you use `setTimeout(() => inject(el), 100)` to inject into a message action, the element may be detached before the callback runs. Prefer **synchronous injection** when you find the element, verify with `document.body.contains(el)` before inject, and use polling/interval as fallback.
 
 ---
 
@@ -1384,6 +1599,26 @@ var(--radius-lg)   /* 16px */   var(--radius-full) /* 9999px */
 
 无需为深色模式做额外工作 -- 使用上述变量即可确保插件在两种主题下正确显示。
 
+#### 可复用的 UI 类
+
+自定义设置插件可使用以下宿主样式类以保持界面一致（需注入到 `#plugin-custom-settings-area`，非 Shadow DOM）：
+
+| 类名 | 用途 |
+|------|------|
+| `input-minimal` | 文本、数字、密码输入框 |
+| `btn-primary` | 主要操作按钮 |
+| `btn-secondary` | 次要/取消按钮 |
+| `form-group` | 表单项容器（label + 控件） |
+| `form-label` | 表单项标签 |
+| `toggle-switch` | 布尔开关（36×20 紧凑尺寸）。开启时添加 `checked` 类。需配合内层 `<span class="toggle-handle"></span>` |
+
+**开关示例**（自定义设置中的布尔项）：
+```html
+<button role="switch" aria-checked="true" class="toggle-switch checked" onclick="...">
+    <span class="toggle-handle"></span>
+</button>
+```
+
 ### 代理 API（用于外部服务）
 
 为保护 API 密钥，请使用代理 API 调用外部服务：
@@ -1660,15 +1895,51 @@ const allData = ChatRaw.storage.getAll(PLUGIN_ID);
    - 测试图标显示正确（128x128 PNG）
 
 4. **分发方式**：
-   - **插件市场**：提交到 `Plugin_market` 仓库
+   - **插件市场**：提交到 `Plugin_market` 仓库（需在 index.json 中注册，见下方）
    - **本地上传**：用户在插件设置中拖放 zip 文件
    - **直接下载**：托管在 GitHub releases 或你的网站
+
+#### 插件市场：index.json 注册
+
+要让插件出现在内置**插件市场**标签页，必须在 `Plugins/Plugin_market/index.json` 中注册。该文件是市场目录：前端通过它获取可安装插件列表。
+
+**步骤**：
+1. 将插件文件夹置于 `Plugins/Plugin_market/` 下（如 `Plugins/Plugin_market/my-plugin/`）。
+2. 在 `index.json` 的 `plugins` 数组中添加条目：
+
+```json
+{
+  "id": "my-plugin",
+  "version": "1.0.0",
+  "name": { "en": "My Plugin", "zh": "我的插件" },
+  "description": { "en": "Brief description", "zh": "简短描述" },
+  "author": "Your Name",
+  "type": "message_processor",
+  "downloads": 0,
+  "folder": "my-plugin"
+}
+```
+
+**必填字段**：
+
+| 字段 | 说明 |
+|------|------|
+| `id` | 需与 manifest.json 一致 |
+| `version` | 语义化版本号 |
+| `name` | 含 `en`、`zh` 键的对象 |
+| `description` | 含 `en`、`zh` 键的对象 |
+| `author` | 作者名 |
+| `type` | 插件类型（见 manifest.json） |
+| `folder` | `Plugin_market/` 下的目录名 |
+
+安装 URL 格式：`https://raw.githubusercontent.com/{repo}/main/Plugins/Plugin_market/{folder}`。未在 index.json 中注册的插件不会在市场中显示。
 
 5. **常见问题**：
    - 错误：zip 包含嵌套文件夹：`your-plugin.zip/your-plugin/your-plugin/manifest.json`
    - 正确结构：`your-plugin.zip/your-plugin/manifest.json`
    - 错误：文件在插件文件夹外
    - 正确：所有文件在单个插件文件夹内
+   - 重新上传插件后：请硬刷新页面（Ctrl+Shift+R / Cmd+Shift+R）以获取新版 main.js，避免使用浏览器缓存
 
 ### 进阶：本地依赖和 CSS 加载
 
@@ -1753,6 +2024,123 @@ ChatRawPlugin.hooks.register('after_receive', {
 - 钩子接收完整的消息对象，包括 `role`、`content`、`thinking` 等
 - 多个插件可以注册同一个钩子；第一个返回 `success: true` 的生效
 
+### 进阶：向消息操作区注入 UI
+
+插件可在助手消息旁的 Copy 按钮旁添加按钮（如导出），通过注入到 `.message-actions-plugin-slot` 或 `.message-actions` 实现。宿主应用使用 Alpine.js 的 `x-for` 渲染消息，DOM 节点在重新渲染时可能被回收。
+
+**要点**：
+
+1. **同步注入**：发现目标元素后立即注入，避免 `setTimeout`——回调执行时 Alpine 可能已回收节点
+2. **注入前校验元素仍在文档中**：`if (!document.body.contains(actionsEl)) return;`
+3. **轮询作为后备**：`setInterval(processAllMessageActions, 1500)` 持续扫描并注入新渲染的消息
+4. **MutationObserver + 轮询结合**：监听 `.messages` 的 `childList` 变化，同步处理并配合 50–500ms 延迟和 1.5s 轮询
+5. **目标选择**：对 assistant 消息查找 `.message-actions`；若存在 `.message-actions-plugin-slot` 则注入其中，否则注入 `.message-actions` 本身
+
+**参考实现**：见 `Plugins/Plugin_market/enhanced-export/main.js`
+
+### 示例：内容可视化插件（思维导图渲染器）
+
+`mindmap-renderer` 插件展示了一个完整的富内容渲染模式（思维导图）。它结合了 `after_receive` 钩子进行内容检测和 `MutationObserver` 进行 DOM 渲染。
+
+#### 核心架构
+
+1. **内容检测**（`after_receive` 钩子）：检测结构化内容（Markdown 标题、JSON、Mermaid 语法）并包装到代码块中以便后续渲染
+2. **DOM 渲染**（`MutationObserver`）：监听渲染后的代码块并替换为交互式可视化
+3. **多格式支持**：解析各种 JSON 结构、Markdown 大纲和 Mermaid 思维导图语法
+4. **内置库**：在 `lib/` 目录中包含 Markmap 库以支持离线使用
+
+#### manifest.json
+
+```json
+{
+  "id": "mindmap-renderer",
+  "type": "message_processor",
+  "hooks": ["after_receive"],
+  "dependencies": {
+    "markmap": "/api/plugins/mindmap-renderer/lib/markmap-bundle.min.js"
+  }
+}
+```
+
+#### 关键实现模式
+
+**1. 使用 MutationObserver 进行 DOM 渲染：**
+
+```javascript
+const observer = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+        if (m.type === 'childList') {
+            for (const node of m.addedNodes) {
+                if (node.nodeType === 1) {
+                    const contents = node.classList?.contains('message-content')
+                        ? [node] : node.querySelectorAll?.('.message-content') || [];
+                    for (const el of contents) processContent(el);
+                }
+            }
+        }
+    }
+});
+observer.observe(document.querySelector('.messages'), { childList: true, subtree: true });
+```
+
+**2. SVG 导出（避免 canvas 污染问题）：**
+
+```javascript
+function downloadSvg(svg, filename) {
+    const svgClone = svg.cloneNode(true);
+    svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    
+    // 添加白色背景
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('width', '100%');
+    rect.setAttribute('height', '100%');
+    rect.setAttribute('fill', '#ffffff');
+    svgClone.insertBefore(rect, svgClone.firstChild);
+
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgClone);
+    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+    
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+```
+
+> **注意**：对包含 `foreignObject` 元素的 SVG 使用 Canvas `toBlob()` 会导致 "Tainted canvas" 错误。应直接导出 SVG 格式。
+
+**3. 使用正确的命名空间创建 SVG：**
+
+```javascript
+// 正确：使用 createElementNS 创建 SVG 元素
+const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+svg.setAttribute('width', '800');
+svg.setAttribute('height', '500');
+
+// 错误：createElement 创建的是 HTML 元素，不是 SVG
+const svg = document.createElement('svg');  // 可能无法正确渲染
+```
+
+**4. 灵活的 JSON 解析以支持多种格式：**
+
+```javascript
+// 支持各种思维导图 JSON 格式
+const NODE_TEXT_KEYS = ['title', 'label', 'text', 'name', 'topic', 'center'];
+const NODE_CHILDREN_KEYS = ['children', 'subBranches', 'branches', 'nodes'];
+
+function getNodeText(n) {
+    if (typeof n === 'string') return n;
+    for (const key of NODE_TEXT_KEYS) {
+        if (n[key]) return n[key];
+    }
+    return '';
+}
+```
+
+**参考实现**：见 `Plugins/Plugin_market/mindmap-renderer/main.js` 完整实现。
+
 ### 最佳实践
 
 1. **保持轻量**：最小化依赖和文件大小
@@ -1828,6 +2216,36 @@ button.onclick = async () => {
 
 16. **禁止使用 emoji**：插件中任何地方（代码、UI、toast、模态框内容、manifest）均不得使用 emoji，使用 emoji 的插件将无法通过审核。
 
+17. **异步回调中延迟 UI 更新**：在浏览器 API 回调（如 SpeechRecognition、WebSocket、`fetch`、权限弹窗）中调用 `showToast` 或 `setButtonState` 时，用 `setTimeout(..., 0)` 包装，避免 Alpine.js 过渡动画报错（`TypeError: u is not a function`）：
+    ```javascript
+    // 错误 - 在非 Alpine 回调中直接调用可能导致过渡错误
+    recognition.onerror = (event) => {
+        ChatRaw.utils?.showToast?.(msg, 'error');
+        ChatRaw.ui.setButtonState('my-btn', { active: false }, PLUGIN_ID);
+    };
+
+    // 正确 - 推迟到下一事件循环
+    recognition.onerror = (event) => {
+        setTimeout(() => {
+            ChatRaw.utils?.showToast?.(msg, 'error');
+            ChatRaw.ui.setButtonState('my-btn', { active: false }, PLUGIN_ID);
+        }, 0);
+    };
+    ```
+
+18. **追加文本到输入框**：需要程序化追加文本到对话输入框（如语音输入、自动补全）时，选中 textarea 并派发 `input` 事件以同步 Alpine 的 x-model：
+    ```javascript
+    function appendToInput(text) {
+        const textarea = document.querySelector('.input-wrapper textarea');
+        if (!textarea) return;
+        const existing = textarea.value || '';
+        const sep = existing && !existing.endsWith(' ') ? ' ' : '';
+        textarea.value = existing + sep + text;
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    ```
+    若在异步回调中调用（如 SpeechRecognition 的 `onresult`），按 #17 用 `setTimeout` 包装。
+
 ### 常见陷阱
 
 开发时请注意避免以下常见错误：
@@ -1901,6 +2319,18 @@ ChatRaw.hooks.register('before_send', () => {
 ```
 
 7. **禁止使用 emoji**：插件中**严禁**在任何地方使用 emoji，包括代码、UI 文案、toast 提示、模态框内容、manifest 的 `name`/`description` 以及任何面向用户的文字。使用 emoji 的插件将无法通过审核。
+
+8. **箭头函数中的正则字面量解析歧义**：正则字面量如 `/^#{2,6}\s+/` 直接写在箭头函数 `l => /^#{2,6}\s+/.test(l)` 中，部分解析器可能误判为除法运算符，导致 `SyntaxError: missing ) after argument list`。用括号包裹正则消除歧义：
+
+```javascript
+// 错误 - 部分浏览器可能报 SyntaxError
+arr.filter(l => /^#{2,6}\s+/.test(l))
+
+// 正确 - 括号明确正则边界
+arr.filter(l => (/^#{2,6}\s+/).test(l))
+```
+
+9. **响应式框架中的 setTimeout DOM 注入**：在 Alpine.js（x-for、x-show）中，DOM 节点可能被回收。若用 `setTimeout(() => inject(el), 100)` 向消息操作区注入，回调执行时元素可能已脱离文档。建议**同步注入**（发现元素后立即处理），注入前用 `document.body.contains(el)` 校验，并用轮询作为后备。
 
 ---
 

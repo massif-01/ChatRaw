@@ -1,0 +1,47 @@
+{
+  "id": "enhanced-export",
+  "version": "1.0.0",
+  "name": {
+    "en": "Enhanced Export",
+    "zh": "增强导出"
+  },
+  "description": {
+    "en": "Export assistant messages as TXT, MD, PDF, or HTML. Toggles control which formats are available. Batch download when multiple formats are enabled.",
+    "zh": "将助手消息导出为 TXT、MD、PDF 或 HTML。通过开关控制可用格式，支持多格式批量下载。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://github.com/massif-01/ChatRaw",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "message_processor",
+  "hooks": ["after_receive", "custom_settings"],
+  "dependencies": {
+    "html2pdf": "/api/plugins/enhanced-export/lib/html2pdf.bundle.min.js"
+  },
+  "settings": [
+    {
+      "id": "exportTxt",
+      "type": "boolean",
+      "default": true,
+      "label": { "en": "Export as TXT", "zh": "导出 TXT" }
+    },
+    {
+      "id": "exportMd",
+      "type": "boolean",
+      "default": true,
+      "label": { "en": "Export as MD", "zh": "导出 MD" }
+    },
+    {
+      "id": "exportPdf",
+      "type": "boolean",
+      "default": true,
+      "label": { "en": "Export as PDF", "zh": "导出 PDF" }
+    },
+    {
+      "id": "exportHtml",
+      "type": "boolean",
+      "default": true,
+      "label": { "en": "Export as HTML", "zh": "导出 HTML" }
+    }
+  ]
+}

@@ -175,6 +175,7 @@ const i18n = {
         selectPluginZip: 'Click or drag to upload plugin (.zip)',
         pluginDevGuide: 'Plugin Development Guide',
         noPluginsAvailable: 'No plugins available',
+        searchPlugins: 'Search plugins',
         noPluginsInstalled: 'No plugins installed yet',
         noPluginSettings: 'This plugin has no settings.',
         apiKeySettings: 'API Key Settings',
@@ -308,6 +309,7 @@ const i18n = {
         selectPluginZip: '点击或拖拽上传插件 (.zip)',
         pluginDevGuide: '插件开发指南',
         noPluginsAvailable: '暂无可用插件',
+        searchPlugins: '搜索插件',
         noPluginsInstalled: '暂未安装任何插件',
         noPluginSettings: '此插件暂无可配置项',
         apiKeySettings: 'API 密钥设置',
@@ -381,6 +383,7 @@ function app() {
         installedPlugins: [],
         pluginMarketLoading: false,
         pluginMarketError: false,
+        pluginMarketSearch: '',
         pluginInstalling: null,
         pluginUploading: false,
         showPluginSettings: false,
@@ -2117,6 +2120,19 @@ function app() {
             return this.installedPlugins.some(p => p.id === pluginId);
         },
         
+        // Filter market plugins by search (name + description, en + zh)
+        get filteredMarketPlugins() {
+            const q = (this.pluginMarketSearch || '').trim().toLowerCase();
+            if (!q) return this.marketPlugins;
+            return this.marketPlugins.filter(plugin => {
+                const nameEn = (plugin.name?.en || '').toLowerCase();
+                const nameZh = plugin.name?.zh || '';
+                const descEn = (plugin.description?.en || '').toLowerCase();
+                const descZh = plugin.description?.zh || '';
+                return nameEn.includes(q) || nameZh.includes(q) || descEn.includes(q) || descZh.includes(q);
+            });
+        },
+        
         // Install plugin from market
         async installPlugin(plugin) {
             this.pluginInstalling = plugin.id;
@@ -2150,11 +2166,22 @@ function app() {
             }
         },
         
-        // Handle local plugin upload
+        // Handle local plugin upload (from file input click)
         async handlePluginUpload(event) {
-            const file = event.target.files[0];
+            const file = event.target?.files?.[0];
             if (!file) return;
-            
+            await this.uploadPluginFile(file, event.target);
+        },
+        
+        // Handle plugin drop (from drag and drop)
+        async handlePluginDrop(event) {
+            const file = event.dataTransfer?.files?.[0];
+            if (!file) return;
+            event.dataTransfer.clearData();
+            await this.uploadPluginFile(file);
+        },
+        
+        async uploadPluginFile(file, fileInput) {
             if (!file.name.endsWith('.zip')) {
                 this.showToast(this.t('onlyZipSupported'), 'error');
                 return;
@@ -2176,7 +2203,6 @@ function app() {
                 if (data.success) {
                     this.showToast(this.t('installSuccess'), 'success');
                     await this.loadInstalledPlugins();
-                    // Load the newly installed plugin
                     const newPlugin = this.installedPlugins.find(p => p.id === data.plugin_id);
                     if (newPlugin) {
                         await this.loadPluginJS(newPlugin);
@@ -2188,7 +2214,7 @@ function app() {
                 this.showToast(this.t('installFailed') + ': ' + e.message, 'error');
             } finally {
                 this.pluginUploading = false;
-                event.target.value = '';
+                if (fileInput) fileInput.value = '';
             }
         },
         

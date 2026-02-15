@@ -2174,7 +2174,9 @@ async def get_plugin_js(plugin_id: str):
         if not os.path.exists(main_path):
             return JSONResponse({"error": "Plugin main.js not found"}, status_code=404)
         
-        return FileResponse(main_path, media_type="application/javascript")
+        response = FileResponse(main_path, media_type="application/javascript")
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+        return response
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 

@@ -1,0 +1,52 @@
+{
+  "id": "mindmap-renderer",
+  "version": "1.0.0",
+  "name": {
+    "en": "Mindmap Renderer",
+    "zh": "思维导图渲染"
+  },
+  "description": {
+    "en": "Parse structured content (headings, lists, outlines) and render as interactive mind maps via Markmap. Supports explicit markmap blocks. Fully offline.",
+    "zh": "解析结构化内容（标题、列表、大纲）并渲染为交互式思维导图。支持显式 markmap 代码块。完全离线可用。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://github.com/massif-01/ChatRaw",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "message_processor",
+  "hooks": ["after_receive"],
+  "dependencies": {
+    "markmap": "/api/plugins/mindmap-renderer/lib/markmap-bundle.min.js"
+  },
+  "settings": [
+    {
+      "id": "enableMindmap",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Enable mindmap rendering",
+        "zh": "启用思维导图渲染"
+      }
+    },
+    {
+      "id": "autoDetect",
+      "type": "boolean",
+      "default": true,
+      "label": {
+        "en": "Auto-detect and convert structured content",
+        "zh": "自动检测并转换结构化内容"
+      }
+    },
+    {
+      "id": "minLevels",
+      "type": "number",
+      "default": 2,
+      "min": 1,
+      "max": 6,
+      "label": {
+        "en": "Minimum hierarchy levels to trigger conversion",
+        "zh": "最少层级数才触发转换"
+      }
+    }
+  ]
+}

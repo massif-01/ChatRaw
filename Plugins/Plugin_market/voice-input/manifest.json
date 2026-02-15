@@ -1,0 +1,18 @@
+{
+  "id": "voice-input",
+  "version": "1.0.0",
+  "name": {
+    "en": "Voice Input",
+    "zh": "语音输入"
+  },
+  "description": {
+    "en": "Speech-to-text using browser Web Speech API. Pure frontend, no backend. Ideal for mobile and lazy typing.",
+    "zh": "基于浏览器 Web Speech API 的语音转文字，纯前端无需后端。适合移动端和懒得打字的场景。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://github.com/massif-01/ChatRaw",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "ui_extension",
+  "hooks": ["plugin_load"]
+}
