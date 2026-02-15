@@ -33,7 +33,7 @@
 ![Model Configuration](assets/model-configuration.png)
 
 ### Plugin Market
-![Plugin Market](assets/plugin-market.png)
+![Plugin Market](assets/plugin-market.png?v=2)
 
 ---
 
@@ -344,7 +344,7 @@ Apache License 2.0
 ![模型配置](assets/model-configuration.png)
 
 ### 插件市场
-![插件市场](assets/plugin-market.png)
+![插件市场](assets/plugin-market.png?v=2)
 
 ---
 
