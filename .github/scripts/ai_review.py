@@ -13,11 +13,15 @@ MAX_DIFF_CHARS = 15000
 
 REVIEW_DIMENSIONS = """请从以下维度审查代码变更，给出简明扼要的中文反馈：
 
-1. **安全**：是否存在潜在的安全漏洞（如注入、敏感信息泄露）
+1. **安全**：是否存在潜在的安全漏洞（如注入、XSS、敏感信息泄露）
 2. **Bug**：是否可能引入运行时错误或逻辑问题
 3. **性能**：是否存在明显性能问题
 4. **可读性**：命名、注释、结构是否清晰
-5. **架构**：是否符合项目既有设计，是否过度设计或设计不足"""
+5. **架构**：是否符合项目既有设计，是否过度设计或设计不足
+6. **前端特有**（若含 JS/CSS）：DOM 操作是否安全、浏览器兼容性、无障碍性（a11y）"""
+
+# 支持审查的文件类型
+REVIEW_PATTERNS = ["*.py", "*.js", "*.css", "backend/**/*.py", "backend/**/*.js", "backend/**/*.css"]
 
 
 def run_cmd(cmd: list[str], cwd: str | None = None) -> tuple[int, str]:
@@ -32,12 +36,13 @@ def run_cmd(cmd: list[str], cwd: str | None = None) -> tuple[int, str]:
     return result.returncode, out
 
 
-def get_py_diff() -> tuple[list[str], str]:
-    """Get list of changed .py files and the diff content."""
+def get_code_diff() -> tuple[list[str], str]:
+    """Get list of changed .py/.js/.css files and the diff content."""
     base_ref = f"origin/{GITHUB_BASE_REF}"
-    # Get changed .py files
+    # Get changed files (Python, JavaScript, CSS)
     rc, out = run_cmd(
-        ["git", "diff", "--name-only", f"{base_ref}...HEAD", "--", "*.py"]
+        ["git", "diff", "--name-only", f"{base_ref}...HEAD", "--"]
+        + REVIEW_PATTERNS
     )
     if rc != 0:
         return [], ""
@@ -47,7 +52,7 @@ def get_py_diff() -> tuple[list[str], str]:
 
     # Get full diff
     rc, diff_out = run_cmd(
-        ["git", "diff", f"{base_ref}...HEAD", "--", "*.py"]
+        ["git", "diff", f"{base_ref}...HEAD", "--"] + REVIEW_PATTERNS
     )
     diff = diff_out if rc == 0 else ""
 
@@ -59,7 +64,18 @@ def get_py_diff() -> tuple[list[str], str]:
 
 def build_prompt(files: list[str], diff: str) -> str:
     """Build the review prompt."""
-    return f"""你是一位资深代码审查专家。请对以下 PR 中的 Python 代码变更进行审查。
+    py_count = sum(1 for f in files if f.endswith(".py"))
+    js_count = sum(1 for f in files if f.endswith(".js"))
+    css_count = sum(1 for f in files if f.endswith(".css"))
+    lang_parts = []
+    if py_count:
+        lang_parts.append(f"Python ({py_count})")
+    if js_count:
+        lang_parts.append(f"JavaScript ({js_count})")
+    if css_count:
+        lang_parts.append(f"CSS ({css_count})")
+    lang_desc = "、".join(lang_parts)
+    return f"""你是一位资深代码审查专家。请对以下 PR 中的代码变更进行审查，涉及语言：{lang_desc}。
 
 ## 修改的文件
 {chr(10).join(f"- {f}" for f in files)}
@@ -139,9 +155,9 @@ def write_result(result: str) -> None:
 
 
 def main() -> int:
-    files, diff = get_py_diff()
+    files, diff = get_code_diff()
     if not files:
-        result = "本次 PR 无 Python 文件变更，跳过 AI 审查。"
+        result = "本次 PR 无 Python/JavaScript/CSS 文件变更，跳过 AI 审查。"
         write_result(result)
         return 0
 

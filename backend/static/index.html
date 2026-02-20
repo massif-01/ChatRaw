@@ -151,7 +151,7 @@
 </head>
 <body x-data="app()" x-init="init()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
-    <div class="sidebar-overlay" x-show="!sidebarCollapsed" @click="sidebarCollapsed = true" x-transition:enter="fade-enter" x-transition:leave="fade-leave"></div>
+    <div class="sidebar-overlay" x-show="isMobileView && !sidebarCollapsed" @click="closeSidebar()" x-transition:enter="fade-enter" x-transition:leave="fade-leave"></div>
     
     <!-- Sidebar -->
     <aside class="sidebar" :class="{ 'collapsed': sidebarCollapsed }">
@@ -160,7 +160,7 @@
                 <img x-show="settings.ui_settings.logo_data" :src="settings.ui_settings.logo_data" alt="Logo" class="logo-img" width="32" height="32">
                 <span class="logo-text" x-text="settings.ui_settings.logo_text || 'JustChat'"></span>
             </div>
-            <button class="btn-icon" @click="sidebarCollapsed = !sidebarCollapsed" :title="sidebarCollapsed ? t('expand') : t('collapse')" :aria-expanded="String(!sidebarCollapsed)" aria-label="Toggle sidebar">
+            <button class="btn-icon" @click="toggleSidebar()" :title="sidebarCollapsed ? t('expand') : t('collapse')" :aria-expanded="String(!sidebarCollapsed)" aria-label="Toggle sidebar">
                 <i class="ri-arrow-left-s-line" x-show="!sidebarCollapsed"></i>
                 <i class="ri-arrow-right-s-line" x-show="sidebarCollapsed"></i>
             </button>
@@ -193,20 +193,20 @@
         </button>
 
         <div class="sidebar-footer" x-show="!sidebarCollapsed">
-            <button class="btn-plugins" @click="showPlugins = true; loadPluginMarket()">
+            <button class="btn-plugins" @click="openPluginsPanel()">
                 <i class="ri-tools-line"></i>
                 <span x-text="t('plugins')"></span>
             </button>
-            <button class="btn-settings" @click="showSettings = true">
+            <button class="btn-settings" @click="openSettingsPanel()">
                 <i class="ri-settings-3-line"></i>
                 <span x-text="t('settings')"></span>
             </button>
         </div>
         
-        <button class="btn-icon sidebar-plugins-collapsed" @click="showPlugins = true; loadPluginMarket()" x-show="sidebarCollapsed" :title="t('plugins')">
+        <button class="btn-icon sidebar-plugins-collapsed" @click="openPluginsPanel()" x-show="sidebarCollapsed" :title="t('plugins')">
             <i class="ri-tools-line"></i>
         </button>
-        <button class="btn-icon sidebar-settings-collapsed" @click="showSettings = true" x-show="sidebarCollapsed" :title="t('settings')">
+        <button class="btn-icon sidebar-settings-collapsed" @click="openSettingsPanel()" x-show="sidebarCollapsed" :title="t('settings')">
             <i class="ri-settings-3-line"></i>
         </button>
     </aside>
@@ -214,8 +214,8 @@
     <!-- Main Content -->
     <main class="main-content">
         <!-- Mobile Header -->
-        <div class="mobile-header" x-show="sidebarCollapsed">
-            <button class="btn-icon" @click="sidebarCollapsed = false">
+        <div class="mobile-header" x-show="isMobileView">
+            <button class="btn-icon" @click="openSidebar()">
                 <i class="ri-menu-line"></i>
             </button>
             <span class="mobile-title">ChatRaw</span>
@@ -247,7 +247,7 @@
             </div>
 
             <!-- Messages -->
-            <div class="messages" x-ref="messagesContainer" aria-live="polite">
+            <div class="messages" x-show="messages.length > 0" x-ref="messagesContainer" aria-live="polite">
                 <template x-for="(msg, index) in messages" :key="index">
                     <div class="message" :class="msg.role">
                         <div class="message-avatar" :class="msg.role">

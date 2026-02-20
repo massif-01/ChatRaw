@@ -346,12 +346,18 @@ marked.setOptions({
 });
 
 function app() {
+    const initialDesktopCollapsed = localStorage.getItem('chatraw_sidebar_collapsed') === '1';
+    const initialIsMobile = window.matchMedia('(max-width: 768px)').matches;
+    
     return {
         // Language
         lang: localStorage.getItem('justchat_lang') || 'en',
         
         // State
-        sidebarCollapsed: window.innerWidth < 768,
+        isMobileView: initialIsMobile,
+        desktopSidebarCollapsed: initialDesktopCollapsed,
+        sidebarCollapsed: initialIsMobile ? true : initialDesktopCollapsed,
+        _resizeRaf: null,
         showSettings: false,
         settingsTab: 'models',
         showSystemPrompt: false,
@@ -485,6 +491,7 @@ function app() {
         
         // Initialize
         async init() {
+            this.initResponsiveLayout();
             await this.loadSettings();
             await this.loadModels();
             await this.loadChats();
@@ -494,6 +501,69 @@ function app() {
             // Note: favicon is updated by loadLogo() which is called from loadSettings()
             // Initialize plugin system
             this.initPluginSystem();
+        },
+        
+        // Responsive layout sync (mobile drawer + desktop collapse)
+        initResponsiveLayout() {
+            this.syncSidebarForViewport(true);
+            const onViewportChange = () => {
+                if (this._resizeRaf) {
+                    cancelAnimationFrame(this._resizeRaf);
+                }
+                this._resizeRaf = requestAnimationFrame(() => {
+                    this.syncSidebarForViewport(false);
+                });
+            };
+            window.addEventListener('resize', onViewportChange, { passive: true });
+            window.addEventListener('orientationchange', onViewportChange, { passive: true });
+        },
+        
+        syncSidebarForViewport(isInitial) {
+            const isMobileNow = window.matchMedia('(max-width: 768px)').matches;
+            const switchedToMobile = !this.isMobileView && isMobileNow;
+            const switchedToDesktop = this.isMobileView && !isMobileNow;
+            this.isMobileView = isMobileNow;
+            
+            if (isMobileNow && (isInitial || switchedToMobile)) {
+                // Mobile: default closed drawer, open via top menu.
+                this.sidebarCollapsed = true;
+            } else if (!isMobileNow && (isInitial || switchedToDesktop)) {
+                // Desktop: restore persisted collapse preference.
+                this.sidebarCollapsed = this.desktopSidebarCollapsed;
+            }
+        },
+        
+        toggleSidebar() {
+            this.sidebarCollapsed = !this.sidebarCollapsed;
+            if (!this.isMobileView) {
+                this.desktopSidebarCollapsed = this.sidebarCollapsed;
+                localStorage.setItem('chatraw_sidebar_collapsed', this.sidebarCollapsed ? '1' : '0');
+            }
+        },
+        
+        openSidebar() {
+            this.sidebarCollapsed = false;
+        },
+        
+        closeSidebar() {
+            this.sidebarCollapsed = true;
+        },
+        
+        closeSidebarOnMobile() {
+            if (this.isMobileView) {
+                this.closeSidebar();
+            }
+        },
+        
+        openSettingsPanel() {
+            this.showSettings = true;
+            this.closeSidebarOnMobile();
+        },
+        
+        openPluginsPanel() {
+            this.showPlugins = true;
+            this.loadPluginMarket();
+            this.closeSidebarOnMobile();
         },
         
         // Apply theme
@@ -598,6 +668,7 @@ function app() {
                         this.chats.pop();
                     }
                     this.selectChat(chat.id);
+                    this.closeSidebarOnMobile();
                 }
             } catch (e) {
                 this.showToast(this.t('createChatFailed'), 'error');
@@ -608,6 +679,7 @@ function app() {
         async selectChat(chatId) {
             this.currentChatId = chatId;
             await this.loadMessages(chatId);
+            this.closeSidebarOnMobile();
         },
         
         // Load messages

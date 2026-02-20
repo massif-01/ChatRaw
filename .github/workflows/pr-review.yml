@@ -7,8 +7,10 @@ on:
     paths:
       - 'backend/**/*.py'
       - 'backend/requirements.txt'
+      - 'backend/static/**'
       - 'Dockerfile'
       - 'docker-compose.yml'
+      - 'docs/**'
       - '.github/workflows/**'
       - '.github/scripts/**'
   pull_request_target:
@@ -17,8 +19,10 @@ on:
     paths:
       - 'backend/**/*.py'
       - 'backend/requirements.txt'
+      - 'backend/static/**'
       - 'Dockerfile'
       - 'docker-compose.yml'
+      - 'docs/**'
       - '.github/workflows/**'
       - '.github/scripts/**'
   workflow_dispatch:
@@ -73,7 +77,7 @@ jobs:
     needs: security-check
     if: needs.security-check.outputs.safe_to_run == 'true'
     outputs:
-      has_py_changes: ${{ steps.check.outputs.has_py_changes }}
+      has_reviewable_changes: ${{ steps.check.outputs.has_reviewable_changes }}
       syntax_ok: ${{ steps.check.outputs.syntax_ok }}
     steps:
       - name: Checkout PR branch
@@ -96,23 +100,29 @@ jobs:
         id: check
         run: |
           git fetch origin ${{ env.BASE_REF }}
-          FILES=$(git diff --name-only origin/${{ env.BASE_REF }}...HEAD -- '*.py' 'backend/**/*.py' 2>/dev/null || true)
-          if [ -z "$FILES" ]; then
-            echo "has_py_changes=false" >> $GITHUB_OUTPUT
+          # 检测可审查的代码变更：Python、JavaScript、CSS
+          ALL_FILES=$(git diff --name-only origin/${{ env.BASE_REF }}...HEAD -- '*.py' '*.js' '*.css' 'backend/**/*.py' 'backend/**/*.js' 'backend/**/*.css' 2>/dev/null | tr '\n' ' ')
+          PY_FILES=$(git diff --name-only origin/${{ env.BASE_REF }}...HEAD -- '*.py' 'backend/**/*.py' 2>/dev/null | tr '\n' ' ')
+          if [ -z "$ALL_FILES" ]; then
+            echo "has_reviewable_changes=false" >> $GITHUB_OUTPUT
             echo "syntax_ok=true" >> $GITHUB_OUTPUT
-            echo "## Static Check: 无 Python 变更" >> $GITHUB_STEP_SUMMARY
+            echo "## Static Check: 无 Python/JS/CSS 变更" >> $GITHUB_STEP_SUMMARY
             exit 0
           fi
-          echo "has_py_changes=true" >> $GITHUB_OUTPUT
+          echo "has_reviewable_changes=true" >> $GITHUB_OUTPUT
           SYNTAX_OK=true
-          for f in $FILES; do
-            if [ -f "$f" ]; then
-              python -m py_compile "$f" 2>/dev/null || SYNTAX_OK=false
-            fi
-          done
-          flake8 --select=E9,F63,F7,F82 $FILES 2>/dev/null || SYNTAX_OK=false
+          if [ -n "$PY_FILES" ]; then
+            for f in $PY_FILES; do
+              if [ -f "$f" ]; then
+                python -m py_compile "$f" 2>/dev/null || SYNTAX_OK=false
+              fi
+            done
+            flake8 --select=E9,F63,F7,F82 $PY_FILES 2>/dev/null || SYNTAX_OK=false
+            echo "## Static Check: 已检查 $(echo $PY_FILES | wc -w) 个 Python 文件" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Static Check: 仅 JS/CSS 变更，跳过 Python 检查" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "syntax_ok=$SYNTAX_OK" >> $GITHUB_OUTPUT
-          echo "## Static Check: 已检查 $(echo $FILES | wc -w) 个文件" >> $GITHUB_STEP_SUMMARY
 
   ai-review:
     name: AI Review
@@ -121,7 +131,7 @@ jobs:
     if: |
       always() &&
       needs.security-check.outputs.safe_to_run == 'true' &&
-      needs.auto-check.outputs.has_py_changes == 'true' &&
+      needs.auto-check.outputs.has_reviewable_changes == 'true' &&
       needs.auto-check.result == 'success'
     steps:
       - name: Checkout scripts from default branch

@@ -31,7 +31,7 @@
 
 | 工作流 | 监听的路径 |
 |--------|------------|
-| CI | `backend/**/*.py`, `backend/requirements.txt`, `Dockerfile`, `docker-compose.yml`, `.github/workflows/**` |
+| CI | `backend/**/*.py`, `backend/requirements.txt`, `backend/static/**`, `Dockerfile`, `docker-compose.yml`, `docs/**`, `.github/workflows/**` |
 | PR Review | 同上，外加 `.github/scripts/**` |
 
 ---
@@ -67,13 +67,13 @@ security-check（检测 .github/workflows、.github/scripts 是否被修改）
        ↓
     safe_to_run = true/false
        ↓
-auto-check（仅当 safe_to_run=true：对变更的 .py 做语法 + Flake8）
+auto-check（仅当 safe_to_run=true：对变更的 .py 做语法 + Flake8，检测 .py/.js/.css 变更）
        ↓
-    has_py_changes、syntax_ok
+    has_reviewable_changes、syntax_ok
        ↓
-ai-review（仅当 safe_to_run=true 且 has_py_changes=true 且 auto-check 成功）
+ai-review（仅当 safe_to_run=true 且 has_reviewable_changes=true 且 auto-check 成功）
        ↓
-    脚本从 main 分支拉取，审查 PR 分支的 Python diff
+    脚本从 main 分支拉取，审查 PR 分支的 Python/JavaScript/CSS diff
        ↓
 comment（always 执行，汇总报告，发表/更新 PR 评论）
 ```
@@ -98,9 +98,9 @@ comment（always 执行，汇总报告，发表/更新 PR 评论）
 
 ### 脚本逻辑
 
-- 使用 `git diff origin/$BASE_REF...HEAD -- *.py` 获取变更的 Python 文件及 diff
+- 使用 `git diff origin/$BASE_REF...HEAD -- *.py *.js *.css backend/**/*` 获取变更的 Python/JavaScript/CSS 文件及 diff
 - diff 超过 15000 字符时截断
-- 审查维度：安全、Bug、性能、可读性、架构
+- 审查维度：安全、Bug、性能、可读性、架构、前端特有（JS/CSS：DOM 安全、兼容性、无障碍性）
 - 结果写入 `ai_review_result.txt`，供 `comment` job 读取并发布
 
 ### Comment 与 Artifact
@@ -155,7 +155,7 @@ mkdir -p .github/workflows .github/scripts
 - 使用 `pull_request` 和 `pull_request_target`（后者用于从 main 拉取脚本）
 - `security-check`：检测 `.github/workflows/*.yml`、`.github/scripts/*.py`
 - `auto-check`：`if: needs.security-check.outputs.safe_to_run == 'true'`
-- `ai-review`：`if` 包含 `safe_to_run`、`has_py_changes`、`auto-check.result == 'success'`
+- `ai-review`：`if` 包含 `safe_to_run`、`has_reviewable_changes`、`auto-check.result == 'success'`
 - **`comment`**：`if: always() && github.event.pull_request != null`（必须！）
 - `comment` 中：当 `!safeToRun` 时，将 `aiResult` 设为说明性文案
 
@@ -222,7 +222,7 @@ docker run --rm chatraw:test python -c "print('✅ Docker OK')"
 | 现象 | 可能原因 |
 |------|----------|
 | PR 上没有任何评论 | `comment` 的 `if` 不是 `always()`，或依赖的 job 被 skip 导致整链失败。应改为 `if: always() && github.event.pull_request != null` |
-| AI 审查不执行 | 未配置 `OPENAI_API_KEY` 或 `GEMINI_API_KEY`；或 `safe_to_run=false`（修改了 .github） |
+| AI 审查不执行 | 未配置 `OPENAI_API_KEY` 或 `GEMINI_API_KEY`；或 `safe_to_run=false`（修改了 .github）；或无 Python/JS/CSS 变更 |
 | 修改 .github 后无评论 | 同上：`comment` 必须用 `always()`，并在 `!safeToRun` 时发布说明性评论 |
 | ai-review 报错 | 检查 API Key、BASE_URL、MODEL 配置；或查看 Actions 日志中的具体异常 |
 
