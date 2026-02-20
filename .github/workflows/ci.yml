@@ -6,8 +6,10 @@ on:
     paths:
       - 'backend/**/*.py'
       - 'backend/requirements.txt'
+      - 'backend/static/**'
       - 'Dockerfile'
       - 'docker-compose.yml'
+      - 'docs/**'
       - '.github/workflows/**'
 
 jobs:
