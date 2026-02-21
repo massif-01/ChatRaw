@@ -12,7 +12,7 @@
  * 
  * @version 1.0.0
  * @author ChatRaw
- * @license Apache-2.0
+ * @license MIT
  */
 (function(ChatRaw) {
     'use strict';

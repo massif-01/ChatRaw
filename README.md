@@ -7,7 +7,7 @@
 *Fast, Lightweight, Extensible | 快速、轻量、可扩展*
 
 ![Lighthouse Performance](https://img.shields.io/badge/Lighthouse-100%2F100%2F100%2F100-brightgreen?logo=lighthouse)
-![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)
@@ -312,7 +312,7 @@ Contributions are welcome! Please submit issues or pull requests.
 
 ## License
 
-Apache License 2.0
+MIT License
 
 © 2026 ChatRaw by massif-01, RMinte® AI Technology Co., Ltd.
 
@@ -618,7 +618,7 @@ python main.py
 
 ## 开源协议
 
-Apache License 2.0
+MIT License
 
 © 2026 ChatRaw by massif-01, RMinte® AI Technology Co., Ltd.
 
