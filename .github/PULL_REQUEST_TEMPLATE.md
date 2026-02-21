@@ -48,5 +48,5 @@ See [CI.md](.github/CI.md) for details.
 ---
 
 **By submitting, I confirm**:
-- [ ] License contributions under Apache 2.0
+- [ ] License contributions under MIT
 - [ ] Understand checks must pass before merge

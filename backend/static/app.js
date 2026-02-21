@@ -150,7 +150,7 @@ const i18n = {
         uploadAIAvatar: 'Upload AI Avatar',
         active: 'Active',
         error: 'Error',
-        apacheLicense: 'Apache 2.0 License',
+        mitLicense: 'MIT License',
         // Plugin translations
         plugins: 'Plugins',
         pluginMarket: 'Plugin Market',
@@ -284,7 +284,7 @@ const i18n = {
         uploadAIAvatar: '上传 AI 头像',
         active: '活跃',
         error: '错误',
-        apacheLicense: 'Apache 2.0 协议',
+        mitLicense: 'MIT 协议',
         // Plugin translations
         plugins: '插件',
         pluginMarket: '插件市场',
