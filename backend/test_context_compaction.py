@@ -1,12 +1,18 @@
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 
 TEST_DATA_DIR = tempfile.mkdtemp(prefix="chatraw-context-test-")
 os.environ["DATA_DIR"] = TEST_DATA_DIR
 
-import main  # noqa: E402
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.abspath(os.path.join(BACKEND_DIR, ".."))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
+from backend import main  # noqa: E402
 
 
 def tearDownModule():

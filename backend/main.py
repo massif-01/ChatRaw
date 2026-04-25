@@ -93,6 +93,8 @@ import math
 from collections import defaultdict
 import time as time_module
 
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Document parsing
 try:
     from pypdf import PdfReader
@@ -459,10 +461,10 @@ class Database:
         cursor.execute("SELECT id FROM chats ORDER BY updated_at DESC LIMIT -1 OFFSET 9")
         stale_chat_ids = [row["id"] for row in cursor.fetchall()]
         if stale_chat_ids:
-            placeholders = ",".join("?" for _ in stale_chat_ids)
-            cursor.execute(f"DELETE FROM chat_compactions WHERE chat_id IN ({placeholders})", stale_chat_ids)
-            cursor.execute(f"DELETE FROM messages WHERE chat_id IN ({placeholders})", stale_chat_ids)
-            cursor.execute(f"DELETE FROM chats WHERE id IN ({placeholders})", stale_chat_ids)
+            stale_chats_subquery = "SELECT id FROM chats ORDER BY updated_at DESC LIMIT -1 OFFSET 9"
+            cursor.execute(f"DELETE FROM chat_compactions WHERE chat_id IN ({stale_chats_subquery})")
+            cursor.execute(f"DELETE FROM messages WHERE chat_id IN ({stale_chats_subquery})")
+            cursor.execute(f"DELETE FROM chats WHERE id IN ({stale_chats_subquery})")
             for stale_chat_id in stale_chat_ids:
                 _context_compaction_locks.pop(stale_chat_id, None)
         
@@ -2221,10 +2223,9 @@ os.makedirs(PLUGINS_INSTALLED_DIR, exist_ok=True)
 
 # Auto-install bundled plugins with lib/ directory (offline dependencies)
 # Resolve path: Docker has /app/Plugins, local dev has Plugins at project root (sibling of backend/)
-_backend_dir = os.path.dirname(os.path.abspath(__file__))
 _candidates = [
-    os.path.join(_backend_dir, "Plugins", "Plugin_market"),
-    os.path.abspath(os.path.join(_backend_dir, "..", "Plugins", "Plugin_market")),
+    os.path.join(BACKEND_DIR, "Plugins", "Plugin_market"),
+    os.path.abspath(os.path.join(BACKEND_DIR, "..", "Plugins", "Plugin_market")),
 ]
 BUNDLED_PLUGINS_DIR = next((p for p in _candidates if os.path.exists(p)), _candidates[0])
 
@@ -3093,7 +3094,7 @@ class CachedStaticFiles(StaticFiles):
 # Note: app.mount() creates a sub-application that bypasses main app middleware
 # So we wrap StaticFiles with GZipMiddleware directly
 from starlette.middleware.gzip import GZipMiddleware as StaticGZip
-static_app = CachedStaticFiles(directory="static", html=True)
+static_app = CachedStaticFiles(directory=os.path.join(BACKEND_DIR, "static"), html=True)
 gzipped_static_app = StaticGZip(static_app, minimum_size=500)
 app.mount("/", gzipped_static_app, name="static")
 

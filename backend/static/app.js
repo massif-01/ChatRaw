@@ -2174,6 +2174,8 @@ function app() {
                     'https://raw.githubusercontent.com/massif-01/ChatRaw/main/Plugins/Plugin_market/index.json',
                     { signal: controller.signal }
                 );
+                clearTimeout(timeout);
+                timeout = null;
                 
                 if (!res.ok) throw new Error('Failed to fetch');
                 
