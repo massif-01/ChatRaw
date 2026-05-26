@@ -742,6 +742,7 @@ function app() {
             if (!message || this.isGenerating) return;
             
             this.inputMessage = '';
+            this.$nextTick(() => this.autoResize(this.$refs.inputBox));
             this.isGenerating = true;
             this.abortController = new AbortController();
             
