@@ -258,6 +258,100 @@ class SecurityRegressionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("internal networks", response.text)
 
+    def test_parse_url_follows_safe_redirects(self):
+        calls = []
+
+        class FakeResponse:
+            def __init__(self, status, headers=None, body=""):
+                self.status = status
+                self.headers = headers or {}
+                self.body = body
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def text(self):
+                return self.body
+
+        class FakeSession:
+            def get(self, url, headers, timeout, allow_redirects):
+                calls.append((url, allow_redirects))
+                if url == "https://example.com/start":
+                    return FakeResponse(302, {"Location": "/article"})
+                if url == "https://example.com/article":
+                    return FakeResponse(
+                        200,
+                        body="<html><head><title>Final</title></head><body><p>Redirected body</p></body></html>",
+                    )
+                raise AssertionError(f"unexpected URL {url}")
+
+        class FakeSessionManager:
+            async def __aenter__(self):
+                return FakeSession()
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        with patch.object(
+            main, "create_external_http_session", lambda: FakeSessionManager()
+        ):
+            response = self.client.post(
+                "/api/parse-url",
+                json={"url": "example.com/start"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["url"], "https://example.com/article")
+        self.assertEqual(
+            calls,
+            [
+                ("https://example.com/start", False),
+                ("https://example.com/article", False),
+            ],
+        )
+
+    def test_parse_url_blocks_redirect_to_internal_target(self):
+        calls = []
+
+        class FakeResponse:
+            status = 302
+            headers = {"Location": "http://169.254.169.254/latest/meta-data"}
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        class FakeSession:
+            def get(self, url, headers, timeout, allow_redirects):
+                calls.append((url, allow_redirects))
+                return FakeResponse()
+
+        class FakeSessionManager:
+            async def __aenter__(self):
+                return FakeSession()
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        with patch.object(
+            main, "create_external_http_session", lambda: FakeSessionManager()
+        ):
+            response = self.client.post(
+                "/api/parse-url",
+                json={"url": "https://example.com/start"},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
+        self.assertEqual(calls, [("https://example.com/start", False)])
+
     def test_proxy_request_rejects_literal_internal_targets_without_network(self):
         async def fail_if_called():
             raise AssertionError("get_http_session should not be called")
@@ -502,6 +596,18 @@ class SecurityRegressionTests(unittest.TestCase):
                         dirty: '<a/href="javascript:alert(4)">x</a>',
                         forbidden: [/href=/i, /javascript:/i],
                         required: ['<a>x</a>']
+                    }},
+                    {{
+                        name: 'data html link',
+                        dirty: '<a href="data:text/html,<script>alert(18)</script>">x</a>',
+                        forbidden: [/href=/i, new RegExp('data:text/html', 'i'), /script/i],
+                        required: ['<a>x</a>']
+                    }},
+                    {{
+                        name: 'data html charset form action',
+                        dirty: '<form action="data:text/html;charset=utf-8,<script>alert(19)</script>"><button>open</button></form>',
+                        forbidden: [/action=/i, new RegExp('data:text/html', 'i'), /script/i],
+                        required: ['<form><button>open</button></form>']
                     }},
                     {{
                         name: 'form URL attributes',

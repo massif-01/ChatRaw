@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import Optional, List, AsyncGenerator, Dict, Any
 from contextlib import asynccontextmanager
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import unquote, urljoin, urlparse
 
 # ============ Structured Logging Setup ============
 
@@ -2325,12 +2325,28 @@ async def parse_url(request: ParseUrlRequest):
             "Accept-Language": "en-US,en;q=0.5",
         }
         
+        redirect_statuses = {301, 302, 303, 307, 308}
+        final_url = url
         async with create_external_http_session() as session:
-            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=False) as resp:
-                if resp.status != 200:
-                    return JSONResponse({"success": False, "error": f"Failed to fetch URL (HTTP {resp.status})"}, status_code=400)
+            for _ in range(5):
+                async with session.get(final_url, headers=headers, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=False) as resp:
+                    if resp.status in redirect_statuses:
+                        location = resp.headers.get("Location")
+                        if not location:
+                            return JSONResponse({"success": False, "error": f"Failed to fetch URL (HTTP {resp.status})"}, status_code=400)
+                        try:
+                            final_url = validate_external_url(urljoin(final_url, location))
+                        except HTTPException as exc:
+                            return security_error_response(exc)
+                        continue
 
-                html = await resp.text()
+                    if resp.status != 200:
+                        return JSONResponse({"success": False, "error": f"Failed to fetch URL (HTTP {resp.status})"}, status_code=400)
+
+                    html = await resp.text()
+                    break
+            else:
+                return JSONResponse({"success": False, "error": "Too many redirects"}, status_code=400)
         
         # Try to use trafilatura for content extraction
         try:
@@ -2360,14 +2376,14 @@ async def parse_url(request: ParseUrlRequest):
         
         # Extract title from HTML
         title_match = re.search(r'<title[^>]*>([^<]+)</title>', html, re.IGNORECASE)
-        parsed_url = urlparse(url)
+        parsed_url = urlparse(final_url)
         title = title_match.group(1).strip() if title_match else parsed_url.netloc
         
         return {
             "success": True,
             "title": title,
             "content": content,
-            "url": url,
+            "url": final_url,
             "length": len(content)
         }
         

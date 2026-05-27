@@ -195,7 +195,7 @@ function hasDangerousUrlScheme(value) {
         decoded = next;
     }
     const normalized = decoded.replace(/[\u0000-\u001F\u007F\s]+/g, '').toLowerCase();
-    return /^(?:javascript|vbscript|data:text\/html):/.test(normalized);
+    return /^(?:javascript|vbscript):/.test(normalized) || /^data:text\/html(?:[;,]|$)/.test(normalized);
 }
 
 // i18n translations
