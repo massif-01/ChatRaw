@@ -1623,7 +1623,7 @@ def validate_external_url(url: str) -> str:
     if not normalized_url:
         raise HTTPException(status_code=400, detail="URL is required")
 
-    if not normalized_url.startswith(("http://", "https://")):
+    if "://" not in normalized_url:
         normalized_url = "https://" + normalized_url
 
     try:

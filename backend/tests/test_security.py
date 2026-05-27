@@ -213,6 +213,7 @@ class SecurityRegressionTests(unittest.TestCase):
             raise AssertionError("get_http_session should not be called")
 
         blocked_urls = [
+            "HTTP://127.0.0.1:51111",
             "http://127.0.0.1:51111",
             "http://localhost:51111",
             "http://100.64.0.1",
@@ -262,6 +263,7 @@ class SecurityRegressionTests(unittest.TestCase):
             raise AssertionError("get_http_session should not be called")
 
         blocked_urls = [
+            "HTTP://127.0.0.1:51111",
             "http://127.0.0.1:51111",
             "http://localhost:51111",
             "http://100.64.0.1",
@@ -277,6 +279,57 @@ class SecurityRegressionTests(unittest.TestCase):
                         json={"service_id": "test", "url": url},
                     )
                     self.assertEqual(response.status_code, 400)
+
+    def test_proxy_request_accepts_case_insensitive_http_scheme(self):
+        captured = {}
+
+        class FakeResponse:
+            status = 200
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def json(self):
+                return {"ok": True}
+
+        class FakeSession:
+            def request(self, method, url, headers, json, timeout, allow_redirects):
+                captured["url"] = url
+                return FakeResponse()
+
+        class FakeSessionManager:
+            async def __aenter__(self):
+                return FakeSession()
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        with patch.object(
+            main, "create_external_http_session", lambda: FakeSessionManager()
+        ):
+            response = self.client.post(
+                "/api/proxy/request",
+                json={"service_id": "test", "url": "HTTP://api.example.com/v1"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(captured["url"], "HTTP://api.example.com/v1")
+        self.assertNotIn("https://HTTP://", captured["url"])
+
+    def test_proxy_request_rejects_unsupported_explicit_scheme_without_network(self):
+        def fail_if_called():
+            raise AssertionError("create_external_http_session should not be called")
+
+        with patch.object(main, "create_external_http_session", fail_if_called):
+            response = self.client.post(
+                "/api/proxy/request",
+                json={"service_id": "test", "url": "ftp://api.example.com/v1"},
+            )
+
+        self.assertEqual(response.status_code, 400)
 
     def test_proxy_request_blocks_private_ip_at_connection_resolution(self):
         async def fail_if_called():
