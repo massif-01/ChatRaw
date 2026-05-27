@@ -63,6 +63,10 @@ jobs:
           cd backend
           python -c "from main import app"
 
+      - name: Unit tests
+        run: |
+          python -m unittest discover -s backend -p 'test*.py'
+
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest

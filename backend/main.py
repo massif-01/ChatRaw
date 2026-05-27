@@ -9,13 +9,18 @@ import json
 import uuid
 import asyncio
 import aiohttp
+import hmac
+import ipaddress
 import io
 import struct
 import logging
 import shutil
+import socket
 from datetime import datetime
 from typing import Optional, List, AsyncGenerator, Dict, Any
 from contextlib import asynccontextmanager
+from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 # ============ Structured Logging Setup ============
 
@@ -87,7 +92,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.gzip import GZipMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 import sqlite3
 import math
 from collections import defaultdict
@@ -404,6 +409,26 @@ class Database:
         cursor.execute("SELECT * FROM model_configs WHERE type = ? LIMIT 1", (model_type,))
         row = cursor.fetchone()
         
+        if row:
+            cap = json.loads(row["capability"]) if row["capability"] else {}
+            return ModelConfig(
+                id=row["id"],
+                name=row["name"],
+                api_key=row["api_key"] or "",
+                api_url=row["api_url"] or "",
+                model_id=row["model_id"] or "",
+                context_length=row["context_length"],
+                max_output=row["max_output"],
+                type=row["type"],
+                capability=ModelCapability(**cap)
+            )
+        return None
+
+    def get_model_config(self, model_id: str) -> Optional[ModelConfig]:
+        cursor = self.get_conn().cursor()
+        cursor.execute("SELECT * FROM model_configs WHERE id = ? LIMIT 1", (model_id,))
+        row = cursor.fetchone()
+
         if row:
             cap = json.loads(row["capability"]) if row["capability"] else {}
             return ModelConfig(
@@ -1544,6 +1569,115 @@ RATE_LIMIT_WINDOW = int(os.environ.get("RATE_LIMIT_WINDOW", "60"))  # window in 
 MAX_UPLOAD_SIZE = int(os.environ.get("MAX_UPLOAD_SIZE", str(50 * 1024 * 1024)))  # 50MB default
 MAX_IMAGE_SIZE = int(os.environ.get("MAX_IMAGE_SIZE", str(20 * 1024 * 1024)))  # 20MB default
 
+# ============ Security Helpers ============
+
+def model_config_response(config: ModelConfig) -> Dict[str, Any]:
+    data = config.model_dump()
+    api_key = data.pop("api_key", "")
+    data["api_key"] = ""
+    data["api_key_set"] = bool(api_key)
+    return data
+
+async def require_model_auth(request: Request):
+    token = os.environ.get("CHATRAW_AUTH_TOKEN", "")
+    if not token:
+        return
+
+    authorization = request.headers.get("authorization", "")
+    scheme, _, credential = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not credential or not hmac.compare_digest(credential, token):
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+def resolve_safe_path(root: str | Path, requested_path: str) -> Path:
+    decoded_path = unquote(requested_path)
+    if "\x00" in decoded_path:
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    requested = Path(decoded_path)
+    if requested.is_absolute():
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    root_path = Path(root).resolve()
+    target_path = (root_path / requested).resolve()
+    try:
+        target_path.relative_to(root_path)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    return target_path
+
+def is_blocked_ip(ip: ipaddress._BaseAddress) -> bool:
+    mapped = getattr(ip, "ipv4_mapped", None)
+    if mapped is not None:
+        ip = mapped
+    return (
+        ip.is_loopback
+        or ip.is_private
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+    )
+
+def resolve_hostname(hostname: str, port: Optional[int] = None) -> List[ipaddress._BaseAddress]:
+    try:
+        infos = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
+    except socket.gaierror:
+        raise HTTPException(status_code=400, detail="Unable to resolve URL host")
+
+    addresses = []
+    for info in infos:
+        address = info[4][0]
+        try:
+            addresses.append(ipaddress.ip_address(address))
+        except ValueError:
+            continue
+
+    if not addresses:
+        raise HTTPException(status_code=400, detail="Unable to resolve URL host")
+    return addresses
+
+def validate_external_url(url: str) -> str:
+    normalized_url = url.strip()
+    if not normalized_url:
+        raise HTTPException(status_code=400, detail="URL is required")
+
+    if not normalized_url.startswith(("http://", "https://")):
+        normalized_url = "https://" + normalized_url
+
+    try:
+        parsed = urlparse(normalized_url)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid URL format")
+
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise HTTPException(status_code=400, detail="Invalid URL")
+
+    hostname = parsed.hostname.rstrip(".").lower()
+    if hostname == "localhost" or hostname.endswith(".localhost"):
+        raise HTTPException(status_code=400, detail="Access to internal networks is not allowed")
+
+    try:
+        addresses = [ipaddress.ip_address(hostname)]
+    except ValueError:
+        try:
+            port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid URL")
+        addresses = resolve_hostname(hostname, port)
+
+    if any(is_blocked_ip(address) for address in addresses):
+        raise HTTPException(status_code=400, detail="Access to internal networks is not allowed")
+
+    return normalized_url
+
+def security_error_response(exc: HTTPException) -> JSONResponse:
+    return JSONResponse({"success": False, "error": exc.detail}, status_code=exc.status_code)
+
 # ============ Rate Limiting Middleware ============
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -1684,17 +1818,19 @@ async def readiness_check():
 async def fonts(path: str):
     """Serve font files with long-term caching for optimal performance"""
     try:
-        font_path = os.path.join("static", "fonts", path)
-        if not os.path.exists(font_path):
+        font_path = resolve_safe_path(Path(BACKEND_DIR) / "static" / "fonts", path)
+        if not font_path.exists() or not font_path.is_file():
             raise HTTPException(status_code=404, detail="Font file not found")
         
         return FileResponse(
-            font_path,
+            str(font_path),
             headers={
                 "Cache-Control": "public, max-age=31536000, immutable",
                 "Access-Control-Allow-Origin": "*"
             }
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error serving font file: {str(e)}")
         raise HTTPException(status_code=404, detail="Font file not found")
@@ -1720,17 +1856,52 @@ async def save_settings(settings: Settings):
     return {"success": True}
 
 @app.get("/api/models")
-async def get_models():
+async def get_models(request: Request):
+    await require_model_auth(request)
     configs = db.get_model_configs()
-    return [c.model_dump() for c in configs]
+    return [model_config_response(c) for c in configs]
 
 @app.post("/api/models")
-async def save_model(config: ModelConfig):
+async def save_model(request: Request):
+    await require_model_auth(request)
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"success": False, "error": "Invalid JSON"}, status_code=400)
+    if not isinstance(body, dict):
+        return JSONResponse({"success": False, "error": "Invalid model config"}, status_code=400)
+
+    try:
+        config = ModelConfig.model_validate(body)
+    except ValidationError:
+        return JSONResponse({"success": False, "error": "Invalid model config"}, status_code=400)
+    if "api_key" not in body and config.id:
+        existing = db.get_model_config(config.id)
+        if existing:
+            config.api_key = existing.api_key
+
     saved = db.save_model_config(config)
-    return saved.model_dump()
+    return model_config_response(saved)
 
 @app.post("/api/models/verify")
-async def verify_model(config: ModelConfig):
+async def verify_model(request: Request):
+    await require_model_auth(request)
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse({"success": False, "error": "Invalid JSON"}, status_code=400)
+    if not isinstance(body, dict):
+        return JSONResponse({"success": False, "error": "Invalid model config"}, status_code=400)
+
+    try:
+        config = ModelConfig.model_validate(body)
+    except ValidationError:
+        return JSONResponse({"success": False, "error": "Invalid model config"}, status_code=400)
+    if not config.api_key and config.id:
+        existing = db.get_model_config(config.id)
+        if existing:
+            config.api_key = existing.api_key
+
     if not config.api_url or not config.model_id:
         return {"success": False, "error": "API URL and Model ID required"}
     
@@ -1789,7 +1960,8 @@ async def verify_model(config: ModelConfig):
         return {"success": False, "error": str(e)}
 
 @app.delete("/api/models/{model_id}")
-async def delete_model(model_id: str):
+async def delete_model(model_id: str, request: Request):
+    await require_model_auth(request)
     db.delete_model_config(model_id)
     return {"success": True}
 
@@ -2129,25 +2301,11 @@ async def fetch_raw_url(request: ParseUrlRequest):
 async def parse_url(request: ParseUrlRequest):
     """Parse web page content from URL"""
     import re
-    from urllib.parse import urlparse
     
-    url = request.url.strip()
-    
-    # Validate URL format
-    if not url:
-        return JSONResponse({"success": False, "error": "URL is required"}, status_code=400)
-    
-    # Add https:// if no protocol specified
-    if not url.startswith(('http://', 'https://')):
-        url = 'https://' + url
-    
-    # Validate URL
     try:
-        parsed = urlparse(url)
-        if not parsed.netloc:
-            return JSONResponse({"success": False, "error": "Invalid URL"}, status_code=400)
-    except:
-        return JSONResponse({"success": False, "error": "Invalid URL format"}, status_code=400)
+        url = validate_external_url(request.url)
+    except HTTPException as exc:
+        return security_error_response(exc)
     
     try:
         # Fetch the web page
@@ -2158,7 +2316,7 @@ async def parse_url(request: ParseUrlRequest):
         }
         
         session = await get_http_session()
-        async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=True) as resp:
+        async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=False) as resp:
             if resp.status != 200:
                 return JSONResponse({"success": False, "error": f"Failed to fetch URL (HTTP {resp.status})"}, status_code=400)
             
@@ -2192,7 +2350,8 @@ async def parse_url(request: ParseUrlRequest):
         
         # Extract title from HTML
         title_match = re.search(r'<title[^>]*>([^<]+)</title>', html, re.IGNORECASE)
-        title = title_match.group(1).strip() if title_match else parsed.netloc
+        parsed_url = urlparse(url)
+        title = title_match.group(1).strip() if title_match else parsed_url.netloc
         
         return {
             "success": True,
@@ -2833,21 +2992,10 @@ async def get_plugin_manifest(plugin_id: str):
 @app.post("/api/proxy/request")
 async def proxy_request(request: ProxyRequest):
     """Generic HTTP proxy for plugins - protects API keys"""
-    from urllib.parse import urlparse
-    
-    # Validate URL
     try:
-        parsed = urlparse(request.url)
-        if not parsed.scheme in ('http', 'https'):
-            return JSONResponse({"success": False, "error": "Only HTTP(S) URLs are allowed"}, status_code=400)
-        if not parsed.netloc:
-            return JSONResponse({"success": False, "error": "Invalid URL"}, status_code=400)
-        # Block internal/private networks (basic SSRF protection)
-        hostname = parsed.hostname.lower() if parsed.hostname else ''
-        if hostname in ('localhost', '127.0.0.1', '0.0.0.0', '::1') or hostname.startswith('192.168.') or hostname.startswith('10.') or hostname.startswith('172.'):
-            return JSONResponse({"success": False, "error": "Access to internal networks is not allowed"}, status_code=400)
-    except Exception:
-        return JSONResponse({"success": False, "error": "Invalid URL format"}, status_code=400)
+        validated_url = validate_external_url(request.url)
+    except HTTPException as exc:
+        return security_error_response(exc)
     
     # Validate HTTP method
     allowed_methods = {'GET', 'POST', 'PUT', 'DELETE', 'PATCH'}
@@ -2874,7 +3022,7 @@ async def proxy_request(request: ProxyRequest):
         session = await get_http_session()
         async with session.request(
             method=request.method.upper(),
-            url=request.url,
+            url=validated_url,
             headers=headers,
             json=request.body if request.body else None,
             timeout=aiohttp.ClientTimeout(total=30),

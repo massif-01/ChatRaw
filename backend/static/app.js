@@ -48,6 +48,18 @@ function loadScript(src) {
     });
 }
 
+function sanitizeMarkdownHtml(html) {
+    if (!html) return '';
+    return String(html)
+        .replace(/<\s*(script|iframe|object|embed|link|meta|base)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+        .replace(/<\s*(script|iframe|object|embed|link|meta|base)\b[^>]*\/?>/gi, '')
+        .replace(/\s+on[a-z0-9_-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/\s+(href|src|xlink:href)\s*=\s*(["'])\s*(?:javascript|vbscript|data:text\/html)\s*:[\s\S]*?\2/gi, '')
+        .replace(/\s+(href|src|xlink:href)\s*=\s*([^\s>]+)/gi, (match, attr, value) => {
+            return /^(?:javascript|vbscript|data:text\/html)\s*:/i.test(value.trim()) ? '' : match;
+        });
+}
+
 // i18n translations
 const i18n = {
     en: {
@@ -632,6 +644,17 @@ function app() {
             } catch (e) {
                 console.error('Failed to load models:', e);
             }
+        },
+
+        prepareModelPayload(model) {
+            const payload = { ...model };
+            delete payload.api_key_set;
+            delete payload.status;
+            delete payload.verifyMessage;
+            if (model.api_key_set && !model.api_key) {
+                delete payload.api_key;
+            }
+            return payload;
         },
         
         // Load chat list
@@ -1453,10 +1476,11 @@ function app() {
                 }
                 
                 // Save model config
+                const payload = this.prepareModelPayload(model);
                 const saveRes = await fetch('/api/models', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(model)
+                    body: JSON.stringify(payload)
                 });
                 
                 if (!saveRes.ok) {
@@ -1467,17 +1491,22 @@ function app() {
                 if (savedModel.id) {
                     model.id = savedModel.id;
                 }
+                model.api_key_set = savedModel.api_key_set || !!model.api_key;
                 
                 // Verify model connection
+                const verifyPayload = {
+                    id: model.id,
+                    api_url: model.api_url,
+                    model_id: model.model_id,
+                    type: model.type
+                };
+                if (model.api_key) {
+                    verifyPayload.api_key = model.api_key;
+                }
                 const verifyRes = await fetch('/api/models/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        api_url: model.api_url,
-                        api_key: model.api_key,
-                        model_id: model.model_id,
-                        type: model.type
-                    })
+                    body: JSON.stringify(verifyPayload)
                 });
                 
                 const verifyData = await verifyRes.json();
@@ -1512,10 +1541,11 @@ function app() {
                     if (!model.name) {
                         model.name = model.model_id || 'Unnamed';
                     }
+                    const payload = this.prepareModelPayload(model);
                     await fetch('/api/models', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(model)
+                        body: JSON.stringify(payload)
                     });
                 }
                 
@@ -1562,7 +1592,7 @@ function app() {
         // Render Markdown
         renderMarkdown(content) {
             if (!content) return '';
-            return marked.parse(content);
+            return sanitizeMarkdownHtml(marked.parse(content));
         },
         
         // Scroll to bottom
