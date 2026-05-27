@@ -528,3 +528,98 @@ class SecurityRegressionTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_save_all_settings_reports_model_save_failure(self):
+        script = textwrap.dedent(
+            f"""
+            const fs = require('fs');
+            const vm = require('vm');
+            const source = fs.readFileSync({str(REPO_ROOT / 'backend' / 'static' / 'app.js')!r}, 'utf8');
+            const calls = [];
+            const toasts = [];
+            const sandbox = {{
+                calls,
+                toasts,
+                marked: {{ setOptions() {{}} }},
+                window: {{
+                    matchMedia() {{ return {{ matches: false }}; }},
+                    prompt() {{ return ''; }}
+                }},
+                localStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
+                sessionStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
+                document: {{
+                    head: {{ appendChild() {{}} }},
+                    createElement() {{ return {{}}; }},
+                    querySelectorAll() {{ return []; }},
+                    documentElement: {{ setAttribute() {{}} }}
+                }},
+                fetch: async (url, options = {{}}) => {{
+                    calls.push({{ url, method: options.method || 'GET' }});
+                    if (url === '/api/settings') {{
+                        return {{ status: 200, ok: true, json: async () => ({{ success: true }}) }};
+                    }}
+                    if (url === '/api/models') {{
+                        return {{ status: 401, ok: false, json: async () => ({{ error: 'Unauthorized' }}) }};
+                    }}
+                    return {{ status: 404, ok: false, json: async () => ({{}}) }};
+                }}
+            }};
+            (async () => {{
+                vm.runInNewContext(source + `
+                    this.done = (async () => {{
+                        const state = app();
+                        state.showToast = (message, type) => toasts.push({{ message, type }});
+                        state.applyTheme = () => {{ this.appliedTheme = true; }};
+                        state.showSettings = true;
+                        state.models = [{{
+                            id: 'secret-chat',
+                            name: 'Secret Chat',
+                            model_id: 'chat-model',
+                            api_url: 'https://example.com/v1',
+                            type: 'chat',
+                            api_key: '',
+                            api_key_set: true,
+                            api_key_touched: false
+                        }}];
+                        await state.saveAllSettings();
+                        this.showSettings = state.showSettings;
+                    }})();
+                `, sandbox);
+                await sandbox.done;
+                if (sandbox.showSettings !== true) {{
+                    process.stderr.write('settings panel closed after failed model save');
+                    process.exit(1);
+                }}
+                if (sandbox.appliedTheme) {{
+                    process.stderr.write('theme applied after failed model save');
+                    process.exit(1);
+                }}
+                if (!sandbox.calls.some(call => call.url === '/api/models' && call.method === 'POST')) {{
+                    process.stderr.write(JSON.stringify(sandbox.calls));
+                    process.exit(1);
+                }}
+                if (sandbox.toasts.some(toast => toast.message === 'Settings saved')) {{
+                    process.stderr.write(JSON.stringify(sandbox.toasts));
+                    process.exit(1);
+                }}
+                const lastToast = sandbox.toasts[sandbox.toasts.length - 1];
+                if (!lastToast || lastToast.type !== 'error' || !lastToast.message.startsWith('Save failed:')) {{
+                    process.stderr.write(JSON.stringify(sandbox.toasts));
+                    process.exit(1);
+                }}
+            }})().catch(error => {{
+                process.stderr.write(error.stack || String(error));
+                process.exit(1);
+            }});
+            """
+        )
+
+        result = subprocess.run(
+            ["node", "-e", script],
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)

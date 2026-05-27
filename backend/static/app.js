@@ -1639,11 +1639,14 @@ function app() {
                         model.name = model.model_id || 'Unnamed';
                     }
                     const payload = this.prepareModelPayload(model);
-                    await this.modelFetch('/api/models', {
+                    const modelRes = await this.modelFetch('/api/models', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
+                    if (!modelRes.ok) {
+                        throw new Error('Failed to save');
+                    }
                 }
                 
                 this.applyTheme();
