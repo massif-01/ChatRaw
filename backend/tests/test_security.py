@@ -391,3 +391,85 @@ class SecurityRegressionTests(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_model_fetch_prompts_and_retries_with_auth_token(self):
+        script = textwrap.dedent(
+            f"""
+            const fs = require('fs');
+            const vm = require('vm');
+            const source = fs.readFileSync({str(REPO_ROOT / 'backend' / 'static' / 'app.js')!r}, 'utf8');
+            const calls = [];
+            const store = {{}};
+            const sandbox = {{
+                calls,
+                store,
+                marked: {{ setOptions() {{}} }},
+                window: {{
+                    matchMedia() {{ return {{ matches: false }}; }},
+                    prompt() {{ return 'test-token'; }}
+                }},
+                localStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
+                sessionStorage: {{
+                    getItem(key) {{ return store[key] || null; }},
+                    setItem(key, value) {{ store[key] = value; }}
+                }},
+                document: {{
+                    head: {{ appendChild() {{}} }},
+                    createElement() {{ return {{}}; }},
+                    querySelectorAll() {{ return []; }}
+                }},
+                fetch: async (url, options = {{}}) => {{
+                    calls.push({{ url, headers: options.headers || {{}} }});
+                    return {{
+                        status: calls.length === 1 ? 401 : 200,
+                        ok: calls.length > 1,
+                        json: async () => []
+                    }};
+                }}
+            }};
+            (async () => {{
+                vm.runInNewContext(source + `
+                    this.done = (async () => {{
+                        const state = app();
+                        const response = await state.modelFetch('/api/models');
+                        this.status = response.status;
+                        this.storedToken = store.chatraw_model_auth_token;
+                    }})();
+                `, sandbox);
+                await sandbox.done;
+                if (sandbox.status !== 200) {{
+                    process.stderr.write('unexpected status ' + sandbox.status);
+                    process.exit(1);
+                }}
+                if (sandbox.calls.length !== 2) {{
+                    process.stderr.write(JSON.stringify(sandbox.calls));
+                    process.exit(1);
+                }}
+                if (sandbox.calls[0].headers.Authorization) {{
+                    process.stderr.write(JSON.stringify(sandbox.calls[0]));
+                    process.exit(1);
+                }}
+                if (sandbox.calls[1].headers.Authorization !== 'Bearer test-token') {{
+                    process.stderr.write(JSON.stringify(sandbox.calls[1]));
+                    process.exit(1);
+                }}
+                if (sandbox.storedToken !== 'test-token') {{
+                    process.stderr.write('token not stored');
+                    process.exit(1);
+                }}
+            }})().catch(error => {{
+                process.stderr.write(error.stack || String(error));
+                process.exit(1);
+            }});
+            """
+        )
+
+        result = subprocess.run(
+            ["node", "-e", script],
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
