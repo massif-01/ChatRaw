@@ -53,7 +53,7 @@ function sanitizeMarkdownHtml(html) {
     return String(html)
         .replace(/<\s*(script|iframe|object|embed|link|meta|base)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
         .replace(/<\s*(script|iframe|object|embed|link|meta|base)\b[^>]*\/?>/gi, '')
-        .replace(/\s+on[a-z0-9_-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/(?:\s+|\/+)on[a-z0-9_-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
         .replace(/\s+(href|src|xlink:href|action|formaction)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi, (match, attr, doubleValue, singleValue, unquotedValue) => {
             const value = doubleValue ?? singleValue ?? unquotedValue ?? '';
             return hasDangerousUrlScheme(value) ? '' : match;

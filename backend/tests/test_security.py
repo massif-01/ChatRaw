@@ -311,9 +311,9 @@ class SecurityRegressionTests(unittest.TestCase):
                     querySelectorAll() {{ return []; }}
                 }}
             }};
-            const dirty = '<img src=x onerror=alert(1)><a href="jav&#x61;script:alert(1)">x</a><form action="javascript:alert(2)"><button formaction="jav&#x61;script:alert(3)">open</button></form><strong>ok</strong>';
+            const dirty = '<img src=x onerror=alert(1)><svg/onload=alert(2)><a href="jav&#x61;script:alert(3)">x</a><form action="javascript:alert(4)"><button formaction="jav&#x61;script:alert(5)">open</button></form><strong>ok</strong>';
             vm.runInNewContext(source + '\\nthis.result = app().renderMarkdown(' + JSON.stringify(dirty) + ');', sandbox);
-            if (/onerror|href=|action=|formaction|javascript:|jav&#x61;script:/i.test(sandbox.result)) {{
+            if (/onerror|onload|href=|action=|formaction|javascript:|jav&#x61;script:/i.test(sandbox.result)) {{
                 process.stderr.write(sandbox.result);
                 process.exit(1);
             }}
