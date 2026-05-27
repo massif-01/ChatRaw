@@ -161,7 +161,7 @@
     
     async function loadModels() {
         try {
-            const res = await fetch('/api/models');
+            const res = await ChatRaw.modelFetch('/api/models');
             if (res.ok) {
                 models = await res.json();
                 renderModelCards();
@@ -259,7 +259,7 @@
         
         try {
             // First verify the model
-            const verifyRes = await fetch('/api/models/verify', {
+            const verifyRes = await ChatRaw.modelFetch('/api/models/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(model)
@@ -273,7 +273,7 @@
                 if (statusEl) statusEl.innerHTML = `<span style="color:var(--success-color)">● ${t('active')}</span>`;
                 
                 // Save the model to backend after successful verification
-                const saveRes = await fetch('/api/models', {
+                const saveRes = await ChatRaw.modelFetch('/api/models', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(model)

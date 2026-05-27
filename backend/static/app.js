@@ -1906,6 +1906,9 @@ function app() {
                 
                 // Dependency loader
                 require: (depName) => this.loadedPluginDeps[depName],
+
+                // Auth-aware model configuration API
+                modelFetch: (url, options = {}, retry = true) => this.modelFetch(url, options, retry),
                 
                 // Proxy API for external service calls
                 proxy: {

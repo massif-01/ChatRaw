@@ -1407,7 +1407,11 @@ class SecurityRegressionTests(unittest.TestCase):
                 }},
                 window: {{ matchMedia() {{ return {{ matches: false }}; }} }},
                 localStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
-                sessionStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
+                sessionStorage: {{
+                    getItem(key) {{ return key === 'chatraw_model_auth_token' ? 'plugin-token' : null; }},
+                    setItem() {{}}
+                }},
+                fetchCalls: [],
                 document: {{
                     head: {{ appendChild() {{}} }},
                     createElement() {{ return {{}}; }},
@@ -1415,6 +1419,10 @@ class SecurityRegressionTests(unittest.TestCase):
                 }}
             }};
             vm.runInNewContext(source + `
+                this.fetch = (url, options = {{}}) => {{
+                    this.fetchCalls.push({{ url, options }});
+                    return Promise.resolve({{ status: 200, ok: true, json: async () => [] }});
+                }};
                 const state = app();
                 const markdownCases = [
                     {{
@@ -1467,6 +1475,10 @@ class SecurityRegressionTests(unittest.TestCase):
                     api_key: '',
                     api_key_touched: false
                 }});
+                state.initPluginSystem();
+                window.ChatRawPlugin.modelFetch('/api/models', {{
+                    headers: {{ 'Content-Type': 'application/json' }}
+                }});
             `, sandbox);
             if (sandbox.markdownFailures.length) {{
                 process.stderr.write(sandbox.markdownFailures.join('\\n'));
@@ -1476,6 +1488,96 @@ class SecurityRegressionTests(unittest.TestCase):
                 process.stderr.write(JSON.stringify(sandbox.payload));
                 process.exit(1);
             }}
+            const pluginCall = sandbox.fetchCalls.find(call => call.url === '/api/models');
+            if (!pluginCall || pluginCall.options.headers.Authorization !== 'Bearer plugin-token') {{
+                process.stderr.write(JSON.stringify(sandbox.fetchCalls));
+                process.exit(1);
+            }}
+            """
+        )
+
+        result = subprocess.run(
+            ["node", "-e", script],
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_bundled_model_plugins_use_auth_aware_fetch(self):
+        plugin_paths = [
+            REPO_ROOT / "Plugins" / "Plugin_market" / "multi-model-manager" / "main.js",
+            REPO_ROOT / "Plugins" / "Plugin_market" / "lightweight-rag" / "main.js",
+        ]
+        for path in plugin_paths:
+            source = path.read_text()
+            with self.subTest(path=path.name):
+                self.assertIn("ChatRaw.modelFetch", source)
+                self.assertNotRegex(source, r"fetch\(\s*['\"`]/api/models")
+
+    def test_plugin_model_fetch_prompts_and_retries_after_unauthorized(self):
+        script = textwrap.dedent(
+            f"""
+            (async () => {{
+                const fs = require('fs');
+                const vm = require('vm');
+                const source = fs.readFileSync({str(REPO_ROOT / 'backend' / 'static' / 'app.min.js')!r}, 'utf8');
+                const tokenStore = {{}};
+                const sandbox = {{
+                    marked: {{ setOptions() {{}}, parse(value) {{ return value; }} }},
+                    window: {{
+                        matchMedia() {{ return {{ matches: false }}; }},
+                        prompt() {{ return 'fresh-token'; }},
+                        addEventListener() {{}}
+                    }},
+                    localStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
+                    sessionStorage: {{
+                        getItem(key) {{ return tokenStore[key] || null; }},
+                        setItem(key, value) {{ tokenStore[key] = value; }}
+                    }},
+                    document: {{
+                        documentElement: {{ setAttribute() {{}} }},
+                        head: {{ appendChild() {{}} }},
+                        createElement() {{ return {{}}; }},
+                        querySelectorAll() {{ return []; }}
+                    }},
+                    requestAnimationFrame(callback) {{ callback(); return 1; }},
+                    cancelAnimationFrame() {{}},
+                    fetchCalls: []
+                }};
+                sandbox.fetch = (url, options = {{}}) => {{
+                    sandbox.fetchCalls.push({{ url, options }});
+                    if (sandbox.fetchCalls.length === 1) {{
+                        return Promise.resolve({{ status: 401, ok: false, json: async () => ({{}}) }});
+                    }}
+                    return Promise.resolve({{ status: 200, ok: true, json: async () => [] }});
+                }};
+                vm.runInNewContext(source + `
+                    this.state = app();
+                    this.state.initPluginSystem();
+                `, sandbox);
+
+                const response = await sandbox.window.ChatRawPlugin.modelFetch('/api/models', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: '{{}}'
+                }});
+                if (!response.ok || sandbox.fetchCalls.length !== 2) {{
+                    throw new Error(JSON.stringify({{ status: response.status, calls: sandbox.fetchCalls }}));
+                }}
+                const retryHeaders = sandbox.fetchCalls[1].options.headers;
+                if (
+                    retryHeaders.Authorization !== 'Bearer fresh-token' ||
+                    retryHeaders['Content-Type'] !== 'application/json'
+                ) {{
+                    throw new Error(JSON.stringify(sandbox.fetchCalls));
+                }}
+            }})().catch(error => {{
+                process.stderr.write(error.stack || String(error));
+                process.exit(1);
+            }});
             """
         )
 

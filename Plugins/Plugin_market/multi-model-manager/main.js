@@ -196,7 +196,7 @@
         }
         
         try {
-            const res = await fetch('/api/models');
+            const res = await ChatRaw.modelFetch('/api/models');
             if (res.ok) {
                 const models = await res.json();
                 const chatModel = models.find(m => m.type === 'chat');
@@ -218,7 +218,7 @@
         }
         
         try {
-            const res = await fetch('/api/models', {
+            const res = await ChatRaw.modelFetch('/api/models', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -251,7 +251,7 @@
         
         // Write to main config
         try {
-            const res = await fetch('/api/models', {
+            const res = await ChatRaw.modelFetch('/api/models', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -359,7 +359,7 @@
         renderUI();
         
         try {
-            const res = await fetch('/api/models/verify', {
+            const res = await ChatRaw.modelFetch('/api/models/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
