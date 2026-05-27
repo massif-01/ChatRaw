@@ -311,14 +311,69 @@ class SecurityRegressionTests(unittest.TestCase):
                     querySelectorAll() {{ return []; }}
                 }}
             }};
-            const dirty = '<img src=x onerror=alert(1)><svg/onload=alert(2)><a href="jav&#x61;script:alert(3)">x</a><form action="javascript:alert(4)"><button formaction="jav&#x61;script:alert(5)">open</button></form><strong>ok</strong>';
-            vm.runInNewContext(source + '\\nthis.result = app().renderMarkdown(' + JSON.stringify(dirty) + ');', sandbox);
-            if (/onerror|onload|href=|action=|formaction|javascript:|jav&#x61;script:/i.test(sandbox.result)) {{
-                process.stderr.write(sandbox.result);
-                process.exit(1);
-            }}
-            if (!sandbox.result.includes('<strong>ok</strong>')) {{
-                process.stderr.write(sandbox.result);
+            vm.runInNewContext(source + `
+                const state = app();
+                const cases = [
+                    {{
+                        name: 'space-delimited event attribute',
+                        dirty: '<img src=x onerror=alert(1)>',
+                        forbidden: [/onerror/i],
+                        required: ['<img src=x>']
+                    }},
+                    {{
+                        name: 'slash-delimited event attribute',
+                        dirty: '<svg/onload=alert(2)>',
+                        forbidden: [/onload/i],
+                        required: ['<svg>']
+                    }},
+                    {{
+                        name: 'entity-encoded dangerous link',
+                        dirty: '<a href="jav&#x61;script:alert(3)">x</a>',
+                        forbidden: [/href=/i, /javascript:/i, /jav&#x61;script:/i],
+                        required: ['<a>x</a>']
+                    }},
+                    {{
+                        name: 'slash-delimited dangerous link',
+                        dirty: '<a/href="javascript:alert(4)">x</a>',
+                        forbidden: [/href=/i, /javascript:/i],
+                        required: ['<a>x</a>']
+                    }},
+                    {{
+                        name: 'form URL attributes',
+                        dirty: '<form action="javascript:alert(5)"><button formaction="jav&#x61;script:alert(6)">open</button></form>',
+                        forbidden: [/action=/i, /formaction=/i, /javascript:/i, /jav&#x61;script:/i],
+                        required: ['<form><button>open</button></form>']
+                    }},
+                    {{
+                        name: 'slash-delimited form URL attributes',
+                        dirty: '<form/action="javascript:alert(7)"><button/formaction="javascript:alert(8)">open</button></form>',
+                        forbidden: [/action=/i, /formaction=/i, /javascript:/i],
+                        required: ['<form><button>open</button></form>']
+                    }},
+                    {{
+                        name: 'safe URL and formatting tags',
+                        dirty: '<a href="https://example.com">ok</a><img src="/image.png"><strong>ok</strong>',
+                        forbidden: [/javascript:/i, /onerror/i],
+                        required: ['href="https://example.com"', 'src="/image.png"', '<strong>ok</strong>']
+                    }}
+                ];
+                this.failures = [];
+                for (const item of cases) {{
+                    const result = state.renderMarkdown(item.dirty);
+                    for (const pattern of item.forbidden) {{
+                        if (pattern.test(result)) {{
+                            this.failures.push(item.name + ' retained ' + pattern + ' in ' + result);
+                        }}
+                    }}
+                    for (const expected of item.required) {{
+                        if (!result.includes(expected)) {{
+                            this.failures.push(item.name + ' missing ' + expected + ' in ' + result);
+                        }}
+                    }}
+                }}
+            `, sandbox);
+            if (sandbox.failures.length) {{
+                process.stderr.write(sandbox.failures.join('\\n'));
                 process.exit(1);
             }}
             """

@@ -53,11 +53,30 @@ function sanitizeMarkdownHtml(html) {
     return String(html)
         .replace(/<\s*(script|iframe|object|embed|link|meta|base)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
         .replace(/<\s*(script|iframe|object|embed|link|meta|base)\b[^>]*\/?>/gi, '')
-        .replace(/(?:\s+|\/+)on[a-z0-9_-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-        .replace(/\s+(href|src|xlink:href|action|formaction)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi, (match, attr, doubleValue, singleValue, unquotedValue) => {
-            const value = doubleValue ?? singleValue ?? unquotedValue ?? '';
-            return hasDangerousUrlScheme(value) ? '' : match;
-        });
+        .replace(/<\s*\/?\s*[a-z][^<>]*>/gi, sanitizeMarkdownTag);
+}
+
+function sanitizeMarkdownTag(tagHtml) {
+    if (/^<\s*\//.test(tagHtml)) return tagHtml;
+    const urlAttrs = new Set(['href', 'src', 'xlink:href', 'action', 'formaction']);
+    return tagHtml.replace(/([\s/]+)([^\s/=>]+)\s*=\s*("[^"]*"|'[^']*'|[^\s"'=<>`]+)/gi, (match, _separator, attr, rawValue) => {
+        const attrName = attr.toLowerCase();
+        if (attrName.startsWith('on')) return '';
+        if (urlAttrs.has(attrName) && hasDangerousUrlScheme(stripAttributeQuotes(rawValue))) return '';
+        return match;
+    });
+}
+
+function stripAttributeQuotes(value) {
+    const stringValue = String(value);
+    if (
+        stringValue.length >= 2 &&
+        ((stringValue[0] === '"' && stringValue[stringValue.length - 1] === '"') ||
+            (stringValue[0] === "'" && stringValue[stringValue.length - 1] === "'"))
+    ) {
+        return stringValue.slice(1, -1);
+    }
+    return stringValue;
 }
 
 function decodeHtmlEntities(value) {
