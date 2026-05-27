@@ -48,6 +48,156 @@ function loadScript(src) {
     });
 }
 
+function sanitizeMarkdownHtml(html) {
+    if (!html) return '';
+    const input = String(html);
+    let output = '';
+    let index = 0;
+
+    while (index < input.length) {
+        const tagStart = input.indexOf('<', index);
+        if (tagStart === -1) {
+            output += input.slice(index);
+            break;
+        }
+
+        output += input.slice(index, tagStart);
+        const tagEnd = findMarkdownTagEnd(input, tagStart);
+        if (tagEnd === -1) {
+            const remainder = input.slice(tagStart);
+            if (!isMarkdownTagLike(remainder)) {
+                output += remainder;
+            }
+            break;
+        }
+
+        const tagHtml = input.slice(tagStart, tagEnd + 1);
+        const tagName = getMarkdownTagName(tagHtml);
+        if (!tagName) {
+            output += tagHtml;
+            index = tagEnd + 1;
+            continue;
+        }
+
+        if (isBlockedMarkdownTag(tagName)) {
+            index = tagEnd + 1;
+            if (!isClosingMarkdownTag(tagHtml)) {
+                const closingTagEnd = findClosingMarkdownTagEnd(input, index, tagName);
+                if (closingTagEnd !== -1) {
+                    index = closingTagEnd + 1;
+                }
+            }
+            continue;
+        }
+
+        output += sanitizeMarkdownTag(tagHtml);
+        index = tagEnd + 1;
+    }
+
+    return output;
+}
+
+function findMarkdownTagEnd(value, startIndex) {
+    let quote = '';
+    for (let index = startIndex + 1; index < value.length; index++) {
+        const char = value[index];
+        if (quote) {
+            if (char === quote) quote = '';
+            continue;
+        }
+        if (char === '"' || char === "'") {
+            quote = char;
+            continue;
+        }
+        if (char === '>') return index;
+    }
+    return -1;
+}
+
+function getMarkdownTagName(tagHtml) {
+    const match = tagHtml.match(/^<\s*\/?\s*([a-z][^\s/=>]*)/i);
+    return match ? match[1].toLowerCase() : '';
+}
+
+function isMarkdownTagLike(value) {
+    return /^<\s*\/?\s*[a-z]/i.test(value);
+}
+
+function isClosingMarkdownTag(tagHtml) {
+    return /^<\s*\//.test(tagHtml);
+}
+
+function isBlockedMarkdownTag(tagName) {
+    return ['script', 'iframe', 'object', 'embed', 'link', 'meta', 'base'].includes(tagName);
+}
+
+function findClosingMarkdownTagEnd(value, startIndex, tagName) {
+    const needle = '</' + tagName.toLowerCase();
+    const lowerValue = value.toLowerCase();
+    const closingTagStart = lowerValue.indexOf(needle, startIndex);
+    if (closingTagStart === -1) return -1;
+    return findMarkdownTagEnd(value, closingTagStart);
+}
+
+function sanitizeMarkdownTag(tagHtml) {
+    if (isClosingMarkdownTag(tagHtml)) return tagHtml;
+    const urlAttrs = new Set(['href', 'src', 'xlink:href', 'action', 'formaction']);
+    return tagHtml.replace(/([\s/]+)([^\s/=>]+)\s*=\s*("[^"]*"|'[^']*'|[^\s"'=<>`]+)/gi, (match, _separator, attr, rawValue) => {
+        const attrName = attr.toLowerCase();
+        if (attrName.startsWith('on')) return '';
+        if (urlAttrs.has(attrName) && hasDangerousUrlScheme(stripAttributeQuotes(rawValue))) return '';
+        return match;
+    });
+}
+
+function stripAttributeQuotes(value) {
+    const stringValue = String(value);
+    if (
+        stringValue.length >= 2 &&
+        ((stringValue[0] === '"' && stringValue[stringValue.length - 1] === '"') ||
+            (stringValue[0] === "'" && stringValue[stringValue.length - 1] === "'"))
+    ) {
+        return stringValue.slice(1, -1);
+    }
+    return stringValue;
+}
+
+function decodeHtmlEntities(value) {
+    const namedEntities = {
+        amp: '&',
+        apos: "'",
+        colon: ':',
+        gt: '>',
+        lt: '<',
+        newline: '\n',
+        quot: '"',
+        tab: '\t'
+    };
+    return String(value).replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);?/gi, (match, entity) => {
+        const lower = entity.toLowerCase();
+        if (lower.startsWith('#x')) {
+            const codePoint = parseInt(lower.slice(2), 16);
+            return codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : match;
+        }
+        if (lower.startsWith('#')) {
+            const codePoint = parseInt(lower.slice(1), 10);
+            return codePoint <= 0x10FFFF ? String.fromCodePoint(codePoint) : match;
+        }
+        return Object.prototype.hasOwnProperty.call(namedEntities, lower) ? namedEntities[lower] : match;
+    });
+}
+
+function hasDangerousUrlScheme(value) {
+    let decoded = String(value).trim();
+    for (let i = 0; i < 3; i++) {
+        const next = decodeHtmlEntities(decoded);
+        if (next === decoded) break;
+        decoded = next;
+    }
+    const normalized = decoded.replace(/[\u0000-\u001F\u007F\s]+/g, '').toLowerCase();
+    return /^(?:javascript|vbscript|data:text\/html):/.test(normalized);
+}
+
 // i18n translations
 const i18n = {
     en: {
@@ -93,6 +243,8 @@ const i18n = {
         uiSettingsDesc: 'Customize the interface appearance.',
         kbDesc: 'Upload documents for RAG context.',
         modelConfigDesc: 'Manage your AI model connections and parameters.',
+        modelAuthTokenPrompt: 'Enter model configuration auth token',
+        modelAuthRequired: 'Model configuration auth token required',
         modelType: 'Type',
         chat: 'Chat',
         embedding: 'Embedding',
@@ -220,6 +372,8 @@ const i18n = {
         inputPlaceholder: '输入消息... (Enter 发送, Shift+Enter 换行)',
         modelConfig: '模型配置',
         modelConfigDesc: '管理您的AI模型连接和参数',
+        modelAuthTokenPrompt: '请输入模型配置认证令牌',
+        modelAuthRequired: '需要模型配置认证令牌',
         chatSettings: '聊天设置',
         chatSettingsDesc: '调整AI对您输入的响应方式',
         ragSettings: 'RAG设置',
@@ -620,7 +774,7 @@ function app() {
         // Load model configs
         async loadModels() {
             try {
-                const res = await fetch('/api/models');
+                const res = await this.modelFetch('/api/models');
                 if (res.ok) {
                     this.models = await res.json();
                     this.models.forEach(m => {
@@ -632,6 +786,54 @@ function app() {
             } catch (e) {
                 console.error('Failed to load models:', e);
             }
+        },
+
+        getModelAuthToken() {
+            return sessionStorage.getItem('chatraw_model_auth_token') || '';
+        },
+
+        setModelAuthToken(token) {
+            sessionStorage.setItem('chatraw_model_auth_token', token);
+        },
+
+        modelAuthHeaders(headers = {}) {
+            const token = this.getModelAuthToken();
+            return token ? { ...headers, Authorization: `Bearer ${token}` } : { ...headers };
+        },
+
+        promptModelAuthToken() {
+            const token = window.prompt(this.t('modelAuthTokenPrompt'));
+            if (!token || !token.trim()) {
+                this.showToast(this.t('modelAuthRequired'), 'error');
+                return false;
+            }
+            this.setModelAuthToken(token.trim());
+            return true;
+        },
+
+        async modelFetch(url, options = {}, retry = true) {
+            const headers = this.modelAuthHeaders(options.headers || {});
+            const response = await fetch(url, { ...options, headers });
+            if (response.status === 401 && retry && this.promptModelAuthToken()) {
+                return this.modelFetch(url, options, false);
+            }
+            if (response.status === 401) {
+                this.showToast(this.t('modelAuthRequired'), 'error');
+            }
+            return response;
+        },
+
+        prepareModelPayload(model) {
+            const payload = { ...model };
+            const apiKeyTouched = !!model.api_key_touched;
+            delete payload.api_key_set;
+            delete payload.api_key_touched;
+            delete payload.status;
+            delete payload.verifyMessage;
+            if (model.api_key_set && !model.api_key && !apiKeyTouched) {
+                delete payload.api_key;
+            }
+            return payload;
         },
         
         // Load chat list
@@ -1453,10 +1655,11 @@ function app() {
                 }
                 
                 // Save model config
-                const saveRes = await fetch('/api/models', {
+                const payload = this.prepareModelPayload(model);
+                const saveRes = await this.modelFetch('/api/models', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(model)
+                    body: JSON.stringify(payload)
                 });
                 
                 if (!saveRes.ok) {
@@ -1467,17 +1670,23 @@ function app() {
                 if (savedModel.id) {
                     model.id = savedModel.id;
                 }
+                model.api_key_set = savedModel.api_key_set || !!model.api_key;
+                model.api_key_touched = false;
                 
                 // Verify model connection
-                const verifyRes = await fetch('/api/models/verify', {
+                const verifyPayload = {
+                    id: model.id,
+                    api_url: model.api_url,
+                    model_id: model.model_id,
+                    type: model.type
+                };
+                if (model.api_key) {
+                    verifyPayload.api_key = model.api_key;
+                }
+                const verifyRes = await this.modelFetch('/api/models/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        api_url: model.api_url,
-                        api_key: model.api_key,
-                        model_id: model.model_id,
-                        type: model.type
-                    })
+                    body: JSON.stringify(verifyPayload)
                 });
                 
                 const verifyData = await verifyRes.json();
@@ -1512,11 +1721,15 @@ function app() {
                     if (!model.name) {
                         model.name = model.model_id || 'Unnamed';
                     }
-                    await fetch('/api/models', {
+                    const payload = this.prepareModelPayload(model);
+                    const modelRes = await this.modelFetch('/api/models', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(model)
+                        body: JSON.stringify(payload)
                     });
+                    if (!modelRes.ok) {
+                        throw new Error('Failed to save');
+                    }
                 }
                 
                 this.applyTheme();
@@ -1562,7 +1775,7 @@ function app() {
         // Render Markdown
         renderMarkdown(content) {
             if (!content) return '';
-            return marked.parse(content);
+            return sanitizeMarkdownHtml(marked.parse(content));
         },
         
         // Scroll to bottom
