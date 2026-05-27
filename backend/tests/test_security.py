@@ -1,3 +1,4 @@
+import ipaddress
 import os
 import shutil
 import socket
@@ -184,6 +185,29 @@ class SecurityRegressionTests(unittest.TestCase):
         self.assertIn(response.status_code, (400, 404))
         self.assertNotIn("font traversal secret", response.text)
 
+    def test_external_url_ip_guard_allows_only_global_unicast(self):
+        allowed_addresses = [
+            "8.8.8.8",
+            "2001:4860:4860::8888",
+        ]
+        blocked_addresses = [
+            "10.0.0.1",
+            "100.64.0.1",
+            "127.0.0.1",
+            "169.254.169.254",
+            "224.0.0.1",
+            "0.0.0.0",
+            "::1",
+        ]
+
+        for address in allowed_addresses:
+            with self.subTest(address=address):
+                self.assertFalse(main.is_blocked_ip(ipaddress.ip_address(address)))
+
+        for address in blocked_addresses:
+            with self.subTest(address=address):
+                self.assertTrue(main.is_blocked_ip(ipaddress.ip_address(address)))
+
     def test_parse_url_rejects_internal_targets_without_network(self):
         async def fail_if_called():
             raise AssertionError("get_http_session should not be called")
@@ -191,6 +215,7 @@ class SecurityRegressionTests(unittest.TestCase):
         blocked_urls = [
             "http://127.0.0.1:51111",
             "http://localhost:51111",
+            "http://100.64.0.1",
             "http://169.254.169.254/latest/meta-data",
             "http://192.168.1.1",
         ]
@@ -239,6 +264,7 @@ class SecurityRegressionTests(unittest.TestCase):
         blocked_urls = [
             "http://127.0.0.1:51111",
             "http://localhost:51111",
+            "http://100.64.0.1",
             "http://169.254.169.254/latest/meta-data",
             "http://192.168.1.1",
             "http://[::1]/",
@@ -287,6 +313,38 @@ class SecurityRegressionTests(unittest.TestCase):
                 response = self.client.post(
                     "/api/proxy/request",
                     json={"service_id": "test", "url": "http://rebind.example"},
+                )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
+
+    def test_proxy_request_blocks_shared_ip_at_connection_resolution(self):
+        async def fail_if_called():
+            raise AssertionError("get_http_session should not be called")
+
+        class SharedResolver:
+            async def resolve(self, host, port=0, family=0):
+                return [
+                    {
+                        "hostname": host,
+                        "host": "100.64.0.1",
+                        "port": port,
+                        "family": socket.AF_INET,
+                        "proto": 0,
+                        "flags": 0,
+                    }
+                ]
+
+            async def close(self):
+                pass
+
+        with patch.object(main, "get_http_session", fail_if_called):
+            with patch.object(
+                main.aiohttp, "DefaultResolver", lambda: SharedResolver()
+            ):
+                response = self.client.post(
+                    "/api/proxy/request",
+                    json={"service_id": "test", "url": "http://shared.example"},
                 )
 
         self.assertEqual(response.status_code, 400)

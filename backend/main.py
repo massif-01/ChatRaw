@@ -1613,14 +1613,7 @@ def is_blocked_ip(ip: ipaddress._BaseAddress) -> bool:
     mapped = getattr(ip, "ipv4_mapped", None)
     if mapped is not None:
         ip = mapped
-    return (
-        ip.is_loopback
-        or ip.is_private
-        or ip.is_link_local
-        or ip.is_multicast
-        or ip.is_reserved
-        or ip.is_unspecified
-    )
+    return not ip.is_global or ip.is_multicast
 
 class ExternalURLBlocked(Exception):
     pass
