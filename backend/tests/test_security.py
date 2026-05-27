@@ -28,12 +28,19 @@ class SecurityRegressionTests(unittest.TestCase):
         self.old_db = main.db
         self.old_llm_service = main.llm_service
         self.old_rag_service = main.rag_service
+        self.old_plugins_dir = main.PLUGINS_DIR
+        self.old_plugins_installed_dir = main.PLUGINS_INSTALLED_DIR
+        self.old_plugins_config_file = main.PLUGINS_CONFIG_FILE
 
         os.environ["CHATRAW_AUTH_TOKEN"] = "test-token"
         self.db = main.Database(os.path.join(self.tmpdir, "chatraw.db"))
         main.db = self.db
         main.llm_service = main.LLMService(main.db)
         main.rag_service = main.RAGService(main.db, main.llm_service)
+        main.PLUGINS_DIR = os.path.join(self.tmpdir, "plugins")
+        main.PLUGINS_INSTALLED_DIR = os.path.join(main.PLUGINS_DIR, "installed")
+        main.PLUGINS_CONFIG_FILE = os.path.join(main.PLUGINS_DIR, "config.json")
+        os.makedirs(main.PLUGINS_INSTALLED_DIR, exist_ok=True)
         self.client = TestClient(main.app)
 
     def tearDown(self):
@@ -44,6 +51,9 @@ class SecurityRegressionTests(unittest.TestCase):
             main.db = self.old_db
             main.llm_service = self.old_llm_service
             main.rag_service = self.old_rag_service
+            main.PLUGINS_DIR = self.old_plugins_dir
+            main.PLUGINS_INSTALLED_DIR = self.old_plugins_installed_dir
+            main.PLUGINS_CONFIG_FILE = self.old_plugins_config_file
             if self.old_auth_token is None:
                 os.environ.pop("CHATRAW_AUTH_TOKEN", None)
             else:
@@ -145,7 +155,154 @@ class SecurityRegressionTests(unittest.TestCase):
                     headers=self.auth_headers(),
                     json={
                         "id": "secret-chat",
+                        "api_url": "https://api.example.com/v1",
+                        "model_id": "chat-model",
+                        "type": "chat",
+                    },
+                )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
+        self.assertEqual(
+            fake_session.url,
+            "https://api.example.com/v1/chat/completions",
+        )
+        self.assertEqual(fake_session.headers["Authorization"], "Bearer sk-secret")
+
+    def test_model_verify_does_not_reuse_existing_secret_for_changed_url(self):
+        self.save_secret_model()
+
+        class FakeResponse:
+            status = 200
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def text(self):
+                return ""
+
+        class FakeSession:
+            def __init__(self):
+                self.headers = None
+                self.url = None
+
+            def post(self, url, json, headers):
+                self.url = url
+                self.headers = headers
+                return FakeResponse()
+
+        fake_session = FakeSession()
+
+        async def get_fake_session():
+            return fake_session
+
+        with patch.object(main, "get_http_session", get_fake_session):
+            response = self.client.post(
+                "/api/models/verify",
+                headers=self.auth_headers(),
+                json={
+                    "id": "secret-chat",
+                    "api_url": "https://evil.example.com/v1",
+                    "model_id": "chat-model",
+                    "type": "chat",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
+        self.assertEqual(
+            fake_session.url, "https://evil.example.com/v1/chat/completions"
+        )
+        self.assertNotIn("Authorization", fake_session.headers)
+
+    def test_model_verify_empty_api_key_does_not_reuse_existing_secret(self):
+        self.save_secret_model()
+
+        class FakeResponse:
+            status = 200
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def text(self):
+                return ""
+
+        class FakeSession:
+            def __init__(self):
+                self.headers = None
+
+            def post(self, url, json, headers):
+                self.headers = headers
+                return FakeResponse()
+
+        fake_session = FakeSession()
+
+        async def get_fake_session():
+            return fake_session
+
+        with patch.object(main, "get_http_session", get_fake_session):
+            response = self.client.post(
+                "/api/models/verify",
+                headers=self.auth_headers(),
+                json={
+                    "id": "secret-chat",
+                    "api_url": "https://api.example.com/v1",
+                    "api_key": "",
+                    "model_id": "chat-model",
+                    "type": "chat",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
+        self.assertNotIn("Authorization", fake_session.headers)
+
+    def test_model_verify_allows_local_provider_with_explicit_key(self):
+        class FakeResponse:
+            status = 200
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def text(self):
+                return ""
+
+        class FakeSession:
+            def __init__(self):
+                self.headers = None
+                self.url = None
+
+            def post(self, url, json, headers):
+                self.url = url
+                self.headers = headers
+                return FakeResponse()
+
+        fake_session = FakeSession()
+
+        async def get_fake_session():
+            return fake_session
+
+        with patch.object(main, "get_http_session", get_fake_session):
+            with patch.object(
+                main.aiohttp,
+                "DefaultResolver",
+                side_effect=AssertionError("external resolver should not be used"),
+            ):
+                response = self.client.post(
+                    "/api/models/verify",
+                    headers=self.auth_headers(),
+                    json={
                         "api_url": "http://127.0.0.1:11434/v1",
+                        "api_key": "sk-local",
                         "model_id": "chat-model",
                         "type": "chat",
                     },
@@ -157,7 +314,7 @@ class SecurityRegressionTests(unittest.TestCase):
             fake_session.url,
             "http://127.0.0.1:11434/v1/chat/completions",
         )
-        self.assertEqual(fake_session.headers["Authorization"], "Bearer sk-secret")
+        self.assertEqual(fake_session.headers["Authorization"], "Bearer sk-local")
 
     def test_model_endpoints_reject_invalid_payloads(self):
         invalid_payload = {"id": "secret-chat", "context_length": "not-an-int"}
@@ -209,8 +366,8 @@ class SecurityRegressionTests(unittest.TestCase):
                 self.assertTrue(main.is_blocked_ip(ipaddress.ip_address(address)))
 
     def test_parse_url_rejects_internal_targets_without_network(self):
-        async def fail_if_called():
-            raise AssertionError("get_http_session should not be called")
+        def fail_if_called():
+            raise AssertionError("create_external_http_session should not be called")
 
         blocked_urls = [
             "HTTP://127.0.0.1:51111",
@@ -220,16 +377,13 @@ class SecurityRegressionTests(unittest.TestCase):
             "http://169.254.169.254/latest/meta-data",
             "http://192.168.1.1",
         ]
-        with patch.object(main, "get_http_session", fail_if_called):
+        with patch.object(main, "create_external_http_session", fail_if_called):
             for url in blocked_urls:
                 with self.subTest(url=url):
                     response = self.client.post("/api/parse-url", json={"url": url})
                     self.assertEqual(response.status_code, 400)
 
     def test_parse_url_blocks_private_ip_at_connection_resolution(self):
-        async def fail_if_called():
-            raise AssertionError("get_http_session should not be called")
-
         class PrivateResolver:
             async def resolve(self, host, port=0, family=0):
                 return [
@@ -246,14 +400,11 @@ class SecurityRegressionTests(unittest.TestCase):
             async def close(self):
                 pass
 
-        with patch.object(main, "get_http_session", fail_if_called):
-            with patch.object(
-                main.aiohttp, "DefaultResolver", lambda: PrivateResolver()
-            ):
-                response = self.client.post(
-                    "/api/parse-url",
-                    json={"url": "http://rebind.example"},
-                )
+        with patch.object(main.aiohttp, "DefaultResolver", lambda: PrivateResolver()):
+            response = self.client.post(
+                "/api/parse-url",
+                json={"url": "http://rebind.example"},
+            )
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("internal networks", response.text)
@@ -458,8 +609,8 @@ class SecurityRegressionTests(unittest.TestCase):
         self.assertEqual(calls, [("https://example.com/raw-start", False)])
 
     def test_proxy_request_rejects_literal_internal_targets_without_network(self):
-        async def fail_if_called():
-            raise AssertionError("get_http_session should not be called")
+        def fail_if_called():
+            raise AssertionError("create_external_http_session should not be called")
 
         blocked_urls = [
             "HTTP://127.0.0.1:51111",
@@ -470,7 +621,7 @@ class SecurityRegressionTests(unittest.TestCase):
             "http://192.168.1.1",
             "http://[::1]/",
         ]
-        with patch.object(main, "get_http_session", fail_if_called):
+        with patch.object(main, "create_external_http_session", fail_if_called):
             for url in blocked_urls:
                 with self.subTest(url=url):
                     response = self.client.post(
@@ -615,10 +766,108 @@ class SecurityRegressionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("internal networks", response.text)
 
-    def test_proxy_request_blocks_private_ip_at_connection_resolution(self):
-        async def fail_if_called():
-            raise AssertionError("get_http_session should not be called")
+    def test_plugin_install_rejects_internal_source_without_network(self):
+        def fail_if_called():
+            raise AssertionError("create_external_http_session should not be called")
 
+        with patch.object(main, "create_external_http_session", fail_if_called):
+            response = self.client.post(
+                "/api/plugins/install",
+                json={"source_url": "http://169.254.169.254/plugin"},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
+
+    def test_plugin_install_uses_guarded_session_and_disables_redirects(self):
+        calls = []
+
+        class FakeResponse:
+            def __init__(self, status, body="", headers=None):
+                self.status = status
+                self.body = body
+                self.headers = headers or {}
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def text(self):
+                return self.body
+
+            async def read(self):
+                return self.body.encode("utf-8")
+
+        class FakeSession:
+            closed = False
+
+            def get(self, url, timeout, allow_redirects):
+                calls.append((url, allow_redirects))
+                if url == "https://plugins.example.com/safe/manifest.json":
+                    return FakeResponse(
+                        200,
+                        '{"id": "safe-plugin", "main": "main.js", "icon": "icon.png"}',
+                    )
+                if url == "https://plugins.example.com/safe/main.js":
+                    return FakeResponse(200, "window.safePlugin = true;")
+                if url == "https://plugins.example.com/safe/icon.png":
+                    return FakeResponse(404)
+                raise AssertionError(f"unexpected URL {url}")
+
+            async def close(self):
+                self.closed = True
+
+        with patch.object(main, "create_external_http_session", lambda: FakeSession()):
+            response = self.client.post(
+                "/api/plugins/install",
+                json={"source_url": "plugins.example.com/safe"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
+        self.assertEqual(
+            calls,
+            [
+                ("https://plugins.example.com/safe/manifest.json", False),
+                ("https://plugins.example.com/safe/main.js", False),
+                ("https://plugins.example.com/safe/icon.png", False),
+            ],
+        )
+        installed_main = Path(main.PLUGINS_INSTALLED_DIR) / "safe-plugin" / "main.js"
+        self.assertTrue(installed_main.exists())
+        self.assertEqual(
+            installed_main.read_text(encoding="utf-8"), "window.safePlugin = true;"
+        )
+
+    def test_plugin_install_blocks_private_ip_at_connection_resolution(self):
+        class PrivateResolver:
+            async def resolve(self, host, port=0, family=0):
+                return [
+                    {
+                        "hostname": host,
+                        "host": "10.0.0.1",
+                        "port": port,
+                        "family": socket.AF_INET,
+                        "proto": 0,
+                        "flags": 0,
+                    }
+                ]
+
+            async def close(self):
+                pass
+
+        with patch.object(main.aiohttp, "DefaultResolver", lambda: PrivateResolver()):
+            response = self.client.post(
+                "/api/plugins/install",
+                json={"source_url": "http://plugin-install.example/safe"},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
+
+    def test_proxy_request_blocks_private_ip_at_connection_resolution(self):
         class PrivateResolver:
             async def resolve(self, host, port=0, family=0):
                 return [
@@ -643,22 +892,16 @@ class SecurityRegressionTests(unittest.TestCase):
             async def close(self):
                 pass
 
-        with patch.object(main, "get_http_session", fail_if_called):
-            with patch.object(
-                main.aiohttp, "DefaultResolver", lambda: PrivateResolver()
-            ):
-                response = self.client.post(
-                    "/api/proxy/request",
-                    json={"service_id": "test", "url": "http://rebind.example"},
-                )
+        with patch.object(main.aiohttp, "DefaultResolver", lambda: PrivateResolver()):
+            response = self.client.post(
+                "/api/proxy/request",
+                json={"service_id": "test", "url": "http://rebind.example"},
+            )
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("internal networks", response.text)
 
     def test_proxy_request_blocks_shared_ip_at_connection_resolution(self):
-        async def fail_if_called():
-            raise AssertionError("get_http_session should not be called")
-
         class SharedResolver:
             async def resolve(self, host, port=0, family=0):
                 return [
@@ -675,14 +918,11 @@ class SecurityRegressionTests(unittest.TestCase):
             async def close(self):
                 pass
 
-        with patch.object(main, "get_http_session", fail_if_called):
-            with patch.object(
-                main.aiohttp, "DefaultResolver", lambda: SharedResolver()
-            ):
-                response = self.client.post(
-                    "/api/proxy/request",
-                    json={"service_id": "test", "url": "http://shared.example"},
-                )
+        with patch.object(main.aiohttp, "DefaultResolver", lambda: SharedResolver()):
+            response = self.client.post(
+                "/api/proxy/request",
+                json={"service_id": "test", "url": "http://shared.example"},
+            )
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("internal networks", response.text)
@@ -835,6 +1075,57 @@ class SecurityRegressionTests(unittest.TestCase):
             `, sandbox);
             if (sandbox.failures.length) {{
                 process.stderr.write(sandbox.failures.join('\\n'));
+                process.exit(1);
+            }}
+            """
+        )
+
+        result = subprocess.run(
+            ["node", "-e", script],
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_minified_bundle_uses_security_runtime(self):
+        script = textwrap.dedent(
+            f"""
+            const fs = require('fs');
+            const vm = require('vm');
+            const source = fs.readFileSync({str(REPO_ROOT / 'backend' / 'static' / 'app.min.js')!r}, 'utf8');
+            const sandbox = {{
+                marked: {{
+                    setOptions() {{}},
+                    parse(value) {{ return value; }}
+                }},
+                window: {{ matchMedia() {{ return {{ matches: false }}; }} }},
+                localStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
+                sessionStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
+                document: {{
+                    head: {{ appendChild() {{}} }},
+                    createElement() {{ return {{}}; }},
+                    querySelectorAll() {{ return []; }}
+                }}
+            }};
+            vm.runInNewContext(source + `
+                const state = app();
+                this.rendered = state.renderMarkdown('<img src=x onerror="alert(1)//>">');
+                this.payload = state.prepareModelPayload({{
+                    id: 'secret-chat',
+                    api_key_set: true,
+                    api_key: '',
+                    api_key_touched: false
+                }});
+            `, sandbox);
+            if (/onerror/i.test(sandbox.rendered) || !sandbox.rendered.includes('<img src=x>')) {{
+                process.stderr.write(sandbox.rendered);
+                process.exit(1);
+            }}
+            if (Object.prototype.hasOwnProperty.call(sandbox.payload, 'api_key')) {{
+                process.stderr.write(JSON.stringify(sandbox.payload));
                 process.exit(1);
             }}
             """

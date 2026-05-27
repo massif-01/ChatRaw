@@ -1939,9 +1939,9 @@ async def verify_model(request: Request):
         config = ModelConfig.model_validate(body)
     except ValidationError:
         return JSONResponse({"success": False, "error": "Invalid model config"}, status_code=400)
-    if not config.api_key and config.id:
+    if "api_key" not in body and config.id:
         existing = db.get_model_config(config.id)
-        if existing:
+        if existing and config.api_url.rstrip("/") == existing.api_url.rstrip("/"):
             config.api_key = existing.api_key
 
     if not config.api_url or not config.model_id:
@@ -2547,16 +2547,25 @@ async def install_plugin(request: PluginInstallRequest):
     import shutil
     import tempfile
     
-    source_url = request.source_url.rstrip("/")
-    plugin_dir = None  # Track for cleanup on failure
-    
     try:
-        session = await get_http_session()
+        source_url = validate_external_url(request.source_url).rstrip("/")
+    except HTTPException as exc:
+        return security_error_response(exc)
+
+    session = None
+    plugin_dir = None  # Track for cleanup on failure
+
+    try:
+        session = create_external_http_session()
         
         # Determine if it's a directory URL or zip URL
         if source_url.endswith(".zip"):
             # Download zip file with size limit
-            async with session.get(source_url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+            async with session.get(
+                source_url,
+                timeout=aiohttp.ClientTimeout(total=30),
+                allow_redirects=False,
+            ) as resp:
                 if resp.status != 200:
                     return JSONResponse({"success": False, "error": f"Failed to download: HTTP {resp.status}"}, status_code=400)
                 
@@ -2617,7 +2626,11 @@ async def install_plugin(request: PluginInstallRequest):
             # It's a GitHub raw directory URL, download individual files
             # First get manifest.json
             manifest_url = f"{source_url}/manifest.json"
-            async with session.get(manifest_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+            async with session.get(
+                manifest_url,
+                timeout=aiohttp.ClientTimeout(total=10),
+                allow_redirects=False,
+            ) as resp:
                 if resp.status != 200:
                     return JSONResponse({"success": False, "error": f"Failed to fetch manifest: HTTP {resp.status}"}, status_code=400)
                 try:
@@ -2646,7 +2659,11 @@ async def install_plugin(request: PluginInstallRequest):
             # Download main.js (required)
             main_js = manifest.get("main", "main.js")
             main_url = f"{source_url}/{main_js}"
-            async with session.get(main_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+            async with session.get(
+                main_url,
+                timeout=aiohttp.ClientTimeout(total=10),
+                allow_redirects=False,
+            ) as resp:
                 if resp.status != 200:
                     # Cleanup on failure
                     if plugin_dir and os.path.exists(plugin_dir):
@@ -2660,7 +2677,11 @@ async def install_plugin(request: PluginInstallRequest):
             icon_file = manifest.get("icon", "icon.png")
             icon_url = f"{source_url}/{icon_file}"
             try:
-                async with session.get(icon_url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                async with session.get(
+                    icon_url,
+                    timeout=aiohttp.ClientTimeout(total=10),
+                    allow_redirects=False,
+                ) as resp:
                     if resp.status == 200:
                         icon_content = await resp.read()
                         with open(os.path.join(plugin_dir, icon_file), "wb") as f:
@@ -2678,7 +2699,11 @@ async def install_plugin(request: PluginInstallRequest):
                         continue
                     lib_url = f"{source_url}/lib/{lib_path}"
                     try:
-                        async with session.get(lib_url, timeout=aiohttp.ClientTimeout(total=30)) as resp:
+                        async with session.get(
+                            lib_url,
+                            timeout=aiohttp.ClientTimeout(total=30),
+                            allow_redirects=False,
+                        ) as resp:
                             if resp.status == 200:
                                 lib_target = os.path.join(plugin_dir, "lib", lib_path)
                                 os.makedirs(os.path.dirname(lib_target), exist_ok=True)
@@ -2698,7 +2723,16 @@ async def install_plugin(request: PluginInstallRequest):
         
         logger.info(f"Plugin installed: {plugin_id}")
         return {"success": True, "plugin_id": plugin_id, "manifest": manifest}
-        
+
+    except ExternalURLBlocked as e:
+        # Cleanup on blocked network resolution after a plugin directory was created.
+        if plugin_dir and os.path.exists(plugin_dir):
+            try:
+                import shutil
+                shutil.rmtree(plugin_dir)
+            except:
+                pass
+        return security_error_response(HTTPException(status_code=400, detail=str(e)))
     except Exception as e:
         # Cleanup on unexpected error
         if plugin_dir and os.path.exists(plugin_dir):
@@ -2709,6 +2743,9 @@ async def install_plugin(request: PluginInstallRequest):
                 pass
         logger.error(f"Plugin install error: {e}")
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+    finally:
+        if session and not session.closed:
+            await session.close()
 
 @app.post("/api/plugins/upload")
 async def upload_plugin(file: UploadFile = File(...)):
