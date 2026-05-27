@@ -1618,6 +1618,8 @@ def is_blocked_ip(ip: ipaddress._BaseAddress) -> bool:
 class ExternalURLBlocked(Exception):
     pass
 
+REDIRECT_STATUSES = {301, 302, 303, 307, 308}
+
 def validate_external_url(url: str) -> str:
     normalized_url = url.strip()
     if not normalized_url:
@@ -1689,7 +1691,6 @@ def security_error_response(exc: HTTPException) -> JSONResponse:
     return JSONResponse({"success": False, "error": exc.detail}, status_code=exc.status_code)
 
 async def fetch_external_text(url: str, headers: Dict[str, str], timeout_seconds: int = 15) -> tuple[str, str]:
-    redirect_statuses = {301, 302, 303, 307, 308}
     final_url = validate_external_url(url)
 
     async with create_external_http_session() as session:
@@ -1700,7 +1701,7 @@ async def fetch_external_text(url: str, headers: Dict[str, str], timeout_seconds
                 timeout=aiohttp.ClientTimeout(total=timeout_seconds),
                 allow_redirects=False,
             ) as resp:
-                if resp.status in redirect_statuses:
+                if resp.status in REDIRECT_STATUSES:
                     location = resp.headers.get("Location")
                     if not location:
                         raise HTTPException(
@@ -1719,6 +1720,69 @@ async def fetch_external_text(url: str, headers: Dict[str, str], timeout_seconds
                 return await resp.text(), final_url
 
     raise HTTPException(status_code=400, detail="Too many redirects")
+
+async def fetch_external_bytes_with_redirects(
+    session: aiohttp.ClientSession,
+    url: str,
+    timeout_seconds: int,
+    error_prefix: str,
+    max_size: Optional[int] = None,
+) -> bytes:
+    final_url = validate_external_url(url)
+
+    for _ in range(5):
+        async with session.get(
+            final_url,
+            timeout=aiohttp.ClientTimeout(total=timeout_seconds),
+            allow_redirects=False,
+        ) as resp:
+            if resp.status in REDIRECT_STATUSES:
+                location = resp.headers.get("Location")
+                if not location:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"{error_prefix}: HTTP {resp.status}",
+                    )
+                final_url = validate_external_url(urljoin(final_url, location))
+                continue
+
+            if resp.status != 200:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"{error_prefix}: HTTP {resp.status}",
+                )
+
+            if max_size is not None:
+                content_length = resp.headers.get("Content-Length")
+                if content_length and int(content_length) > max_size:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Plugin too large (max {max_size // (1024 * 1024)}MB)",
+                    )
+
+            content = await resp.read()
+            if max_size is not None and len(content) > max_size:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Plugin too large (max {max_size // (1024 * 1024)}MB)",
+                )
+            return content
+
+    raise HTTPException(status_code=400, detail="Too many redirects")
+
+async def fetch_external_text_with_redirects(
+    session: aiohttp.ClientSession,
+    url: str,
+    timeout_seconds: int,
+    error_prefix: str,
+) -> str:
+    content = await fetch_external_bytes_with_redirects(
+        session,
+        url,
+        timeout_seconds,
+        error_prefix,
+    )
+    return content.decode("utf-8")
 
 # ============ Rate Limiting Middleware ============
 
@@ -2560,23 +2624,13 @@ async def install_plugin(request: PluginInstallRequest):
         
         # Determine if it's a directory URL or zip URL
         if source_url.endswith(".zip"):
-            # Download zip file with size limit
-            async with session.get(
+            zip_content = await fetch_external_bytes_with_redirects(
+                session,
                 source_url,
-                timeout=aiohttp.ClientTimeout(total=30),
-                allow_redirects=False,
-            ) as resp:
-                if resp.status != 200:
-                    return JSONResponse({"success": False, "error": f"Failed to download: HTTP {resp.status}"}, status_code=400)
-                
-                # Check content length if available
-                content_length = resp.headers.get('Content-Length')
-                if content_length and int(content_length) > MAX_PLUGIN_SIZE:
-                    return JSONResponse({"success": False, "error": f"Plugin too large (max {MAX_PLUGIN_SIZE // (1024*1024)}MB)"}, status_code=400)
-                
-                zip_content = await resp.read()
-                if len(zip_content) > MAX_PLUGIN_SIZE:
-                    return JSONResponse({"success": False, "error": f"Plugin too large (max {MAX_PLUGIN_SIZE // (1024*1024)}MB)"}, status_code=400)
+                timeout_seconds=30,
+                error_prefix="Failed to download",
+                max_size=MAX_PLUGIN_SIZE,
+            )
             
             # Extract zip
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -2626,20 +2680,20 @@ async def install_plugin(request: PluginInstallRequest):
             # It's a GitHub raw directory URL, download individual files
             # First get manifest.json
             manifest_url = f"{source_url}/manifest.json"
-            async with session.get(
-                manifest_url,
-                timeout=aiohttp.ClientTimeout(total=10),
-                allow_redirects=False,
-            ) as resp:
-                if resp.status != 200:
-                    return JSONResponse({"success": False, "error": f"Failed to fetch manifest: HTTP {resp.status}"}, status_code=400)
-                try:
-                    # GitHub raw returns text/plain, so we need to parse manually
-                    manifest_text = await resp.text()
-                    manifest = json.loads(manifest_text)
-                except Exception as e:
-                    return JSONResponse({"success": False, "error": f"Invalid manifest.json format: {str(e)}"}, status_code=400)
-            
+            try:
+                # GitHub raw returns text/plain, so we need to parse manually
+                manifest_text = await fetch_external_text_with_redirects(
+                    session,
+                    manifest_url,
+                    timeout_seconds=10,
+                    error_prefix="Failed to fetch manifest",
+                )
+                manifest = json.loads(manifest_text)
+            except HTTPException:
+                raise
+            except Exception as e:
+                return JSONResponse({"success": False, "error": f"Invalid manifest.json format: {str(e)}"}, status_code=400)
+
             plugin_id = manifest.get("id")
             if not plugin_id:
                 return JSONResponse({"success": False, "error": "Plugin manifest missing 'id'"}, status_code=400)
@@ -2659,33 +2713,32 @@ async def install_plugin(request: PluginInstallRequest):
             # Download main.js (required)
             main_js = manifest.get("main", "main.js")
             main_url = f"{source_url}/{main_js}"
-            async with session.get(
-                main_url,
-                timeout=aiohttp.ClientTimeout(total=10),
-                allow_redirects=False,
-            ) as resp:
-                if resp.status != 200:
-                    # Cleanup on failure
-                    if plugin_dir and os.path.exists(plugin_dir):
-                        shutil.rmtree(plugin_dir)
-                    return JSONResponse({"success": False, "error": f"Failed to download main.js: HTTP {resp.status}"}, status_code=400)
-                main_content = await resp.text()
-                with open(os.path.join(plugin_dir, main_js), "w", encoding="utf-8") as f:
-                    f.write(main_content)
+            try:
+                main_content = await fetch_external_text_with_redirects(
+                    session,
+                    main_url,
+                    timeout_seconds=10,
+                    error_prefix="Failed to download main.js",
+                )
+            except HTTPException:
+                if plugin_dir and os.path.exists(plugin_dir):
+                    shutil.rmtree(plugin_dir)
+                raise
+            with open(os.path.join(plugin_dir, main_js), "w", encoding="utf-8") as f:
+                f.write(main_content)
             
             # Download icon (optional)
             icon_file = manifest.get("icon", "icon.png")
             icon_url = f"{source_url}/{icon_file}"
             try:
-                async with session.get(
+                icon_content = await fetch_external_bytes_with_redirects(
+                    session,
                     icon_url,
-                    timeout=aiohttp.ClientTimeout(total=10),
-                    allow_redirects=False,
-                ) as resp:
-                    if resp.status == 200:
-                        icon_content = await resp.read()
-                        with open(os.path.join(plugin_dir, icon_file), "wb") as f:
-                            f.write(icon_content)
+                    timeout_seconds=10,
+                    error_prefix="Failed to download icon",
+                )
+                with open(os.path.join(plugin_dir, icon_file), "wb") as f:
+                    f.write(icon_content)
             except Exception:
                 pass  # Icon is optional
             
@@ -2699,18 +2752,17 @@ async def install_plugin(request: PluginInstallRequest):
                         continue
                     lib_url = f"{source_url}/lib/{lib_path}"
                     try:
-                        async with session.get(
+                        content = await fetch_external_bytes_with_redirects(
+                            session,
                             lib_url,
-                            timeout=aiohttp.ClientTimeout(total=30),
-                            allow_redirects=False,
-                        ) as resp:
-                            if resp.status == 200:
-                                lib_target = os.path.join(plugin_dir, "lib", lib_path)
-                                os.makedirs(os.path.dirname(lib_target), exist_ok=True)
-                                content = await resp.read()
-                                with open(lib_target, "wb") as f:
-                                    f.write(content)
-                                logger.info(f"Downloaded lib for {plugin_id}: {lib_path}")
+                            timeout_seconds=30,
+                            error_prefix=f"Failed to download lib {lib_path}",
+                        )
+                        lib_target = os.path.join(plugin_dir, "lib", lib_path)
+                        os.makedirs(os.path.dirname(lib_target), exist_ok=True)
+                        with open(lib_target, "wb") as f:
+                            f.write(content)
+                        logger.info(f"Downloaded lib for {plugin_id}: {lib_path}")
                     except Exception as e:
                         logger.warning(f"Failed to download lib {lib_path} for {plugin_id}: {e}")
         
@@ -2724,6 +2776,14 @@ async def install_plugin(request: PluginInstallRequest):
         logger.info(f"Plugin installed: {plugin_id}")
         return {"success": True, "plugin_id": plugin_id, "manifest": manifest}
 
+    except HTTPException as e:
+        if plugin_dir and os.path.exists(plugin_dir):
+            try:
+                import shutil
+                shutil.rmtree(plugin_dir)
+            except:
+                pass
+        return security_error_response(e)
     except ExternalURLBlocked as e:
         # Cleanup on blocked network resolution after a plugin directory was created.
         if plugin_dir and os.path.exists(plugin_dir):

@@ -1,4 +1,5 @@
 import ipaddress
+import io
 import os
 import shutil
 import socket
@@ -7,6 +8,7 @@ import sys
 import tempfile
 import textwrap
 import unittest
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -62,6 +64,16 @@ class SecurityRegressionTests(unittest.TestCase):
 
     def auth_headers(self):
         return {"Authorization": "Bearer test-token"}
+
+    def make_plugin_zip(self, plugin_id="zip-plugin", main_js="main.js"):
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr(
+                "plugin/manifest.json",
+                f'{{"id": "{plugin_id}", "main": "{main_js}"}}',
+            )
+            archive.writestr(f"plugin/{main_js}", "window.zipPlugin = true;")
+        return buffer.getvalue()
 
     def save_secret_model(self):
         main.db.save_model_config(
@@ -779,7 +791,7 @@ class SecurityRegressionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("internal networks", response.text)
 
-    def test_plugin_install_uses_guarded_session_and_disables_redirects(self):
+    def test_plugin_install_uses_guarded_session_without_auto_redirects(self):
         calls = []
 
         class FakeResponse:
@@ -807,13 +819,23 @@ class SecurityRegressionTests(unittest.TestCase):
                 calls.append((url, allow_redirects))
                 if url == "https://plugins.example.com/safe/manifest.json":
                     return FakeResponse(
+                        302,
+                        headers={
+                            "Location": "https://downloads.example.com/safe/manifest.json"
+                        },
+                    )
+                if url == "https://downloads.example.com/safe/manifest.json":
+                    return FakeResponse(
                         200,
                         '{"id": "safe-plugin", "main": "main.js", "icon": "icon.png"}',
                     )
                 if url == "https://plugins.example.com/safe/main.js":
                     return FakeResponse(200, "window.safePlugin = true;")
                 if url == "https://plugins.example.com/safe/icon.png":
-                    return FakeResponse(404)
+                    return FakeResponse(
+                        302,
+                        headers={"Location": "http://169.254.169.254/icon.png"},
+                    )
                 raise AssertionError(f"unexpected URL {url}")
 
             async def close(self):
@@ -831,6 +853,7 @@ class SecurityRegressionTests(unittest.TestCase):
             calls,
             [
                 ("https://plugins.example.com/safe/manifest.json", False),
+                ("https://downloads.example.com/safe/manifest.json", False),
                 ("https://plugins.example.com/safe/main.js", False),
                 ("https://plugins.example.com/safe/icon.png", False),
             ],
@@ -840,6 +863,167 @@ class SecurityRegressionTests(unittest.TestCase):
         self.assertEqual(
             installed_main.read_text(encoding="utf-8"), "window.safePlugin = true;"
         )
+
+    def test_plugin_install_rejects_main_redirect_to_internal_network(self):
+        calls = []
+
+        class FakeResponse:
+            def __init__(self, status, body="", headers=None):
+                self.status = status
+                self.body = body
+                self.headers = headers or {}
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def read(self):
+                return self.body.encode("utf-8")
+
+        class FakeSession:
+            closed = False
+
+            def get(self, url, timeout, allow_redirects):
+                calls.append((url, allow_redirects))
+                if url == "https://plugins.example.com/safe/manifest.json":
+                    return FakeResponse(
+                        200,
+                        '{"id": "safe-plugin", "main": "main.js", "icon": "icon.png"}',
+                    )
+                if url == "https://plugins.example.com/safe/main.js":
+                    return FakeResponse(
+                        302,
+                        headers={"Location": "http://169.254.169.254/main.js"},
+                    )
+                raise AssertionError(f"unsafe redirect should not be requested: {url}")
+
+            async def close(self):
+                self.closed = True
+
+        with patch.object(main, "create_external_http_session", lambda: FakeSession()):
+            response = self.client.post(
+                "/api/plugins/install",
+                json={"source_url": "plugins.example.com/safe"},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
+        self.assertEqual(
+            calls,
+            [
+                ("https://plugins.example.com/safe/manifest.json", False),
+                ("https://plugins.example.com/safe/main.js", False),
+            ],
+        )
+        installed_dir = Path(main.PLUGINS_INSTALLED_DIR) / "safe-plugin"
+        self.assertFalse(installed_dir.exists())
+
+    def test_plugin_zip_install_follows_safe_redirects_manually(self):
+        calls = []
+        zip_content = self.make_plugin_zip()
+
+        class FakeResponse:
+            def __init__(self, status, body=b"", headers=None):
+                self.status = status
+                self.body = body
+                self.headers = headers or {}
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def read(self):
+                return self.body
+
+        class FakeSession:
+            closed = False
+
+            def get(self, url, timeout, allow_redirects):
+                calls.append((url, allow_redirects))
+                if url == "https://plugins.example.com/release.zip":
+                    return FakeResponse(
+                        302,
+                        headers={
+                            "Location": "https://downloads.example.com/release.zip"
+                        },
+                    )
+                if url == "https://downloads.example.com/release.zip":
+                    return FakeResponse(
+                        200,
+                        zip_content,
+                        headers={"Content-Length": str(len(zip_content))},
+                    )
+                raise AssertionError(f"unexpected URL {url}")
+
+            async def close(self):
+                self.closed = True
+
+        with patch.object(main, "create_external_http_session", lambda: FakeSession()):
+            response = self.client.post(
+                "/api/plugins/install",
+                json={"source_url": "plugins.example.com/release.zip"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
+        self.assertEqual(
+            calls,
+            [
+                ("https://plugins.example.com/release.zip", False),
+                ("https://downloads.example.com/release.zip", False),
+            ],
+        )
+        installed_main = Path(main.PLUGINS_INSTALLED_DIR) / "zip-plugin" / "main.js"
+        self.assertTrue(installed_main.exists())
+        self.assertEqual(
+            installed_main.read_text(encoding="utf-8"), "window.zipPlugin = true;"
+        )
+
+    def test_plugin_zip_install_rejects_redirect_to_internal_network(self):
+        calls = []
+
+        class FakeResponse:
+            def __init__(self, status, headers=None):
+                self.status = status
+                self.headers = headers or {}
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def read(self):
+                return b""
+
+        class FakeSession:
+            closed = False
+
+            def get(self, url, timeout, allow_redirects):
+                calls.append((url, allow_redirects))
+                if url == "https://plugins.example.com/release.zip":
+                    return FakeResponse(
+                        302,
+                        headers={"Location": "http://169.254.169.254/plugin.zip"},
+                    )
+                raise AssertionError(f"unsafe redirect should not be requested: {url}")
+
+            async def close(self):
+                self.closed = True
+
+        with patch.object(main, "create_external_http_session", lambda: FakeSession()):
+            response = self.client.post(
+                "/api/plugins/install",
+                json={"source_url": "plugins.example.com/release.zip"},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
+        self.assertEqual(calls, [("https://plugins.example.com/release.zip", False)])
 
     def test_plugin_install_blocks_private_ip_at_connection_resolution(self):
         class PrivateResolver:
