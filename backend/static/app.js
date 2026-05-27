@@ -74,8 +74,14 @@ function sanitizeMarkdownHtml(html) {
         const tagHtml = input.slice(tagStart, tagEnd + 1);
         const tagName = getMarkdownTagName(tagHtml);
         if (!tagName) {
-            output += tagHtml;
-            index = tagEnd + 1;
+            const nestedTagStart = findNestedMarkdownTagStart(tagHtml);
+            if (nestedTagStart !== -1) {
+                output += escapeMarkdownText(tagHtml.slice(0, nestedTagStart));
+                index = tagStart + nestedTagStart;
+            } else {
+                output += tagHtml;
+                index = tagEnd + 1;
+            }
             continue;
         }
 
@@ -114,9 +120,25 @@ function findMarkdownTagEnd(value, startIndex) {
     return -1;
 }
 
+function findNestedMarkdownTagStart(tagHtml) {
+    for (let index = 1; index < tagHtml.length; index++) {
+        if (tagHtml[index] === '<' && isMarkdownTagLike(tagHtml.slice(index))) {
+            return index;
+        }
+    }
+    return -1;
+}
+
 function getMarkdownTagName(tagHtml) {
     const match = tagHtml.match(/^<\s*\/?\s*([a-z][^\s/=>]*)/i);
     return match ? match[1].toLowerCase() : '';
+}
+
+function escapeMarkdownText(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 }
 
 function isMarkdownTagLike(value) {
@@ -142,12 +164,13 @@ function findClosingMarkdownTagEnd(value, startIndex, tagName) {
 function sanitizeMarkdownTag(tagHtml) {
     if (isClosingMarkdownTag(tagHtml)) return tagHtml;
     const urlAttrs = new Set(['href', 'src', 'xlink:href', 'action', 'formaction']);
-    return tagHtml.replace(/([\s/]+)([^\s/=>]+)\s*=\s*("[^"]*"|'[^']*'|[^\s"'=<>`]+)/gi, (match, _separator, attr, rawValue) => {
-        const attrName = attr.toLowerCase();
-        if (attrName.startsWith('on')) return '';
-        if (urlAttrs.has(attrName) && hasDangerousUrlScheme(stripAttributeQuotes(rawValue))) return '';
-        return match;
-    });
+    return tagHtml
+        .replace(/([\s/]+)on[^\s/=>]*(?:\s*=\s*("[^"]*"|'[^']*'|[^\s>]*))?/gi, '')
+        .replace(/([\s/]+)([^\s/=>]+)\s*=\s*("[^"]*"|'[^']*'|[^\s"'=<>`]+)/gi, (match, _separator, attr, rawValue) => {
+            const attrName = attr.toLowerCase();
+            if (urlAttrs.has(attrName) && hasDangerousUrlScheme(stripAttributeQuotes(rawValue))) return '';
+            return match;
+        });
 }
 
 function stripAttributeQuotes(value) {

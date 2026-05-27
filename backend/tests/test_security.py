@@ -1326,6 +1326,36 @@ class SecurityRegressionTests(unittest.TestCase):
                         required: ['<form><button>open</button></form>']
                     }},
                     {{
+                        name: 'nested malformed image tag',
+                        dirty: '<<img src=x onerror=alert(20)>',
+                        forbidden: [/onerror/i, /alert\\(20\\)/i],
+                        required: ['&lt;<img src=x>']
+                    }},
+                    {{
+                        name: 'spaced nested malformed image tag',
+                        dirty: '< <img src=x onerror=alert(21)>',
+                        forbidden: [/onerror/i, /alert\\(21\\)/i],
+                        required: ['&lt; <img src=x>']
+                    }},
+                    {{
+                        name: 'nested malformed script tag',
+                        dirty: '<<<script>alert(22)</script><strong>ok</strong>',
+                        forbidden: [/script/i, /alert\\(22\\)/i],
+                        required: ['&lt;&lt;<strong>ok</strong>']
+                    }},
+                    {{
+                        name: 'malformed event attribute value',
+                        dirty: '<img src=x onerror=<svg/onload=alert(23)>>',
+                        forbidden: [/onerror/i, /onload/i, /alert\\(23\\)/i],
+                        required: ['<img src=x>']
+                    }},
+                    {{
+                        name: 'nested malformed event attribute value',
+                        dirty: '<<img src=x onerror=<svg/onload=alert(24)>>',
+                        forbidden: [/onerror/i, /onload/i, /alert\\(24\\)/i],
+                        required: ['&lt;<img src=x>']
+                    }},
+                    {{
                         name: 'safe URL and formatting tags',
                         dirty: '<a href="https://example.com">ok</a><img src="/image.png"><strong>ok</strong>',
                         forbidden: [/javascript:/i, /onerror/i],
@@ -1386,7 +1416,51 @@ class SecurityRegressionTests(unittest.TestCase):
             }};
             vm.runInNewContext(source + `
                 const state = app();
-                this.rendered = state.renderMarkdown('<img src=x onerror="alert(1)//>">');
+                const markdownCases = [
+                    {{
+                        name: 'quoted greater-than event handler',
+                        dirty: '<img src=x onerror="alert(1)//>">',
+                        forbidden: /onerror|alert\\(1\\)/i,
+                        required: '<img src=x>'
+                    }},
+                    {{
+                        name: 'nested malformed image tag',
+                        dirty: '<<img src=x onerror=alert(2)>',
+                        forbidden: /onerror|alert\\(2\\)/i,
+                        required: '&lt;<img src=x>'
+                    }},
+                    {{
+                        name: 'spaced nested malformed image tag',
+                        dirty: '< <img src=x onerror=alert(3)>',
+                        forbidden: /onerror|alert\\(3\\)/i,
+                        required: '&lt; <img src=x>'
+                    }},
+                    {{
+                        name: 'nested malformed script tag',
+                        dirty: '<<<script>alert(4)</script><strong>ok</strong>',
+                        forbidden: /script|alert\\(4\\)/i,
+                        required: '&lt;&lt;<strong>ok</strong>'
+                    }},
+                    {{
+                        name: 'malformed event attribute value',
+                        dirty: '<img src=x onerror=<svg/onload=alert(5)>>',
+                        forbidden: /onerror|onload|alert\\(5\\)/i,
+                        required: '<img src=x>'
+                    }},
+                    {{
+                        name: 'nested malformed event attribute value',
+                        dirty: '<<img src=x onerror=<svg/onload=alert(6)>>',
+                        forbidden: /onerror|onload|alert\\(6\\)/i,
+                        required: '&lt;<img src=x>'
+                    }}
+                ];
+                this.markdownFailures = [];
+                for (const item of markdownCases) {{
+                    const rendered = state.renderMarkdown(item.dirty);
+                    if (item.forbidden.test(rendered) || !rendered.includes(item.required)) {{
+                        this.markdownFailures.push(item.name + ': ' + rendered);
+                    }}
+                }}
                 this.payload = state.prepareModelPayload({{
                     id: 'secret-chat',
                     api_key_set: true,
@@ -1394,8 +1468,8 @@ class SecurityRegressionTests(unittest.TestCase):
                     api_key_touched: false
                 }});
             `, sandbox);
-            if (/onerror/i.test(sandbox.rendered) || !sandbox.rendered.includes('<img src=x>')) {{
-                process.stderr.write(sandbox.rendered);
+            if (sandbox.markdownFailures.length) {{
+                process.stderr.write(sandbox.markdownFailures.join('\\n'));
                 process.exit(1);
             }}
             if (Object.prototype.hasOwnProperty.call(sandbox.payload, 'api_key')) {{
