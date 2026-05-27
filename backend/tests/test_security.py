@@ -385,6 +385,60 @@ class SecurityRegressionTests(unittest.TestCase):
                         required: ['<svg>']
                     }},
                     {{
+                        name: 'quoted greater-than event attribute',
+                        dirty: '<img src=x onerror="alert(9)//>">',
+                        forbidden: [/onerror/i],
+                        required: ['<img src=x>']
+                    }},
+                    {{
+                        name: 'event attribute after double-quoted greater-than',
+                        dirty: '<img alt=">" src=x onerror=alert(11)>',
+                        forbidden: [/onerror/i],
+                        required: []
+                    }},
+                    {{
+                        name: 'event attribute after single-quoted greater-than',
+                        dirty: "<img alt='>' src=x onerror=alert(12)>",
+                        forbidden: [/onerror/i],
+                        required: []
+                    }},
+                    {{
+                        name: 'dangerous href after quoted greater-than',
+                        dirty: '<a title=">" href="javascript:alert(13)">x</a>',
+                        forbidden: [/href=/i, /javascript:/i],
+                        required: ['<a title=">">x</a>']
+                    }},
+                    {{
+                        name: 'entity and newline encoded href after quoted greater-than',
+                        dirty: '<a title=">" href="java&#x0A;script:alert(14)">x</a>',
+                        forbidden: [/href=/i, /java&#x0A;script/i],
+                        required: ['<a title=">">x</a>']
+                    }},
+                    {{
+                        name: 'xlink href after quoted greater-than',
+                        dirty: '<svg><a data-x=">" xlink:href="javascript:alert(15)">x</a></svg>',
+                        forbidden: [/xlink:href/i, /javascript:/i],
+                        required: ['<svg><a data-x=">">x</a></svg>']
+                    }},
+                    {{
+                        name: 'malformed tag-like tail is dropped',
+                        dirty: '<img src=x onerror="alert(16)',
+                        forbidden: [/onerror/i, /alert\\(16\\)/i],
+                        required: []
+                    }},
+                    {{
+                        name: 'blocked script tag with quoted greater-than attribute',
+                        dirty: '<script data-x=">">alert(10)</script><strong>ok</strong>',
+                        forbidden: [/script/i, /alert\\(10\\)/i],
+                        required: ['<strong>ok</strong>']
+                    }},
+                    {{
+                        name: 'blocked iframe tag with srcdoc payload',
+                        dirty: '<iframe title=">" srcdoc="<img src=x onerror=alert(17)>">',
+                        forbidden: [/iframe/i, /srcdoc/i, /onerror/i, /alert\\(17\\)/i],
+                        required: []
+                    }},
+                    {{
                         name: 'entity-encoded dangerous link',
                         dirty: '<a href="jav&#x61;script:alert(3)">x</a>',
                         forbidden: [/href=/i, /javascript:/i, /jav&#x61;script:/i],

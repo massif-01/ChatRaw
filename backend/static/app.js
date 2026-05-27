@@ -50,14 +50,97 @@ function loadScript(src) {
 
 function sanitizeMarkdownHtml(html) {
     if (!html) return '';
-    return String(html)
-        .replace(/<\s*(script|iframe|object|embed|link|meta|base)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
-        .replace(/<\s*(script|iframe|object|embed|link|meta|base)\b[^>]*\/?>/gi, '')
-        .replace(/<\s*\/?\s*[a-z][^<>]*>/gi, sanitizeMarkdownTag);
+    const input = String(html);
+    let output = '';
+    let index = 0;
+
+    while (index < input.length) {
+        const tagStart = input.indexOf('<', index);
+        if (tagStart === -1) {
+            output += input.slice(index);
+            break;
+        }
+
+        output += input.slice(index, tagStart);
+        const tagEnd = findMarkdownTagEnd(input, tagStart);
+        if (tagEnd === -1) {
+            const remainder = input.slice(tagStart);
+            if (!isMarkdownTagLike(remainder)) {
+                output += remainder;
+            }
+            break;
+        }
+
+        const tagHtml = input.slice(tagStart, tagEnd + 1);
+        const tagName = getMarkdownTagName(tagHtml);
+        if (!tagName) {
+            output += tagHtml;
+            index = tagEnd + 1;
+            continue;
+        }
+
+        if (isBlockedMarkdownTag(tagName)) {
+            index = tagEnd + 1;
+            if (!isClosingMarkdownTag(tagHtml)) {
+                const closingTagEnd = findClosingMarkdownTagEnd(input, index, tagName);
+                if (closingTagEnd !== -1) {
+                    index = closingTagEnd + 1;
+                }
+            }
+            continue;
+        }
+
+        output += sanitizeMarkdownTag(tagHtml);
+        index = tagEnd + 1;
+    }
+
+    return output;
+}
+
+function findMarkdownTagEnd(value, startIndex) {
+    let quote = '';
+    for (let index = startIndex + 1; index < value.length; index++) {
+        const char = value[index];
+        if (quote) {
+            if (char === quote) quote = '';
+            continue;
+        }
+        if (char === '"' || char === "'") {
+            quote = char;
+            continue;
+        }
+        if (char === '>') return index;
+    }
+    return -1;
+}
+
+function getMarkdownTagName(tagHtml) {
+    const match = tagHtml.match(/^<\s*\/?\s*([a-z][^\s/=>]*)/i);
+    return match ? match[1].toLowerCase() : '';
+}
+
+function isMarkdownTagLike(value) {
+    return /^<\s*\/?\s*[a-z]/i.test(value);
+}
+
+function isClosingMarkdownTag(tagHtml) {
+    return /^<\s*\//.test(tagHtml);
+}
+
+function isBlockedMarkdownTag(tagName) {
+    return ['script', 'iframe', 'object', 'embed', 'link', 'meta', 'base'].includes(tagName);
+}
+
+function findClosingMarkdownTagEnd(value, startIndex, tagName) {
+    const needle = '</' + tagName.toLowerCase();
+    const lowerValue = value.toLowerCase();
+    const closingTagStart = lowerValue.indexOf(needle, startIndex);
+    if (closingTagStart === -1) return -1;
+    return findMarkdownTagEnd(value, closingTagStart);
 }
 
 function sanitizeMarkdownTag(tagHtml) {
-    if (/^<\s*\//.test(tagHtml)) return tagHtml;
+    if (isClosingMarkdownTag(tagHtml)) return tagHtml;
     const urlAttrs = new Set(['href', 'src', 'xlink:href', 'action', 'formaction']);
     return tagHtml.replace(/([\s/]+)([^\s/=>]+)\s*=\s*("[^"]*"|'[^']*'|[^\s"'=<>`]+)/gi, (match, _separator, attr, rawValue) => {
         const attrName = attr.toLowerCase();
