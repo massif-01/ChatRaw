@@ -1983,7 +1983,7 @@ async def save_model(request: Request):
         return JSONResponse({"success": False, "error": "Invalid model config"}, status_code=400)
     if "api_key" not in body and config.id:
         existing = db.get_model_config(config.id)
-        if existing:
+        if existing and config.api_url.rstrip("/") == existing.api_url.rstrip("/"):
             config.api_key = existing.api_key
 
     saved = db.save_model_config(config)

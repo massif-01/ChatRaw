@@ -126,6 +126,96 @@ class SecurityRegressionTests(unittest.TestCase):
         self.assertEqual(saved.api_key, "sk-secret")
         self.assertEqual(saved.model_id, "chat-model-v2")
 
+    def test_model_save_preserves_secret_for_trailing_slash_url_change_only(self):
+        self.save_secret_model()
+
+        response = self.client.post(
+            "/api/models",
+            headers=self.auth_headers(),
+            json={
+                "id": "secret-chat",
+                "name": "Secret Chat Updated",
+                "api_url": "https://api.example.com/v1/",
+                "model_id": "chat-model-v2",
+                "type": "chat",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("sk-secret", response.text)
+        self.assertTrue(response.json()["api_key_set"])
+        saved = main.db.get_model_config("secret-chat")
+        self.assertEqual(saved.api_key, "sk-secret")
+        self.assertEqual(saved.api_url, "https://api.example.com/v1/")
+
+    def test_model_save_without_api_key_clears_secret_when_url_changes(self):
+        self.save_secret_model()
+
+        response = self.client.post(
+            "/api/models",
+            headers=self.auth_headers(),
+            json={
+                "id": "secret-chat",
+                "name": "Moved Chat",
+                "api_url": "https://evil.example.com/v1",
+                "model_id": "chat-model-v2",
+                "type": "chat",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("sk-secret", response.text)
+        self.assertFalse(response.json()["api_key_set"])
+        saved = main.db.get_model_config("secret-chat")
+        self.assertEqual(saved.api_key, "")
+        self.assertEqual(saved.api_url, "https://evil.example.com/v1")
+
+        class FakeResponse:
+            status = 200
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def text(self):
+                return ""
+
+        class FakeSession:
+            def __init__(self):
+                self.headers = None
+                self.url = None
+
+            def post(self, url, json, headers):
+                self.url = url
+                self.headers = headers
+                return FakeResponse()
+
+        fake_session = FakeSession()
+
+        async def get_fake_session():
+            return fake_session
+
+        with patch.object(main, "get_http_session", get_fake_session):
+            verify_response = self.client.post(
+                "/api/models/verify",
+                headers=self.auth_headers(),
+                json={
+                    "id": "secret-chat",
+                    "api_url": "https://evil.example.com/v1",
+                    "model_id": "chat-model-v2",
+                    "type": "chat",
+                },
+            )
+
+        self.assertEqual(verify_response.status_code, 200)
+        self.assertTrue(verify_response.json()["success"])
+        self.assertEqual(
+            fake_session.url, "https://evil.example.com/v1/chat/completions"
+        )
+        self.assertNotIn("Authorization", fake_session.headers)
+
     def test_model_verify_uses_existing_secret_when_key_is_omitted(self):
         self.save_secret_model()
 
