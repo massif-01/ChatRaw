@@ -135,7 +135,7 @@
             font-size: 1.1rem;
             margin-bottom: 40px;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 768px), (max-height: 500px) and (max-width: 900px) and (pointer: coarse) {
             .sidebar { position: fixed; left: 0; top: 0; transform: translateX(0); }
             .sidebar.collapsed { transform: translateX(-100%); }
         }
@@ -346,6 +346,26 @@
                         <button class="btn-remove-doc" @click="removeAttachedDocument()" aria-label="Remove document"><i class="ri-close-circle-fill"></i></button>
                     </div>
 
+                    <!-- URL Input Popup -->
+                    <div class="url-input-popup" x-show="showUrlInput" x-cloak @click.outside="cancelUrlInput()">
+                        <div class="url-input-header" x-text="t('enterUrl')"></div>
+                        <input
+                            type="text"
+                            x-model="urlInputValue"
+                            :placeholder="t('urlPlaceholder')"
+                            @keydown.enter="parseUrl()"
+                            @keydown.escape="cancelUrlInput()"
+                            :disabled="isParsingUrl"
+                        >
+                        <div class="url-input-actions">
+                            <button class="btn-cancel" @click="cancelUrlInput()" x-text="t('cancel')"></button>
+                            <button class="btn-confirm" @click="parseUrl()" :disabled="isParsingUrl || !urlInputValue.trim()">
+                                <span x-show="!isParsingUrl" x-text="t('confirm')"></span>
+                                <span x-show="isParsingUrl" x-text="t('parsing')"></span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="input-wrapper">
                         <textarea 
                             x-model="inputMessage" 
@@ -412,26 +432,6 @@
                                             </div>
                                         </template>
                                     </div>
-                                </div>
-                            </div>
-                            
-                            <!-- URL Input Popup -->
-                            <div class="url-input-popup" x-show="showUrlInput" x-cloak @click.outside="cancelUrlInput()">
-                                <div class="url-input-header" x-text="t('enterUrl')"></div>
-                                <input 
-                                    type="text" 
-                                    x-model="urlInputValue" 
-                                    :placeholder="t('urlPlaceholder')"
-                                    @keydown.enter="parseUrl()"
-                                    @keydown.escape="cancelUrlInput()"
-                                    :disabled="isParsingUrl"
-                                >
-                                <div class="url-input-actions">
-                                    <button class="btn-cancel" @click="cancelUrlInput()" x-text="t('cancel')"></button>
-                                    <button class="btn-confirm" @click="parseUrl()" :disabled="isParsingUrl || !urlInputValue.trim()">
-                                        <span x-show="!isParsingUrl" x-text="t('confirm')"></span>
-                                        <span x-show="isParsingUrl" x-text="t('parsing')"></span>
-                                    </button>
                                 </div>
                             </div>
                         </div>

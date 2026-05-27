@@ -345,9 +345,15 @@ marked.setOptions({
     gfm: true
 });
 
+const MOBILE_VIEW_MEDIA_QUERY = '(max-width: 768px), (max-height: 500px) and (max-width: 900px) and (pointer: coarse)';
+
+function isMobileViewport() {
+    return window.matchMedia(MOBILE_VIEW_MEDIA_QUERY).matches;
+}
+
 function app() {
     const initialDesktopCollapsed = localStorage.getItem('chatraw_sidebar_collapsed') === '1';
-    const initialIsMobile = window.matchMedia('(max-width: 768px)').matches;
+    const initialIsMobile = isMobileViewport();
     
     return {
         // Language
@@ -519,7 +525,7 @@ function app() {
         },
         
         syncSidebarForViewport(isInitial) {
-            const isMobileNow = window.matchMedia('(max-width: 768px)').matches;
+            const isMobileNow = isMobileViewport();
             const switchedToMobile = !this.isMobileView && isMobileNow;
             const switchedToDesktop = this.isMobileView && !isMobileNow;
             this.isMobileView = isMobileNow;
