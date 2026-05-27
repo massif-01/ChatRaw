@@ -292,7 +292,7 @@ class SecurityRegressionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("internal networks", response.text)
 
-    def test_markdown_sanitizer_removes_event_handlers(self):
+    def test_markdown_sanitizer_removes_event_handlers_and_dangerous_urls(self):
         script = textwrap.dedent(
             f"""
             const fs = require('fs');
@@ -311,9 +311,9 @@ class SecurityRegressionTests(unittest.TestCase):
                     querySelectorAll() {{ return []; }}
                 }}
             }};
-            const dirty = '<img src=x onerror=alert(1)><a href="jav&#x61;script:alert(1)">x</a><strong>ok</strong>';
+            const dirty = '<img src=x onerror=alert(1)><a href="jav&#x61;script:alert(1)">x</a><form action="javascript:alert(2)"><button formaction="jav&#x61;script:alert(3)">open</button></form><strong>ok</strong>';
             vm.runInNewContext(source + '\\nthis.result = app().renderMarkdown(' + JSON.stringify(dirty) + ');', sandbox);
-            if (/onerror|href=|javascript:|jav&#x61;script:/i.test(sandbox.result)) {{
+            if (/onerror|href=|action=|formaction|javascript:|jav&#x61;script:/i.test(sandbox.result)) {{
                 process.stderr.write(sandbox.result);
                 process.exit(1);
             }}
