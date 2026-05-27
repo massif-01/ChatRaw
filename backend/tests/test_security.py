@@ -1479,6 +1479,22 @@ class SecurityRegressionTests(unittest.TestCase):
                 window.ChatRawPlugin.modelFetch('/api/models', {{
                     headers: {{ 'Content-Type': 'application/json' }}
                 }});
+                this.pluginPreservePayload = window.ChatRawPlugin.prepareModelPayload({{
+                    id: 'default-chat',
+                    api_url: 'https://api.example.com/v1',
+                    model_id: 'gpt-test',
+                    api_key: '',
+                    api_key_set: true,
+                    api_key_touched: false
+                }});
+                this.pluginClearPayload = window.ChatRawPlugin.prepareModelPayload({{
+                    id: 'default-chat',
+                    api_url: 'https://api.example.com/v1',
+                    model_id: 'gpt-test',
+                    api_key: '',
+                    api_key_set: true,
+                    api_key_touched: true
+                }});
             `, sandbox);
             if (sandbox.markdownFailures.length) {{
                 process.stderr.write(sandbox.markdownFailures.join('\\n'));
@@ -1491,6 +1507,14 @@ class SecurityRegressionTests(unittest.TestCase):
             const pluginCall = sandbox.fetchCalls.find(call => call.url === '/api/models');
             if (!pluginCall || pluginCall.options.headers.Authorization !== 'Bearer plugin-token') {{
                 process.stderr.write(JSON.stringify(sandbox.fetchCalls));
+                process.exit(1);
+            }}
+            if (Object.prototype.hasOwnProperty.call(sandbox.pluginPreservePayload, 'api_key')) {{
+                process.stderr.write(JSON.stringify(sandbox.pluginPreservePayload));
+                process.exit(1);
+            }}
+            if (sandbox.pluginClearPayload.api_key !== '') {{
+                process.stderr.write(JSON.stringify(sandbox.pluginClearPayload));
                 process.exit(1);
             }}
             """
@@ -1515,7 +1539,13 @@ class SecurityRegressionTests(unittest.TestCase):
             source = path.read_text()
             with self.subTest(path=path.name):
                 self.assertIn("ChatRaw.modelFetch", source)
+                self.assertIn("ChatRaw.prepareModelPayload", source)
                 self.assertNotRegex(source, r"fetch\(\s*['\"`]/api/models")
+                self.assertNotRegex(source, r"body:\s*JSON\.stringify\(\s*model\s*\)")
+        multi_model_source = plugin_paths[0].read_text()
+        self.assertIn("Cannot restore redacted original API key", multi_model_source)
+        rag_source = plugin_paths[1].read_text()
+        self.assertIn("model.api_key_touched = false", rag_source)
 
     def test_plugin_model_fetch_prompts_and_retries_after_unauthorized(self):
         script = textwrap.dedent(

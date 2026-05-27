@@ -1909,6 +1909,7 @@ function app() {
 
                 // Auth-aware model configuration API
                 modelFetch: (url, options = {}, retry = true) => this.modelFetch(url, options, retry),
+                prepareModelPayload: (model) => this.prepareModelPayload(model),
                 
                 // Proxy API for external service calls
                 proxy: {

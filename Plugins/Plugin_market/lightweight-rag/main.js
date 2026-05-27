@@ -258,11 +258,12 @@
         if (messageEl) messageEl.textContent = '';
         
         try {
+            const payload = ChatRaw.prepareModelPayload(model);
             // First verify the model
             const verifyRes = await ChatRaw.modelFetch('/api/models/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(model)
+                body: JSON.stringify(payload)
             });
             
             const verifyData = await verifyRes.json();
@@ -276,13 +277,14 @@
                 const saveRes = await ChatRaw.modelFetch('/api/models', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(model)
+                    body: JSON.stringify(payload)
                 });
                 
                 if (saveRes.ok) {
                     const savedModel = await saveRes.json();
                     // Update model with saved data (including ID if new)
                     Object.assign(model, savedModel);
+                    model.api_key_touched = false;
                     ChatRaw.utils?.showToast?.(t('settingsSaved'), 'success');
                 } else {
                     console.error('[RAG Plugin] Failed to save model');
@@ -606,6 +608,9 @@
     
     function updateModel(index, field, value) {
         if (models[index]) {
+            if (field === 'api_key' && value !== (models[index].api_key || '')) {
+                models[index].api_key_touched = true;
+            }
             models[index][field] = value;
         }
     }

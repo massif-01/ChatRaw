@@ -216,16 +216,22 @@
             console.log('[MultiModel] No original config to restore');
             return;
         }
+        if (pluginData.originalConfig.api_key_set && !pluginData.originalConfig.api_key) {
+            console.warn('[MultiModel] Cannot restore redacted original API key');
+            ChatRaw.utils?.showToast?.(t('saveFailed'), 'error');
+            return;
+        }
         
         try {
+            const payload = ChatRaw.prepareModelPayload({
+                ...pluginData.originalConfig,
+                id: 'default-chat',
+                type: 'chat'
+            });
             const res = await ChatRaw.modelFetch('/api/models', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...pluginData.originalConfig,
-                    id: 'default-chat',
-                    type: 'chat'
-                })
+                body: JSON.stringify(payload)
             });
             
             if (res.ok) {
@@ -251,19 +257,22 @@
         
         // Write to main config
         try {
+            const payload = ChatRaw.prepareModelPayload({
+                id: 'default-chat',
+                type: 'chat',
+                api_url: model.api_url,
+                api_key: model.api_key,
+                api_key_set: model.api_key_set,
+                api_key_touched: model.api_key_touched,
+                model_id: model.model_id,
+                capability: model.capability,
+                context_length: model.context_length,
+                max_output: model.max_output
+            });
             const res = await ChatRaw.modelFetch('/api/models', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: 'default-chat',
-                    type: 'chat',
-                    api_url: model.api_url,
-                    api_key: model.api_key,
-                    model_id: model.model_id,
-                    capability: model.capability,
-                    context_length: model.context_length,
-                    max_output: model.max_output
-                })
+                body: JSON.stringify(payload)
             });
             
             if (res.ok) {
@@ -338,7 +347,11 @@
     function updateModelFromForm(model) {
         model.displayName = document.getElementById('mm-displayName')?.value || '';
         model.api_url = document.getElementById('mm-apiUrl')?.value || '';
-        model.api_key = document.getElementById('mm-apiKey')?.value || '';
+        const nextApiKey = document.getElementById('mm-apiKey')?.value || '';
+        if (nextApiKey !== (model.api_key || '')) {
+            model.api_key_touched = true;
+        }
+        model.api_key = nextApiKey;
         model.model_id = document.getElementById('mm-modelId')?.value || '';
         model.capability = {
             vision: document.getElementById('mm-vision')?.checked || false,
@@ -359,16 +372,19 @@
         renderUI();
         
         try {
+            const payload = ChatRaw.prepareModelPayload({
+                id: model.id,
+                type: 'chat',
+                api_url: model.api_url,
+                api_key: model.api_key,
+                api_key_set: model.api_key_set,
+                api_key_touched: model.api_key_touched,
+                model_id: model.model_id
+            });
             const res = await ChatRaw.modelFetch('/api/models/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: model.id,
-                    type: 'chat',
-                    api_url: model.api_url,
-                    api_key: model.api_key,
-                    model_id: model.model_id
-                })
+                body: JSON.stringify(payload)
             });
             
             const result = await res.json();
