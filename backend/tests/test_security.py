@@ -247,14 +247,72 @@ class SecurityRegressionTests(unittest.TestCase):
                     querySelectorAll() {{ return []; }}
                 }}
             }};
-            const dirty = '<img src=x onerror=alert(1)><a href="javascript:alert(1)">x</a><strong>ok</strong>';
+            const dirty = '<img src=x onerror=alert(1)><a href="jav&#x61;script:alert(1)">x</a><strong>ok</strong>';
             vm.runInNewContext(source + '\\nthis.result = app().renderMarkdown(' + JSON.stringify(dirty) + ');', sandbox);
-            if (/onerror|javascript:/i.test(sandbox.result)) {{
+            if (/onerror|href=|javascript:|jav&#x61;script:/i.test(sandbox.result)) {{
                 process.stderr.write(sandbox.result);
                 process.exit(1);
             }}
             if (!sandbox.result.includes('<strong>ok</strong>')) {{
                 process.stderr.write(sandbox.result);
+                process.exit(1);
+            }}
+            """
+        )
+
+        result = subprocess.run(
+            ["node", "-e", script],
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_model_payload_preserves_or_clears_api_key_by_user_intent(self):
+        script = textwrap.dedent(
+            f"""
+            const fs = require('fs');
+            const vm = require('vm');
+            const source = fs.readFileSync({str(REPO_ROOT / 'backend' / 'static' / 'app.js')!r}, 'utf8');
+            const sandbox = {{
+                marked: {{ setOptions() {{}} }},
+                window: {{ matchMedia() {{ return {{ matches: false }}; }} }},
+                localStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
+                document: {{
+                    head: {{ appendChild() {{}} }},
+                    createElement() {{ return {{}}; }},
+                    querySelectorAll() {{ return []; }}
+                }}
+            }};
+            vm.runInNewContext(source + `
+                const state = app();
+                this.preserve = state.prepareModelPayload({{
+                    id: 'secret-chat',
+                    api_key_set: true,
+                    api_key: '',
+                    api_key_touched: false,
+                    status: 'loading',
+                    verifyMessage: 'pending'
+                }});
+                this.clear = state.prepareModelPayload({{
+                    id: 'secret-chat',
+                    api_key_set: true,
+                    api_key: '',
+                    api_key_touched: true
+                }});
+            `, sandbox);
+            if (Object.prototype.hasOwnProperty.call(sandbox.preserve, 'api_key')) {{
+                process.stderr.write(JSON.stringify(sandbox.preserve));
+                process.exit(1);
+            }}
+            if (sandbox.clear.api_key !== '') {{
+                process.stderr.write(JSON.stringify(sandbox.clear));
+                process.exit(1);
+            }}
+            if ('api_key_set' in sandbox.clear || 'api_key_touched' in sandbox.clear) {{
+                process.stderr.write(JSON.stringify(sandbox.clear));
                 process.exit(1);
             }}
             """
