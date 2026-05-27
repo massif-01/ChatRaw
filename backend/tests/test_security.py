@@ -121,8 +121,10 @@ class SecurityRegressionTests(unittest.TestCase):
         class FakeSession:
             def __init__(self):
                 self.headers = None
+                self.url = None
 
             def post(self, url, json, headers):
+                self.url = url
                 self.headers = headers
                 return FakeResponse()
 
@@ -132,19 +134,28 @@ class SecurityRegressionTests(unittest.TestCase):
             return fake_session
 
         with patch.object(main, "get_http_session", get_fake_session):
-            response = self.client.post(
-                "/api/models/verify",
-                headers=self.auth_headers(),
-                json={
-                    "id": "secret-chat",
-                    "api_url": "https://api.example.com/v1",
-                    "model_id": "chat-model",
-                    "type": "chat",
-                },
-            )
+            with patch.object(
+                main.aiohttp,
+                "DefaultResolver",
+                side_effect=AssertionError("external resolver should not be used"),
+            ):
+                response = self.client.post(
+                    "/api/models/verify",
+                    headers=self.auth_headers(),
+                    json={
+                        "id": "secret-chat",
+                        "api_url": "http://127.0.0.1:11434/v1",
+                        "model_id": "chat-model",
+                        "type": "chat",
+                    },
+                )
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["success"])
+        self.assertEqual(
+            fake_session.url,
+            "http://127.0.0.1:11434/v1/chat/completions",
+        )
         self.assertEqual(fake_session.headers["Authorization"], "Bearer sk-secret")
 
     def test_model_endpoints_reject_invalid_payloads(self):
@@ -189,7 +200,39 @@ class SecurityRegressionTests(unittest.TestCase):
                     response = self.client.post("/api/parse-url", json={"url": url})
                     self.assertEqual(response.status_code, 400)
 
-    def test_proxy_request_rejects_internal_and_private_dns_targets(self):
+    def test_parse_url_blocks_private_ip_at_connection_resolution(self):
+        async def fail_if_called():
+            raise AssertionError("get_http_session should not be called")
+
+        class PrivateResolver:
+            async def resolve(self, host, port=0, family=0):
+                return [
+                    {
+                        "hostname": host,
+                        "host": "169.254.169.254",
+                        "port": port,
+                        "family": socket.AF_INET,
+                        "proto": 0,
+                        "flags": 0,
+                    }
+                ]
+
+            async def close(self):
+                pass
+
+        with patch.object(main, "get_http_session", fail_if_called):
+            with patch.object(
+                main.aiohttp, "DefaultResolver", lambda: PrivateResolver()
+            ):
+                response = self.client.post(
+                    "/api/parse-url",
+                    json={"url": "http://rebind.example"},
+                )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
+
+    def test_proxy_request_rejects_literal_internal_targets_without_network(self):
         async def fail_if_called():
             raise AssertionError("get_http_session should not be called")
 
@@ -209,24 +252,45 @@ class SecurityRegressionTests(unittest.TestCase):
                     )
                     self.assertEqual(response.status_code, 400)
 
+    def test_proxy_request_blocks_private_ip_at_connection_resolution(self):
+        async def fail_if_called():
+            raise AssertionError("get_http_session should not be called")
+
+        class PrivateResolver:
+            async def resolve(self, host, port=0, family=0):
+                return [
+                    {
+                        "hostname": host,
+                        "host": "93.184.216.34",
+                        "port": port,
+                        "family": socket.AF_INET,
+                        "proto": 0,
+                        "flags": 0,
+                    },
+                    {
+                        "hostname": host,
+                        "host": "10.0.0.1",
+                        "port": port,
+                        "family": socket.AF_INET,
+                        "proto": 0,
+                        "flags": 0,
+                    },
+                ]
+
+            async def close(self):
+                pass
+
+        with patch.object(main, "get_http_session", fail_if_called):
             with patch.object(
-                main.socket,
-                "getaddrinfo",
-                return_value=[
-                    (
-                        socket.AF_INET,
-                        socket.SOCK_STREAM,
-                        6,
-                        "",
-                        ("10.0.0.1", 80),
-                    )
-                ],
+                main.aiohttp, "DefaultResolver", lambda: PrivateResolver()
             ):
                 response = self.client.post(
                     "/api/proxy/request",
-                    json={"service_id": "test", "url": "http://private.example"},
+                    json={"service_id": "test", "url": "http://rebind.example"},
                 )
-                self.assertEqual(response.status_code, 400)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
 
     def test_markdown_sanitizer_removes_event_handlers(self):
         script = textwrap.dedent(

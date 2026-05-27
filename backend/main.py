@@ -15,7 +15,6 @@ import io
 import struct
 import logging
 import shutil
-import socket
 from datetime import datetime
 from typing import Optional, List, AsyncGenerator, Dict, Any
 from contextlib import asynccontextmanager
@@ -1623,23 +1622,8 @@ def is_blocked_ip(ip: ipaddress._BaseAddress) -> bool:
         or ip.is_unspecified
     )
 
-def resolve_hostname(hostname: str, port: Optional[int] = None) -> List[ipaddress._BaseAddress]:
-    try:
-        infos = socket.getaddrinfo(hostname, port, type=socket.SOCK_STREAM)
-    except socket.gaierror:
-        raise HTTPException(status_code=400, detail="Unable to resolve URL host")
-
-    addresses = []
-    for info in infos:
-        address = info[4][0]
-        try:
-            addresses.append(ipaddress.ip_address(address))
-        except ValueError:
-            continue
-
-    if not addresses:
-        raise HTTPException(status_code=400, detail="Unable to resolve URL host")
-    return addresses
+class ExternalURLBlocked(Exception):
+    pass
 
 def validate_external_url(url: str) -> str:
     normalized_url = url.strip()
@@ -1665,15 +1649,48 @@ def validate_external_url(url: str) -> str:
         addresses = [ipaddress.ip_address(hostname)]
     except ValueError:
         try:
-            port = parsed.port or (443 if parsed.scheme == "https" else 80)
+            parsed.port
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid URL")
-        addresses = resolve_hostname(hostname, port)
-
-    if any(is_blocked_ip(address) for address in addresses):
-        raise HTTPException(status_code=400, detail="Access to internal networks is not allowed")
+    else:
+        if any(is_blocked_ip(address) for address in addresses):
+            raise HTTPException(status_code=400, detail="Access to internal networks is not allowed")
 
     return normalized_url
+
+class ExternalURLResolver(aiohttp.abc.AbstractResolver):
+    def __init__(self):
+        self._resolver = aiohttp.DefaultResolver()
+
+    async def resolve(self, host: str, port: int = 0, family: int = 0):
+        hostname = host.rstrip(".").lower()
+        if hostname == "localhost" or hostname.endswith(".localhost"):
+            raise ExternalURLBlocked("Access to internal networks is not allowed")
+
+        results = await self._resolver.resolve(host, port, family=family)
+        if not results:
+            raise OSError("Unable to resolve URL host")
+
+        for result in results:
+            try:
+                address = ipaddress.ip_address(result["host"])
+            except ValueError:
+                raise OSError("Unable to resolve URL host")
+            if is_blocked_ip(address):
+                raise ExternalURLBlocked("Access to internal networks is not allowed")
+
+        return results
+
+    async def close(self):
+        await self._resolver.close()
+
+def create_external_http_session() -> aiohttp.ClientSession:
+    timeout = aiohttp.ClientTimeout(total=300, connect=10)
+    connector = aiohttp.TCPConnector(
+        resolver=ExternalURLResolver(),
+        use_dns_cache=False,
+    )
+    return aiohttp.ClientSession(timeout=timeout, connector=connector)
 
 def security_error_response(exc: HTTPException) -> JSONResponse:
     return JSONResponse({"success": False, "error": exc.detail}, status_code=exc.status_code)
@@ -2315,12 +2332,12 @@ async def parse_url(request: ParseUrlRequest):
             "Accept-Language": "en-US,en;q=0.5",
         }
         
-        session = await get_http_session()
-        async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=False) as resp:
-            if resp.status != 200:
-                return JSONResponse({"success": False, "error": f"Failed to fetch URL (HTTP {resp.status})"}, status_code=400)
-            
-            html = await resp.text()
+        async with create_external_http_session() as session:
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=False) as resp:
+                if resp.status != 200:
+                    return JSONResponse({"success": False, "error": f"Failed to fetch URL (HTTP {resp.status})"}, status_code=400)
+
+                html = await resp.text()
         
         # Try to use trafilatura for content extraction
         try:
@@ -2361,6 +2378,8 @@ async def parse_url(request: ParseUrlRequest):
             "length": len(content)
         }
         
+    except ExternalURLBlocked as e:
+        return security_error_response(HTTPException(status_code=400, detail=str(e)))
     except asyncio.TimeoutError:
         return JSONResponse({"success": False, "error": "Request timeout - page took too long to load"}, status_code=400)
     except aiohttp.ClientError as e:
@@ -3019,26 +3038,28 @@ async def proxy_request(request: ProxyRequest):
     headers.pop("Cookie", None)
     
     try:
-        session = await get_http_session()
-        async with session.request(
-            method=request.method.upper(),
-            url=validated_url,
-            headers=headers,
-            json=request.body if request.body else None,
-            timeout=aiohttp.ClientTimeout(total=30),
-            allow_redirects=False  # Prevent redirect-based attacks
-        ) as resp:
-            try:
-                data = await resp.json()
-            except:
-                text = await resp.text()
-                # Limit response size
-                data = {"raw": text[:50000] if len(text) > 50000 else text}
-            
-            if resp.status != 200:
-                return JSONResponse({"success": False, "error": data, "status": resp.status}, status_code=resp.status)
-            
-            return {"success": True, "data": data}
+        async with create_external_http_session() as session:
+            async with session.request(
+                method=request.method.upper(),
+                url=validated_url,
+                headers=headers,
+                json=request.body if request.body else None,
+                timeout=aiohttp.ClientTimeout(total=30),
+                allow_redirects=False  # Prevent redirect-based attacks
+            ) as resp:
+                try:
+                    data = await resp.json()
+                except:
+                    text = await resp.text()
+                    # Limit response size
+                    data = {"raw": text[:50000] if len(text) > 50000 else text}
+
+                if resp.status != 200:
+                    return JSONResponse({"success": False, "error": data, "status": resp.status}, status_code=resp.status)
+
+                return {"success": True, "data": data}
+    except ExternalURLBlocked as e:
+        return security_error_response(HTTPException(status_code=400, detail=str(e)))
     except asyncio.TimeoutError:
         return JSONResponse({"success": False, "error": "Request timeout"}, status_code=504)
     except aiohttp.ClientError as e:
