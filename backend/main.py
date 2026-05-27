@@ -1688,6 +1688,38 @@ def create_external_http_session() -> aiohttp.ClientSession:
 def security_error_response(exc: HTTPException) -> JSONResponse:
     return JSONResponse({"success": False, "error": exc.detail}, status_code=exc.status_code)
 
+async def fetch_external_text(url: str, headers: Dict[str, str], timeout_seconds: int = 15) -> tuple[str, str]:
+    redirect_statuses = {301, 302, 303, 307, 308}
+    final_url = validate_external_url(url)
+
+    async with create_external_http_session() as session:
+        for _ in range(5):
+            async with session.get(
+                final_url,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=timeout_seconds),
+                allow_redirects=False,
+            ) as resp:
+                if resp.status in redirect_statuses:
+                    location = resp.headers.get("Location")
+                    if not location:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Failed to fetch URL (HTTP {resp.status})",
+                        )
+                    final_url = validate_external_url(urljoin(final_url, location))
+                    continue
+
+                if resp.status != 200:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Failed to fetch URL (HTTP {resp.status})",
+                    )
+
+                return await resp.text(), final_url
+
+    raise HTTPException(status_code=400, detail="Too many redirects")
+
 # ============ Rate Limiting Middleware ============
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -2270,35 +2302,18 @@ class PluginToggleRequest(BaseModel):
 @app.post("/api/fetch-raw-url")
 async def fetch_raw_url(request: ParseUrlRequest):
     """Fetch raw HTML from URL (no content extraction). Used by url_parser plugins."""
-    from urllib.parse import urlparse
-
-    url = request.url.strip()
-
-    if not url:
-        return JSONResponse({"success": False, "error": "URL is required"}, status_code=400)
-
-    if not url.startswith(('http://', 'https://')):
-        url = 'https://' + url
-
-    try:
-        parsed = urlparse(url)
-        if not parsed.netloc:
-            return JSONResponse({"success": False, "error": "Invalid URL"}, status_code=400)
-    except Exception:
-        return JSONResponse({"success": False, "error": "Invalid URL format"}, status_code=400)
-
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.5",
         }
-        session = await get_http_session()
-        async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=True) as resp:
-            if resp.status != 200:
-                return JSONResponse({"success": False, "error": f"Failed to fetch URL (HTTP {resp.status})"}, status_code=400)
-            html = await resp.text()
-        return {"success": True, "html": html, "url": url}
+        html, final_url = await fetch_external_text(request.url, headers)
+        return {"success": True, "html": html, "url": final_url}
+    except HTTPException as exc:
+        return security_error_response(exc)
+    except ExternalURLBlocked as e:
+        return security_error_response(HTTPException(status_code=400, detail=str(e)))
     except asyncio.TimeoutError:
         return JSONResponse({"success": False, "error": "Request timeout - page took too long to load"}, status_code=400)
     except aiohttp.ClientError as e:
@@ -2313,40 +2328,14 @@ async def parse_url(request: ParseUrlRequest):
     import re
     
     try:
-        url = validate_external_url(request.url)
-    except HTTPException as exc:
-        return security_error_response(exc)
-    
-    try:
         # Fetch the web page
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.5",
         }
-        
-        redirect_statuses = {301, 302, 303, 307, 308}
-        final_url = url
-        async with create_external_http_session() as session:
-            for _ in range(5):
-                async with session.get(final_url, headers=headers, timeout=aiohttp.ClientTimeout(total=15), allow_redirects=False) as resp:
-                    if resp.status in redirect_statuses:
-                        location = resp.headers.get("Location")
-                        if not location:
-                            return JSONResponse({"success": False, "error": f"Failed to fetch URL (HTTP {resp.status})"}, status_code=400)
-                        try:
-                            final_url = validate_external_url(urljoin(final_url, location))
-                        except HTTPException as exc:
-                            return security_error_response(exc)
-                        continue
 
-                    if resp.status != 200:
-                        return JSONResponse({"success": False, "error": f"Failed to fetch URL (HTTP {resp.status})"}, status_code=400)
-
-                    html = await resp.text()
-                    break
-            else:
-                return JSONResponse({"success": False, "error": "Too many redirects"}, status_code=400)
+        html, final_url = await fetch_external_text(request.url, headers)
         
         # Try to use trafilatura for content extraction
         try:
@@ -2387,6 +2376,8 @@ async def parse_url(request: ParseUrlRequest):
             "length": len(content)
         }
         
+    except HTTPException as exc:
+        return security_error_response(exc)
     except ExternalURLBlocked as e:
         return security_error_response(HTTPException(status_code=400, detail=str(e)))
     except asyncio.TimeoutError:
@@ -3100,22 +3091,10 @@ async def proxy_upload(
         extra_fields: JSON string of additional form fields
         file_field_name: Name of the file field in the multipart form (default: "file")
     """
-    from urllib.parse import urlparse
-    import aiohttp
-    
-    # Validate URL
     try:
-        parsed = urlparse(url)
-        if parsed.scheme not in ('http', 'https'):
-            return JSONResponse({"success": False, "error": "Only HTTP(S) URLs are allowed"}, status_code=400)
-        if not parsed.netloc:
-            return JSONResponse({"success": False, "error": "Invalid URL"}, status_code=400)
-        # Block internal/private networks (SSRF protection)
-        hostname = parsed.hostname.lower() if parsed.hostname else ''
-        if hostname in ('localhost', '127.0.0.1', '0.0.0.0', '::1') or hostname.startswith('192.168.') or hostname.startswith('10.') or hostname.startswith('172.'):
-            return JSONResponse({"success": False, "error": "Access to internal networks is not allowed"}, status_code=400)
-    except Exception:
-        return JSONResponse({"success": False, "error": "Invalid URL format"}, status_code=400)
+        validated_url = validate_external_url(url)
+    except HTTPException as exc:
+        return security_error_response(exc)
     
     # Read and validate file size
     try:
@@ -3164,30 +3143,31 @@ async def proxy_upload(
             else:
                 form_data.add_field(key, str(value))
         
-        # Send request
-        session = await get_http_session()
-        async with session.post(
-            url,
-            data=form_data,
-            headers=headers,
-            timeout=aiohttp.ClientTimeout(total=120),  # Longer timeout for file uploads
-            allow_redirects=False
-        ) as resp:
-            try:
-                data = await resp.json()
-            except:
-                text = await resp.text()
-                data = {"raw": text[:50000] if len(text) > 50000 else text}
+        async with create_external_http_session() as session:
+            async with session.post(
+                validated_url,
+                data=form_data,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=120),  # Longer timeout for file uploads
+                allow_redirects=False
+            ) as resp:
+                try:
+                    data = await resp.json()
+                except (aiohttp.ContentTypeError, json.JSONDecodeError):
+                    text = await resp.text()
+                    data = {"raw": text[:50000] if len(text) > 50000 else text}
+
+                if resp.status != 200:
+                    return JSONResponse({
+                        "success": False,
+                        "error": data,
+                        "status": resp.status
+                    }, status_code=resp.status)
+
+                return {"success": True, "data": data}
             
-            if resp.status != 200:
-                return JSONResponse({
-                    "success": False, 
-                    "error": data, 
-                    "status": resp.status
-                }, status_code=resp.status)
-            
-            return {"success": True, "data": data}
-            
+    except ExternalURLBlocked as e:
+        return security_error_response(HTTPException(status_code=400, detail=str(e)))
     except asyncio.TimeoutError:
         return JSONResponse({"success": False, "error": "Upload timeout"}, status_code=504)
     except aiohttp.ClientError as e:

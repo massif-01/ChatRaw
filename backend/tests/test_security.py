@@ -352,6 +352,111 @@ class SecurityRegressionTests(unittest.TestCase):
         self.assertIn("internal networks", response.text)
         self.assertEqual(calls, [("https://example.com/start", False)])
 
+    def test_fetch_raw_url_rejects_internal_targets_without_network(self):
+        def fail_if_called():
+            raise AssertionError("create_external_http_session should not be called")
+
+        with patch.object(main, "create_external_http_session", fail_if_called):
+            response = self.client.post(
+                "/api/fetch-raw-url",
+                json={"url": "http://169.254.169.254/latest/meta-data"},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
+
+    def test_fetch_raw_url_follows_safe_redirects(self):
+        calls = []
+
+        class FakeResponse:
+            def __init__(self, status, headers=None, body=""):
+                self.status = status
+                self.headers = headers or {}
+                self.body = body
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def text(self):
+                return self.body
+
+        class FakeSession:
+            def get(self, url, headers, timeout, allow_redirects):
+                calls.append((url, allow_redirects))
+                if url == "https://example.com/raw-start":
+                    return FakeResponse(301, {"Location": "raw-final"})
+                if url == "https://example.com/raw-final":
+                    return FakeResponse(200, body="<html>Raw body</html>")
+                raise AssertionError(f"unexpected URL {url}")
+
+        class FakeSessionManager:
+            async def __aenter__(self):
+                return FakeSession()
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        with patch.object(
+            main, "create_external_http_session", lambda: FakeSessionManager()
+        ):
+            response = self.client.post(
+                "/api/fetch-raw-url",
+                json={"url": "example.com/raw-start"},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["html"], "<html>Raw body</html>")
+        self.assertEqual(payload["url"], "https://example.com/raw-final")
+        self.assertEqual(
+            calls,
+            [
+                ("https://example.com/raw-start", False),
+                ("https://example.com/raw-final", False),
+            ],
+        )
+
+    def test_fetch_raw_url_blocks_redirect_to_internal_target(self):
+        calls = []
+
+        class FakeResponse:
+            status = 302
+            headers = {"Location": "http://169.254.169.254/latest/meta-data"}
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        class FakeSession:
+            def get(self, url, headers, timeout, allow_redirects):
+                calls.append((url, allow_redirects))
+                return FakeResponse()
+
+        class FakeSessionManager:
+            async def __aenter__(self):
+                return FakeSession()
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        with patch.object(
+            main, "create_external_http_session", lambda: FakeSessionManager()
+        ):
+            response = self.client.post(
+                "/api/fetch-raw-url",
+                json={"url": "https://example.com/raw-start"},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
+        self.assertEqual(calls, [("https://example.com/raw-start", False)])
+
     def test_proxy_request_rejects_literal_internal_targets_without_network(self):
         async def fail_if_called():
             raise AssertionError("get_http_session should not be called")
@@ -424,6 +529,91 @@ class SecurityRegressionTests(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 400)
+
+    def test_proxy_upload_rejects_internal_target_without_network(self):
+        def fail_if_called():
+            raise AssertionError("create_external_http_session should not be called")
+
+        with patch.object(main, "create_external_http_session", fail_if_called):
+            response = self.client.post(
+                "/api/proxy/upload",
+                data={
+                    "service_id": "test",
+                    "url": "http://169.254.169.254/latest/meta-data",
+                },
+                files={"file": ("sample.txt", b"hello", "text/plain")},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
+
+    def test_proxy_upload_uses_validated_url_and_disables_redirects(self):
+        captured = {}
+
+        class FakeResponse:
+            status = 200
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+            async def json(self):
+                return {"ok": True}
+
+        class FakeSession:
+            def post(self, url, data, headers, timeout, allow_redirects):
+                captured["url"] = url
+                captured["allow_redirects"] = allow_redirects
+                return FakeResponse()
+
+        class FakeSessionManager:
+            async def __aenter__(self):
+                return FakeSession()
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        with patch.object(
+            main, "create_external_http_session", lambda: FakeSessionManager()
+        ):
+            response = self.client.post(
+                "/api/proxy/upload",
+                data={"service_id": "test", "url": "api.example.com/upload"},
+                files={"file": ("sample.txt", b"hello", "text/plain")},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(captured["url"], "https://api.example.com/upload")
+        self.assertFalse(captured["allow_redirects"])
+
+    def test_proxy_upload_blocks_private_ip_at_connection_resolution(self):
+        class PrivateResolver:
+            async def resolve(self, host, port=0, family=0):
+                return [
+                    {
+                        "hostname": host,
+                        "host": "10.0.0.1",
+                        "port": port,
+                        "family": socket.AF_INET,
+                        "proto": 0,
+                        "flags": 0,
+                    }
+                ]
+
+            async def close(self):
+                pass
+
+        with patch.object(main.aiohttp, "DefaultResolver", lambda: PrivateResolver()):
+            response = self.client.post(
+                "/api/proxy/upload",
+                data={"service_id": "test", "url": "http://rebind-upload.example"},
+                files={"file": ("sample.txt", b"hello", "text/plain")},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
 
     def test_proxy_request_blocks_private_ip_at_connection_resolution(self):
         async def fail_if_called():
