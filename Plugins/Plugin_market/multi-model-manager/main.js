@@ -216,18 +216,16 @@
             console.log('[MultiModel] No original config to restore');
             return;
         }
-        if (pluginData.originalConfig.api_key_set && !pluginData.originalConfig.api_key) {
-            console.warn('[MultiModel] Cannot restore redacted original API key');
-            ChatRaw.utils?.showToast?.(t('saveFailed'), 'error');
-            return;
-        }
-        
         try {
-            const payload = ChatRaw.prepareModelPayload({
+            const restoreConfig = {
                 ...pluginData.originalConfig,
                 id: 'default-chat',
                 type: 'chat'
-            });
+            };
+            if (restoreConfig.api_key_set && !restoreConfig.api_key) {
+                restoreConfig.restore_previous_api_key = true;
+            }
+            const payload = ChatRaw.prepareModelPayload(restoreConfig);
             const res = await ChatRaw.modelFetch('/api/models', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -239,6 +237,9 @@
                 await savePluginData();
                 ChatRaw.utils?.showToast?.(t('originalRestored'), 'success');
                 console.log('[MultiModel] Restored original config');
+            } else {
+                console.error('[MultiModel] Failed to restore original config:', await res.text());
+                ChatRaw.utils?.showToast?.(t('saveFailed'), 'error');
             }
         } catch (e) {
             console.error('[MultiModel] Failed to restore original config:', e);
@@ -267,7 +268,8 @@
                 model_id: model.model_id,
                 capability: model.capability,
                 context_length: model.context_length,
-                max_output: model.max_output
+                max_output: model.max_output,
+                preserve_previous_api_key: !!(pluginData.originalConfig?.api_key_set && !pluginData.originalConfig?.api_key)
             });
             const res = await ChatRaw.modelFetch('/api/models', {
                 method: 'POST',

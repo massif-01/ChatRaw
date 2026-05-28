@@ -216,6 +216,99 @@ class SecurityRegressionTests(unittest.TestCase):
         )
         self.assertNotIn("Authorization", fake_session.headers)
 
+    def test_model_save_restores_backed_up_secret_for_original_endpoint(self):
+        main.db.save_model_config(
+            main.ModelConfig(
+                id="default-chat",
+                name="Original Chat",
+                api_key="sk-original",
+                api_url="https://api.original.example/v1",
+                model_id="original-model",
+                type="chat",
+            )
+        )
+
+        activate_response = self.client.post(
+            "/api/models",
+            headers=self.auth_headers(),
+            json={
+                "id": "default-chat",
+                "name": "Temporary Chat",
+                "api_url": "https://api.temporary.example/v1",
+                "api_key": "sk-temporary",
+                "model_id": "temporary-model",
+                "type": "chat",
+                "preserve_previous_api_key": True,
+            },
+        )
+
+        self.assertEqual(activate_response.status_code, 200)
+        self.assertNotIn("sk-original", activate_response.text)
+        self.assertNotIn("sk-temporary", activate_response.text)
+        active = main.db.get_model_config("default-chat")
+        self.assertEqual(active.api_key, "sk-temporary")
+        self.assertEqual(active.api_url, "https://api.temporary.example/v1")
+
+        restore_response = self.client.post(
+            "/api/models",
+            headers=self.auth_headers(),
+            json={
+                "id": "default-chat",
+                "name": "Original Chat",
+                "api_url": "https://api.original.example/v1",
+                "model_id": "original-model",
+                "type": "chat",
+                "restore_previous_api_key": True,
+            },
+        )
+
+        self.assertEqual(restore_response.status_code, 200)
+        self.assertNotIn("sk-original", restore_response.text)
+        self.assertNotIn("sk-temporary", restore_response.text)
+        self.assertTrue(restore_response.json()["api_key_set"])
+        restored = main.db.get_model_config("default-chat")
+        self.assertEqual(restored.api_key, "sk-original")
+        self.assertEqual(restored.api_url, "https://api.original.example/v1")
+        self.assertEqual(
+            main.db.get_model_api_key_backup(
+                "default-chat", "https://api.original.example/v1"
+            ),
+            "",
+        )
+
+    def test_model_restore_without_backed_up_secret_does_not_overwrite_active_model(
+        self,
+    ):
+        main.db.save_model_config(
+            main.ModelConfig(
+                id="default-chat",
+                name="Temporary Chat",
+                api_key="sk-temporary",
+                api_url="https://api.temporary.example/v1",
+                model_id="temporary-model",
+                type="chat",
+            )
+        )
+
+        response = self.client.post(
+            "/api/models",
+            headers=self.auth_headers(),
+            json={
+                "id": "default-chat",
+                "name": "Original Chat",
+                "api_url": "https://api.original.example/v1",
+                "model_id": "original-model",
+                "type": "chat",
+                "restore_previous_api_key": True,
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn("sk-temporary", response.text)
+        active = main.db.get_model_config("default-chat")
+        self.assertEqual(active.api_key, "sk-temporary")
+        self.assertEqual(active.api_url, "https://api.temporary.example/v1")
+
     def test_model_verify_uses_existing_secret_when_key_is_omitted(self):
         self.save_secret_model()
 
@@ -1495,6 +1588,15 @@ class SecurityRegressionTests(unittest.TestCase):
                     api_key_set: true,
                     api_key_touched: true
                 }});
+                this.pluginRestorePayload = window.ChatRawPlugin.prepareModelPayload({{
+                    id: 'default-chat',
+                    api_url: 'https://api.example.com/v1',
+                    model_id: 'gpt-test',
+                    api_key: '',
+                    api_key_set: true,
+                    api_key_touched: false,
+                    restore_previous_api_key: true
+                }});
             `, sandbox);
             if (sandbox.markdownFailures.length) {{
                 process.stderr.write(sandbox.markdownFailures.join('\\n'));
@@ -1515,6 +1617,13 @@ class SecurityRegressionTests(unittest.TestCase):
             }}
             if (sandbox.pluginClearPayload.api_key !== '') {{
                 process.stderr.write(JSON.stringify(sandbox.pluginClearPayload));
+                process.exit(1);
+            }}
+            if (
+                Object.prototype.hasOwnProperty.call(sandbox.pluginRestorePayload, 'api_key') ||
+                sandbox.pluginRestorePayload.restore_previous_api_key !== true
+            ) {{
+                process.stderr.write(JSON.stringify(sandbox.pluginRestorePayload));
                 process.exit(1);
             }}
             """
@@ -1543,7 +1652,9 @@ class SecurityRegressionTests(unittest.TestCase):
                 self.assertNotRegex(source, r"fetch\(\s*['\"`]/api/models")
                 self.assertNotRegex(source, r"body:\s*JSON\.stringify\(\s*model\s*\)")
         multi_model_source = plugin_paths[0].read_text()
-        self.assertIn("Cannot restore redacted original API key", multi_model_source)
+        self.assertNotIn("Cannot restore redacted original API key", multi_model_source)
+        self.assertIn("restore_previous_api_key", multi_model_source)
+        self.assertIn("preserve_previous_api_key", multi_model_source)
         rag_source = plugin_paths[1].read_text()
         self.assertIn("model.api_key_touched = false", rag_source)
 

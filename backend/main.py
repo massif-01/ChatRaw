@@ -252,6 +252,14 @@ class Database:
                 capability TEXT,
                 created_at TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS model_api_key_backups (
+                id TEXT NOT NULL,
+                api_url TEXT NOT NULL,
+                api_key TEXT NOT NULL,
+                created_at TEXT,
+                PRIMARY KEY (id, api_url)
+            );
             
             CREATE TABLE IF NOT EXISTS chats (
                 id TEXT PRIMARY KEY,
@@ -442,6 +450,49 @@ class Database:
                 capability=ModelCapability(**cap)
             )
         return None
+
+    def save_model_api_key_backup(self, model_id: str, api_url: str, api_key: str):
+        normalized_api_url = (api_url or "").rstrip("/")
+        if not model_id or not normalized_api_url or not api_key:
+            return
+
+        conn = self.get_conn()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT OR REPLACE INTO model_api_key_backups
+            (id, api_url, api_key, created_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (model_id, normalized_api_url, api_key, datetime.now().isoformat()),
+        )
+        conn.commit()
+
+    def get_model_api_key_backup(self, model_id: str, api_url: str) -> str:
+        normalized_api_url = (api_url or "").rstrip("/")
+        if not model_id or not normalized_api_url:
+            return ""
+
+        cursor = self.get_conn().cursor()
+        cursor.execute(
+            "SELECT api_key FROM model_api_key_backups WHERE id = ? AND api_url = ? LIMIT 1",
+            (model_id, normalized_api_url),
+        )
+        row = cursor.fetchone()
+        return row["api_key"] if row else ""
+
+    def delete_model_api_key_backup(self, model_id: str, api_url: str):
+        normalized_api_url = (api_url or "").rstrip("/")
+        if not model_id or not normalized_api_url:
+            return
+
+        conn = self.get_conn()
+        cursor = conn.cursor()
+        cursor.execute(
+            "DELETE FROM model_api_key_backups WHERE id = ? AND api_url = ?",
+            (model_id, normalized_api_url),
+        )
+        conn.commit()
     
     def save_model_config(self, config: ModelConfig) -> ModelConfig:
         if not config.id:
@@ -463,6 +514,7 @@ class Database:
         conn = self.get_conn()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM model_configs WHERE id = ?", (model_id,))
+        cursor.execute("DELETE FROM model_api_key_backups WHERE id = ?", (model_id,))
         conn.commit()
     
     # Chats
@@ -1981,12 +2033,45 @@ async def save_model(request: Request):
         config = ModelConfig.model_validate(body)
     except ValidationError:
         return JSONResponse({"success": False, "error": "Invalid model config"}, status_code=400)
-    if "api_key" not in body and config.id:
-        existing = db.get_model_config(config.id)
-        if existing and config.api_url.rstrip("/") == existing.api_url.rstrip("/"):
+
+    api_key_provided = "api_key" in body
+    preserve_previous_api_key = bool(body.get("preserve_previous_api_key"))
+    restore_previous_api_key = bool(body.get("restore_previous_api_key"))
+    existing = db.get_model_config(config.id) if config.id else None
+    normalized_api_url = config.api_url.rstrip("/")
+    existing_api_url = existing.api_url.rstrip("/") if existing else ""
+    restored_backup_key = ""
+
+    # Redacted clients cannot hold the original key while temporarily replacing a model.
+    # Only restore a server-side backup for the exact original endpoint when requested.
+    if not api_key_provided and config.id:
+        if existing and normalized_api_url == existing_api_url:
             config.api_key = existing.api_key
+        elif restore_previous_api_key:
+            restored_backup_key = db.get_model_api_key_backup(config.id, config.api_url)
+            if not restored_backup_key:
+                return JSONResponse(
+                    {
+                        "success": False,
+                        "error": "Saved API key is unavailable for restore",
+                    },
+                    status_code=400,
+                )
+            config.api_key = restored_backup_key
+    elif (
+        api_key_provided
+        and preserve_previous_api_key
+        and existing
+        and existing.api_key
+        and normalized_api_url != existing_api_url
+    ):
+        db.save_model_api_key_backup(config.id, existing.api_url, existing.api_key)
+    elif api_key_provided and not config.api_key:
+        db.delete_model_api_key_backup(config.id, config.api_url)
 
     saved = db.save_model_config(config)
+    if restored_backup_key:
+        db.delete_model_api_key_backup(saved.id, saved.api_url)
     return model_config_response(saved)
 
 @app.post("/api/models/verify")
