@@ -1658,6 +1658,419 @@ class SecurityRegressionTests(unittest.TestCase):
         rag_source = plugin_paths[1].read_text()
         self.assertIn("model.api_key_touched = false", rag_source)
 
+    def test_multi_model_manager_preserves_state_when_restore_fails(self):
+        script = textwrap.dedent(
+            f"""
+            (async () => {{
+                const fs = require('fs');
+                const vm = require('vm');
+                const source = fs.readFileSync(
+                    {str(REPO_ROOT / 'Plugins' / 'Plugin_market' / 'multi-model-manager' / 'main.js')!r},
+                    'utf8'
+                );
+                const harnessedSource = source.replace(
+                    /\\n\\s*init\\(\\);\\s*\\n\\s*\\}}\\)\\(window\\.ChatRawPlugin\\);\\s*$/,
+                    `
+                    window.__mmTest = {{
+                        get pluginData() {{ return pluginData; }},
+                        setPluginData(value) {{ pluginData = value; }},
+                        get selectedModelId() {{ return selectedModelId; }},
+                        setSelectedModelId(value) {{ selectedModelId = value; }},
+                        activateModel,
+                        deactivateModel,
+                        deleteModel,
+                        restoreOriginalConfig,
+                        backupOriginalConfig
+                    }};
+
+                }})(window.ChatRawPlugin);
+                    `
+                );
+                if (harnessedSource === source) {{
+                    throw new Error('failed to install multi-model-manager test harness');
+                }}
+
+                const sandbox = {{
+                    modelCalls: [],
+                    saveCalls: [],
+                    toasts: [],
+                    console,
+                    setTimeout() {{}},
+                    confirm() {{ return true; }},
+                    document: {{
+                        getElementById() {{ return null; }},
+                        querySelector() {{ return null; }}
+                    }},
+                    window: {{
+                        addEventListener() {{}},
+                        ChatRawPlugin: {{
+                            hooks: {{ register() {{}} }},
+                            modelFetch: async (url, options = {{}}) => {{
+                                sandbox.modelCalls.push({{ url, options }});
+                                return {{
+                                    ok: false,
+                                    status: 400,
+                                    text: async () => 'restore unavailable'
+                                }};
+                            }},
+                            prepareModelPayload(model) {{
+                                const payload = {{ ...model }};
+                                const apiKeyTouched = !!model.api_key_touched;
+                                delete payload.api_key_set;
+                                delete payload.api_key_touched;
+                                delete payload.status;
+                                delete payload.verifyMessage;
+                                if (model.api_key_set && !model.api_key && !apiKeyTouched) {{
+                                    delete payload.api_key;
+                                }}
+                                return payload;
+                            }},
+                            utils: {{
+                                getLanguage() {{ return 'en'; }},
+                                showToast(message, type) {{
+                                    sandbox.toasts.push({{ message, type }});
+                                }}
+                            }}
+                        }}
+                    }},
+                    fetch: async (url, options = {{}}) => {{
+                        sandbox.saveCalls.push({{ url, options }});
+                        return {{ ok: true, status: 200, text: async () => '{{}}' }};
+                    }}
+                }};
+
+                vm.runInNewContext(harnessedSource, sandbox);
+                const api = sandbox.window.__mmTest;
+
+                api.setPluginData({{
+                    models: [
+                        {{
+                            id: 'temp-model',
+                            displayName: 'Temp',
+                            active: true,
+                            api_url: 'https://api.temp.example/v1',
+                            api_key: 'sk-temp',
+                            model_id: 'temp',
+                            capability: {{}},
+                            context_length: 8192,
+                            max_output: 4096
+                        }}
+                    ],
+                    originalConfig: {{
+                        id: 'default-chat',
+                        type: 'chat',
+                        api_url: 'https://api.original.example/v1',
+                        api_key: '',
+                        api_key_set: true,
+                        model_id: 'original',
+                        capability: {{}},
+                        context_length: 8192,
+                        max_output: 4096
+                    }}
+                }});
+                api.setSelectedModelId('temp-model');
+
+                const deactivateResult = await api.deactivateModel('temp-model');
+                if (deactivateResult !== false) {{
+                    throw new Error('deactivate should report restore failure');
+                }}
+                if (!api.pluginData.models[0].active || api.selectedModelId !== 'temp-model') {{
+                    throw new Error('deactivate drifted plugin state after restore failure');
+                }}
+                if (sandbox.saveCalls.length !== 0) {{
+                    throw new Error('deactivate saved failed restore state');
+                }}
+                const restorePayload = JSON.parse(sandbox.modelCalls[0].options.body);
+                if (
+                    restorePayload.restore_previous_api_key !== true ||
+                    Object.prototype.hasOwnProperty.call(restorePayload, 'api_key')
+                ) {{
+                    throw new Error('restore payload did not preserve redacted key semantics');
+                }}
+
+                sandbox.modelCalls = [];
+                sandbox.saveCalls = [];
+                sandbox.toasts = [];
+                api.setPluginData({{
+                    models: [
+                        {{
+                            id: 'temp-model',
+                            displayName: 'Temp',
+                            active: true,
+                            api_url: 'https://api.temp.example/v1',
+                            api_key: 'sk-temp',
+                            model_id: 'temp',
+                            capability: {{}},
+                            context_length: 8192,
+                            max_output: 4096
+                        }}
+                    ],
+                    originalConfig: {{
+                        id: 'default-chat',
+                        type: 'chat',
+                        api_url: 'https://api.original.example/v1',
+                        api_key: '',
+                        api_key_set: true,
+                        model_id: 'original',
+                        capability: {{}},
+                        context_length: 8192,
+                        max_output: 4096
+                    }}
+                }});
+                api.setSelectedModelId('temp-model');
+
+                const deleteResult = await api.deleteModel('temp-model');
+                if (deleteResult !== false) {{
+                    throw new Error('delete should report restore failure');
+                }}
+                if (
+                    api.pluginData.models.length !== 1 ||
+                    api.pluginData.models[0].id !== 'temp-model' ||
+                    !api.pluginData.models[0].active ||
+                    api.selectedModelId !== 'temp-model'
+                ) {{
+                    throw new Error('delete drifted plugin state after restore failure');
+                }}
+                if (sandbox.saveCalls.length !== 0) {{
+                    throw new Error('delete saved failed restore state');
+                }}
+                if (sandbox.toasts.some(toast => toast.type === 'success')) {{
+                    throw new Error('delete showed success after restore failure');
+                }}
+            }})().catch(error => {{
+                process.stderr.write(error.stack || String(error));
+                process.exit(1);
+            }});
+            """
+        )
+
+        result = subprocess.run(
+            ["node", "-e", script],
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_multi_model_manager_aborts_activation_when_backup_fails(self):
+        script = textwrap.dedent(
+            f"""
+            (async () => {{
+                const fs = require('fs');
+                const vm = require('vm');
+                const source = fs.readFileSync(
+                    {str(REPO_ROOT / 'Plugins' / 'Plugin_market' / 'multi-model-manager' / 'main.js')!r},
+                    'utf8'
+                );
+                const harnessedSource = source.replace(
+                    /\\n\\s*init\\(\\);\\s*\\n\\s*\\}}\\)\\(window\\.ChatRawPlugin\\);\\s*$/,
+                    `
+                    window.__mmTest = {{
+                        get pluginData() {{ return pluginData; }},
+                        setPluginData(value) {{ pluginData = value; }},
+                        activateModel
+                    }};
+
+                }})(window.ChatRawPlugin);
+                    `
+                );
+                const sandbox = {{
+                    modelCalls: [],
+                    saveCalls: [],
+                    console,
+                    setTimeout() {{}},
+                    document: {{
+                        getElementById() {{ return null; }},
+                        querySelector() {{ return null; }}
+                    }},
+                    window: {{
+                        addEventListener() {{}},
+                        ChatRawPlugin: {{
+                            hooks: {{ register() {{}} }},
+                            modelFetch: async (url, options = {{}}) => {{
+                                sandbox.modelCalls.push({{ url, options }});
+                                return {{
+                                    ok: false,
+                                    status: 500,
+                                    text: async () => 'backup unavailable'
+                                }};
+                            }},
+                            prepareModelPayload(model) {{ return {{ ...model }}; }},
+                            utils: {{ getLanguage() {{ return 'en'; }}, showToast() {{}} }}
+                        }}
+                    }},
+                    fetch: async (url, options = {{}}) => {{
+                        sandbox.saveCalls.push({{ url, options }});
+                        return {{ ok: true, status: 200, text: async () => '{{}}' }};
+                    }}
+                }};
+
+                vm.runInNewContext(harnessedSource, sandbox);
+                const api = sandbox.window.__mmTest;
+                api.setPluginData({{
+                    models: [
+                        {{
+                            id: 'temp-model',
+                            displayName: 'Temp',
+                            active: false,
+                            api_url: 'https://api.temp.example/v1',
+                            api_key: 'sk-temp',
+                            model_id: 'temp',
+                            capability: {{}},
+                            context_length: 8192,
+                            max_output: 4096
+                        }}
+                    ],
+                    originalConfig: null
+                }});
+
+                await api.activateModel('temp-model');
+                if (api.pluginData.models[0].active) {{
+                    throw new Error('activation changed local state after backup failure');
+                }}
+                if (sandbox.modelCalls.length !== 1 || sandbox.modelCalls[0].url !== '/api/models') {{
+                    throw new Error('activation should stop after failed backup fetch');
+                }}
+                if (sandbox.saveCalls.length !== 0) {{
+                    throw new Error('activation saved state after backup failure');
+                }}
+
+                sandbox.modelCalls = [];
+                sandbox.saveCalls = [];
+                sandbox.window.ChatRawPlugin.modelFetch = async (url, options = {{}}) => {{
+                    sandbox.modelCalls.push({{ url, options }});
+                    return {{
+                        ok: true,
+                        status: 200,
+                        json: async () => [
+                            {{
+                                id: 'default-chat',
+                                type: 'chat',
+                                api_url: 'https://api.original.example/v1',
+                                api_key: '',
+                                api_key_set: true,
+                                model_id: 'original'
+                            }}
+                        ],
+                        text: async () => '[]'
+                    }};
+                }};
+                sandbox.fetch = async (url, options = {{}}) => {{
+                    sandbox.saveCalls.push({{ url, options }});
+                    return {{ ok: false, status: 500, text: async () => 'settings save failed' }};
+                }};
+                api.setPluginData({{
+                    models: [
+                        {{
+                            id: 'temp-model',
+                            displayName: 'Temp',
+                            active: false,
+                            api_url: 'https://api.temp.example/v1',
+                            api_key: 'sk-temp',
+                            model_id: 'temp',
+                            capability: {{}},
+                            context_length: 8192,
+                            max_output: 4096
+                        }}
+                    ],
+                    originalConfig: null
+                }});
+
+                await api.activateModel('temp-model');
+                if (api.pluginData.models[0].active || api.pluginData.originalConfig) {{
+                    throw new Error('activation proceeded after backup persistence failure');
+                }}
+                if (sandbox.modelCalls.length !== 1 || sandbox.modelCalls[0].url !== '/api/models') {{
+                    throw new Error('backup persistence failure should stop before model save');
+                }}
+                if (sandbox.saveCalls.length !== 1) {{
+                    throw new Error('backup persistence failure should only try to persist backup once');
+                }}
+
+                sandbox.modelCalls = [];
+                sandbox.saveCalls = [];
+                sandbox.window.ChatRawPlugin.modelFetch = async (url, options = {{}}) => {{
+                    sandbox.modelCalls.push({{ url, options }});
+                    if (sandbox.modelCalls.length === 1) {{
+                        return {{
+                            ok: true,
+                            status: 200,
+                            json: async () => [
+                                {{
+                                    id: 'default-chat',
+                                    type: 'chat',
+                                    api_url: 'https://api.original.example/v1',
+                                    api_key: '',
+                                    api_key_set: true,
+                                    model_id: 'original'
+                                }}
+                            ],
+                            text: async () => '[]'
+                        }};
+                    }}
+                    return {{
+                        ok: false,
+                        status: 400,
+                        text: async () => 'activation save failed'
+                    }};
+                }};
+                sandbox.fetch = async (url, options = {{}}) => {{
+                    sandbox.saveCalls.push({{ url, options }});
+                    return {{ ok: true, status: 200, text: async () => '{{}}' }};
+                }};
+                api.setPluginData({{
+                    models: [
+                        {{
+                            id: 'temp-model',
+                            displayName: 'Temp',
+                            active: false,
+                            api_url: 'https://api.temp.example/v1',
+                            api_key: 'sk-temp',
+                            model_id: 'temp',
+                            capability: {{}},
+                            context_length: 8192,
+                            max_output: 4096
+                        }}
+                    ],
+                    originalConfig: null
+                }});
+
+                await api.activateModel('temp-model');
+                if (api.pluginData.models[0].active) {{
+                    throw new Error('activation left local state active after backend save failure');
+                }}
+                if (!api.pluginData.originalConfig) {{
+                    throw new Error('activation failure lost backed up original config');
+                }}
+                if (sandbox.modelCalls.length !== 2) {{
+                    throw new Error('activation failure should fetch backup then attempt model save');
+                }}
+                if (sandbox.saveCalls.length !== 2) {{
+                    throw new Error('activation failure should save backup and reverted plugin state');
+                }}
+                const activationPayload = JSON.parse(sandbox.modelCalls[1].options.body);
+                if (activationPayload.preserve_previous_api_key !== true) {{
+                    throw new Error('activation did not request server-side key backup');
+                }}
+            }})().catch(error => {{
+                process.stderr.write(error.stack || String(error));
+                process.exit(1);
+            }});
+            """
+        )
+
+        result = subprocess.run(
+            ["node", "-e", script],
+            cwd=str(REPO_ROOT),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_plugin_model_fetch_prompts_and_retries_after_unauthorized(self):
         script = textwrap.dedent(
             f"""

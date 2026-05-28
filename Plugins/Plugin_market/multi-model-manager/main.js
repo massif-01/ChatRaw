@@ -192,7 +192,7 @@
     async function backupOriginalConfig() {
         if (pluginData.originalConfig) {
             console.log('[MultiModel] Original config already backed up');
-            return;
+            return true;
         }
         
         try {
@@ -202,19 +202,30 @@
                 const chatModel = models.find(m => m.type === 'chat');
                 if (chatModel) {
                     pluginData.originalConfig = { ...chatModel };
-                    await savePluginData();
+                    const saved = await savePluginData();
+                    if (!saved) {
+                        pluginData.originalConfig = null;
+                        ChatRaw.utils?.showToast?.(t('saveFailed'), 'error');
+                        return false;
+                    }
                     console.log('[MultiModel] Backed up original config:', pluginData.originalConfig);
                 }
+                return true;
             }
+            console.error('[MultiModel] Failed to backup original config:', await res.text());
+            ChatRaw.utils?.showToast?.(t('saveFailed'), 'error');
+            return false;
         } catch (e) {
             console.error('[MultiModel] Failed to backup original config:', e);
+            ChatRaw.utils?.showToast?.(t('saveFailed'), 'error');
+            return false;
         }
     }
     
     async function restoreOriginalConfig() {
         if (!pluginData.originalConfig) {
             console.log('[MultiModel] No original config to restore');
-            return;
+            return true;
         }
         try {
             const restoreConfig = {
@@ -237,21 +248,30 @@
                 await savePluginData();
                 ChatRaw.utils?.showToast?.(t('originalRestored'), 'success');
                 console.log('[MultiModel] Restored original config');
+                return true;
             } else {
                 console.error('[MultiModel] Failed to restore original config:', await res.text());
                 ChatRaw.utils?.showToast?.(t('saveFailed'), 'error');
+                return false;
             }
         } catch (e) {
             console.error('[MultiModel] Failed to restore original config:', e);
+            ChatRaw.utils?.showToast?.(t('saveFailed'), 'error');
+            return false;
         }
     }
     
     async function activateModel(modelId) {
         const model = pluginData.models.find(m => m.id === modelId);
         if (!model) return;
+        const previousActiveStates = pluginData.models.map(m => ({
+            id: m.id,
+            active: m.active
+        }));
         
         // First backup original config if not already done
-        await backupOriginalConfig();
+        const backedUp = await backupOriginalConfig();
+        if (!backedUp) return;
         
         // Deactivate all other models
         pluginData.models.forEach(m => m.active = (m.id === modelId));
@@ -281,10 +301,21 @@
                 await savePluginData();
                 renderUI();
                 console.log('[MultiModel] Activated model:', model.displayName);
+                return true;
             }
+            console.error('[MultiModel] Failed to activate model:', await res.text());
+            ChatRaw.utils?.showToast?.(t('saveFailed'), 'error');
         } catch (e) {
             console.error('[MultiModel] Failed to activate model:', e);
+            ChatRaw.utils?.showToast?.(t('saveFailed'), 'error');
         }
+        pluginData.models.forEach(m => {
+            const previous = previousActiveStates.find(state => state.id === m.id);
+            m.active = previous ? previous.active : false;
+        });
+        await savePluginData();
+        renderUI();
+        return false;
     }
     
     async function deactivateModel(modelId) {
@@ -298,11 +329,19 @@
         
         if (!hasActiveModel) {
             // No active model, restore original config
-            await restoreOriginalConfig();
+            const restored = await restoreOriginalConfig();
+            if (!restored) {
+                if (model) {
+                    model.active = true;
+                }
+                renderUI();
+                return false;
+            }
         }
         
         await savePluginData();
         renderUI();
+        return true;
     }
     
     async function saveModel(model) {
@@ -316,7 +355,8 @@
         
         // If this model is active, update main config too
         if (model.active) {
-            await activateModel(model.id);
+            const activated = await activateModel(model.id);
+            if (!activated) return;
         }
         
         ChatRaw.utils?.showToast?.(t('modelSaved'), 'success');
@@ -325,6 +365,8 @@
     async function deleteModel(modelId) {
         const model = pluginData.models.find(m => m.id === modelId);
         const wasActive = model?.active;
+        const previousModels = pluginData.models.map(m => ({ ...m }));
+        const previousSelectedModelId = selectedModelId;
         
         pluginData.models = pluginData.models.filter(m => m.id !== modelId);
         
@@ -332,7 +374,13 @@
         if (wasActive) {
             const hasActiveModel = pluginData.models.some(m => m.active);
             if (!hasActiveModel) {
-                await restoreOriginalConfig();
+                const restored = await restoreOriginalConfig();
+                if (!restored) {
+                    pluginData.models = previousModels;
+                    selectedModelId = previousSelectedModelId;
+                    renderUI();
+                    return false;
+                }
             }
         }
         
@@ -344,6 +392,7 @@
         
         ChatRaw.utils?.showToast?.(t('modelDeleted'), 'success');
         renderUI();
+        return true;
     }
     
     function updateModelFromForm(model) {
