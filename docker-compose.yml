@@ -10,6 +10,7 @@ services:
     environment:
       - PORT=51111
       - DATA_DIR=/app/data
+      - CHATRAW_AUTH_TOKEN=${CHATRAW_AUTH_TOKEN:?set CHATRAW_AUTH_TOKEN}
     restart: unless-stopped
 
 volumes:

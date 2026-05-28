@@ -1630,9 +1630,13 @@ def model_config_response(config: ModelConfig) -> Dict[str, Any]:
     return data
 
 async def require_model_auth(request: Request):
-    token = os.environ.get("CHATRAW_AUTH_TOKEN", "")
+    token = os.environ.get("CHATRAW_AUTH_TOKEN", "").strip()
     if not token:
-        return
+        raise HTTPException(
+            status_code=401,
+            detail="Model configuration auth token is not configured",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     authorization = request.headers.get("authorization", "")
     scheme, _, credential = authorization.partition(" ")
@@ -2096,57 +2100,78 @@ async def verify_model(request: Request):
     if not config.api_url or not config.model_id:
         return {"success": False, "error": "API URL and Model ID required"}
     
-    url = config.api_url.rstrip("/")
+    try:
+        url = validate_external_url(config.api_url).rstrip("/")
+    except HTTPException as exc:
+        return security_error_response(exc)
+
     headers = {"Content-Type": "application/json"}
     if config.api_key:
         headers["Authorization"] = f"Bearer {config.api_key}"
     
     try:
-        session = await get_http_session()
-        if config.type == "chat":
-            payload = {
-                "model": config.model_id,
-                "messages": [{"role": "user", "content": "Say OK"}],
-                "max_tokens": 5,
-                "stream": False
-            }
-            async with session.post(f"{url}/chat/completions", json=payload, headers=headers) as resp:
-                if resp.status == 200:
-                    return {"success": True}
-                else:
+        async with create_external_http_session() as session:
+            if config.type == "chat":
+                payload = {
+                    "model": config.model_id,
+                    "messages": [{"role": "user", "content": "Say OK"}],
+                    "max_tokens": 5,
+                    "stream": False
+                }
+                async with session.post(
+                    f"{url}/chat/completions",
+                    json=payload,
+                    headers=headers,
+                    allow_redirects=False,
+                ) as resp:
+                    if resp.status == 200:
+                        return {"success": True}
+                    else:
+                        text = await resp.text()
+                        return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
+            elif config.type == "embedding":
+                payload = {"model": config.model_id, "input": "test"}
+                async with session.post(
+                    f"{url}/embeddings",
+                    json=payload,
+                    headers=headers,
+                    allow_redirects=False,
+                ) as resp:
+                    if resp.status == 200:
+                        return {"success": True}
+                    else:
+                        text = await resp.text()
+                        return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
+            else:  # rerank
+                payload = {
+                    "model": config.model_id,
+                    "query": "test query",
+                    "documents": ["test document 1", "test document 2"]
+                }
+                async with session.post(
+                    f"{url}/rerank",
+                    json=payload,
+                    headers=headers,
+                    allow_redirects=False,
+                ) as resp:
                     text = await resp.text()
-                    return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
-        elif config.type == "embedding":
-            payload = {"model": config.model_id, "input": "test"}
-            async with session.post(f"{url}/embeddings", json=payload, headers=headers) as resp:
-                if resp.status == 200:
-                    return {"success": True}
-                else:
-                    text = await resp.text()
-                    return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
-        else:  # rerank
-            payload = {
-                "model": config.model_id,
-                "query": "test query",
-                "documents": ["test document 1", "test document 2"]
-            }
-            async with session.post(f"{url}/rerank", json=payload, headers=headers) as resp:
-                text = await resp.text()
-                # Check if endpoint is actually supported
-                if "Unexpected endpoint" in text or "not found" in text.lower() or "not supported" in text.lower():
-                    return {"success": False, "error": "Rerank not supported. LM Studio doesn't have /v1/rerank endpoint."}
-                if resp.status == 200:
-                    # Try to parse response to verify it's a real rerank response
-                    try:
-                        data = json.loads(text)
-                        if "results" in data or "data" in data:
-                            return {"success": True}
-                        else:
-                            return {"success": False, "error": "Invalid rerank response format"}
-                    except:
-                        return {"success": False, "error": "Invalid rerank response"}
-                else:
-                    return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
+                    # Check if endpoint is actually supported
+                    if "Unexpected endpoint" in text or "not found" in text.lower() or "not supported" in text.lower():
+                        return {"success": False, "error": "Rerank not supported. LM Studio doesn't have /v1/rerank endpoint."}
+                    if resp.status == 200:
+                        # Try to parse response to verify it's a real rerank response
+                        try:
+                            data = json.loads(text)
+                            if "results" in data or "data" in data:
+                                return {"success": True}
+                            else:
+                                return {"success": False, "error": "Invalid rerank response format"}
+                        except:
+                            return {"success": False, "error": "Invalid rerank response"}
+                    else:
+                        return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
+    except ExternalURLBlocked as e:
+        return security_error_response(HTTPException(status_code=400, detail=str(e)))
     except Exception as e:
         return {"success": False, "error": str(e)}
 

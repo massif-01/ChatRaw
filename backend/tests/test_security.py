@@ -87,12 +87,51 @@ class SecurityRegressionTests(unittest.TestCase):
             )
         )
 
+    class SuccessfulVerifyResponse:
+        status = 200
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def text(self):
+            return ""
+
+    class SuccessfulVerifySession:
+        def __init__(self):
+            self.headers = None
+            self.url = None
+            self.json = None
+            self.allow_redirects = None
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        def post(self, url, json, headers, allow_redirects=False):
+            self.url = url
+            self.json = json
+            self.headers = headers
+            self.allow_redirects = allow_redirects
+            return SecurityRegressionTests.SuccessfulVerifyResponse()
+
     def test_models_require_auth_when_token_is_configured(self):
         unauthenticated = self.client.get("/api/models")
         self.assertEqual(unauthenticated.status_code, 401)
 
         authenticated = self.client.get("/api/models", headers=self.auth_headers())
         self.assertEqual(authenticated.status_code, 200)
+
+    def test_models_require_auth_when_token_is_not_configured(self):
+        os.environ.pop("CHATRAW_AUTH_TOKEN", None)
+
+        response = self.client.get("/api/models")
+
+        self.assertEqual(response.status_code, 401)
 
     def test_models_do_not_return_plaintext_api_key(self):
         self.save_secret_model()
@@ -170,34 +209,9 @@ class SecurityRegressionTests(unittest.TestCase):
         self.assertEqual(saved.api_key, "")
         self.assertEqual(saved.api_url, "https://evil.example.com/v1")
 
-        class FakeResponse:
-            status = 200
+        fake_session = self.SuccessfulVerifySession()
 
-            async def __aenter__(self):
-                return self
-
-            async def __aexit__(self, exc_type, exc, tb):
-                return False
-
-            async def text(self):
-                return ""
-
-        class FakeSession:
-            def __init__(self):
-                self.headers = None
-                self.url = None
-
-            def post(self, url, json, headers):
-                self.url = url
-                self.headers = headers
-                return FakeResponse()
-
-        fake_session = FakeSession()
-
-        async def get_fake_session():
-            return fake_session
-
-        with patch.object(main, "get_http_session", get_fake_session):
+        with patch.object(main, "create_external_http_session", lambda: fake_session):
             verify_response = self.client.post(
                 "/api/models/verify",
                 headers=self.auth_headers(),
@@ -215,6 +229,7 @@ class SecurityRegressionTests(unittest.TestCase):
             fake_session.url, "https://evil.example.com/v1/chat/completions"
         )
         self.assertNotIn("Authorization", fake_session.headers)
+        self.assertFalse(fake_session.allow_redirects)
 
     def test_model_save_restores_backed_up_secret_for_original_endpoint(self):
         main.db.save_model_config(
@@ -312,34 +327,9 @@ class SecurityRegressionTests(unittest.TestCase):
     def test_model_verify_uses_existing_secret_when_key_is_omitted(self):
         self.save_secret_model()
 
-        class FakeResponse:
-            status = 200
+        fake_session = self.SuccessfulVerifySession()
 
-            async def __aenter__(self):
-                return self
-
-            async def __aexit__(self, exc_type, exc, tb):
-                return False
-
-            async def text(self):
-                return ""
-
-        class FakeSession:
-            def __init__(self):
-                self.headers = None
-                self.url = None
-
-            def post(self, url, json, headers):
-                self.url = url
-                self.headers = headers
-                return FakeResponse()
-
-        fake_session = FakeSession()
-
-        async def get_fake_session():
-            return fake_session
-
-        with patch.object(main, "get_http_session", get_fake_session):
+        with patch.object(main, "create_external_http_session", lambda: fake_session):
             with patch.object(
                 main.aiohttp,
                 "DefaultResolver",
@@ -363,38 +353,14 @@ class SecurityRegressionTests(unittest.TestCase):
             "https://api.example.com/v1/chat/completions",
         )
         self.assertEqual(fake_session.headers["Authorization"], "Bearer sk-secret")
+        self.assertFalse(fake_session.allow_redirects)
 
     def test_model_verify_does_not_reuse_existing_secret_for_changed_url(self):
         self.save_secret_model()
 
-        class FakeResponse:
-            status = 200
+        fake_session = self.SuccessfulVerifySession()
 
-            async def __aenter__(self):
-                return self
-
-            async def __aexit__(self, exc_type, exc, tb):
-                return False
-
-            async def text(self):
-                return ""
-
-        class FakeSession:
-            def __init__(self):
-                self.headers = None
-                self.url = None
-
-            def post(self, url, json, headers):
-                self.url = url
-                self.headers = headers
-                return FakeResponse()
-
-        fake_session = FakeSession()
-
-        async def get_fake_session():
-            return fake_session
-
-        with patch.object(main, "get_http_session", get_fake_session):
+        with patch.object(main, "create_external_http_session", lambda: fake_session):
             response = self.client.post(
                 "/api/models/verify",
                 headers=self.auth_headers(),
@@ -412,36 +378,14 @@ class SecurityRegressionTests(unittest.TestCase):
             fake_session.url, "https://evil.example.com/v1/chat/completions"
         )
         self.assertNotIn("Authorization", fake_session.headers)
+        self.assertFalse(fake_session.allow_redirects)
 
     def test_model_verify_empty_api_key_does_not_reuse_existing_secret(self):
         self.save_secret_model()
 
-        class FakeResponse:
-            status = 200
+        fake_session = self.SuccessfulVerifySession()
 
-            async def __aenter__(self):
-                return self
-
-            async def __aexit__(self, exc_type, exc, tb):
-                return False
-
-            async def text(self):
-                return ""
-
-        class FakeSession:
-            def __init__(self):
-                self.headers = None
-
-            def post(self, url, json, headers):
-                self.headers = headers
-                return FakeResponse()
-
-        fake_session = FakeSession()
-
-        async def get_fake_session():
-            return fake_session
-
-        with patch.object(main, "get_http_session", get_fake_session):
+        with patch.object(main, "create_external_http_session", lambda: fake_session):
             response = self.client.post(
                 "/api/models/verify",
                 headers=self.auth_headers(),
@@ -457,59 +401,67 @@ class SecurityRegressionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["success"])
         self.assertNotIn("Authorization", fake_session.headers)
+        self.assertFalse(fake_session.allow_redirects)
 
-    def test_model_verify_allows_local_provider_with_explicit_key(self):
-        class FakeResponse:
-            status = 200
+    def test_model_verify_rejects_literal_internal_targets_without_network(self):
+        def fail_if_called():
+            raise AssertionError("create_external_http_session should not be called")
 
-            async def __aenter__(self):
-                return self
+        blocked_urls = [
+            "http://127.0.0.1:11434/v1",
+            "http://localhost:11434/v1",
+            "http://10.0.0.1/v1",
+            "http://192.168.1.1/v1",
+            "http://169.254.169.254/latest/meta-data",
+        ]
 
-            async def __aexit__(self, exc_type, exc, tb):
-                return False
+        with patch.object(main, "create_external_http_session", fail_if_called):
+            for url in blocked_urls:
+                with self.subTest(url=url):
+                    response = self.client.post(
+                        "/api/models/verify",
+                        headers=self.auth_headers(),
+                        json={
+                            "api_url": url,
+                            "api_key": "sk-local",
+                            "model_id": "chat-model",
+                            "type": "chat",
+                        },
+                    )
 
-            async def text(self):
-                return ""
+                    self.assertEqual(response.status_code, 400)
 
-        class FakeSession:
-            def __init__(self):
-                self.headers = None
-                self.url = None
+    def test_model_verify_blocks_private_ip_at_connection_resolution(self):
+        class PrivateResolver:
+            async def resolve(self, host, port=0, family=0):
+                return [
+                    {
+                        "hostname": host,
+                        "host": "169.254.169.254",
+                        "port": port,
+                        "family": socket.AF_INET,
+                        "proto": 0,
+                        "flags": 0,
+                    }
+                ]
 
-            def post(self, url, json, headers):
-                self.url = url
-                self.headers = headers
-                return FakeResponse()
+            async def close(self):
+                pass
 
-        fake_session = FakeSession()
+        with patch.object(main.aiohttp, "DefaultResolver", lambda: PrivateResolver()):
+            response = self.client.post(
+                "/api/models/verify",
+                headers=self.auth_headers(),
+                json={
+                    "api_url": "http://rebind.example/v1",
+                    "api_key": "sk-test",
+                    "model_id": "chat-model",
+                    "type": "chat",
+                },
+            )
 
-        async def get_fake_session():
-            return fake_session
-
-        with patch.object(main, "get_http_session", get_fake_session):
-            with patch.object(
-                main.aiohttp,
-                "DefaultResolver",
-                side_effect=AssertionError("external resolver should not be used"),
-            ):
-                response = self.client.post(
-                    "/api/models/verify",
-                    headers=self.auth_headers(),
-                    json={
-                        "api_url": "http://127.0.0.1:11434/v1",
-                        "api_key": "sk-local",
-                        "model_id": "chat-model",
-                        "type": "chat",
-                    },
-                )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.json()["success"])
-        self.assertEqual(
-            fake_session.url,
-            "http://127.0.0.1:11434/v1/chat/completions",
-        )
-        self.assertEqual(fake_session.headers["Authorization"], "Bearer sk-local")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("internal networks", response.text)
 
     def test_model_endpoints_reject_invalid_payloads(self):
         invalid_payload = {"id": "secret-chat", "context_length": "not-an-int"}
