@@ -1005,7 +1005,7 @@ function getNodeText(n) {
 8. **Persist data properly**: 
    - Use `POST /api/plugins/{id}/settings` to save plugin settings
    - Use `POST /api/plugins/api-key` to save API keys
-   - Use `ChatRaw.modelFetch('/api/models', ...)` to save model configurations (for RAG plugins; model APIs require the app auth token)
+   - Use `POST /api/models` to save model configurations (for RAG plugins)
 9. **Load data on open**: Always reload settings when the settings modal opens
 10. **Custom settings listener**: Use `plugin-settings-open` event to inject custom UI
 11. **Always `await` async operations**: When calling async functions (like `saveSettings()`) in event handlers, always use `await` to ensure operations complete before proceeding:
@@ -2181,7 +2181,7 @@ function getNodeText(n) {
 8. **正确持久化数据**：
    - 使用 `POST /api/plugins/{id}/settings` 保存插件设置
    - 使用 `POST /api/plugins/api-key` 保存 API 密钥
-   - 使用 `ChatRaw.modelFetch('/api/models', ...)` 保存模型配置（用于 RAG 插件；模型 API 需要应用认证令牌）
+   - 使用 `POST /api/models` 保存模型配置（用于 RAG 插件）
 9. **打开时加载数据**：设置模态框打开时始终重新加载设置
 10. **自定义设置监听器**：使用 `plugin-settings-open` 事件注入自定义 UI
 11. **异步操作必须 `await`**：在事件处理函数中调用异步函数（如 `saveSettings()`）时，必须使用 `await` 确保操作完成后再继续：

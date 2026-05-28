@@ -196,7 +196,7 @@
         }
         
         try {
-            const res = await ChatRaw.modelFetch('/api/models');
+            const res = await fetch('/api/models');
             if (res.ok) {
                 const models = await res.json();
                 const chatModel = models.find(m => m.type === 'chat');
@@ -237,7 +237,7 @@
                 restoreConfig.restore_previous_api_key = true;
             }
             const payload = ChatRaw.prepareModelPayload(restoreConfig);
-            const res = await ChatRaw.modelFetch('/api/models', {
+            const res = await fetch('/api/models', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -291,7 +291,7 @@
                 max_output: model.max_output,
                 preserve_previous_api_key: !!(pluginData.originalConfig?.api_key_set && !pluginData.originalConfig?.api_key)
             });
-            const res = await ChatRaw.modelFetch('/api/models', {
+            const res = await fetch('/api/models', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -432,7 +432,7 @@
                 api_key_touched: model.api_key_touched,
                 model_id: model.model_id
             });
-            const res = await ChatRaw.modelFetch('/api/models/verify', {
+            const res = await fetch('/api/models/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

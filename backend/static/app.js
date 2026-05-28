@@ -266,8 +266,6 @@ const i18n = {
         uiSettingsDesc: 'Customize the interface appearance.',
         kbDesc: 'Upload documents for RAG context.',
         modelConfigDesc: 'Manage your AI model connections and parameters.',
-        modelAuthTokenPrompt: 'Enter model configuration auth token',
-        modelAuthRequired: 'Model configuration auth token required',
         modelType: 'Type',
         chat: 'Chat',
         embedding: 'Embedding',
@@ -395,8 +393,6 @@ const i18n = {
         inputPlaceholder: '输入消息... (Enter 发送, Shift+Enter 换行)',
         modelConfig: '模型配置',
         modelConfigDesc: '管理您的AI模型连接和参数',
-        modelAuthTokenPrompt: '请输入模型配置认证令牌',
-        modelAuthRequired: '需要模型配置认证令牌',
         chatSettings: '聊天设置',
         chatSettingsDesc: '调整AI对您输入的响应方式',
         ragSettings: 'RAG设置',
@@ -797,7 +793,7 @@ function app() {
         // Load model configs
         async loadModels() {
             try {
-                const res = await this.modelFetch('/api/models');
+                const res = await fetch('/api/models');
                 if (res.ok) {
                     this.models = await res.json();
                     this.models.forEach(m => {
@@ -809,41 +805,6 @@ function app() {
             } catch (e) {
                 console.error('Failed to load models:', e);
             }
-        },
-
-        getModelAuthToken() {
-            return sessionStorage.getItem('chatraw_model_auth_token') || '';
-        },
-
-        setModelAuthToken(token) {
-            sessionStorage.setItem('chatraw_model_auth_token', token);
-        },
-
-        modelAuthHeaders(headers = {}) {
-            const token = this.getModelAuthToken();
-            return token ? { ...headers, Authorization: `Bearer ${token}` } : { ...headers };
-        },
-
-        promptModelAuthToken() {
-            const token = window.prompt(this.t('modelAuthTokenPrompt'));
-            if (!token || !token.trim()) {
-                this.showToast(this.t('modelAuthRequired'), 'error');
-                return false;
-            }
-            this.setModelAuthToken(token.trim());
-            return true;
-        },
-
-        async modelFetch(url, options = {}, retry = true) {
-            const headers = this.modelAuthHeaders(options.headers || {});
-            const response = await fetch(url, { ...options, headers });
-            if (response.status === 401 && retry && this.promptModelAuthToken()) {
-                return this.modelFetch(url, options, false);
-            }
-            if (response.status === 401) {
-                this.showToast(this.t('modelAuthRequired'), 'error');
-            }
-            return response;
         },
 
         prepareModelPayload(model) {
@@ -1679,7 +1640,7 @@ function app() {
                 
                 // Save model config
                 const payload = this.prepareModelPayload(model);
-                const saveRes = await this.modelFetch('/api/models', {
+                const saveRes = await fetch('/api/models', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -1706,7 +1667,7 @@ function app() {
                 if (model.api_key) {
                     verifyPayload.api_key = model.api_key;
                 }
-                const verifyRes = await this.modelFetch('/api/models/verify', {
+                const verifyRes = await fetch('/api/models/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(verifyPayload)
@@ -1745,7 +1706,7 @@ function app() {
                         model.name = model.model_id || 'Unnamed';
                     }
                     const payload = this.prepareModelPayload(model);
-                    const modelRes = await this.modelFetch('/api/models', {
+                    const modelRes = await fetch('/api/models', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -1907,8 +1868,7 @@ function app() {
                 // Dependency loader
                 require: (depName) => this.loadedPluginDeps[depName],
 
-                // Auth-aware model configuration API
-                modelFetch: (url, options = {}, retry = true) => this.modelFetch(url, options, retry),
+                // Model configuration payload helper
                 prepareModelPayload: (model) => this.prepareModelPayload(model),
                 
                 // Proxy API for external service calls

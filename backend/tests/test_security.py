@@ -25,7 +25,6 @@ from backend import main  # noqa: E402
 class SecurityRegressionTests(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp(prefix="chatraw-security-")
-        self.old_auth_token = os.environ.get("CHATRAW_AUTH_TOKEN")
         self.old_backend_dir = main.BACKEND_DIR
         self.old_db = main.db
         self.old_llm_service = main.llm_service
@@ -34,7 +33,6 @@ class SecurityRegressionTests(unittest.TestCase):
         self.old_plugins_installed_dir = main.PLUGINS_INSTALLED_DIR
         self.old_plugins_config_file = main.PLUGINS_CONFIG_FILE
 
-        os.environ["CHATRAW_AUTH_TOKEN"] = "test-token"
         self.db = main.Database(os.path.join(self.tmpdir, "chatraw.db"))
         main.db = self.db
         main.llm_service = main.LLMService(main.db)
@@ -56,14 +54,10 @@ class SecurityRegressionTests(unittest.TestCase):
             main.PLUGINS_DIR = self.old_plugins_dir
             main.PLUGINS_INSTALLED_DIR = self.old_plugins_installed_dir
             main.PLUGINS_CONFIG_FILE = self.old_plugins_config_file
-            if self.old_auth_token is None:
-                os.environ.pop("CHATRAW_AUTH_TOKEN", None)
-            else:
-                os.environ["CHATRAW_AUTH_TOKEN"] = self.old_auth_token
             shutil.rmtree(self.tmpdir, ignore_errors=True)
 
     def auth_headers(self):
-        return {"Authorization": "Bearer test-token"}
+        return {}
 
     def make_plugin_zip(self, plugin_id="zip-plugin", main_js="main.js"):
         buffer = io.BytesIO()
@@ -119,19 +113,15 @@ class SecurityRegressionTests(unittest.TestCase):
             self.allow_redirects = allow_redirects
             return SecurityRegressionTests.SuccessfulVerifyResponse()
 
-    def test_models_require_auth_when_token_is_configured(self):
-        unauthenticated = self.client.get("/api/models")
-        self.assertEqual(unauthenticated.status_code, 401)
-
-        authenticated = self.client.get("/api/models", headers=self.auth_headers())
-        self.assertEqual(authenticated.status_code, 200)
-
-    def test_models_require_auth_when_token_is_not_configured(self):
-        os.environ.pop("CHATRAW_AUTH_TOKEN", None)
-
+    def test_models_are_readable_without_auth_but_redacted(self):
+        self.save_secret_model()
         response = self.client.get("/api/models")
 
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("sk-secret", response.text)
+        model = next(item for item in response.json() if item["id"] == "secret-chat")
+        self.assertEqual(model["api_key"], "")
+        self.assertTrue(model["api_key_set"])
 
     def test_models_do_not_return_plaintext_api_key(self):
         self.save_secret_model()
@@ -1452,10 +1442,6 @@ class SecurityRegressionTests(unittest.TestCase):
                 }},
                 window: {{ matchMedia() {{ return {{ matches: false }}; }} }},
                 localStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
-                sessionStorage: {{
-                    getItem(key) {{ return key === 'chatraw_model_auth_token' ? 'plugin-token' : null; }},
-                    setItem() {{}}
-                }},
                 fetchCalls: [],
                 document: {{
                     head: {{ appendChild() {{}} }},
@@ -1521,9 +1507,6 @@ class SecurityRegressionTests(unittest.TestCase):
                     api_key_touched: false
                 }});
                 state.initPluginSystem();
-                window.ChatRawPlugin.modelFetch('/api/models', {{
-                    headers: {{ 'Content-Type': 'application/json' }}
-                }});
                 this.pluginPreservePayload = window.ChatRawPlugin.prepareModelPayload({{
                     id: 'default-chat',
                     api_url: 'https://api.example.com/v1',
@@ -1556,11 +1539,6 @@ class SecurityRegressionTests(unittest.TestCase):
             }}
             if (Object.prototype.hasOwnProperty.call(sandbox.payload, 'api_key')) {{
                 process.stderr.write(JSON.stringify(sandbox.payload));
-                process.exit(1);
-            }}
-            const pluginCall = sandbox.fetchCalls.find(call => call.url === '/api/models');
-            if (!pluginCall || pluginCall.options.headers.Authorization !== 'Bearer plugin-token') {{
-                process.stderr.write(JSON.stringify(sandbox.fetchCalls));
                 process.exit(1);
             }}
             if (Object.prototype.hasOwnProperty.call(sandbox.pluginPreservePayload, 'api_key')) {{
@@ -1599,9 +1577,7 @@ class SecurityRegressionTests(unittest.TestCase):
         for path in plugin_paths:
             source = path.read_text()
             with self.subTest(path=path.name):
-                self.assertIn("ChatRaw.modelFetch", source)
                 self.assertIn("ChatRaw.prepareModelPayload", source)
-                self.assertNotRegex(source, r"fetch\(\s*['\"`]/api/models")
                 self.assertNotRegex(source, r"body:\s*JSON\.stringify\(\s*model\s*\)")
         multi_model_source = plugin_paths[0].read_text()
         self.assertNotIn("Cannot restore redacted original API key", multi_model_source)
@@ -1657,14 +1633,6 @@ class SecurityRegressionTests(unittest.TestCase):
                         addEventListener() {{}},
                         ChatRawPlugin: {{
                             hooks: {{ register() {{}} }},
-                            modelFetch: async (url, options = {{}}) => {{
-                                sandbox.modelCalls.push({{ url, options }});
-                                return {{
-                                    ok: false,
-                                    status: 400,
-                                    text: async () => 'restore unavailable'
-                                }};
-                            }},
                             prepareModelPayload(model) {{
                                 const payload = {{ ...model }};
                                 const apiKeyTouched = !!model.api_key_touched;
@@ -1686,6 +1654,14 @@ class SecurityRegressionTests(unittest.TestCase):
                         }}
                     }},
                     fetch: async (url, options = {{}}) => {{
+                        if (url.startsWith('/api/models')) {{
+                            sandbox.modelCalls.push({{ url, options }});
+                            return {{
+                                ok: false,
+                                status: 400,
+                                text: async () => 'restore unavailable'
+                            }};
+                        }}
                         sandbox.saveCalls.push({{ url, options }});
                         return {{ ok: true, status: 200, text: async () => '{{}}' }};
                     }}
@@ -1841,19 +1817,19 @@ class SecurityRegressionTests(unittest.TestCase):
                         addEventListener() {{}},
                         ChatRawPlugin: {{
                             hooks: {{ register() {{}} }},
-                            modelFetch: async (url, options = {{}}) => {{
-                                sandbox.modelCalls.push({{ url, options }});
-                                return {{
-                                    ok: false,
-                                    status: 500,
-                                    text: async () => 'backup unavailable'
-                                }};
-                            }},
                             prepareModelPayload(model) {{ return {{ ...model }}; }},
                             utils: {{ getLanguage() {{ return 'en'; }}, showToast() {{}} }}
                         }}
                     }},
                     fetch: async (url, options = {{}}) => {{
+                        if (url.startsWith('/api/models')) {{
+                            sandbox.modelCalls.push({{ url, options }});
+                            return {{
+                                ok: false,
+                                status: 500,
+                                text: async () => 'backup unavailable'
+                            }};
+                        }}
                         sandbox.saveCalls.push({{ url, options }});
                         return {{ ok: true, status: 200, text: async () => '{{}}' }};
                     }}
@@ -1891,25 +1867,25 @@ class SecurityRegressionTests(unittest.TestCase):
 
                 sandbox.modelCalls = [];
                 sandbox.saveCalls = [];
-                sandbox.window.ChatRawPlugin.modelFetch = async (url, options = {{}}) => {{
-                    sandbox.modelCalls.push({{ url, options }});
-                    return {{
-                        ok: true,
-                        status: 200,
-                        json: async () => [
-                            {{
-                                id: 'default-chat',
-                                type: 'chat',
-                                api_url: 'https://api.original.example/v1',
-                                api_key: '',
-                                api_key_set: true,
-                                model_id: 'original'
-                            }}
-                        ],
-                        text: async () => '[]'
-                    }};
-                }};
                 sandbox.fetch = async (url, options = {{}}) => {{
+                    if (url.startsWith('/api/models')) {{
+                        sandbox.modelCalls.push({{ url, options }});
+                        return {{
+                            ok: true,
+                            status: 200,
+                            json: async () => [
+                                {{
+                                    id: 'default-chat',
+                                    type: 'chat',
+                                    api_url: 'https://api.original.example/v1',
+                                    api_key: '',
+                                    api_key_set: true,
+                                    model_id: 'original'
+                                }}
+                            ],
+                            text: async () => '[]'
+                        }};
+                    }}
                     sandbox.saveCalls.push({{ url, options }});
                     return {{ ok: false, status: 500, text: async () => 'settings save failed' }};
                 }};
@@ -1943,32 +1919,32 @@ class SecurityRegressionTests(unittest.TestCase):
 
                 sandbox.modelCalls = [];
                 sandbox.saveCalls = [];
-                sandbox.window.ChatRawPlugin.modelFetch = async (url, options = {{}}) => {{
-                    sandbox.modelCalls.push({{ url, options }});
-                    if (sandbox.modelCalls.length === 1) {{
+                sandbox.fetch = async (url, options = {{}}) => {{
+                    if (url.startsWith('/api/models')) {{
+                        sandbox.modelCalls.push({{ url, options }});
+                        if (sandbox.modelCalls.length === 1) {{
+                            return {{
+                                ok: true,
+                                status: 200,
+                                json: async () => [
+                                    {{
+                                        id: 'default-chat',
+                                        type: 'chat',
+                                        api_url: 'https://api.original.example/v1',
+                                        api_key: '',
+                                        api_key_set: true,
+                                        model_id: 'original'
+                                    }}
+                                ],
+                                text: async () => '[]'
+                            }};
+                        }}
                         return {{
-                            ok: true,
-                            status: 200,
-                            json: async () => [
-                                {{
-                                    id: 'default-chat',
-                                    type: 'chat',
-                                    api_url: 'https://api.original.example/v1',
-                                    api_key: '',
-                                    api_key_set: true,
-                                    model_id: 'original'
-                                }}
-                            ],
-                            text: async () => '[]'
+                            ok: false,
+                            status: 400,
+                            text: async () => 'activation save failed'
                         }};
                     }}
-                    return {{
-                        ok: false,
-                        status: 400,
-                        text: async () => 'activation save failed'
-                    }};
-                }};
-                sandbox.fetch = async (url, options = {{}}) => {{
                     sandbox.saveCalls.push({{ url, options }});
                     return {{ ok: true, status: 200, text: async () => '{{}}' }};
                 }};
@@ -2005,80 +1981,6 @@ class SecurityRegressionTests(unittest.TestCase):
                 const activationPayload = JSON.parse(sandbox.modelCalls[1].options.body);
                 if (activationPayload.preserve_previous_api_key !== true) {{
                     throw new Error('activation did not request server-side key backup');
-                }}
-            }})().catch(error => {{
-                process.stderr.write(error.stack || String(error));
-                process.exit(1);
-            }});
-            """
-        )
-
-        result = subprocess.run(
-            ["node", "-e", script],
-            cwd=str(REPO_ROOT),
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-
-        self.assertEqual(result.returncode, 0, result.stderr)
-
-    def test_plugin_model_fetch_prompts_and_retries_after_unauthorized(self):
-        script = textwrap.dedent(
-            f"""
-            (async () => {{
-                const fs = require('fs');
-                const vm = require('vm');
-                const source = fs.readFileSync({str(REPO_ROOT / 'backend' / 'static' / 'app.min.js')!r}, 'utf8');
-                const tokenStore = {{}};
-                const sandbox = {{
-                    marked: {{ setOptions() {{}}, parse(value) {{ return value; }} }},
-                    window: {{
-                        matchMedia() {{ return {{ matches: false }}; }},
-                        prompt() {{ return 'fresh-token'; }},
-                        addEventListener() {{}}
-                    }},
-                    localStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
-                    sessionStorage: {{
-                        getItem(key) {{ return tokenStore[key] || null; }},
-                        setItem(key, value) {{ tokenStore[key] = value; }}
-                    }},
-                    document: {{
-                        documentElement: {{ setAttribute() {{}} }},
-                        head: {{ appendChild() {{}} }},
-                        createElement() {{ return {{}}; }},
-                        querySelectorAll() {{ return []; }}
-                    }},
-                    requestAnimationFrame(callback) {{ callback(); return 1; }},
-                    cancelAnimationFrame() {{}},
-                    fetchCalls: []
-                }};
-                sandbox.fetch = (url, options = {{}}) => {{
-                    sandbox.fetchCalls.push({{ url, options }});
-                    if (sandbox.fetchCalls.length === 1) {{
-                        return Promise.resolve({{ status: 401, ok: false, json: async () => ({{}}) }});
-                    }}
-                    return Promise.resolve({{ status: 200, ok: true, json: async () => [] }});
-                }};
-                vm.runInNewContext(source + `
-                    this.state = app();
-                    this.state.initPluginSystem();
-                `, sandbox);
-
-                const response = await sandbox.window.ChatRawPlugin.modelFetch('/api/models', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: '{{}}'
-                }});
-                if (!response.ok || sandbox.fetchCalls.length !== 2) {{
-                    throw new Error(JSON.stringify({{ status: response.status, calls: sandbox.fetchCalls }}));
-                }}
-                const retryHeaders = sandbox.fetchCalls[1].options.headers;
-                if (
-                    retryHeaders.Authorization !== 'Bearer fresh-token' ||
-                    retryHeaders['Content-Type'] !== 'application/json'
-                ) {{
-                    throw new Error(JSON.stringify(sandbox.fetchCalls));
                 }}
             }})().catch(error => {{
                 process.stderr.write(error.stack || String(error));
@@ -2142,88 +2044,6 @@ class SecurityRegressionTests(unittest.TestCase):
                 process.stderr.write(JSON.stringify(sandbox.clear));
                 process.exit(1);
             }}
-            """
-        )
-
-        result = subprocess.run(
-            ["node", "-e", script],
-            cwd=str(REPO_ROOT),
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-
-        self.assertEqual(result.returncode, 0, result.stderr)
-
-    def test_model_fetch_prompts_and_retries_with_auth_token(self):
-        script = textwrap.dedent(
-            f"""
-            const fs = require('fs');
-            const vm = require('vm');
-            const source = fs.readFileSync({str(REPO_ROOT / 'backend' / 'static' / 'app.js')!r}, 'utf8');
-            const calls = [];
-            const store = {{}};
-            const sandbox = {{
-                calls,
-                store,
-                marked: {{ setOptions() {{}} }},
-                window: {{
-                    matchMedia() {{ return {{ matches: false }}; }},
-                    prompt() {{ return 'test-token'; }}
-                }},
-                localStorage: {{ getItem() {{ return null; }}, setItem() {{}} }},
-                sessionStorage: {{
-                    getItem(key) {{ return store[key] || null; }},
-                    setItem(key, value) {{ store[key] = value; }}
-                }},
-                document: {{
-                    head: {{ appendChild() {{}} }},
-                    createElement() {{ return {{}}; }},
-                    querySelectorAll() {{ return []; }}
-                }},
-                fetch: async (url, options = {{}}) => {{
-                    calls.push({{ url, headers: options.headers || {{}} }});
-                    return {{
-                        status: calls.length === 1 ? 401 : 200,
-                        ok: calls.length > 1,
-                        json: async () => []
-                    }};
-                }}
-            }};
-            (async () => {{
-                vm.runInNewContext(source + `
-                    this.done = (async () => {{
-                        const state = app();
-                        const response = await state.modelFetch('/api/models');
-                        this.status = response.status;
-                        this.storedToken = store.chatraw_model_auth_token;
-                    }})();
-                `, sandbox);
-                await sandbox.done;
-                if (sandbox.status !== 200) {{
-                    process.stderr.write('unexpected status ' + sandbox.status);
-                    process.exit(1);
-                }}
-                if (sandbox.calls.length !== 2) {{
-                    process.stderr.write(JSON.stringify(sandbox.calls));
-                    process.exit(1);
-                }}
-                if (sandbox.calls[0].headers.Authorization) {{
-                    process.stderr.write(JSON.stringify(sandbox.calls[0]));
-                    process.exit(1);
-                }}
-                if (sandbox.calls[1].headers.Authorization !== 'Bearer test-token') {{
-                    process.stderr.write(JSON.stringify(sandbox.calls[1]));
-                    process.exit(1);
-                }}
-                if (sandbox.storedToken !== 'test-token') {{
-                    process.stderr.write('token not stored');
-                    process.exit(1);
-                }}
-            }})().catch(error => {{
-                process.stderr.write(error.stack || String(error));
-                process.exit(1);
-            }});
             """
         )
 

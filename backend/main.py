@@ -9,7 +9,6 @@ import json
 import uuid
 import asyncio
 import aiohttp
-import hmac
 import ipaddress
 import io
 import struct
@@ -1629,24 +1628,6 @@ def model_config_response(config: ModelConfig) -> Dict[str, Any]:
     data["api_key_set"] = bool(api_key)
     return data
 
-async def require_model_auth(request: Request):
-    token = os.environ.get("CHATRAW_AUTH_TOKEN", "").strip()
-    if not token:
-        raise HTTPException(
-            status_code=401,
-            detail="Model configuration auth token is not configured",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    authorization = request.headers.get("authorization", "")
-    scheme, _, credential = authorization.partition(" ")
-    if scheme.lower() != "bearer" or not credential or not hmac.compare_digest(credential, token):
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
 def resolve_safe_path(root: str | Path, requested_path: str) -> Path:
     decoded_path = unquote(requested_path)
     if "\x00" in decoded_path:
@@ -2018,14 +1999,12 @@ async def save_settings(settings: Settings):
     return {"success": True}
 
 @app.get("/api/models")
-async def get_models(request: Request):
-    await require_model_auth(request)
+async def get_models():
     configs = db.get_model_configs()
     return [model_config_response(c) for c in configs]
 
 @app.post("/api/models")
 async def save_model(request: Request):
-    await require_model_auth(request)
     try:
         body = await request.json()
     except Exception:
@@ -2080,7 +2059,6 @@ async def save_model(request: Request):
 
 @app.post("/api/models/verify")
 async def verify_model(request: Request):
-    await require_model_auth(request)
     try:
         body = await request.json()
     except Exception:
@@ -2176,8 +2154,7 @@ async def verify_model(request: Request):
         return {"success": False, "error": str(e)}
 
 @app.delete("/api/models/{model_id}")
-async def delete_model(model_id: str, request: Request):
-    await require_model_auth(request)
+async def delete_model(model_id: str):
     db.delete_model_config(model_id)
     return {"success": True}
 

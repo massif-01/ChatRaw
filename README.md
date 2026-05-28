@@ -154,17 +154,14 @@ Run these commands in a terminal. Data is stored in a Docker volume `chatraw-dat
 # 1. Pull the latest image (run this again whenever you want to update)
 docker pull massif01/chatraw:latest
 
-# 2. Choose a model-configuration auth token
-export CHATRAW_AUTH_TOKEN=replace-with-a-long-random-token
-
-# 3. Start the container (creates volume chatraw-data if needed)
-docker run -d -p 51111:51111 -v chatraw-data:/app/data -e CHATRAW_AUTH_TOKEN="$CHATRAW_AUTH_TOKEN" --name chatraw massif01/chatraw:latest
+# 2. Start the container (creates volume chatraw-data if needed)
+docker run -d -p 51111:51111 -v chatraw-data:/app/data --name chatraw massif01/chatraw:latest
 ```
 
 - **Access**: http://localhost:51111  
 - **To access LAN services** (e.g. local LLM at 192.168.x.x), use host network instead:
   ```bash
-  docker run -d --network host -v chatraw-data:/app/data -e PORT=51111 -e CHATRAW_AUTH_TOKEN="$CHATRAW_AUTH_TOKEN" --name chatraw massif01/chatraw:latest
+  docker run -d --network host -v chatraw-data:/app/data -e PORT=51111 --name chatraw massif01/chatraw:latest
   ```
 
 ---
@@ -179,7 +176,6 @@ git clone https://github.com/massif-01/ChatRaw.git
 cd ChatRaw
 
 # 2. Pull the latest image and start the service
-export CHATRAW_AUTH_TOKEN=replace-with-a-long-random-token
 docker compose pull
 docker compose up -d
 ```
@@ -201,7 +197,6 @@ cd ChatRaw/backend
 pip install -r requirements.txt
 
 # Run
-export CHATRAW_AUTH_TOKEN=replace-with-a-long-random-token
 python main.py
 ```
 
@@ -232,8 +227,7 @@ docker stop chatraw && docker rm chatraw
 docker pull massif01/chatraw:latest
 
 # Start again (same volume keeps your data)
-export CHATRAW_AUTH_TOKEN=replace-with-a-long-random-token
-docker run -d -p 51111:51111 -v chatraw-data:/app/data -e CHATRAW_AUTH_TOKEN="$CHATRAW_AUTH_TOKEN" --name chatraw massif01/chatraw:latest
+docker run -d -p 51111:51111 -v chatraw-data:/app/data --name chatraw massif01/chatraw:latest
 ```
 
 ### Docker Compose
@@ -241,7 +235,6 @@ docker run -d -p 51111:51111 -v chatraw-data:/app/data -e CHATRAW_AUTH_TOKEN="$C
 ```bash
 cd ChatRaw
 git pull origin main
-export CHATRAW_AUTH_TOKEN=replace-with-a-long-random-token
 docker compose pull
 docker compose up -d
 ```
@@ -253,7 +246,6 @@ cd ChatRaw
 git pull origin main
 cd backend
 pip install -r requirements.txt --upgrade
-export CHATRAW_AUTH_TOKEN=replace-with-a-long-random-token
 python main.py
 ```
 
@@ -268,8 +260,6 @@ python main.py
 ## Configuration
 
 ### Initial Setup
-
-Model configuration APIs require `CHATRAW_AUTH_TOKEN`. Set it before starting ChatRaw, then enter the same token if the UI prompts for model-configuration authentication.
 
 1. Open http://localhost:51111
 2. Click the **Settings** button in the bottom-left corner
@@ -475,17 +465,14 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 # 1. 拉取最新镜像（每次要更新时重新执行此命令）
 docker pull massif01/chatraw:latest
 
-# 2. 设置模型配置认证令牌
-export CHATRAW_AUTH_TOKEN=replace-with-a-long-random-token
-
-# 3. 启动容器（若卷 chatraw-data 不存在会自动创建）
-docker run -d -p 51111:51111 -v chatraw-data:/app/data -e CHATRAW_AUTH_TOKEN="$CHATRAW_AUTH_TOKEN" --name chatraw massif01/chatraw:latest
+# 2. 启动容器（若卷 chatraw-data 不存在会自动创建）
+docker run -d -p 51111:51111 -v chatraw-data:/app/data --name chatraw massif01/chatraw:latest
 ```
 
 - **访问**：http://localhost:51111  
 - **如需访问局域网服务**（例如本机 LLM 在 192.168.x.x），可改用 host 网络：
   ```bash
-  docker run -d --network host -v chatraw-data:/app/data -e PORT=51111 -e CHATRAW_AUTH_TOKEN="$CHATRAW_AUTH_TOKEN" --name chatraw massif01/chatraw:latest
+  docker run -d --network host -v chatraw-data:/app/data -e PORT=51111 --name chatraw massif01/chatraw:latest
   ```
 
 ---
@@ -500,7 +487,6 @@ git clone https://github.com/massif-01/ChatRaw.git
 cd ChatRaw
 
 # 2. 拉取最新镜像并启动服务
-export CHATRAW_AUTH_TOKEN=replace-with-a-long-random-token
 docker compose pull
 docker compose up -d
 ```
@@ -522,7 +508,6 @@ cd ChatRaw/backend
 pip install -r requirements.txt
 
 # 运行
-export CHATRAW_AUTH_TOKEN=replace-with-a-long-random-token
 python main.py
 ```
 
@@ -553,8 +538,7 @@ docker stop chatraw && docker rm chatraw
 docker pull massif01/chatraw:latest
 
 # 再次启动（使用同一卷，数据保留）
-export CHATRAW_AUTH_TOKEN=replace-with-a-long-random-token
-docker run -d -p 51111:51111 -v chatraw-data:/app/data -e CHATRAW_AUTH_TOKEN="$CHATRAW_AUTH_TOKEN" --name chatraw massif01/chatraw:latest
+docker run -d -p 51111:51111 -v chatraw-data:/app/data --name chatraw massif01/chatraw:latest
 ```
 
 ### Docker Compose
@@ -562,7 +546,6 @@ docker run -d -p 51111:51111 -v chatraw-data:/app/data -e CHATRAW_AUTH_TOKEN="$C
 ```bash
 cd ChatRaw
 git pull origin main
-export CHATRAW_AUTH_TOKEN=replace-with-a-long-random-token
 docker compose pull
 docker compose up -d
 ```
@@ -574,7 +557,6 @@ cd ChatRaw
 git pull origin main
 cd backend
 pip install -r requirements.txt --upgrade
-export CHATRAW_AUTH_TOKEN=replace-with-a-long-random-token
 python main.py
 ```
 
@@ -589,8 +571,6 @@ python main.py
 ## 配置说明
 
 ### 初始设置
-
-模型配置 API 需要 `CHATRAW_AUTH_TOKEN`。启动 ChatRaw 前先设置该环境变量；界面提示输入模型配置认证令牌时，输入同一个值。
 
 1. 打开 http://localhost:51111
 2. 点击左下角的**设置**按钮
