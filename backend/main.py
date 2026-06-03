@@ -14,6 +14,7 @@ import struct
 import logging
 import shutil
 from datetime import datetime
+from pathlib import Path
 from typing import Optional, List, AsyncGenerator, Dict, Any
 from contextlib import asynccontextmanager
 
@@ -94,6 +95,7 @@ from collections import defaultdict
 import time as time_module
 
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+FONT_DIR = Path(BACKEND_DIR, "static", "fonts").resolve()
 
 # Document parsing
 try:
@@ -1684,20 +1686,33 @@ async def readiness_check():
 async def fonts(path: str):
     """Serve font files with long-term caching for optimal performance"""
     try:
-        font_path = os.path.join("static", "fonts", path)
-        if not os.path.exists(font_path):
-            raise HTTPException(status_code=404, detail="Font file not found")
+        font_path = resolve_font_path(path)
         
         return FileResponse(
-            font_path,
+            str(font_path),
             headers={
                 "Cache-Control": "public, max-age=31536000, immutable",
                 "Access-Control-Allow-Origin": "*"
             }
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error serving font file: {str(e)}")
         raise HTTPException(status_code=404, detail="Font file not found")
+
+def resolve_font_path(path: str) -> Path:
+    """Resolve a font path without allowing access outside static/fonts."""
+    font_path = (FONT_DIR / path).resolve()
+    try:
+        font_path.relative_to(FONT_DIR)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Font file not found")
+
+    if not font_path.is_file():
+        raise HTTPException(status_code=404, detail="Font file not found")
+
+    return font_path
 
 @app.get("/api/settings")
 async def get_settings(include_logo: bool = False):
