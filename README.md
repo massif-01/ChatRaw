@@ -10,6 +10,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
+![macOS](https://img.shields.io/badge/macOS-14%2B-000000?logo=apple)
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)
 ![Docker Pulls](https://img.shields.io/docker/pulls/massif01/chatraw?logo=docker)
 ![Memory](https://img.shields.io/badge/Memory-~60MB-green?logo=microsoftedge)
@@ -43,12 +44,21 @@ Many developers, AI hardware vendors, and users just need a simple, lightweight 
 
 ---
 
+## ChatRaw for Mac
+
+ChatRaw now includes a native macOS desktop version: **ChatRaw for Mac**. It wraps the same lightweight web interface in a SwiftUI + WKWebView desktop shell, automatically starts a local ChatRaw backend, and loads the app through a local `127.0.0.1` address. This gives macOS users a double-click desktop experience while keeping the same model settings, plugin system, document parsing, image understanding, and OpenAI-compatible API support as the web/Docker version.
+
+The current macOS package targets Apple Silicon and requires macOS 14 or later. A DMG package is available from [Releases](https://github.com/massif-01/ChatRaw/releases), and developers can also build and run it from source with the included script.
+
+---
+
 ## Part 1: Core Features
 
 *Fast, Lightweight, Convenient*
 
 ### Core Highlights
 
+- **Native macOS App** - ChatRaw for Mac provides a desktop shell with automatic local backend startup
 - **Ultra Lightweight** - ~60MB memory footprint, optimized binary embedding storage
 - **Instant Startup** - Ready in seconds with connection pooling for fast API calls
 - **Custom Branding** - Freely customize name, logo, and theme
@@ -184,7 +194,28 @@ docker compose up -d
 
 ---
 
-### Option 2: From Source
+### Option 2: macOS Desktop App
+
+**Requirements**: Apple Silicon Mac, macOS 14+
+
+Download the latest `ChatRaw-for-Mac-*.dmg` from [Releases](https://github.com/massif-01/ChatRaw/releases), open it, and drag **ChatRaw for Mac.app** into Applications.
+
+The macOS app starts the local backend automatically and opens ChatRaw in a native desktop window. Your data is stored under the app's local Application Support directory instead of a Docker volume.
+
+For local development:
+
+```bash
+# Clone repository
+git clone https://github.com/massif-01/ChatRaw.git
+cd ChatRaw
+
+# Build and run the macOS app
+./script/build_and_run.sh
+```
+
+---
+
+### Option 3: From Source
 
 **Requirements**: Python 3.12+
 
@@ -238,6 +269,10 @@ git pull origin main
 docker compose pull
 docker compose up -d
 ```
+
+### macOS Desktop App
+
+Download the latest `ChatRaw-for-Mac-*.dmg` from [Releases](https://github.com/massif-01/ChatRaw/releases), replace the old app in Applications, and launch it again. Existing local app data is preserved in Application Support.
 
 ### From Source
 
@@ -359,12 +394,21 @@ MIT License
 
 ---
 
+## ChatRaw for Mac
+
+ChatRaw 现在提供原生 macOS 桌面版本：**ChatRaw for Mac**。它使用 SwiftUI + WKWebView 桌面外壳承载同一套轻量 Web 界面，并自动启动本地 ChatRaw 后端，通过本机 `127.0.0.1` 地址加载应用。macOS 用户可以像普通桌面 App 一样双击使用，同时保留与 Web/Docker 版本一致的模型配置、插件系统、文档解析、图片理解和 OpenAI 兼容 API 支持。
+
+当前 macOS 安装包面向 Apple Silicon，要求 macOS 14 或更高版本。可在 [Releases](https://github.com/massif-01/ChatRaw/releases) 下载 DMG 安装包；开发者也可以使用仓库内置脚本从源码构建并运行。
+
+---
+
 ## 第一部分：核心功能
 
 *快速、轻量、便捷*
 
 ### 核心亮点
 
+- **原生 macOS 应用** - ChatRaw for Mac 提供桌面外壳，并自动启动本地后端
 - **极致轻量** - 内存占用约 60MB，优化的二进制向量存储
 - **极速启动** - 秒级启动，连接池加速 API 调用
 - **自定义品牌** - 自由定制名称、Logo 和主题
@@ -495,7 +539,28 @@ docker compose up -d
 
 ---
 
-### 方式二：源码部署
+### 方式二：macOS 桌面应用
+
+**环境要求**：Apple Silicon Mac，macOS 14+
+
+从 [Releases](https://github.com/massif-01/ChatRaw/releases) 下载最新的 `ChatRaw-for-Mac-*.dmg`，打开后将 **ChatRaw for Mac.app** 拖入 Applications。
+
+macOS 应用会自动启动本地后端，并在原生桌面窗口中打开 ChatRaw。数据保存在应用的本地 Application Support 目录中，而不是 Docker 卷中。
+
+本地开发时可使用：
+
+```bash
+# 克隆仓库
+git clone https://github.com/massif-01/ChatRaw.git
+cd ChatRaw
+
+# 构建并运行 macOS 应用
+./script/build_and_run.sh
+```
+
+---
+
+### 方式三：源码部署
 
 **环境要求**：Python 3.12+
 
@@ -549,6 +614,10 @@ git pull origin main
 docker compose pull
 docker compose up -d
 ```
+
+### macOS 桌面应用
+
+从 [Releases](https://github.com/massif-01/ChatRaw/releases) 下载更新的 `ChatRaw-for-Mac-*.dmg`，替换 Applications 中的旧版应用后重新打开。已有本地应用数据会继续保留在 Application Support 中。
 
 ### 源码部署
 
