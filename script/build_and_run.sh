@@ -63,7 +63,7 @@ ensure_backend_env() {
 }
 
 backend_import_check() {
-  "$VENV_DIR/bin/python" -X faulthandler -c 'import faulthandler; faulthandler.dump_traceback_later(60, exit=True); import fastapi, uvicorn, aiohttp, pydantic, pypdf, docx, trafilatura' >/dev/null
+  "$VENV_DIR/bin/python" -X faulthandler -c 'import faulthandler; faulthandler.dump_traceback_later(60, exit=True); import fastapi, uvicorn, aiohttp, certifi, pydantic, pypdf, docx, trafilatura' >/dev/null
 }
 
 build_backend_runtime() {
@@ -81,6 +81,7 @@ build_backend_runtime() {
     --specpath "$ROOT_DIR/build/pyinstaller" \
     --add-data "$ROOT_DIR/backend:backend" \
     --add-data "$ROOT_DIR/Plugins:Plugins" \
+    --collect-all certifi \
     --collect-all trafilatura \
     --collect-all babel \
     --collect-all dateparser \

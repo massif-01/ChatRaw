@@ -13,6 +13,8 @@ import io
 import struct
 import logging
 import shutil
+import ssl
+import certifi
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, AsyncGenerator, Dict, Any
@@ -125,12 +127,16 @@ def bytes_to_embedding(data: bytes) -> List[float]:
 
 _http_session: Optional[aiohttp.ClientSession] = None
 
+def _create_ssl_context() -> ssl.SSLContext:
+    return ssl.create_default_context(cafile=certifi.where())
+
 async def get_http_session() -> aiohttp.ClientSession:
     """Get or create shared HTTP session"""
     global _http_session
     if _http_session is None or _http_session.closed:
         timeout = aiohttp.ClientTimeout(total=300, connect=10)
-        _http_session = aiohttp.ClientSession(timeout=timeout)
+        connector = aiohttp.TCPConnector(ssl=_create_ssl_context())
+        _http_session = aiohttp.ClientSession(timeout=timeout, connector=connector)
     return _http_session
 
 async def close_http_session():
@@ -138,7 +144,7 @@ async def close_http_session():
     global _http_session
     if _http_session and not _http_session.closed:
         await _http_session.close()
-        _http_session = None
+    _http_session = None
 
 # ============ Models ============
 

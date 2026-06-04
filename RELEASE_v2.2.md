@@ -12,12 +12,14 @@
 - 修复 RemixIcon 字体在 macOS 壳内显示为方块的问题。
 - 修复 Logo、头像、插件、本地文件等上传入口在 WKWebView 中无法打开文件选择器的问题。
 - 修复插件卸载、清空对话等 `confirm()` 确认弹窗在 WKWebView 中无法继续执行的问题。
+- 修复 macOS 打包版后端在部分环境中无法校验 HTTPS 证书链的问题，模型验证、聊天请求和插件代理等外部 HTTPS 调用会使用打包内置的 CA bundle。
 - App 可见名称调整为 `ChatRaw for Mac`。
 
 ### 发布包
 - 本次 Release 附带 `ChatRaw-for-Mac-2.2.dmg`。
 - DMG 内包含 `ChatRaw for Mac.app`，可拖入 Applications 使用。
 - macOS 包当前面向 Apple Silicon（arm64），最低系统版本为 macOS 14。
+- 本次重打包 DMG SHA256：`e152b3f48defd1c8f3fec24a692cddde1c4389ad931b0c76e91b3b982c07639a`。
 
 ## 使用说明
 
