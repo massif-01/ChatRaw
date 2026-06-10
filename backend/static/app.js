@@ -354,8 +354,10 @@ function isMobileViewport() {
 const SKILL_MANAGER_PLUGIN_ID = 'skill-manager';
 const COMPOSER_COMPLETION_LIMIT = 20;
 const SKILL_CATALOG_CACHE_MS = 30000;
+const MAX_ACTIVE_SKILLS_PER_REQUEST = 5;
 const RESERVED_SLASH_COMMANDS = new Set(['plugins', 'settings', 'help', 'clear', 'compact', 'api']);
 const COMMON_PATH_ROOTS = new Set(['tmp', 'var', 'usr', 'etc', 'home', 'users', 'opt', 'private', 'volumes', 'mnt']);
+const SKILL_NAME_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 
 function app() {
     const initialDesktopCollapsed = localStorage.getItem('chatraw_sidebar_collapsed') === '1';
@@ -384,7 +386,6 @@ function app() {
         completionRange: null,
         completionRequestId: 0,
         completionDebounceTimer: null,
-        activeSkillChips: [],
         skillCatalogCache: null,
         skillCatalogLoadedAt: 0,
         useRAG: false,
@@ -514,6 +515,20 @@ function app() {
             return names[type] || type;
         },
         
+        getChatModel() {
+            return this.models.find(model => model?.type === 'chat') || null;
+        },
+
+        chatModelSupportsVision() {
+            return Boolean(this.getChatModel()?.capability?.vision);
+        },
+
+        syncVisionCapabilityState() {
+            if (!this.chatModelSupportsVision() && this.uploadedImage) {
+                this.removeUploadedImage();
+            }
+        },
+
         // Initialize
         async init() {
             this.initResponsiveLayout();
@@ -581,11 +596,13 @@ function app() {
         },
         
         openSettingsPanel() {
+            this.showPlugins = false;
             this.showSettings = true;
             this.closeSidebarOnMobile();
         },
         
         openPluginsPanel() {
+            this.showSettings = false;
             this.showPlugins = true;
             this.loadPluginMarket();
             this.closeSidebarOnMobile();
@@ -647,6 +664,7 @@ function app() {
                             m.capability = { vision: false, reasoning: false, tools: false };
                         }
                     });
+                    this.syncVisionCapabilityState();
                 }
             } catch (e) {
                 console.error('Failed to load models:', e);
@@ -772,6 +790,15 @@ function app() {
             return String(value);
         },
 
+        escapeComposerHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        },
+
         getComposerSelection() {
             const el = this.$refs.inputBox;
             const fallback = (this.inputMessage || '').length;
@@ -818,9 +845,54 @@ function app() {
         handleComposerInput(event) {
             this.inputMessage = event.target.value;
             this.autoResize(event.target);
+            this.syncComposerHighlightScroll(event);
             if (!this.isComposing) {
                 this.queueCompletionRefresh();
             }
+        },
+
+        syncComposerHighlightScroll(event = null) {
+            const source = event?.target || this.$refs.inputBox;
+            const highlight = this.$refs.composerHighlight;
+            if (!source || !highlight) return;
+            highlight.scrollTop = source.scrollTop;
+            highlight.scrollLeft = source.scrollLeft;
+        },
+
+        deleteComposerSkillToken(key) {
+            const selection = this.getComposerSelection();
+            if (selection.start !== selection.end) return false;
+
+            const value = this.inputMessage || '';
+            const cursor = selection.start;
+            const ranges = this.getComposerSkillTokenRanges(value, { knownOnly: true });
+            for (const range of ranges) {
+                let deleteStart = range.start;
+                let deleteEnd = range.end;
+                let shouldDelete = false;
+
+                if (key === 'Backspace') {
+                    shouldDelete = cursor > range.start && cursor <= range.end;
+                    if (!shouldDelete && cursor === range.end + 1 && /[ \t]/.test(value[range.end] || '')) {
+                        shouldDelete = true;
+                        deleteEnd = range.end + 1;
+                    }
+                } else if (key === 'Delete') {
+                    shouldDelete = cursor >= range.start && cursor < range.end;
+                    if (!shouldDelete && cursor === range.start - 1 && /[ \t]/.test(value[cursor] || '')) {
+                        shouldDelete = true;
+                        deleteStart = cursor;
+                    }
+                }
+
+                if (!shouldDelete) continue;
+                if (/[ \t]/.test(value[range.end] || '')) {
+                    deleteEnd = Math.max(deleteEnd, range.end + 1);
+                }
+                this.replaceComposerRange(deleteStart, deleteEnd, '');
+                return true;
+            }
+            return false;
         },
 
         handleCompositionStart() {
@@ -834,6 +906,12 @@ function app() {
 
         async handleComposerKeydown(event) {
             if (this.isComposing || event.isComposing) return;
+
+            if ((event.key === 'Backspace' || event.key === 'Delete') && this.deleteComposerSkillToken(event.key)) {
+                event.preventDefault();
+                this.closeCompletionMenu();
+                return;
+            }
 
             if (this.completionMenuOpen) {
                 if (event.key === 'ArrowDown') {
@@ -868,6 +946,15 @@ function app() {
             if (!this.completionItems.length) return;
             const length = this.completionItems.length;
             this.completionActiveIndex = (this.completionActiveIndex + delta + length) % length;
+            this.scrollActiveCompletionIntoView();
+        },
+
+        scrollActiveCompletionIntoView() {
+            this.$nextTick(() => {
+                const menu = this.$refs.composerSuggestions;
+                const activeItem = menu?.querySelector('.composer-suggestion-item.active');
+                activeItem?.scrollIntoView({ block: 'nearest' });
+            });
         },
 
         async acceptHighlightedCompletion() {
@@ -976,6 +1063,9 @@ function app() {
             this.completionItems = items.slice(0, COMPOSER_COMPLETION_LIMIT);
             this.completionActiveIndex = 0;
             this.completionMenuOpen = this.completionItems.length > 0;
+            if (this.completionMenuOpen) {
+                this.scrollActiveCompletionIntoView();
+            }
         },
 
         closeCompletionMenu() {
@@ -1045,7 +1135,6 @@ function app() {
             if (pluginId === SKILL_MANAGER_PLUGIN_ID) {
                 this.skillCatalogCache = null;
                 this.skillCatalogLoadedAt = 0;
-                this.activeSkillChips = [];
                 removedActiveMenuProvider = true;
             }
             if (removedActiveMenuProvider) {
@@ -1078,7 +1167,7 @@ function app() {
                 fullId: '__host:skill-manager-skills',
                 pluginId: SKILL_MANAGER_PLUGIN_ID,
                 source: 'skills',
-                icon: 'ri-flashlight-line',
+                icon: 'ri-sparkling-2-line',
                 trigger: '/',
                 getItems: async (context) => this.getSkillCompletionItems(context)
             };
@@ -1154,7 +1243,7 @@ function app() {
                     label: `/${skill.name}`,
                     description: skill.description || '',
                     source: 'skills',
-                    icon: 'ri-flashlight-line',
+                    icon: 'ri-sparkling-2-line',
                     type: 'skill',
                     metadata: { skill },
                     onSelect: (_item, selectContext) => this.selectSkillCompletion(skill, selectContext.range)
@@ -1163,39 +1252,83 @@ function app() {
 
         selectSkillCompletion(skill, range) {
             if (!skill?.name || !range) return;
-            this.addActiveSkillChip(skill);
-
             const value = this.inputMessage || '';
             let replaceStart = range.start;
             let replaceEnd = range.end;
-            if (value[replaceStart - 1] === ' ' && value[replaceEnd] === ' ') {
-                replaceEnd += 1;
-            } else if (replaceStart === 0 && value[replaceEnd] === ' ') {
+            while (value[replaceEnd] && !/\s/.test(value[replaceEnd])) {
                 replaceEnd += 1;
             }
-            this.replaceComposerRange(replaceStart, replaceEnd, '');
+            const suffix = value[replaceEnd] && /\s/.test(value[replaceEnd]) ? '' : ' ';
+            this.replaceComposerRange(replaceStart, replaceEnd, `/${skill.name}${suffix}`);
+            this.closeCompletionMenu();
         },
 
-        addActiveSkillChip(skill) {
-            if (!skill?.name || this.activeSkillChips.some(item => item.name === skill.name)) return;
-            if (this.activeSkillChips.length >= 5) {
-                this.showToast(this.lang === 'zh' ? '每次最多激活 5 个 skills' : 'Up to 5 skills can be active per request', 'error');
-                return;
+        isValidComposerSkillName(name) {
+            return SKILL_NAME_PATTERN.test(name) && !RESERVED_SLASH_COMMANDS.has(name) && !COMMON_PATH_ROOTS.has(name);
+        },
+
+        isKnownComposerSkillName(name) {
+            if (!this.isValidComposerSkillName(name) || !Array.isArray(this.skillCatalogCache)) return false;
+            return this.skillCatalogCache.some(skill => skill?.name === name && skill.enabled !== false);
+        },
+
+        getComposerSkillTokenRanges(message, options = {}) {
+            const text = String(message || '');
+            const matches = text.matchAll(/(^|\s)\/([a-z0-9][a-z0-9-]{0,62})(?=$|\s)/g);
+            const seen = new Set();
+            const ranges = [];
+            for (const match of matches) {
+                const name = match[2];
+                if (!this.isValidComposerSkillName(name)) continue;
+                if (options.knownOnly && !this.isKnownComposerSkillName(name)) continue;
+                const isFirstUse = !seen.has(name);
+                if (isFirstUse && seen.size >= MAX_ACTIVE_SKILLS_PER_REQUEST) continue;
+                if (isFirstUse) seen.add(name);
+                const start = match.index + match[1].length;
+                ranges.push({
+                    name,
+                    start,
+                    end: start + name.length + 1,
+                    text: text.slice(start, start + name.length + 1)
+                });
             }
-            this.activeSkillChips.push({
-                name: skill.name,
-                description: skill.description || ''
-            });
+            return ranges;
         },
 
-        removeActiveSkillChip(skillName) {
-            this.activeSkillChips = this.activeSkillChips.filter(skill => skill.name !== skillName);
+        renderComposerHighlights(message) {
+            const text = String(message || '');
+            if (!text) return '';
+
+            const ranges = this.getComposerSkillTokenRanges(text, { knownOnly: true });
+            if (!ranges.length) return this.escapeComposerHtml(text);
+
+            let cursor = 0;
+            let html = '';
+            for (const range of ranges) {
+                html += this.escapeComposerHtml(text.slice(cursor, range.start));
+                html += `<span class="composer-highlight-skill">${this.escapeComposerHtml(range.text)}</span>`;
+                cursor = range.end;
+            }
+            html += this.escapeComposerHtml(text.slice(cursor));
+            return html;
+        },
+
+        extractActiveSkillNamesFromText(message) {
+            const seen = new Set();
+            const names = [];
+            for (const range of this.getComposerSkillTokenRanges(message)) {
+                if (seen.has(range.name)) continue;
+                seen.add(range.name);
+                names.push(range.name);
+            }
+            return names;
         },
 
         prepareOutgoingMessage() {
+            const message = (this.inputMessage || '').trim();
             return {
-                message: (this.inputMessage || '').trim(),
-                activeSkillNames: this.activeSkillChips.map(skill => skill.name)
+                message,
+                activeSkillNames: this.extractActiveSkillNamesFromText(message)
             };
         },
 
@@ -1242,10 +1375,6 @@ function app() {
                 this.removeUploadedImage();
                 this.removeParsedUrl();
                 this.removeAttachedDocument();
-            }
-
-            if (result.clearActiveSkills !== false) {
-                this.activeSkillChips = [];
             }
 
             if (result.refreshSkillCatalog) {
@@ -1338,8 +1467,6 @@ function app() {
                 } else {
                     await this.handleNormalResponse(body);
                 }
-                this.activeSkillChips = [];
-                
                 // Call after_receive hooks for post-processing
                 const lastMsg = this.messages[this.messages.length - 1];
                 if (lastMsg && lastMsg.role === 'assistant') {
@@ -1667,6 +1794,10 @@ function app() {
         async handleImageUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
+            if (!this.chatModelSupportsVision()) {
+                event.target.value = '';
+                return;
+            }
             
             try {
                 // Compress image before upload
@@ -2109,6 +2240,9 @@ function app() {
         autoResize(el) {
             el.style.height = 'auto';
             el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+            if (el === this.$refs.inputBox) {
+                this.syncComposerHighlightScroll();
+            }
         },
         
         // Show toast
@@ -2754,10 +2888,13 @@ function app() {
                 const controller = new AbortController();
                 timeout = setTimeout(() => controller.abort(), 5000);
                 
-                const res = await fetch(
-                    'https://raw.githubusercontent.com/massif-01/ChatRaw/main/Plugins/Plugin_market/index.json',
-                    { signal: controller.signal }
-                );
+                let res = await fetch('/api/plugins/market', { signal: controller.signal });
+                if (!res.ok) {
+                    res = await fetch(
+                        'https://raw.githubusercontent.com/massif-01/ChatRaw/main/Plugins/Plugin_market/index.json',
+                        { signal: controller.signal }
+                    );
+                }
                 clearTimeout(timeout);
                 timeout = null;
                 
@@ -2776,6 +2913,25 @@ function app() {
                 if (timeout) clearTimeout(timeout);
                 this.pluginMarketLoading = false;
             }
+        },
+
+        getMarketPluginIconUrl(plugin) {
+            if (plugin?.id && this.isPluginInstalled(plugin.id)) {
+                return `/api/plugins/${encodeURIComponent(plugin.id)}/icon`;
+            }
+            const folder = plugin?.folder || plugin?.id || '';
+            return `/api/plugins/market/${encodeURIComponent(folder)}/icon`;
+        },
+
+        handleMarketPluginIconError(event, plugin) {
+            const img = event?.target;
+            if (!img) return;
+            if (!img.dataset.remoteFallbackTried && plugin?.folder) {
+                img.dataset.remoteFallbackTried = '1';
+                img.src = `https://raw.githubusercontent.com/massif-01/ChatRaw/main/Plugins/Plugin_market/${plugin.folder}/icon.png`;
+                return;
+            }
+            img.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22><path d=%22M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z%22/></svg>';
         },
         
         // Check if plugin is installed

@@ -115,7 +115,7 @@ your-plugin/
 | `web_search` | Web search provider | `(query, settings)` | `{ success, results }` |
 | `pre_embedding` | Before text embedding | `(text, settings)` | `{ success, text }` |
 | `post_retrieval` | After RAG retrieval | `(results, settings)` | `{ success, results }` |
-| `send_intercept` | Pre-send interceptor that can fully handle a message before normal chat sending | `(context)` | `{ success, handled?, userMessage?, assistantMessage?, clearInput?, clearAttachments?, clearActiveSkills?, refreshSkillCatalog? }` |
+| `send_intercept` | Pre-send interceptor that can fully handle a message before normal chat sending | `(context)` | `{ success, handled?, userMessage?, assistantMessage?, clearInput?, clearAttachments?, refreshSkillCatalog? }` |
 | `before_send` | Before sending message | `(body)` | `{ success, body }` |
 | `after_receive` | After receiving response | `(message)` | `{ success, content }` |
 | `transform_input` | Transform user input | `(message)` | `{ success, content }` |
@@ -132,9 +132,11 @@ continue.
 The `send_intercept` context includes `message`, `activeSkillNames`, `parsedUrl`, lightweight
 `attachedDocument` information, `hasImage`, `currentChatId`, and an abort `signal`.
 
-When Skill chips are active, the host writes `body.active_skills` after `before_send` completes so regular
-hooks cannot accidentally override the user's explicit skill selection. Plugins that need to handle the
-pre-send skill list should use `send_intercept` and read `context.activeSkillNames`.
+`activeSkillNames` is parsed from inline `/skill-name` tokens in the composer. Known skill tokens are
+highlighted by the host, Backspace/Delete removes the whole token, and the backend accepts at most five
+distinct active skills per request. The host writes `body.active_skills` after `before_send` completes so
+regular hooks cannot accidentally override the user's explicit skill selection. Plugins that need to
+handle the pre-send skill list should use `send_intercept` and read `context.activeSkillNames`.
 
 ### Settings Types
 
@@ -551,6 +553,9 @@ ChatRawPlugin.input.replaceRange(selection.start, selection.end, 'replacement');
 ChatRawPlugin.input.focus();
 ```
 
+If a plugin inserts a known `/skill-name` token, the host keeps it inline in the composer and applies the
+same highlighting, whole-token deletion, and active-skill extraction rules as user-typed tokens.
+
 Available methods:
 
 - `getValue()` returns the current composer text.
@@ -565,6 +570,8 @@ Available methods:
 Plugins can register slash completion providers through `ChatRawPlugin.input.registerCompletionProvider(config, pluginId?)`.
 Provider IDs are bound to the plugin that registered them; pass the same provider `id` to unregister it.
 Disabling or uninstalling the plugin automatically removes its providers and closes related menus.
+The completion menu shows at most five rows at a time and scrolls for additional matches; providers should
+return ranked results rather than relying on visible position alone.
 
 ```javascript
 const providerId = 'my-provider';
@@ -823,7 +830,7 @@ To distribute your plugin:
 
 #### Plugin Market: index.json Registration
 
-To appear in the built-in **Plugin Market** tab, your plugin must be registered in `Plugins/Plugin_market/index.json`. This file is the market catalog: the frontend fetches it to display the list of installable plugins.
+To appear in the built-in **Plugin Market** tab, your plugin must be registered in `Plugins/Plugin_market/index.json`. This file is the market catalog: the frontend first fetches the local `/api/plugins/market` endpoint, which serves bundled market metadata, and falls back to the GitHub `index.json` when needed.
 
 **Steps**:
 1. Place your plugin folder under `Plugins/Plugin_market/` (e.g. `Plugins/Plugin_market/my-plugin/`).
@@ -854,7 +861,7 @@ To appear in the built-in **Plugin Market** tab, your plugin must be registered 
 | `type` | Plugin type (see manifest.json types) |
 | `folder` | Directory name under `Plugin_market/` |
 
-Install URL is built as: `https://raw.githubusercontent.com/{repo}/main/Plugins/Plugin_market/{folder}`. Without an index.json entry, the plugin will not appear in the market.
+Install URL is built as: `https://raw.githubusercontent.com/{repo}/main/Plugins/Plugin_market/{folder}`. Market icons are loaded through `/api/plugins/market/{folder}/icon`, installed plugin icons through `/api/plugins/{plugin_id}/icon`, with a remote GitHub icon fallback for market entries. Without an index.json entry, the plugin will not appear in the market.
 
 5. **Common issues**:
    - Wrong: Zip contains nested folders: `your-plugin.zip/your-plugin/your-plugin/manifest.json`
@@ -1367,7 +1374,7 @@ your-plugin/
 | `web_search` | 网络搜索 | `(query, settings)` | `{ success, results }` |
 | `pre_embedding` | 文本嵌入前 | `(text, settings)` | `{ success, text }` |
 | `post_retrieval` | RAG 检索后 | `(results, settings)` | `{ success, results }` |
-| `send_intercept` | 发送前拦截器，可在正常聊天发送前完整处理一条消息 | `(context)` | `{ success, handled?, userMessage?, assistantMessage?, clearInput?, clearAttachments?, clearActiveSkills?, refreshSkillCatalog? }` |
+| `send_intercept` | 发送前拦截器，可在正常聊天发送前完整处理一条消息 | `(context)` | `{ success, handled?, userMessage?, assistantMessage?, clearInput?, clearAttachments?, refreshSkillCatalog? }` |
 | `before_send` | 发送消息前 | `(body)` | `{ success, body }` |
 | `after_receive` | 收到回复后 | `(message)` | `{ success, content }` |
 | `transform_input` | 转换用户输入 | `(message)` | `{ success, content }` |
@@ -1383,9 +1390,10 @@ your-plugin/
 `send_intercept` context 包含 `message`、`activeSkillNames`、`parsedUrl`、轻量 `attachedDocument`
 信息、`hasImage`、`currentChatId` 和可中止的 `signal`。
 
-当存在 Skill chips 时，宿主会在 `before_send` 完成后写入 `body.active_skills`，避免普通 hook
-意外覆盖用户显式选择的 skills。需要处理发送前 skill 列表的插件应使用 `send_intercept` 并读取
-`context.activeSkillNames`。
+`activeSkillNames` 从输入框内联的 `/skill-name` token 解析而来。已知 skill token 会由宿主高亮，
+Backspace/Delete 会一次删除整个 token，后端每次请求最多接受 5 个不同 active skills。宿主会在
+`before_send` 完成后写入 `body.active_skills`，避免普通 hook 意外覆盖用户显式选择的 skills。
+需要处理发送前 skill 列表的插件应使用 `send_intercept` 并读取 `context.activeSkillNames`。
 
 ### 设置类型
 
@@ -1802,6 +1810,9 @@ ChatRawPlugin.input.replaceRange(selection.start, selection.end, '替换文本')
 ChatRawPlugin.input.focus();
 ```
 
+如果插件插入已知的 `/skill-name` token，宿主会将它保留在输入框文本内，并应用与用户手动输入
+一致的高亮、整 token 删除和 active skill 提取规则。
+
 可用方法：
 
 - `getValue()` 返回当前输入框文本。
@@ -1816,6 +1827,8 @@ ChatRawPlugin.input.focus();
 插件可以通过 `ChatRawPlugin.input.registerCompletionProvider(config, pluginId?)` 注册 slash 补全。
 Provider ID 会绑定到注册它的插件；注销时传入同一个 provider `id`。插件禁用或卸载时，
 宿主会自动清理 provider 并关闭相关菜单。
+补全菜单最多同时显示 5 行，更多匹配项通过滚动查看；provider 应返回排序后的结果，不要依赖
+首屏可见位置表达优先级。
 
 ```javascript
 const providerId = 'my-provider';
@@ -2067,7 +2080,7 @@ const allData = ChatRaw.storage.getAll(PLUGIN_ID);
 
 #### 插件市场：index.json 注册
 
-要让插件出现在内置**插件市场**标签页，必须在 `Plugins/Plugin_market/index.json` 中注册。该文件是市场目录：前端通过它获取可安装插件列表。
+要让插件出现在内置**插件市场**标签页，必须在 `Plugins/Plugin_market/index.json` 中注册。该文件是市场目录：前端会优先请求本地 `/api/plugins/market` 端点读取内置市场 metadata，必要时再回退到 GitHub `index.json`。
 
 **步骤**：
 1. 将插件文件夹置于 `Plugins/Plugin_market/` 下（如 `Plugins/Plugin_market/my-plugin/`）。
@@ -2098,7 +2111,7 @@ const allData = ChatRaw.storage.getAll(PLUGIN_ID);
 | `type` | 插件类型（见 manifest.json） |
 | `folder` | `Plugin_market/` 下的目录名 |
 
-安装 URL 格式：`https://raw.githubusercontent.com/{repo}/main/Plugins/Plugin_market/{folder}`。未在 index.json 中注册的插件不会在市场中显示。
+安装 URL 格式：`https://raw.githubusercontent.com/{repo}/main/Plugins/Plugin_market/{folder}`。市场图标通过 `/api/plugins/market/{folder}/icon` 加载，已安装插件图标通过 `/api/plugins/{plugin_id}/icon` 加载；市场条目还会在需要时回退到 GitHub 远程图标。未在 index.json 中注册的插件不会在市场中显示。
 
 5. **常见问题**：
    - 错误：zip 包含嵌套文件夹：`your-plugin.zip/your-plugin/your-plugin/manifest.json`

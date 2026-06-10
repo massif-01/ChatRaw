@@ -27,7 +27,7 @@
       subtitle: 'Manage installed skills for explicit chat activation',
       install: 'Install',
       githubUrl: 'GitHub URL',
-      githubPlaceholder: 'raw/blob SKILL.md or public tree URL',
+      githubPlaceholder: 'GitHub repo, owner/repo, raw/blob SKILL.md, or tree URL',
       installGithub: 'Install from GitHub',
       uploadLocal: 'Upload local skill',
       uploadHelp: 'Accepts SKILL.md or .zip packages',
@@ -47,7 +47,7 @@
       trustAction: 'Trust',
       untrustAction: 'Untrust',
       securityNote: 'Third-party skills are instruction content. Review the source before enabling or trusting a skill.',
-      scriptBoundaryNote: 'ChatRaw v1 stores scripts and resources for reference only. It does not execute skill scripts or grant allowed-tools permissions.',
+      scriptBoundaryNote: 'ChatRaw stores scripts and resources for reference only. It does not execute skill scripts or grant allowed-tools permissions.',
       trustNote: 'Trusted is governance metadata for future implicit matching. It does not execute scripts or bypass explicit activation rules.',
       source: 'Source',
       diagnostics: 'Diagnostics',
@@ -66,7 +66,6 @@
       installedAt: 'Installed',
       updatedAt: 'Updated',
       license: 'License',
-      compatibility: 'Compatibility',
       fileSelected: 'Selected file',
       noFile: 'No file selected',
       retryOverwrite: 'Skill already exists. Enable overwrite and retry.',
@@ -93,7 +92,7 @@
       subtitle: '管理用于聊天显式激活的本地 Skills',
       install: '安装',
       githubUrl: 'GitHub URL',
-      githubPlaceholder: 'raw/blob SKILL.md 或公开 tree URL',
+      githubPlaceholder: 'GitHub 仓库、owner/repo、raw/blob SKILL.md 或 tree URL',
       installGithub: '从 GitHub 安装',
       uploadLocal: '上传本地 Skill',
       uploadHelp: '支持 SKILL.md 或 .zip 包',
@@ -113,7 +112,7 @@
       trustAction: '信任',
       untrustAction: '取消信任',
       securityNote: '第三方 skill 是指令内容。启用或信任前请先检查来源。',
-      scriptBoundaryNote: 'ChatRaw v1 只把 scripts 和资源作为参考保存；不会执行 skill scripts，也不会授予 allowed-tools 权限。',
+      scriptBoundaryNote: 'ChatRaw 只把 scripts 和资源作为参考保存；不会执行 skill scripts，也不会授予 allowed-tools 权限。',
       trustNote: 'Trusted 是为未来隐式匹配准备的治理元数据；不会执行 scripts，也不会绕过显式调用规则。',
       source: '来源',
       diagnostics: '诊断',
@@ -132,7 +131,6 @@
       installedAt: '安装时间',
       updatedAt: '更新时间',
       license: '许可证',
-      compatibility: '兼容性',
       fileSelected: '已选择文件',
       noFile: '未选择文件',
       retryOverwrite: 'Skill 已存在。启用覆盖后重试。',
@@ -291,14 +289,26 @@
 }
 .skill-manager-input:focus {
   outline: none;
-  border-color: var(--primary-color, #4f46e5);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  border-color: var(--border-focus, var(--accent-color, #111827));
+  box-shadow: 0 0 0 3px hsl(var(--ring, 0 0% 0%) / 0.12);
 }
 .skill-manager-row {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+.skill-manager-action-row {
+  flex-wrap: nowrap;
+}
+.skill-manager-action-row .skill-manager-checkbox {
+  min-width: 0;
+}
+.skill-manager-action-row .skill-manager-checkbox span {
+  overflow-wrap: anywhere;
+}
+.skill-manager-action-row .skill-manager-button span {
+  white-space: nowrap;
 }
 .skill-manager-checkbox {
   display: inline-flex;
@@ -308,6 +318,9 @@
   font-size: 12px;
   line-height: 1.3;
   user-select: none;
+}
+.skill-manager-checkbox input {
+  accent-color: var(--accent-color, #111827);
 }
 .skill-manager-button {
   display: inline-flex;
@@ -323,17 +336,25 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  transition: color var(--duration-fast, 150ms) var(--ease, ease),
+    background-color var(--duration-fast, 150ms) var(--ease, ease),
+    border-color var(--duration-fast, 150ms) var(--ease, ease),
+    transform var(--duration-fast, 150ms) var(--ease, ease);
 }
 .skill-manager-button:hover {
   background: var(--bg-secondary, #f8fafc);
 }
 .skill-manager-button-primary {
-  color: #ffffff;
-  border-color: var(--primary-color, #4f46e5);
-  background: var(--primary-color, #4f46e5);
+  color: var(--on-accent, #ffffff);
+  border-color: var(--accent-color, #111827);
+  background: var(--accent-color, #111827);
 }
-.skill-manager-button-primary:hover {
-  filter: brightness(0.96);
+.skill-manager-button-primary:hover:not(:disabled) {
+  border-color: var(--accent-hover, #333333);
+  background: var(--accent-hover, #333333);
+}
+.skill-manager-button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 .skill-manager-button-danger {
   color: #b91c1c;
@@ -343,6 +364,12 @@
 .skill-manager-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+.skill-manager-button-primary:disabled {
+  color: var(--text-muted, #6b6b6b);
+  border-color: var(--border-color, #d1d5db);
+  background: var(--bg-secondary, #f8fafc);
+  opacity: 1;
 }
 .skill-manager-muted {
   color: var(--text-secondary, #64748b);
@@ -390,8 +417,8 @@
 }
 .skill-manager-list-item:hover,
 .skill-manager-list-item-active {
-  border-color: rgba(79, 70, 229, 0.42);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.08);
+  border-color: hsl(var(--ring, 0 0% 0%) / 0.42);
+  box-shadow: 0 0 0 3px hsl(var(--ring, 0 0% 0%) / 0.08);
 }
 .skill-manager-list-name {
   display: block;
@@ -399,16 +426,6 @@
   font-size: 13px;
   font-weight: 650;
   color: var(--text-primary, #111827);
-}
-.skill-manager-list-description {
-  display: -webkit-box;
-  margin-top: 4px;
-  overflow: hidden;
-  color: var(--text-secondary, #64748b);
-  font-size: 12px;
-  line-height: 1.35;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 .skill-manager-list-badges,
 .skill-manager-badges {
@@ -467,11 +484,7 @@
   font-size: 14px;
 }
 .skill-manager-detail-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 .skill-manager-detail-name {
   margin: 0 0 6px;
@@ -485,6 +498,16 @@
   color: var(--text-secondary, #475569);
   font-size: 14px;
   line-height: 1.5;
+}
+.skill-manager-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+.skill-manager-detail-actions .skill-manager-button {
+  white-space: nowrap;
 }
 .skill-manager-section {
   border-top: 1px solid var(--border-color, #e5e7eb);
@@ -571,9 +594,6 @@
   .skill-manager-detail {
     padding: 16px;
   }
-  .skill-manager-detail-header {
-    flex-direction: column;
-  }
   .skill-manager-grid {
     grid-template-columns: 1fr;
   }
@@ -587,7 +607,7 @@
 <div id="${ROOT_ID}" class="skill-manager-shell">
   <div class="skill-manager-header">
     <div>
-      <h1 class="skill-manager-title"><i class="ri-flashlight-line" aria-hidden="true"></i><span data-sm-text="title">${t('title')}</span></h1>
+      <h1 class="skill-manager-title"><i class="ri-sparkling-2-line" aria-hidden="true"></i><span data-sm-text="title">${t('title')}</span></h1>
       <p class="skill-manager-subtitle" data-sm-text="subtitle">${t('subtitle')}</p>
     </div>
     <button class="skill-manager-close" type="button" data-sm-action="close" aria-label="${t('close')}"><i class="ri-close-line" aria-hidden="true"></i></button>
@@ -600,11 +620,11 @@
           <p class="skill-manager-muted">${t('securityNote')}</p>
           <div class="skill-manager-field">
             <label class="skill-manager-label" for="skill-manager-github-url">${t('githubUrl')}</label>
-            <input id="skill-manager-github-url" class="skill-manager-input" type="url" autocomplete="off" placeholder="${t('githubPlaceholder')}">
+            <input id="skill-manager-github-url" class="skill-manager-input" type="text" inputmode="url" autocomplete="off" placeholder="${t('githubPlaceholder')}">
           </div>
-          <div class="skill-manager-row">
-            <label class="skill-manager-checkbox"><input type="checkbox" data-sm-field="github-overwrite"> <span>${t('overwrite')}</span></label>
+          <div class="skill-manager-row skill-manager-action-row">
             <button class="skill-manager-button skill-manager-button-primary" type="button" data-sm-action="github-install"><i class="ri-github-line" aria-hidden="true"></i><span>${t('installGithub')}</span></button>
+            <label class="skill-manager-checkbox"><input type="checkbox" data-sm-field="github-overwrite"> <span>${t('overwrite')}</span></label>
           </div>
         </section>
 
@@ -617,9 +637,9 @@
             <input id="skill-manager-file-input" class="skill-manager-input" type="file" accept=".md,.zip">
             <p class="skill-manager-status" data-sm-text="file-status">${t('noFile')}</p>
           </div>
-          <div class="skill-manager-row">
-            <label class="skill-manager-checkbox"><input type="checkbox" data-sm-field="upload-overwrite"> <span>${t('overwrite')}</span></label>
+          <div class="skill-manager-row skill-manager-action-row">
             <button class="skill-manager-button skill-manager-button-primary" type="button" data-sm-action="upload"><i class="ri-upload-line" aria-hidden="true"></i><span>${t('upload')}</span></button>
+            <label class="skill-manager-checkbox"><input type="checkbox" data-sm-field="upload-overwrite"> <span>${t('overwrite')}</span></label>
           </div>
         </section>
 
@@ -636,16 +656,14 @@
       <div class="skill-manager-empty" data-sm-empty>${t('selectSkill')}</div>
       <div data-sm-detail hidden>
         <div class="skill-manager-detail-header">
-          <div>
-            <h2 class="skill-manager-detail-name" data-sm-text="detail-name"></h2>
-            <p class="skill-manager-detail-description" data-sm-text="detail-description"></p>
-            <div class="skill-manager-badges" data-sm-badges></div>
-          </div>
-          <div class="skill-manager-row">
-            <button class="skill-manager-button" type="button" data-sm-action="toggle"></button>
-            <button class="skill-manager-button" type="button" data-sm-action="trust"></button>
-            <button class="skill-manager-button skill-manager-button-danger" type="button" data-sm-action="delete"><i class="ri-delete-bin-line" aria-hidden="true"></i><span>${t('delete')}</span></button>
-          </div>
+          <h2 class="skill-manager-detail-name" data-sm-text="detail-name"></h2>
+          <p class="skill-manager-detail-description" data-sm-text="detail-description"></p>
+          <div class="skill-manager-badges" data-sm-badges></div>
+        </div>
+        <div class="skill-manager-detail-actions">
+          <button class="skill-manager-button" type="button" data-sm-action="toggle"></button>
+          <button class="skill-manager-button" type="button" data-sm-action="trust"></button>
+          <button class="skill-manager-button skill-manager-button-danger" type="button" data-sm-action="delete"><i class="ri-delete-bin-line" aria-hidden="true"></i><span>${t('delete')}</span></button>
         </div>
 
         <p class="skill-manager-muted" data-sm-text="trust-note">${t('trustNote')}</p>
@@ -758,17 +776,32 @@
     return String(value || '').replace(/[),.;!?，。！？、]+$/u, '');
   }
 
+  const GITHUB_REPO_SHORTHAND_RE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38}[A-Za-z0-9])?\/[A-Za-z0-9._-]{1,100}$/;
+
+  function normalizeGithubSkillUrl(value) {
+    const cleaned = cleanUrlToken(value).trim();
+    if (!cleaned) return '';
+    if (GITHUB_REPO_SHORTHAND_RE.test(cleaned)) {
+      return `https://github.com/${cleaned}`;
+    }
+    return cleaned;
+  }
+
   function isGithubSkillUrl(value) {
+    const normalized = normalizeGithubSkillUrl(value);
+    if (!normalized) return false;
     try {
-      const url = new URL(value);
+      const url = new URL(normalized);
       if (url.protocol !== 'https:') return false;
       const host = url.hostname.toLowerCase();
-      const path = url.pathname;
+      const parts = url.pathname.split('/').filter(Boolean);
       if (host === 'raw.githubusercontent.com') {
-        return /(^|\/)SKILL\.md$/i.test(path);
+        return /(^|\/)SKILL\.md$/i.test(url.pathname);
       }
       if (host !== 'github.com') return false;
-      return /\/(?:blob|tree)\//.test(path) && (/\/tree\//.test(path) || /(^|\/)SKILL\.md$/i.test(path));
+      if (parts.length === 2) return true;
+      const kind = parts[2];
+      return (kind === 'blob' || kind === 'tree') && (kind === 'tree' || /(^|\/)SKILL\.md$/i.test(url.pathname));
     } catch {
       return false;
     }
@@ -778,7 +811,7 @@
     const urls = [];
     const seen = new Set();
     const addUrl = (value) => {
-      const cleaned = cleanUrlToken(value);
+      const cleaned = normalizeGithubSkillUrl(value);
       if (!cleaned || seen.has(cleaned) || !isGithubSkillUrl(cleaned)) return;
       seen.add(cleaned);
       urls.push(cleaned);
@@ -786,6 +819,8 @@
 
     const matches = String(message || '').match(/\bhttps?:\/\/[^\s<>"'`)\]]+/gi) || [];
     matches.forEach(addUrl);
+    const shorthandMatches = String(message || '').match(/(?:^|[\s([<{])([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}[A-Za-z0-9])?\/[A-Za-z0-9._-]{1,100})(?=$|[\s)\]}>.,;!?，。！？、])/g) || [];
+    shorthandMatches.forEach((match) => addUrl(match.trim().replace(/^[([<{]+/, '')));
     if (parsedUrl?.url) addUrl(parsedUrl.url);
     return urls;
   }
@@ -1022,11 +1057,6 @@
       name.textContent = skill.name;
       button.appendChild(name);
 
-      const description = document.createElement('span');
-      description.className = 'skill-manager-list-description';
-      description.textContent = skill.description || '';
-      button.appendChild(description);
-
       const badges = document.createElement('span');
       badges.className = 'skill-manager-list-badges';
       appendBadge(badges, skill.enabled ? t('enabled') : t('disabled'), skill.enabled ? 'skill-manager-badge-success' : 'skill-manager-badge-warning');
@@ -1094,7 +1124,6 @@
     if (!container) return;
     container.replaceChildren();
     appendKeyValue(container, t('license'), skill.license || '-');
-    appendKeyValue(container, t('compatibility'), skill.compatibility || '-');
     appendKeyValue(container, t('installedAt'), skill.installed_at || '-');
     appendKeyValue(container, t('updatedAt'), skill.updated_at || '-');
 
@@ -1174,7 +1203,7 @@
     const sessionId = state?.sessionId;
     const input = query('#skill-manager-github-url');
     const overwrite = query('[data-sm-field="github-overwrite"]');
-    const url = input?.value?.trim();
+    const url = normalizeGithubSkillUrl(input?.value?.trim());
     if (!sessionId || !url) {
       input?.focus();
       return;
@@ -1445,7 +1474,7 @@
 
   ChatRaw.ui.registerToolbarButton({
     id: 'skill-manager-open',
-    icon: 'ri-flashlight-line',
+    icon: 'ri-sparkling-2-line',
     label: {
       en: 'Skill Manager',
       zh: 'Skill 管理器'

@@ -64,7 +64,7 @@ The current macOS package targets Apple Silicon and requires macOS 14 or later. 
 - **Custom Branding** - Freely customize name, logo, and theme
 - **Universal API Support** - Works with any OpenAI-compatible API (Ollama, vLLM, LocalAI, LM Studio, etc.)
 - **Document Parsing** - Native PDF, DOCX, TXT, MD parsing as chat context
-- **Vision AI Ready** - Multimodal image understanding with auto-compression
+- **Vision AI Ready** - Multimodal image understanding with auto-compression when the chat model's Vision capability is enabled
 - **Thinking Mode** - Support for reasoning models (DeepSeek-R1, Qwen, o1, etc.)
 - **Responsive Design** - Optimized for desktop, tablet, and mobile with touch-friendly UI
 - **One-Click Copy** - Copy AI responses instantly (text only, no metadata)
@@ -109,7 +109,7 @@ ChatRaw features a complete **plugin system** to extend functionality:
 - **Multi-Model Manager** — Manage and switch models
 - **Markdown Renderer Plus** — Math (KaTeX), Mermaid, code copy, offline
 - **Context Compressor** — Compact older chat history automatically or from the input toolbar
-- **Skill Manager** — Install and explicitly activate Agent Skills from GitHub or local files
+- **Skill Manager** — Install Agent Skills from GitHub or local files and activate them inline with `/skill-name`
 - **Toolbar Extension Demo** — Demo plugin showcasing UI Extension API
 
 ### Toolbar Extension
@@ -330,14 +330,23 @@ still used and you can click the input toolbar compression button to compact man
 ### Use Agent Skills
 
 Install and enable **Skill Manager** to manage Agent Skills. You can install skills from a GitHub
-`SKILL.md` / public tree URL or upload a local `SKILL.md` / `.zip` package. Activate a skill explicitly
-for the next message with `/skill-name`, or type a clear command such as `install this skill <GitHub URL>`
-to install a GitHub skill from chat.
+repository URL, `owner/repo` shorthand, raw/blob `SKILL.md`, public tree URL, or upload a local
+`SKILL.md` / `.zip` package. GitHub repository roots are accepted when ChatRaw can resolve exactly one
+skill, such as a root `SKILL.md` or a single `skills/<name>/SKILL.md`; repositories with multiple skills
+require a specific tree URL.
+
+Activate skills by typing `/skill-name` directly in the composer. Known skill tokens are highlighted
+inline, Backspace/Delete removes a whole skill token at once, and each request can activate up to five
+distinct skills. The suggestions menu keeps at most five rows visible and scrolls when there are more
+matches. You can also type a clear command such as `install this skill <GitHub URL>` to install a GitHub
+skill from chat.
 
 ![Skill autocomplete](assets/skill-autocomplete.png)
 
-Skills are third-party instruction content. ChatRaw v1 does not execute skill `scripts/`, does not grant
-permissions from `allowed-tools`, and treats `trusted` as metadata only. See the full guide:
+Skills are third-party instruction content. ChatRaw does not execute skill `scripts/`, does not grant
+permissions from `allowed-tools`, and treats `trusted` as metadata only. For GitHub installs, ChatRaw
+records `license` from `SKILL.md` frontmatter or the repository license API when available; `compatibility`
+metadata is not stored or displayed. See the full guide:
 [docs/skills.md](docs/skills.md).
 
 ---
@@ -430,7 +439,7 @@ ChatRaw 现在提供原生 macOS 桌面版本：**ChatRaw for Mac**。它使用 
 - **自定义品牌** - 自由定制名称、Logo 和主题
 - **通用 API 支持** - 兼容任意 OpenAI 兼容 API（Ollama、vLLM、LocalAI、LM Studio 等）
 - **文档解析** - 原生支持 PDF、DOCX、TXT、MD 解析作为聊天上下文
-- **视觉 AI 就绪** - 多模态图片理解，自动压缩
+- **视觉 AI 就绪** - 在聊天模型启用“视觉”能力后支持多模态图片理解和自动压缩
 - **思考模式** - 支持推理模型（DeepSeek-R1、Qwen、o1 等）
 - **响应式设计** - 完美适配桌面、平板和移动设备，触控友好
 - **一键复制** - 一键复制 AI 回复内容（纯文本，不含元数据）
@@ -475,7 +484,7 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 - **多模型管理** — 管理并切换模型
 - **Markdown 渲染增强** — 数学公式、Mermaid、代码复制，离线可用
 - **上下文压缩** — 自动或通过输入框工具栏压缩较早聊天历史
-- **Skill 管理器** — 从 GitHub 或本地文件安装并显式激活 Agent Skills
+- **Skill 管理器** — 从 GitHub 或本地文件安装 Agent Skills，并用 `/skill-name` 在输入框内联激活
 - **工具栏扩展演示** — 展示 UI 扩展 API 的演示插件
 
 ### 工具栏扩展
@@ -689,14 +698,22 @@ python main.py
 
 ### 使用 Agent Skills
 
-安装并启用 **Skill 管理器**后即可管理 Agent Skills。你可以从 GitHub `SKILL.md` / 公开 tree URL
-安装，也可以上传本地 `SKILL.md` / `.zip` 包。发送消息前用 `/skill-name` 显式激活某个 skill；
-也可以输入明确命令，例如 `安装这个 skill <GitHub URL>`，从聊天中安装 GitHub skill。
+安装并启用 **Skill 管理器**后即可管理 Agent Skills。你可以从 GitHub 仓库 URL、`owner/repo`
+简写、raw/blob `SKILL.md`、公开 tree URL 安装，也可以上传本地 `SKILL.md` / `.zip` 包。GitHub
+仓库根目录在能唯一解析出一个 skill 时可直接安装，例如根目录有 `SKILL.md`，或只有一个
+`skills/<name>/SKILL.md`；包含多个 skills 的仓库需要提供具体 tree URL。
+
+在输入框中直接输入 `/skill-name` 即可激活 skill。已知 skill token 会在文本内高亮，
+Backspace/Delete 会一次删除整个 skill token，每次请求最多激活 5 个不同 skills。建议菜单最多显示
+5 行，更多匹配项通过滚动查看。也可以输入明确命令，例如 `安装这个 skill <GitHub URL>`，
+从聊天中安装 GitHub skill。
 
 ![Skill 自动补全](assets/skill-autocomplete.png)
 
-Skills 是第三方指令内容。ChatRaw v1 不执行 skill `scripts/`，不会根据 `allowed-tools` 授权，
-`trusted` 也只是元数据。完整指南见：[docs/skills.md](docs/skills.md)。
+Skills 是第三方指令内容。ChatRaw 不执行 skill `scripts/`，不会根据 `allowed-tools` 授权，
+`trusted` 也只是元数据。GitHub 安装时，ChatRaw 会优先读取 `SKILL.md` frontmatter 中的
+`license`，没有时再尝试读取仓库许可证；`compatibility` 不再保存或展示。完整指南见：
+[docs/skills.md](docs/skills.md)。
 
 ---
 

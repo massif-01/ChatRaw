@@ -966,10 +966,13 @@ select:focus:not(:focus-visible),
 }
 
 .input-wrapper {
+    --composer-pad-top: 16px;
+    --composer-pad-x: 16px;
+    --composer-pad-bottom: 56px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
-    padding: 16px 16px 56px 16px; /* Extra bottom padding for toolbar */
+    padding: var(--composer-pad-top) var(--composer-pad-x) var(--composer-pad-bottom) var(--composer-pad-x);
     transition: var(--transition);
     box-shadow: var(--shadow-sm);
     position: relative;
@@ -982,10 +985,13 @@ select:focus:not(:focus-visible),
 }
 
 .input-wrapper textarea {
+    position: relative;
+    z-index: 2;
     width: 100%;
     border: none;
     background: transparent;
     color: var(--text-primary);
+    caret-color: var(--text-primary);
     font-size: 1rem;
     font-family: inherit;
     resize: none;
@@ -995,53 +1001,51 @@ select:focus:not(:focus-visible),
     min-height: 24px;
 }
 
-.active-skill-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 10px;
+.input-wrapper textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
 }
 
-.active-skill-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    max-width: 100%;
-    height: 28px;
-    padding: 0 8px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    font-size: 0.82rem;
-    font-family: inherit;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.active-skill-chip:hover {
-    background: var(--bg-secondary);
-    border-color: var(--border-focus);
-}
-
-.active-skill-chip span {
+.composer-highlight {
+    position: absolute;
+    top: var(--composer-pad-top);
+    right: var(--composer-pad-x);
+    bottom: var(--composer-pad-bottom);
+    left: var(--composer-pad-x);
+    z-index: 1;
+    min-height: 24px;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    color: transparent;
+    font-size: 1rem;
+    font-family: inherit;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    pointer-events: none;
+    user-select: none;
 }
 
-.active-skill-chip i {
-    flex-shrink: 0;
-    font-size: 14px;
+.composer-highlight-skill {
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    box-shadow: 0 0 0 1px var(--border-color) inset;
+    color: transparent;
 }
 
 .composer-suggestions {
+    --composer-suggestion-visible-count: 5;
+    --composer-suggestion-row-height: 56px;
     position: absolute;
     left: 0;
     right: 0;
     bottom: calc(100% + 10px);
-    max-height: min(320px, 45vh);
+    max-height: min(
+        calc(var(--composer-suggestion-visible-count) * var(--composer-suggestion-row-height)),
+        45vh
+    );
     overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     padding: 6px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
@@ -1056,7 +1060,7 @@ select:focus:not(:focus-visible),
     align-items: center;
     gap: 10px;
     width: 100%;
-    min-height: 44px;
+    min-height: var(--composer-suggestion-row-height);
     padding: 8px 10px;
     border: none;
     border-radius: var(--radius-sm);
@@ -1104,6 +1108,20 @@ select:focus:not(:focus-visible),
     color: var(--text-muted);
     font-size: 0.74rem;
     white-space: nowrap;
+}
+
+.composer-suggestions::-webkit-scrollbar {
+    width: 8px;
+}
+
+.composer-suggestions::-webkit-scrollbar-thumb {
+    border: 2px solid var(--bg-primary);
+    border-radius: 999px;
+    background: var(--border-color);
+}
+
+.composer-suggestions::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .btn-send {
@@ -1627,6 +1645,28 @@ select:focus:not(:focus-visible),
     align-items: center;
     gap: 12px;
     flex-wrap: nowrap;
+}
+
+.logo-upload-area .btn-compact {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    padding: 0 18px;
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.logo-upload-area .input-flex {
+    height: 48px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.logo-upload-area .btn-compact:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-focus);
 }
 
 /* Logo preview image */
@@ -2215,11 +2255,14 @@ input[type=range]::-webkit-slider-thumb:hover {
     }
     
     .input-wrapper {
-        padding: 12px 12px 48px 12px;
+        --composer-pad-top: 12px;
+        --composer-pad-x: 12px;
+        --composer-pad-bottom: 48px;
         border-radius: var(--radius-md);
     }
     
-    .input-wrapper textarea {
+    .input-wrapper textarea,
+    .composer-highlight {
         font-size: 16px !important; /* Prevent iOS zoom */
     }
     
@@ -2265,8 +2308,12 @@ input[type=range]::-webkit-slider-thumb:hover {
     }
 
     .composer-suggestions {
+        --composer-suggestion-row-height: 52px;
         bottom: calc(100% + 8px);
-        max-height: min(260px, 42vh);
+        max-height: min(
+            calc(var(--composer-suggestion-visible-count) * var(--composer-suggestion-row-height)),
+            42vh
+        );
     }
 
     .composer-suggestion-item {
@@ -2487,7 +2534,9 @@ input[type=range]::-webkit-slider-thumb:hover {
     }
     
     .input-wrapper {
-        padding: 10px 10px 44px 10px;
+        --composer-pad-top: 10px;
+        --composer-pad-x: 10px;
+        --composer-pad-bottom: 44px;
     }
     
     .settings-scroll-area {

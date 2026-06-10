@@ -1785,7 +1785,7 @@ def resolve_font_path(path: str) -> Path:
 # ============ Skill Registry ============
 
 SKILL_NAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
-SKILL_ALLOWED_RESOURCE_DIRS = ("scripts", "references", "assets")
+SKILL_ALLOWED_RESOURCE_DIRS = ("scripts", "references", "assets", "templates")
 _skill_config_lock = threading.Lock()
 
 
@@ -1918,7 +1918,13 @@ def _parse_skill_frontmatter_lines(lines: List[str]) -> Tuple[dict, List[str]]:
             frontmatter["metadata"] = metadata
             continue
 
-        if key in ("name", "description", "license", "compatibility"):
+        if key == "compatibility":
+            idx += 1
+            while idx < len(lines) and lines[idx].startswith((" ", "\t")):
+                idx += 1
+            continue
+
+        if key in ("name", "description", "license"):
             if value in ("|", ">"):
                 diagnostics.append(f"Unsupported multiline value for {key}")
                 frontmatter[key] = ""
@@ -1964,7 +1970,6 @@ def parse_skill_markdown(text: str, expected_name: Optional[str] = None) -> dict
 
     skill_name = str(frontmatter.get("name", "")).strip()
     description = str(frontmatter.get("description", "")).strip()
-    compatibility = str(frontmatter.get("compatibility", "")).strip()
 
     if not skill_name:
         diagnostics.append("Missing required field: name")
@@ -1978,9 +1983,6 @@ def parse_skill_markdown(text: str, expected_name: Optional[str] = None) -> dict
         diagnostics.append("Missing required field: description")
     elif len(description) > 1024:
         diagnostics.append("description exceeds 1024 characters")
-
-    if compatibility and len(compatibility) > 500:
-        diagnostics.append("compatibility exceeds 500 characters")
 
     if "metadata" in frontmatter and not isinstance(frontmatter["metadata"], dict):
         diagnostics.append("metadata must be a simple mapping")
@@ -2011,7 +2013,6 @@ def build_skill_metadata(skill_name: str, entry: dict) -> dict:
         "name": skill_name,
         "description": entry.get("description", ""),
         "license": entry.get("license", ""),
-        "compatibility": entry.get("compatibility", ""),
         "metadata": metadata,
         "enabled": bool(entry.get("enabled", False)),
         "trusted": bool(entry.get("trusted", False)),
@@ -2443,16 +2444,18 @@ def build_skill_config_entry(
     enabled: bool,
     installed_at: str,
     updated_at: str,
+    source_metadata: Optional[dict] = None,
 ) -> dict:
     metadata = frontmatter.get("metadata", {})
     if not isinstance(metadata, dict):
         metadata = {}
+    source_metadata = source_metadata if isinstance(source_metadata, dict) else {}
 
     return {
         "name": skill_name,
         "description": str(frontmatter.get("description", "")).strip(),
-        "license": str(frontmatter.get("license", "")).strip(),
-        "compatibility": str(frontmatter.get("compatibility", "")).strip(),
+        "license": str(frontmatter.get("license", "")).strip()
+        or str(source_metadata.get("license", "")).strip(),
         "metadata": metadata,
         "enabled": bool(enabled),
         "trusted": False,
@@ -2463,7 +2466,13 @@ def build_skill_config_entry(
     }
 
 
-def install_staged_skill(stage_dir: Path, source: dict, overwrite: bool, enabled: bool) -> dict:
+def install_staged_skill(
+    stage_dir: Path,
+    source: dict,
+    overwrite: bool,
+    enabled: bool,
+    source_metadata: Optional[dict] = None,
+) -> dict:
     skill_name, frontmatter, diagnostics = validate_staged_skill(stage_dir)
     target_dir = get_skill_target_dir(skill_name)
     config = load_skill_config()
@@ -2486,6 +2495,7 @@ def install_staged_skill(stage_dir: Path, source: dict, overwrite: bool, enabled
         enabled=enabled,
         installed_at=installed_at,
         updated_at=now,
+        source_metadata=source_metadata,
     )
 
     backup_dir = None
@@ -2531,8 +2541,26 @@ async def read_upload_bytes(file: UploadFile, max_size: int) -> bytes:
     return b"".join(chunks)
 
 
-def parse_github_skill_url(source_url: str) -> dict:
+GITHUB_REPO_SHORTHAND_RE = re.compile(
+    r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38}[A-Za-z0-9])?/[A-Za-z0-9._-]{1,100}$"
+)
+MARKDOWN_LINK_URL_RE = re.compile(r"^\[[^\]]+\]\((https://[^)\s]+)\)$")
+
+
+def normalize_github_skill_source_url(source_url: str) -> str:
     source_url = (source_url or "").strip()
+    markdown_match = MARKDOWN_LINK_URL_RE.match(source_url)
+    if markdown_match:
+        source_url = markdown_match.group(1).strip()
+    if source_url.startswith("<") and source_url.endswith(">"):
+        source_url = source_url[1:-1].strip()
+    if GITHUB_REPO_SHORTHAND_RE.match(source_url):
+        return f"https://github.com/{source_url}"
+    return source_url
+
+
+def parse_github_skill_url(source_url: str) -> dict:
+    source_url = normalize_github_skill_source_url(source_url)
     parsed = urlparse(source_url)
     if parsed.scheme != "https":
         raise SkillInstallError("Only https GitHub URLs are supported")
@@ -2552,6 +2580,14 @@ def parse_github_skill_url(source_url: str) -> dict:
 
     if host != "github.com":
         raise SkillInstallError("Only github.com URLs are supported")
+    if len(parts) == 2:
+        return {
+            "kind": "repo",
+            "url": source_url,
+            "owner": parts[0],
+            "repo": parts[1],
+            "segments": [],
+        }
     if len(parts) < 4:
         raise SkillInstallError("GitHub URL must point to a skill file or directory")
 
@@ -2573,6 +2609,84 @@ def _github_contents_api_url(owner: str, repo: str, path: str, ref: str) -> str:
     return f"https://api.github.com/repos/{owner}/{repo}/contents/{encoded_path}?ref={encoded_ref}"
 
 
+def _github_repo_api_url(owner: str, repo: str) -> str:
+    return f"https://api.github.com/repos/{quote(owner, safe='')}/{quote(repo, safe='')}"
+
+
+def _github_license_api_url(owner: str, repo: str) -> str:
+    return f"{_github_repo_api_url(owner, repo)}/license"
+
+
+def github_api_headers() -> dict:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "ChatRaw",
+    }
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+async def fetch_github_default_branch(
+    session: aiohttp.ClientSession,
+    owner: str,
+    repo: str,
+) -> str:
+    url = _github_repo_api_url(owner, repo)
+    headers = github_api_headers()
+    async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=20)) as resp:
+        if resp.status == 404:
+            raise SkillInstallError("GitHub repository not found", 404)
+        if resp.status != 200:
+            raise SkillInstallError(f"GitHub API error: HTTP {resp.status}")
+        data = await resp.json()
+
+    default_branch = data.get("default_branch") if isinstance(data, dict) else None
+    if not isinstance(default_branch, str) or not default_branch.strip():
+        raise SkillInstallError("GitHub repository is missing a default branch")
+    return default_branch.strip()
+
+
+def parse_github_license_payload(data: Any) -> str:
+    if not isinstance(data, dict):
+        return ""
+    license_data = data.get("license")
+    if not isinstance(license_data, dict):
+        return ""
+
+    spdx_id = str(license_data.get("spdx_id") or "").strip()
+    if spdx_id and spdx_id.upper() != "NOASSERTION":
+        return spdx_id
+    return str(license_data.get("name") or "").strip()
+
+
+async def fetch_github_license(
+    session: aiohttp.ClientSession,
+    owner: str,
+    repo: str,
+) -> str:
+    url = _github_license_api_url(owner, repo)
+    headers = github_api_headers()
+    try:
+        async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=20)) as resp:
+            if resp.status == 404:
+                return ""
+            if resp.status != 200:
+                logger.warning(
+                    "GitHub license lookup failed for %s/%s: HTTP %s",
+                    owner,
+                    repo,
+                    resp.status,
+                )
+                return ""
+            data = await resp.json()
+    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+        logger.warning("GitHub license lookup failed for %s/%s: %s", owner, repo, e)
+        return ""
+    return parse_github_license_payload(data)
+
+
 async def fetch_github_contents(
     session: aiohttp.ClientSession,
     owner: str,
@@ -2581,10 +2695,7 @@ async def fetch_github_contents(
     ref: str,
 ):
     url = _github_contents_api_url(owner, repo, path, ref)
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "ChatRaw",
-    }
+    headers = github_api_headers()
     async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=20)) as resp:
         if resp.status == 404:
             return None
@@ -2748,13 +2859,14 @@ async def stage_github_tree_skill(
     stage_dir: Path,
 ):
     state = {"files": 0, "skill_files": 0, "bytes": 0}
+    base_path = _normalize_package_path(path) if path else PurePosixPath(".")
     await _walk_github_skill_tree(
         session=session,
         owner=owner,
         repo=repo,
         ref=ref,
         current_path=path,
-        base_path=_normalize_package_path(path),
+        base_path=base_path,
         stage_dir=stage_dir,
         state=state,
     )
@@ -2775,13 +2887,80 @@ async def stage_github_tree_skill(
     }
 
 
+def _github_directory_contains_skill_file(data: Any) -> bool:
+    return isinstance(data, list) and any(
+        item.get("type") == "file" and item.get("name") == "SKILL.md"
+        for item in data
+        if isinstance(item, dict)
+    )
+
+
+async def resolve_repo_skill_tree_path(
+    session: aiohttp.ClientSession,
+    owner: str,
+    repo: str,
+    ref: str,
+) -> str:
+    root_data = await fetch_github_contents(session, owner, repo, "", ref)
+    if root_data is None or not isinstance(root_data, list):
+        raise SkillInstallError("GitHub repository does not expose contents")
+    if _github_directory_contains_skill_file(root_data):
+        return ""
+
+    skills_dir = next(
+        (
+            item
+            for item in root_data
+            if isinstance(item, dict)
+            and item.get("type") == "dir"
+            and item.get("name") == "skills"
+            and item.get("path")
+        ),
+        None,
+    )
+    if not skills_dir:
+        return ""
+
+    skills_data = await fetch_github_contents(session, owner, repo, skills_dir["path"], ref)
+    if not isinstance(skills_data, list):
+        return ""
+
+    skill_dirs = [
+        item
+        for item in skills_data
+        if isinstance(item, dict) and item.get("type") == "dir" and item.get("path")
+    ]
+
+    for item in skill_dirs:
+        if item.get("name") != repo:
+            continue
+        child_data = await fetch_github_contents(session, owner, repo, item["path"], ref)
+        if _github_directory_contains_skill_file(child_data):
+            return item["path"]
+
+    candidates = []
+    for item in skill_dirs:
+        child_data = await fetch_github_contents(session, owner, repo, item["path"], ref)
+        if _github_directory_contains_skill_file(child_data):
+            candidates.append(item["path"])
+
+    if len(candidates) == 1:
+        return candidates[0]
+    if len(candidates) > 1:
+        raise SkillInstallError("GitHub repository contains multiple skills; provide a tree URL to a specific skill directory")
+    return ""
+
+
 async def prepare_github_skill_from_url(source_url: str, stage_dir: Path) -> dict:
     github_url = parse_github_skill_url(source_url)
+    source_url = github_url["url"]
     session = await get_http_session()
     owner = github_url["owner"]
     repo = github_url["repo"]
     kind = github_url["kind"]
     segments = github_url["segments"]
+
+    source_metadata = {"license": await fetch_github_license(session, owner, repo)}
 
     if kind in ("raw", "blob"):
         ref, path, data = await resolve_github_ref_path(session, owner, repo, segments, "file")
@@ -2789,12 +2968,19 @@ async def prepare_github_skill_from_url(source_url: str, stage_dir: Path) -> dic
             raise SkillInstallError("GitHub file URL must point to SKILL.md")
         source = await stage_github_file_skill(session, owner, repo, ref, path, data, stage_dir)
         source["url"] = source_url
-        return source
+        return {"source": source, "source_metadata": source_metadata}
 
-    ref, path, _ = await resolve_github_ref_path(session, owner, repo, segments, "dir")
+    if kind == "repo":
+        ref = await fetch_github_default_branch(session, owner, repo)
+        path = await resolve_repo_skill_tree_path(session, owner, repo, ref)
+    elif kind == "tree" and len(segments) == 1:
+        ref = segments[0]
+        path = await resolve_repo_skill_tree_path(session, owner, repo, ref)
+    else:
+        ref, path, _ = await resolve_github_ref_path(session, owner, repo, segments, "dir")
     source = await stage_github_tree_skill(session, owner, repo, ref, path, stage_dir)
     source["url"] = source_url
-    return source
+    return {"source": source, "source_metadata": source_metadata}
 
 
 @app.get("/api/settings")
@@ -3382,12 +3568,13 @@ async def install_skill(request: SkillInstallRequest):
     """Install a skill from a public GitHub raw/blob/tree URL."""
     stage_dir = create_skill_stage_dir()
     try:
-        source = await prepare_github_skill_from_url(request.source_url, stage_dir)
+        prepared = await prepare_github_skill_from_url(request.source_url, stage_dir)
         skill = install_staged_skill(
             stage_dir=stage_dir,
-            source=source,
+            source=prepared["source"],
             overwrite=request.overwrite,
             enabled=request.enabled,
+            source_metadata=prepared.get("source_metadata"),
         )
         return {"success": True, "skill": skill}
     except SkillInstallError as e:
@@ -3725,7 +3912,7 @@ async def get_plugins():
 async def get_plugin_market():
     """Get plugin market listing from index.json"""
     try:
-        market_index = os.path.join("Plugins", "Plugin_market", "index.json")
+        market_index = os.path.join(BUNDLED_PLUGINS_DIR, "index.json")
         if os.path.exists(market_index):
             with open(market_index, "r", encoding="utf-8") as f:
                 market_data = json.load(f)
@@ -3735,6 +3922,44 @@ async def get_plugin_market():
             return {"plugins": []}
     except Exception as e:
         logger.error(f"Error loading plugin market: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+def get_icon_media_type(icon_file: str) -> str:
+    ext = icon_file.lower().rsplit(".", 1)[-1] if "." in icon_file else "png"
+    return {
+        "png": "image/png",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "gif": "image/gif",
+        "svg": "image/svg+xml",
+        "webp": "image/webp",
+        "ico": "image/x-icon",
+    }.get(ext, "image/png")
+
+@app.get("/api/plugins/market/{plugin_folder}/icon")
+async def get_market_plugin_icon(plugin_folder: str):
+    """Get bundled plugin market icon for local/offline rendering"""
+    if not validate_plugin_id(plugin_folder):
+        return JSONResponse({"error": "Invalid plugin folder"}, status_code=400)
+
+    plugin_dir = os.path.join(BUNDLED_PLUGINS_DIR, plugin_folder)
+    manifest_path = os.path.join(plugin_dir, "manifest.json")
+
+    if not os.path.exists(manifest_path):
+        return JSONResponse({"error": "Plugin not found"}, status_code=404)
+
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+
+        icon_file = os.path.basename(manifest.get("icon", "icon.png"))
+        icon_path = os.path.join(plugin_dir, icon_file)
+
+        if not os.path.exists(icon_path):
+            return JSONResponse({"error": "Icon not found"}, status_code=404)
+
+        return FileResponse(icon_path, media_type=get_icon_media_type(icon_file))
+    except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.post("/api/plugins/install")
@@ -4161,20 +4386,7 @@ async def get_plugin_icon(plugin_id: str):
         if not os.path.exists(icon_path):
             return JSONResponse({"error": "Icon not found"}, status_code=404)
         
-        # Detect MIME type from extension
-        ext = icon_file.lower().split('.')[-1] if '.' in icon_file else 'png'
-        mime_types = {
-            'png': 'image/png',
-            'jpg': 'image/jpeg',
-            'jpeg': 'image/jpeg',
-            'gif': 'image/gif',
-            'svg': 'image/svg+xml',
-            'webp': 'image/webp',
-            'ico': 'image/x-icon'
-        }
-        media_type = mime_types.get(ext, 'image/png')
-        
-        return FileResponse(icon_path, media_type=media_type)
+        return FileResponse(icon_path, media_type=get_icon_media_type(icon_file))
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 

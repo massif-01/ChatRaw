@@ -107,7 +107,6 @@ class SkillRegistryTests(unittest.TestCase):
             "name": skill_name,
             "description": f"{skill_name} description",
             "license": "MIT",
-            "compatibility": "ChatRaw",
             "metadata": {
                 "display_name": skill_name.title(),
                 "alias": f"{skill_name}-alias",
@@ -162,16 +161,26 @@ class SkillRegistryTests(unittest.TestCase):
             )
         )
 
-    def patch_github(self, contents, downloads):
+    def patch_github(self, contents, downloads, default_branches=None, licenses=None):
         original_contents = main.fetch_github_contents
+        original_default_branch = main.fetch_github_default_branch
+        original_license = main.fetch_github_license
         original_bytes = main.fetch_url_bytes
         original_session = main.get_http_session
+        default_branches = default_branches or {}
+        licenses = licenses or {}
 
         async def fake_session():
             return object()
 
         async def fake_contents(session, owner, repo, path, ref):
             return contents.get((owner, repo, path, ref))
+
+        async def fake_default_branch(session, owner, repo):
+            return default_branches.get((owner, repo), "main")
+
+        async def fake_license(session, owner, repo):
+            return licenses.get((owner, repo), "")
 
         async def fake_bytes(session, url, max_size):
             data = downloads[url]
@@ -181,11 +190,17 @@ class SkillRegistryTests(unittest.TestCase):
 
         main.get_http_session = fake_session
         main.fetch_github_contents = fake_contents
+        main.fetch_github_default_branch = fake_default_branch
+        main.fetch_github_license = fake_license
         main.fetch_url_bytes = fake_bytes
         self.addCleanup(lambda: setattr(main, "get_http_session", original_session))
         self.addCleanup(
             lambda: setattr(main, "fetch_github_contents", original_contents)
         )
+        self.addCleanup(
+            lambda: setattr(main, "fetch_github_default_branch", original_default_branch)
+        )
+        self.addCleanup(lambda: setattr(main, "fetch_github_license", original_license))
         self.addCleanup(lambda: setattr(main, "fetch_url_bytes", original_bytes))
 
     def enable_skill_manager(self, enabled=True):
@@ -332,6 +347,7 @@ Use this skill for PDF work.
         self.assertEqual(
             parsed["frontmatter"]["metadata"]["display_name"], "PDF Processing"
         )
+        self.assertNotIn("compatibility", parsed["frontmatter"])
         self.assertEqual(parsed["body"], "Use this skill for PDF work.")
         self.assertEqual(parsed["diagnostics"], [])
 
@@ -857,6 +873,11 @@ Use this skill for PDF work.
             ("https://raw.githubusercontent.com/acme/skills/main/pdf/SKILL.md", "raw"),
             ("https://github.com/acme/skills/blob/main/pdf/SKILL.md", "blob"),
             ("https://github.com/acme/skills/tree/main/pdf", "tree"),
+            ("https://github.com/acme/skills/tree/main", "tree"),
+            ("https://github.com/acme/skills", "repo"),
+            ("acme/skills", "repo"),
+            ("[acme/skills](https://github.com/acme/skills)", "repo"),
+            ("<https://github.com/acme/skills/tree/main/pdf>", "tree"),
         ]
         for url, kind in cases:
             with self.subTest(url=url):
@@ -865,7 +886,6 @@ Use this skill for PDF work.
         for url in (
             "http://github.com/acme/skills/blob/main/SKILL.md",
             "https://example.com/acme/skills/blob/main/SKILL.md",
-            "https://github.com/acme/skills",
         ):
             with self.subTest(url=url):
                 with self.assertRaises(main.SkillInstallError):
@@ -1028,8 +1048,140 @@ Use this skill for PDF work.
         self.assertEqual(status, 400)
         self.assertEqual(data["error"], "Skill package exceeds maximum size")
 
-    def test_github_tree_repo_root_is_rejected(self):
-        self.patch_github(contents={}, downloads={})
+    def test_github_repo_root_installs_default_branch_skill(self):
+        skill_text = b"---\nname: github-root\ndescription: GitHub root\n---\nBody"
+        script_text = b"print('ok')"
+        self.patch_github(
+            contents={
+                ("acme", "skills", "", "main"): [
+                    {
+                        "type": "file",
+                        "path": "SKILL.md",
+                        "size": len(skill_text),
+                        "download_url": "https://download.test/root-skill",
+                    },
+                    {"type": "dir", "path": "scripts"},
+                ],
+                ("acme", "skills", "scripts", "main"): [
+                    {
+                        "type": "file",
+                        "path": "scripts/run.py",
+                        "size": len(script_text),
+                        "download_url": "https://download.test/root-script",
+                    }
+                ],
+            },
+            downloads={
+                "https://download.test/root-skill": skill_text,
+                "https://download.test/root-script": script_text,
+            },
+            default_branches={("acme", "skills"): "main"},
+        )
+
+        status, data = self.api_result(
+            asyncio.run(
+                main.install_skill(
+                    main.SkillInstallRequest(
+                        source_url="https://github.com/acme/skills",
+                    )
+                )
+            )
+        )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(data["skill"]["name"], "github-root")
+        self.assertEqual(data["skill"]["source"]["ref"], "main")
+        self.assertEqual(data["skill"]["source"]["path"], "")
+        self.assertTrue(
+            os.path.isfile(
+                os.path.join(
+                    main.SKILLS_INSTALLED_DIR,
+                    "github-root",
+                    "scripts",
+                    "run.py",
+                )
+            )
+        )
+
+    def test_github_repo_root_prefers_matching_skill_directory(self):
+        skill_text = b"---\nname: taste-skill\ndescription: Taste skill\n---\nBody"
+        template_text = b"template"
+        self.patch_github(
+            contents={
+                ("leon", "taste-skill", "", "main"): [
+                    {"type": "dir", "name": "assets", "path": "assets"},
+                    {"type": "dir", "name": "skills", "path": "skills"},
+                ],
+                ("leon", "taste-skill", "skills", "main"): [
+                    {"type": "dir", "name": "other-skill", "path": "skills/other-skill"},
+                    {"type": "dir", "name": "taste-skill", "path": "skills/taste-skill"},
+                ],
+                ("leon", "taste-skill", "skills/taste-skill", "main"): [
+                    {
+                        "type": "file",
+                        "name": "SKILL.md",
+                        "path": "skills/taste-skill/SKILL.md",
+                        "size": len(skill_text),
+                        "download_url": "https://download.test/taste-skill",
+                    },
+                    {"type": "dir", "name": "templates", "path": "skills/taste-skill/templates"},
+                ],
+                ("leon", "taste-skill", "skills/taste-skill/templates", "main"): [
+                    {
+                        "type": "file",
+                        "name": "brief.md",
+                        "path": "skills/taste-skill/templates/brief.md",
+                        "size": len(template_text),
+                        "download_url": "https://download.test/taste-template",
+                    },
+                ],
+            },
+            downloads={
+                "https://download.test/taste-skill": skill_text,
+                "https://download.test/taste-template": template_text,
+            },
+            default_branches={("leon", "taste-skill"): "main"},
+        )
+
+        status, data = self.api_result(
+            asyncio.run(
+                main.install_skill(
+                    main.SkillInstallRequest(
+                        source_url="[taste-skill](https://github.com/leon/taste-skill)",
+                    )
+                )
+            )
+        )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(data["skill"]["name"], "taste-skill")
+        self.assertEqual(data["skill"]["source"]["path"], "skills/taste-skill")
+        self.assertTrue(
+            os.path.isfile(
+                os.path.join(
+                    main.SKILLS_INSTALLED_DIR,
+                    "taste-skill",
+                    "templates",
+                    "brief.md",
+                )
+            )
+        )
+
+    def test_github_tree_root_installs_skill(self):
+        skill_text = b"---\nname: github-tree-root\ndescription: GitHub tree root\n---\nBody"
+        self.patch_github(
+            contents={
+                ("acme", "skills", "", "main"): [
+                    {
+                        "type": "file",
+                        "path": "SKILL.md",
+                        "size": len(skill_text),
+                        "download_url": "https://download.test/tree-root-skill",
+                    },
+                ],
+            },
+            downloads={"https://download.test/tree-root-skill": skill_text},
+        )
 
         status, data = self.api_result(
             asyncio.run(
@@ -1041,8 +1193,103 @@ Use this skill for PDF work.
             )
         )
 
-        self.assertEqual(status, 400)
-        self.assertFalse(data["success"])
+        self.assertEqual(status, 200)
+        self.assertEqual(data["skill"]["name"], "github-tree-root")
+
+    def test_github_shorthand_installs_default_branch_skill(self):
+        skill_text = b"---\nname: github-short\ndescription: GitHub shorthand\n---\nBody"
+        self.patch_github(
+            contents={
+                ("acme", "skills", "", "main"): [
+                    {
+                        "type": "file",
+                        "path": "SKILL.md",
+                        "size": len(skill_text),
+                        "download_url": "https://download.test/short-skill",
+                    },
+                ],
+            },
+            downloads={"https://download.test/short-skill": skill_text},
+        )
+
+        status, data = self.api_result(
+            asyncio.run(
+                main.install_skill(
+                    main.SkillInstallRequest(source_url="acme/skills")
+                )
+            )
+        )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(data["skill"]["name"], "github-short")
+        self.assertEqual(data["skill"]["source"]["url"], "https://github.com/acme/skills")
+
+    def test_github_repo_install_uses_repo_license_when_frontmatter_missing(self):
+        skill_text = b"---\nname: github-license\ndescription: GitHub license\n---\nBody"
+        self.patch_github(
+            contents={
+                ("acme", "skills", "", "main"): [
+                    {
+                        "type": "file",
+                        "path": "SKILL.md",
+                        "size": len(skill_text),
+                        "download_url": "https://download.test/license-skill",
+                    },
+                ],
+            },
+            downloads={"https://download.test/license-skill": skill_text},
+            licenses={("acme", "skills"): "AGPL-3.0"},
+        )
+
+        status, data = self.api_result(
+            asyncio.run(
+                main.install_skill(
+                    main.SkillInstallRequest(source_url="https://github.com/acme/skills")
+                )
+            )
+        )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(data["skill"]["license"], "AGPL-3.0")
+        config = main.load_skill_config()
+        self.assertEqual(config["skills"]["github-license"]["license"], "AGPL-3.0")
+
+    def test_skill_frontmatter_license_overrides_github_license(self):
+        skill_text = (
+            b"---\n"
+            b"name: frontmatter-license\n"
+            b"description: Frontmatter license\n"
+            b"license: MIT\n"
+            b"---\n"
+            b"Body"
+        )
+        self.patch_github(
+            contents={
+                ("acme", "skills", "", "main"): [
+                    {
+                        "type": "file",
+                        "path": "SKILL.md",
+                        "size": len(skill_text),
+                        "download_url": "https://download.test/frontmatter-license-skill",
+                    },
+                ],
+            },
+            downloads={"https://download.test/frontmatter-license-skill": skill_text},
+            licenses={("acme", "skills"): "AGPL-3.0"},
+        )
+
+        status, data = self.api_result(
+            asyncio.run(
+                main.install_skill(
+                    main.SkillInstallRequest(source_url="https://github.com/acme/skills")
+                )
+            )
+        )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(data["skill"]["license"], "MIT")
+        config = main.load_skill_config()
+        self.assertEqual(config["skills"]["frontmatter-license"]["license"], "MIT")
 
     def test_github_rejects_ambiguous_ref_path(self):
         skill_text = b"---\nname: github-raw\ndescription: GitHub raw\n---\nBody"

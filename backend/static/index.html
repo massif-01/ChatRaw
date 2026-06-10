@@ -16,8 +16,8 @@
     
     <!-- Performance: Preload Critical Resources -->
     <link rel="preload" href="fonts/remixicon/remixicon.woff2?t=1769685282643" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="styles.min.css?v=6.1" as="style">
-    <link rel="preload" href="app.min.js?v=6.3" as="script">
+    <link rel="preload" href="styles.min.css?v=7.0" as="style">
+    <link rel="preload" href="app.min.js?v=7.2" as="script">
     <link rel="preload" href="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" as="script" crossorigin="anonymous">
     <link rel="preload" href="https://unpkg.com/marked@9.1.6/marked.min.js" as="script" crossorigin="anonymous">
     
@@ -147,7 +147,7 @@
     <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" crossorigin="anonymous"></script>
     <!-- highlight.js is lazy-loaded in app.min.js when needed -->
     <link rel="stylesheet" href="fonts/remixicon/remixicon.css">
-    <link rel="stylesheet" href="styles.min.css?v=6.1">
+    <link rel="stylesheet" href="styles.min.css?v=7.0">
 </head>
 <body x-data="app()" x-init="init()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
@@ -327,7 +327,7 @@
             <!-- Input Area -->
             <div class="input-area">
                 <div class="input-container-inner">
-                    <div class="uploaded-image-preview" x-show="uploadedImage">
+                    <div class="uploaded-image-preview" x-show="uploadedImage && chatModelSupportsVision()">
                         <img :src="uploadedImage ? 'data:image/jpeg;base64,' + uploadedImageBase64 : ''" alt="Preview" width="60" height="60">
                         <button class="btn-delete-overlay" @click="removeUploadedImage()" aria-label="Remove image"><i class="ri-close-circle-fill"></i></button>
                     </div>
@@ -368,6 +368,7 @@
 
                     <div class="input-wrapper" @click.outside="closeCompletionMenu()">
                         <div class="composer-suggestions"
+                             x-ref="composerSuggestions"
                              x-show="completionMenuOpen"
                              x-cloak
                              x-transition
@@ -392,19 +393,10 @@
                             </template>
                         </div>
 
-                        <div class="active-skill-chips" x-show="activeSkillChips.length > 0" x-cloak>
-                            <template x-for="skill in activeSkillChips" :key="skill.name">
-                                <button type="button"
-                                        class="active-skill-chip"
-                                        @click="removeActiveSkillChip(skill.name)"
-                                        :title="skill.description || skill.name"
-                                        :aria-label="'Remove skill /' + skill.name">
-                                    <i class="ri-flashlight-line"></i>
-                                    <span x-text="'/' + skill.name"></span>
-                                    <i class="ri-close-line"></i>
-                                </button>
-                            </template>
-                        </div>
+                        <div class="composer-highlight"
+                             x-ref="composerHighlight"
+                             x-html="renderComposerHighlights(inputMessage)"
+                             aria-hidden="true"></div>
 
                         <textarea 
                             x-model="inputMessage" 
@@ -413,6 +405,7 @@
                             rows="1"
                             x-ref="inputBox"
                             @input="handleComposerInput($event)"
+                            @scroll="syncComposerHighlightScroll($event)"
                             @click="queueCompletionRefresh()"
                             @focus="queueCompletionRefresh()"
                             @compositionstart="handleCompositionStart()"
@@ -427,10 +420,12 @@
                                     <div class="thinking-slider-handle"></div>
                                 </div>
                             </div>
-                            <label class="btn-tool btn-tool-upload" :title="t('uploadImage')">
-                                <input type="file" @change="handleImageUpload($event)" accept="image/*" class="file-input-hidden">
-                                <i class="ri-image-line"></i>
-                            </label>
+                            <template x-if="chatModelSupportsVision()">
+                                <label class="btn-tool btn-tool-upload" :title="t('uploadImage')">
+                                    <input type="file" @change="handleImageUpload($event)" accept="image/*" class="file-input-hidden">
+                                    <i class="ri-image-line"></i>
+                                </label>
+                            </template>
                             <label class="btn-tool btn-tool-upload" :title="t('uploadDocument')" :class="{ 'active': attachedDocument }">
                                 <input type="file" @change="handleDocumentUpload($event)" :accept="getDocumentAcceptTypes()" class="file-input-hidden" :disabled="isUploadingDocument">
                                 <i class="ri-file-text-line" x-show="!isUploadingDocument"></i>
@@ -548,7 +543,7 @@
                                     <label class="form-label" x-text="t('capabilities')"></label>
                                     <div class="checkbox-group">
                                         <label class="checkbox-label">
-                                            <input type="checkbox" x-model="model.capability.vision"> <span x-text="t('vision')"></span>
+                                            <input type="checkbox" x-model="model.capability.vision" @change="$nextTick(() => syncVisionCapabilityState())"> <span x-text="t('vision')"></span>
                                         </label>
                                         <label class="checkbox-label">
                                             <input type="checkbox" x-model="model.capability.reasoning"> <span x-text="t('reasoning')"></span>
@@ -763,10 +758,10 @@
                         <div class="plugin-grid" x-show="!pluginMarketLoading && !pluginMarketError">
                             <template x-for="plugin in filteredMarketPlugins" :key="plugin.id">
                                 <div class="plugin-card plugin-card-market" x-data="{ infoOpen: false }" @click.outside="infoOpen = false">
-                                    <img :src="'https://raw.githubusercontent.com/massif-01/ChatRaw/main/Plugins/Plugin_market/' + plugin.folder + '/icon.png'" 
+                                    <img :src="getMarketPluginIconUrl(plugin)"
                                          class="plugin-icon plugin-icon-market" 
                                          width="36" height="36"
-                                         @error="$el.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22><path d=%22M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z%22/></svg>'">
+                                         @error="handleMarketPluginIconError($event, plugin)">
                                     <div class="plugin-card-market-body">
                                         <span class="plugin-name plugin-name-market" x-text="plugin.name[lang] || plugin.name.en"></span>
                                     </div>
@@ -992,6 +987,6 @@
     <!-- Toast -->
     <div class="toast" x-show="toast.show" x-text="toast.message" :class="toast.type" x-transition></div>
 
-    <script src="app.min.js?v=6.3"></script>
+    <script src="app.min.js?v=7.2"></script>
 </body>
 </html>
