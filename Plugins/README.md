@@ -102,7 +102,7 @@ your-plugin/
 | `url_parser` | Parse web page URL to content | `parse_url`, `custom_settings` |
 | `search_provider` | Web search service | `web_search`, `before_send` |
 | `rag_enhancer` | Enhance RAG pipeline | `pre_embedding`, `post_retrieval`, `before_send`, `custom_settings` |
-| `ui_extension` | Add UI elements | `toolbar_button`, `custom_action` |
+| `ui_extension` | Add UI elements | `toolbar_button`, `custom_action`, `send_intercept` |
 | `message_processor` | Process messages | `before_send`, `after_receive`, `transform_input`, `transform_output` |
 | `model_manager` | Manage multiple model configs | `custom_settings` |
 
@@ -115,6 +115,7 @@ your-plugin/
 | `web_search` | Web search provider | `(query, settings)` | `{ success, results }` |
 | `pre_embedding` | Before text embedding | `(text, settings)` | `{ success, text }` |
 | `post_retrieval` | After RAG retrieval | `(results, settings)` | `{ success, results }` |
+| `send_intercept` | Pre-send interceptor that can fully handle a message before normal chat sending | `(context)` | `{ success, handled?, userMessage?, assistantMessage?, clearInput?, clearAttachments?, clearActiveSkills?, refreshSkillCatalog? }` |
 | `before_send` | Before sending message | `(body)` | `{ success, body }` |
 | `after_receive` | After receiving response | `(message)` | `{ success, content }` |
 | `transform_input` | Transform user input | `(message)` | `{ success, content }` |
@@ -123,6 +124,17 @@ your-plugin/
 | `file_preview` | Custom file preview | `(file)` | `{ success, html }` |
 | `custom_action` | Custom action handler | `(action, data)` | `{ success, result }` |
 | `custom_settings` | Custom settings UI | - | - |
+
+`send_intercept` is separate from `before_send`. Only `{ success: true, handled: true }` cancels normal
+chat sending. A plain `{ success: true }`, a thrown error, or any other result lets the normal send path
+continue.
+
+The `send_intercept` context includes `message`, `activeSkillNames`, `parsedUrl`, lightweight
+`attachedDocument` information, `hasImage`, `currentChatId`, and an abort `signal`.
+
+When Skill chips are active, the host writes `body.active_skills` after `before_send` completes so regular
+hooks cannot accidentally override the user's explicit skill selection. Plugins that need to handle the
+pre-send skill list should use `send_intercept` and read `context.activeSkillNames`.
 
 ### Settings Types
 
@@ -524,6 +536,64 @@ const messages = ChatRaw.utils.getMessages();
 // Add a message to display
 ChatRaw.utils.addMessage('assistant', 'Hello from plugin!');
 ```
+
+### Composer Input API
+
+Use `ChatRawPlugin.input` instead of querying the textarea directly:
+
+```javascript
+const value = ChatRawPlugin.input.getValue();
+const selection = ChatRawPlugin.input.getSelection();
+
+ChatRawPlugin.input.setValue('New message');
+ChatRawPlugin.input.insertText('/my-skill');
+ChatRawPlugin.input.replaceRange(selection.start, selection.end, 'replacement');
+ChatRawPlugin.input.focus();
+```
+
+Available methods:
+
+- `getValue()` returns the current composer text.
+- `setValue(value)` replaces the composer text and syncs the host state.
+- `insertText(text)` inserts text at the current selection.
+- `replaceRange(start, end, text)` replaces a character range and restores focus.
+- `getSelection()` returns `{ start, end }`.
+- `focus()` focuses the composer.
+
+### Completion Provider API
+
+Plugins can register slash completion providers through `ChatRawPlugin.input.registerCompletionProvider(config, pluginId?)`.
+Provider IDs are bound to the plugin that registered them; pass the same provider `id` to unregister it.
+Disabling or uninstalling the plugin automatically removes its providers and closes related menus.
+
+```javascript
+const providerId = 'my-provider';
+ChatRawPlugin.input.registerCompletionProvider({
+    id: 'my-provider',
+    trigger: '/',
+    async getItems(context) {
+        return [{
+            id: 'item-1',
+            label: 'example',
+            description: 'Insert example text',
+            source: 'my-plugin',
+            icon: 'ri-sparkling-line',
+            type: 'command',
+            metadata: {},
+            onSelect(item, selectContext) {
+                selectContext.replaceRange(selectContext.range.start, selectContext.range.end, 'example');
+            }
+        }];
+    }
+}, 'my-plugin');
+
+ChatRawPlugin.input.unregisterCompletionProvider(providerId, 'my-plugin');
+```
+
+The host renders at most 20 items, discards stale async results by request ID, and opens slash suggestions
+only for `/[a-z0-9-]*` tokens at the start of a line or after whitespace. Suggestions are not opened while
+IME composition is active, inside fenced code blocks, or inside Markdown link/image syntax. When a menu is
+open, ArrowUp/ArrowDown move selection, Tab/Enter accept, and Escape closes the menu.
 
 ### Toolbar Button Extension API
 
@@ -1085,7 +1155,7 @@ button.onclick = async () => {
     };
     ```
 
-18. **Append text to input**: To programmatically append text to the conversation input (e.g., voice input, autocomplete), select the textarea and dispatch `input` for Alpine's x-model to sync:
+18. **Append text to input**: Use `ChatRawPlugin.input.insertText()` for new plugins. Direct textarea access is a legacy fallback for older ChatRaw builds:
     ```javascript
     function appendToInput(text) {
         const textarea = document.querySelector('.input-wrapper textarea');
@@ -1284,7 +1354,7 @@ your-plugin/
 | `url_parser` | 解析网页 URL 为正文 | `parse_url`, `custom_settings` |
 | `search_provider` | 网络搜索服务 | `web_search`, `before_send` |
 | `rag_enhancer` | 增强 RAG 流程 | `pre_embedding`, `post_retrieval`, `before_send`, `custom_settings` |
-| `ui_extension` | 添加 UI 元素 | `toolbar_button`, `custom_action` |
+| `ui_extension` | 添加 UI 元素 | `toolbar_button`, `custom_action`, `send_intercept` |
 | `message_processor` | 消息处理 | `before_send`, `after_receive`, `transform_input`, `transform_output` |
 | `model_manager` | 管理多个模型配置 | `custom_settings` |
 
@@ -1297,6 +1367,7 @@ your-plugin/
 | `web_search` | 网络搜索 | `(query, settings)` | `{ success, results }` |
 | `pre_embedding` | 文本嵌入前 | `(text, settings)` | `{ success, text }` |
 | `post_retrieval` | RAG 检索后 | `(results, settings)` | `{ success, results }` |
+| `send_intercept` | 发送前拦截器，可在正常聊天发送前完整处理一条消息 | `(context)` | `{ success, handled?, userMessage?, assistantMessage?, clearInput?, clearAttachments?, clearActiveSkills?, refreshSkillCatalog? }` |
 | `before_send` | 发送消息前 | `(body)` | `{ success, body }` |
 | `after_receive` | 收到回复后 | `(message)` | `{ success, content }` |
 | `transform_input` | 转换用户输入 | `(message)` | `{ success, content }` |
@@ -1305,6 +1376,16 @@ your-plugin/
 | `file_preview` | 自定义文件预览 | `(file)` | `{ success, html }` |
 | `custom_action` | 自定义操作 | `(action, data)` | `{ success, result }` |
 | `custom_settings` | 自定义设置 UI | - | - |
+
+`send_intercept` 与 `before_send` 分离。只有 `{ success: true, handled: true }` 会取消正常聊天发送；
+普通 `{ success: true }`、抛错或其他返回值都会继续走正常发送路径。
+
+`send_intercept` context 包含 `message`、`activeSkillNames`、`parsedUrl`、轻量 `attachedDocument`
+信息、`hasImage`、`currentChatId` 和可中止的 `signal`。
+
+当存在 Skill chips 时，宿主会在 `before_send` 完成后写入 `body.active_skills`，避免普通 hook
+意外覆盖用户显式选择的 skills。需要处理发送前 skill 列表的插件应使用 `send_intercept` 并读取
+`context.activeSkillNames`。
 
 ### 设置类型
 
@@ -1706,6 +1787,63 @@ const messages = ChatRaw.utils.getMessages();
 // 添加消息到显示
 ChatRaw.utils.addMessage('assistant', '来自插件的问候！');
 ```
+
+### Composer 输入 API
+
+请优先使用 `ChatRawPlugin.input`，不要直接查询 textarea：
+
+```javascript
+const value = ChatRawPlugin.input.getValue();
+const selection = ChatRawPlugin.input.getSelection();
+
+ChatRawPlugin.input.setValue('新消息');
+ChatRawPlugin.input.insertText('/my-skill');
+ChatRawPlugin.input.replaceRange(selection.start, selection.end, '替换文本');
+ChatRawPlugin.input.focus();
+```
+
+可用方法：
+
+- `getValue()` 返回当前输入框文本。
+- `setValue(value)` 替换输入框文本并同步宿主状态。
+- `insertText(text)` 在当前选区插入文本。
+- `replaceRange(start, end, text)` 替换字符范围并恢复焦点。
+- `getSelection()` 返回 `{ start, end }`。
+- `focus()` 聚焦输入框。
+
+### 补全 Provider API
+
+插件可以通过 `ChatRawPlugin.input.registerCompletionProvider(config, pluginId?)` 注册 slash 补全。
+Provider ID 会绑定到注册它的插件；注销时传入同一个 provider `id`。插件禁用或卸载时，
+宿主会自动清理 provider 并关闭相关菜单。
+
+```javascript
+const providerId = 'my-provider';
+ChatRawPlugin.input.registerCompletionProvider({
+    id: 'my-provider',
+    trigger: '/',
+    async getItems(context) {
+        return [{
+            id: 'item-1',
+            label: 'example',
+            description: '插入示例文本',
+            source: 'my-plugin',
+            icon: 'ri-sparkling-line',
+            type: 'command',
+            metadata: {},
+            onSelect(item, selectContext) {
+                selectContext.replaceRange(selectContext.range.start, selectContext.range.end, 'example');
+            }
+        }];
+    }
+}, 'my-plugin');
+
+ChatRawPlugin.input.unregisterCompletionProvider(providerId, 'my-plugin');
+```
+
+宿主最多渲染 20 条结果，并通过 request id 丢弃过期异步结果。Slash 建议只在行首或空白后的
+`/[a-z0-9-]*` token 上触发；IME composition 期间、fenced code block 内、Markdown link/image
+局部上下文中不会触发。菜单打开时，ArrowUp/ArrowDown 移动高亮，Tab/Enter 接受，Escape 关闭。
 
 ### 工具栏按钮扩展 API
 
@@ -2261,7 +2399,7 @@ button.onclick = async () => {
     };
     ```
 
-18. **追加文本到输入框**：需要程序化追加文本到对话输入框（如语音输入、自动补全）时，选中 textarea 并派发 `input` 事件以同步 Alpine 的 x-model：
+18. **追加文本到输入框**：新插件请使用 `ChatRawPlugin.input.insertText()`。直接访问 textarea 只是兼容旧版 ChatRaw 的 fallback：
     ```javascript
     function appendToInput(text) {
         const textarea = document.querySelector('.input-wrapper textarea');

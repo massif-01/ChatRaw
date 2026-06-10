@@ -109,6 +109,7 @@ ChatRaw features a complete **plugin system** to extend functionality:
 - **Multi-Model Manager** — Manage and switch models
 - **Markdown Renderer Plus** — Math (KaTeX), Mermaid, code copy, offline
 - **Context Compressor** — Compact older chat history automatically or from the input toolbar
+- **Skill Manager** — Install and explicitly activate Agent Skills from GitHub or local files
 - **Toolbar Extension Demo** — Demo plugin showcasing UI Extension API
 
 ### Toolbar Extension
@@ -326,6 +327,19 @@ For **Context Compressor**, enable the plugin to use compacted history in model 
 `autoCompress` setting creates or updates summaries automatically; when it is off, existing summaries are
 still used and you can click the input toolbar compression button to compact manually.
 
+### Use Agent Skills
+
+Install and enable **Skill Manager** to manage Agent Skills. You can install skills from a GitHub
+`SKILL.md` / public tree URL or upload a local `SKILL.md` / `.zip` package. Activate a skill explicitly
+for the next message with `/skill-name`, or type a clear command such as `install this skill <GitHub URL>`
+to install a GitHub skill from chat.
+
+![Skill autocomplete](assets/skill-autocomplete.png)
+
+Skills are third-party instruction content. ChatRaw v1 does not execute skill `scripts/`, does not grant
+permissions from `allowed-tools`, and treats `trusted` as metadata only. See the full guide:
+[docs/skills.md](docs/skills.md).
+
 ---
 
 ## Use Cases
@@ -461,6 +475,7 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 - **多模型管理** — 管理并切换模型
 - **Markdown 渲染增强** — 数学公式、Mermaid、代码复制，离线可用
 - **上下文压缩** — 自动或通过输入框工具栏压缩较早聊天历史
+- **Skill 管理器** — 从 GitHub 或本地文件安装并显式激活 Agent Skills
 - **工具栏扩展演示** — 展示 UI 扩展 API 的演示插件
 
 ### 工具栏扩展
@@ -671,6 +686,17 @@ python main.py
 
 对于**上下文压缩**插件，启用插件后模型请求会使用压缩后的历史摘要。`autoCompress` 会自动创建或更新摘要；
 关闭自动压缩后，已有摘要仍会继续使用，未创建摘要时则走完整历史，也可以点击输入框工具栏的压缩按钮手动压缩。
+
+### 使用 Agent Skills
+
+安装并启用 **Skill 管理器**后即可管理 Agent Skills。你可以从 GitHub `SKILL.md` / 公开 tree URL
+安装，也可以上传本地 `SKILL.md` / `.zip` 包。发送消息前用 `/skill-name` 显式激活某个 skill；
+也可以输入明确命令，例如 `安装这个 skill <GitHub URL>`，从聊天中安装 GitHub skill。
+
+![Skill 自动补全](assets/skill-autocomplete.png)
+
+Skills 是第三方指令内容。ChatRaw v1 不执行 skill `scripts/`，不会根据 `allowed-tools` 授权，
+`trusted` 也只是元数据。完整指南见：[docs/skills.md](docs/skills.md)。
 
 ---
 

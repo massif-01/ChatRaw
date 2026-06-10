@@ -351,6 +351,12 @@ function isMobileViewport() {
     return window.matchMedia(MOBILE_VIEW_MEDIA_QUERY).matches;
 }
 
+const SKILL_MANAGER_PLUGIN_ID = 'skill-manager';
+const COMPOSER_COMPLETION_LIMIT = 20;
+const SKILL_CATALOG_CACHE_MS = 30000;
+const RESERVED_SLASH_COMMANDS = new Set(['plugins', 'settings', 'help', 'clear', 'compact', 'api']);
+const COMMON_PATH_ROOTS = new Set(['tmp', 'var', 'usr', 'etc', 'home', 'users', 'opt', 'private', 'volumes', 'mnt']);
+
 function app() {
     const initialDesktopCollapsed = localStorage.getItem('chatraw_sidebar_collapsed') === '1';
     const initialIsMobile = isMobileViewport();
@@ -369,6 +375,18 @@ function app() {
         showSystemPrompt: false,
         currentChatId: null,
         inputMessage: '',
+        isComposing: false,
+        completionProviders: {},
+        completionMenuOpen: false,
+        completionQuery: '',
+        completionItems: [],
+        completionActiveIndex: 0,
+        completionRange: null,
+        completionRequestId: 0,
+        completionDebounceTimer: null,
+        activeSkillChips: [],
+        skillCatalogCache: null,
+        skillCatalogLoadedAt: 0,
         useRAG: false,
         useThinking: false,
         isGenerating: false,
@@ -424,6 +442,7 @@ function app() {
             post_retrieval: [],      // After RAG retrieval
             
             // Message lifecycle
+            send_intercept: [],      // Pre-send interceptors that can fully handle a message
             before_send: [],         // Before sending message to AI
             after_receive: [],       // After receiving AI response
             
@@ -741,30 +760,537 @@ function app() {
                 this.isGenerating = false;
             }
         },
+
+        // ============ Composer Input and Completion ============
+
+        getLocalizedText(value, fallback = '') {
+            if (!value) return fallback;
+            if (typeof value === 'string') return value;
+            if (typeof value === 'object') {
+                return value[this.lang] || value.en || value.zh || Object.values(value).find(Boolean) || fallback;
+            }
+            return String(value);
+        },
+
+        getComposerSelection() {
+            const el = this.$refs.inputBox;
+            const fallback = (this.inputMessage || '').length;
+            return {
+                start: el ? el.selectionStart : fallback,
+                end: el ? el.selectionEnd : fallback
+            };
+        },
+
+        setComposerValue(value, selectionStart = null, selectionEnd = null) {
+            this.inputMessage = value;
+            this.$nextTick(() => {
+                const el = this.$refs.inputBox;
+                if (!el) return;
+                el.value = value;
+                if (Number.isInteger(selectionStart)) {
+                    const end = Number.isInteger(selectionEnd) ? selectionEnd : selectionStart;
+                    el.setSelectionRange(selectionStart, end);
+                }
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                this.autoResize(el);
+            });
+        },
+
+        replaceComposerRange(start, end, text) {
+            const value = this.inputMessage || '';
+            const safeStart = Math.max(0, Math.min(start, value.length));
+            const safeEnd = Math.max(safeStart, Math.min(end, value.length));
+            const nextValue = value.slice(0, safeStart) + text + value.slice(safeEnd);
+            const cursor = safeStart + text.length;
+            this.setComposerValue(nextValue, cursor, cursor);
+            return true;
+        },
+
+        insertComposerText(text) {
+            const selection = this.getComposerSelection();
+            return this.replaceComposerRange(selection.start, selection.end, text);
+        },
+
+        focusComposer() {
+            this.$nextTick(() => this.$refs.inputBox?.focus());
+        },
+
+        handleComposerInput(event) {
+            this.inputMessage = event.target.value;
+            this.autoResize(event.target);
+            if (!this.isComposing) {
+                this.queueCompletionRefresh();
+            }
+        },
+
+        handleCompositionStart() {
+            this.isComposing = true;
+        },
+
+        handleCompositionEnd(event) {
+            this.isComposing = false;
+            this.handleComposerInput(event);
+        },
+
+        async handleComposerKeydown(event) {
+            if (this.isComposing || event.isComposing) return;
+
+            if (this.completionMenuOpen) {
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    this.moveCompletionHighlight(1);
+                    return;
+                }
+                if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    this.moveCompletionHighlight(-1);
+                    return;
+                }
+                if (event.key === 'Tab' || (event.key === 'Enter' && !event.shiftKey)) {
+                    event.preventDefault();
+                    await this.acceptHighlightedCompletion();
+                    return;
+                }
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    this.closeCompletionMenu();
+                    return;
+                }
+            }
+
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                await this.sendMessage();
+            }
+        },
+
+        moveCompletionHighlight(delta) {
+            if (!this.completionItems.length) return;
+            const length = this.completionItems.length;
+            this.completionActiveIndex = (this.completionActiveIndex + delta + length) % length;
+        },
+
+        async acceptHighlightedCompletion() {
+            const item = this.completionItems[this.completionActiveIndex];
+            if (item) {
+                await this.acceptCompletion(item);
+            }
+        },
+
+        isCursorInFencedCode(value, cursor) {
+            const before = value.slice(0, cursor);
+            const matches = before.match(/```/g);
+            return Boolean(matches && matches.length % 2 === 1);
+        },
+
+        isCursorInMarkdownLink(value, cursor) {
+            const local = value.slice(Math.max(0, cursor - 160), cursor);
+            const lastOpenBracket = local.lastIndexOf('[');
+            const lastLinkStart = local.lastIndexOf('](');
+            const lastCloseParen = local.lastIndexOf(')');
+            return Math.max(lastOpenBracket, lastLinkStart) > lastCloseParen;
+        },
+
+        detectSlashToken(value, cursor) {
+            if (!Number.isInteger(cursor)) return null;
+            if (this.isCursorInFencedCode(value, cursor) || this.isCursorInMarkdownLink(value, cursor)) {
+                return null;
+            }
+
+            const before = value.slice(0, cursor);
+            const lineStart = before.lastIndexOf('\n') + 1;
+            const linePrefix = before.slice(lineStart);
+            const match = linePrefix.match(/(^|\s)(\/\S*)$/);
+            if (!match) return null;
+
+            const token = match[2];
+            if (!/^\/[a-z0-9-]*$/.test(token)) return null;
+            const query = token.slice(1);
+            if (COMMON_PATH_ROOTS.has(query.toLowerCase())) return null;
+            const start = lineStart + linePrefix.length - token.length;
+            const end = cursor;
+            return {
+                start,
+                end,
+                query,
+                trigger: '/'
+            };
+        },
+
+        queueCompletionRefresh(delay = 80) {
+            if (this.completionDebounceTimer) {
+                clearTimeout(this.completionDebounceTimer);
+            }
+            this.completionDebounceTimer = setTimeout(() => {
+                this.completionDebounceTimer = null;
+                this.refreshCompletions();
+            }, delay);
+        },
+
+        async refreshCompletions() {
+            const el = this.$refs.inputBox;
+            if (!el || this.isComposing) return;
+
+            const range = this.detectSlashToken(this.inputMessage || '', el.selectionStart);
+            if (!range) {
+                this.closeCompletionMenu();
+                return;
+            }
+
+            const requestId = ++this.completionRequestId;
+            this.completionRange = range;
+            this.completionQuery = range.query;
+
+            const context = {
+                trigger: range.trigger,
+                query: range.query,
+                range: { ...range },
+                value: this.inputMessage || '',
+                selection: this.getComposerSelection()
+            };
+
+            const providers = this.getActiveCompletionProviders(range.trigger);
+            const items = [];
+            for (const provider of providers) {
+                try {
+                    const providerItems = await Promise.resolve(provider.getItems(context));
+                    if (requestId !== this.completionRequestId) return;
+                    for (const item of providerItems || []) {
+                        if (!item || !item.id || !item.label) continue;
+                        items.push({
+                            ...item,
+                            providerId: provider.fullId,
+                            pluginId: provider.pluginId,
+                            source: item.source || provider.source || provider.pluginId,
+                            icon: item.icon || provider.icon || 'ri-command-line'
+                        });
+                        if (items.length >= COMPOSER_COMPLETION_LIMIT) break;
+                    }
+                } catch (error) {
+                    console.error(`[Completion ${provider.fullId}] Error:`, error);
+                }
+                if (items.length >= COMPOSER_COMPLETION_LIMIT) break;
+            }
+
+            if (requestId !== this.completionRequestId) return;
+            this.completionItems = items.slice(0, COMPOSER_COMPLETION_LIMIT);
+            this.completionActiveIndex = 0;
+            this.completionMenuOpen = this.completionItems.length > 0;
+        },
+
+        closeCompletionMenu() {
+            if (this.completionDebounceTimer) {
+                clearTimeout(this.completionDebounceTimer);
+                this.completionDebounceTimer = null;
+            }
+            this.completionRequestId += 1;
+            this.completionMenuOpen = false;
+            this.completionItems = [];
+            this.completionActiveIndex = 0;
+            this.completionQuery = '';
+            this.completionRange = null;
+        },
+
+        getActiveCompletionProviders(trigger = '/') {
+            const providers = [];
+            const skillProvider = this.getSkillCompletionProvider(trigger);
+            if (skillProvider) providers.push(skillProvider);
+
+            for (const provider of Object.values(this.completionProviders)) {
+                if (provider.trigger !== trigger) continue;
+                const plugin = this.installedPlugins.find(p => p.id === provider.pluginId);
+                if (!plugin || plugin.enabled === false) continue;
+                providers.push(provider);
+            }
+            return providers;
+        },
+
+        registerCompletionProvider(config, pluginIdOverride = null) {
+            const pluginId = pluginIdOverride || this._currentLoadingPlugin || config?.pluginId;
+            if (!pluginId || !config?.id || typeof config.getItems !== 'function') {
+                console.warn('[Plugin Input] Completion provider requires plugin id, id, and getItems');
+                return false;
+            }
+
+            const fullId = `${pluginId}:${config.id}`;
+            this.completionProviders[fullId] = {
+                ...config,
+                fullId,
+                pluginId,
+                trigger: config.trigger || '/'
+            };
+            return true;
+        },
+
+        unregisterCompletionProvider(providerId, pluginId = null) {
+            const pid = pluginId || this._currentLoadingPlugin;
+            if (!pid || !providerId) return false;
+            const fullId = `${pid}:${providerId}`;
+            const removed = Boolean(this.completionProviders[fullId]);
+            delete this.completionProviders[fullId];
+            if (this.completionItems.some(item => item.providerId === fullId)) {
+                this.closeCompletionMenu();
+            }
+            return removed;
+        },
+
+        unregisterPluginCompletions(pluginId) {
+            let removedActiveMenuProvider = false;
+            for (const fullId of Object.keys(this.completionProviders)) {
+                if (this.completionProviders[fullId].pluginId === pluginId) {
+                    delete this.completionProviders[fullId];
+                    removedActiveMenuProvider = removedActiveMenuProvider || this.completionItems.some(item => item.providerId === fullId);
+                }
+            }
+            if (pluginId === SKILL_MANAGER_PLUGIN_ID) {
+                this.skillCatalogCache = null;
+                this.skillCatalogLoadedAt = 0;
+                this.activeSkillChips = [];
+                removedActiveMenuProvider = true;
+            }
+            if (removedActiveMenuProvider) {
+                this.closeCompletionMenu();
+            }
+        },
+
+        async acceptCompletion(item) {
+            if (!item) return;
+            const context = {
+                query: this.completionQuery,
+                range: this.completionRange ? { ...this.completionRange } : null,
+                value: this.inputMessage || '',
+                selection: this.getComposerSelection()
+            };
+            if (typeof item.onSelect === 'function') {
+                await item.onSelect(item, context);
+            }
+            this.closeCompletionMenu();
+            this.focusComposer();
+        },
+
+        isSkillManagerEnabled() {
+            return this.installedPlugins.some(plugin => plugin.id === SKILL_MANAGER_PLUGIN_ID && plugin.enabled === true);
+        },
+
+        getSkillCompletionProvider(trigger) {
+            if (trigger !== '/' || !this.isSkillManagerEnabled()) return null;
+            return {
+                fullId: '__host:skill-manager-skills',
+                pluginId: SKILL_MANAGER_PLUGIN_ID,
+                source: 'skills',
+                icon: 'ri-flashlight-line',
+                trigger: '/',
+                getItems: async (context) => this.getSkillCompletionItems(context)
+            };
+        },
+
+        async loadSkillCatalogForCompletion() {
+            const now = Date.now();
+            if (this.skillCatalogCache && now - this.skillCatalogLoadedAt < SKILL_CATALOG_CACHE_MS) {
+                return this.skillCatalogCache;
+            }
+            try {
+                const res = await fetch('/api/skills');
+                if (!res.ok) return [];
+                const data = await res.json();
+                this.skillCatalogCache = Array.isArray(data.skills) ? data.skills : [];
+                this.skillCatalogLoadedAt = now;
+                return this.skillCatalogCache;
+            } catch (error) {
+                console.error('Failed to load skill catalog:', error);
+                return [];
+            }
+        },
+
+        skillAliases(skill) {
+            const metadata = skill?.metadata || {};
+            const aliases = [];
+            for (const key of ['alias', 'aliases']) {
+                const value = metadata[key];
+                if (Array.isArray(value)) {
+                    aliases.push(...value.filter(item => typeof item === 'string'));
+                } else if (typeof value === 'string') {
+                    aliases.push(...value.split(',').map(item => item.trim()).filter(Boolean));
+                }
+            }
+            if (typeof metadata.display_name === 'string') {
+                aliases.push(metadata.display_name);
+            }
+            return aliases;
+        },
+
+        rankSkillCompletion(skill, query) {
+            const normalizedQuery = (query || '').toLowerCase();
+            const name = (skill.name || '').toLowerCase();
+            if (!name || RESERVED_SLASH_COMMANDS.has(name) || COMMON_PATH_ROOTS.has(name)) return null;
+            if (!normalizedQuery) return 100;
+            if (RESERVED_SLASH_COMMANDS.has(normalizedQuery) || COMMON_PATH_ROOTS.has(normalizedQuery)) return null;
+            if (name === normalizedQuery) return 0;
+            if (name.startsWith(normalizedQuery)) return 10;
+            if (name.includes(normalizedQuery)) return 20;
+
+            const aliases = this.skillAliases(skill).map(alias => alias.toLowerCase());
+            if (aliases.some(alias => alias === normalizedQuery)) return 30;
+            if (aliases.some(alias => alias.startsWith(normalizedQuery))) return 35;
+            if (aliases.some(alias => alias.includes(normalizedQuery))) return 40;
+
+            const description = (skill.description || '').toLowerCase();
+            const queryTokens = normalizedQuery.split(/[-\s]+/).filter(Boolean);
+            if (queryTokens.length && queryTokens.every(token => description.includes(token))) {
+                return 50;
+            }
+            return null;
+        },
+
+        async getSkillCompletionItems(context) {
+            const skills = await this.loadSkillCatalogForCompletion();
+            return skills
+                .map(skill => ({ skill, rank: this.rankSkillCompletion(skill, context.query) }))
+                .filter(item => item.rank !== null)
+                .sort((a, b) => a.rank - b.rank || a.skill.name.localeCompare(b.skill.name))
+                .slice(0, COMPOSER_COMPLETION_LIMIT)
+                .map(({ skill }) => ({
+                    id: `skill:${skill.name}`,
+                    label: `/${skill.name}`,
+                    description: skill.description || '',
+                    source: 'skills',
+                    icon: 'ri-flashlight-line',
+                    type: 'skill',
+                    metadata: { skill },
+                    onSelect: (_item, selectContext) => this.selectSkillCompletion(skill, selectContext.range)
+                }));
+        },
+
+        selectSkillCompletion(skill, range) {
+            if (!skill?.name || !range) return;
+            this.addActiveSkillChip(skill);
+
+            const value = this.inputMessage || '';
+            let replaceStart = range.start;
+            let replaceEnd = range.end;
+            if (value[replaceStart - 1] === ' ' && value[replaceEnd] === ' ') {
+                replaceEnd += 1;
+            } else if (replaceStart === 0 && value[replaceEnd] === ' ') {
+                replaceEnd += 1;
+            }
+            this.replaceComposerRange(replaceStart, replaceEnd, '');
+        },
+
+        addActiveSkillChip(skill) {
+            if (!skill?.name || this.activeSkillChips.some(item => item.name === skill.name)) return;
+            if (this.activeSkillChips.length >= 5) {
+                this.showToast(this.lang === 'zh' ? '每次最多激活 5 个 skills' : 'Up to 5 skills can be active per request', 'error');
+                return;
+            }
+            this.activeSkillChips.push({
+                name: skill.name,
+                description: skill.description || ''
+            });
+        },
+
+        removeActiveSkillChip(skillName) {
+            this.activeSkillChips = this.activeSkillChips.filter(skill => skill.name !== skillName);
+        },
+
+        prepareOutgoingMessage() {
+            return {
+                message: (this.inputMessage || '').trim(),
+                activeSkillNames: this.activeSkillChips.map(skill => skill.name)
+            };
+        },
+
+        buildSendInterceptContext(message, activeSkillNames) {
+            return {
+                message,
+                activeSkillNames: [...activeSkillNames],
+                parsedUrl: this.parsedUrl ? {
+                    url: this.parsedUrl.url,
+                    title: this.parsedUrl.title
+                } : null,
+                attachedDocument: this.attachedDocument ? {
+                    filename: this.attachedDocument.filename
+                } : null,
+                hasImage: Boolean(this.uploadedImageBase64),
+                currentChatId: this.currentChatId,
+                signal: this.abortController?.signal
+            };
+        },
+
+        applySendInterceptResult(result, originalMessage) {
+            const userMessage = result.userMessage === false ? null : (result.userMessage || originalMessage);
+            if (userMessage) {
+                this.messages.push({
+                    role: 'user',
+                    content: String(userMessage)
+                });
+            }
+
+            if (result.assistantMessage) {
+                this.messages.push({
+                    role: 'assistant',
+                    content: String(result.assistantMessage)
+                });
+            }
+
+            if (result.clearInput !== false) {
+                this.inputMessage = '';
+                this.closeCompletionMenu();
+                this.$nextTick(() => this.autoResize(this.$refs.inputBox));
+            }
+
+            if (result.clearAttachments !== false) {
+                this.removeUploadedImage();
+                this.removeParsedUrl();
+                this.removeAttachedDocument();
+            }
+
+            if (result.clearActiveSkills !== false) {
+                this.activeSkillChips = [];
+            }
+
+            if (result.refreshSkillCatalog) {
+                this.skillCatalogCache = null;
+                this.skillCatalogLoadedAt = 0;
+            }
+
+            this.$nextTick(() => this.scrollToBottom());
+        },
         
         // Send message
         async sendMessage() {
-            let message = this.inputMessage.trim();
+            const outgoing = this.prepareOutgoingMessage();
+            let message = outgoing.message;
+            const activeSkillNames = [...outgoing.activeSkillNames];
             if (!message || this.isGenerating) return;
             
-            this.inputMessage = '';
-            this.$nextTick(() => this.autoResize(this.$refs.inputBox));
             this.isGenerating = true;
             this.abortController = new AbortController();
             
-            // Call transform_input hooks to allow plugins to modify the input
-            const transformResult = await this.callHook('transform_input', message);
-            if (transformResult?.success && transformResult.content) {
-                message = transformResult.content;
-            }
-            
-            this.messages.push({
-                role: 'user',
-                content: message
-            });
-            this.$nextTick(() => this.scrollToBottom());
-            
             try {
+                const interceptResult = await this.callSendInterceptors(
+                    this.buildSendInterceptContext(message, activeSkillNames)
+                );
+                if (interceptResult?.success && interceptResult.handled) {
+                    this.applySendInterceptResult(interceptResult, message);
+                    return;
+                }
+
+                this.inputMessage = '';
+                this.closeCompletionMenu();
+                this.$nextTick(() => this.autoResize(this.$refs.inputBox));
+
+                // Call transform_input hooks to allow plugins to modify the input
+                const transformResult = await this.callHook('transform_input', message);
+                if (transformResult?.success && transformResult.content) {
+                    message = transformResult.content;
+                }
+
+                this.messages.push({
+                    role: 'user',
+                    content: message
+                });
+                this.$nextTick(() => this.scrollToBottom());
+
                 // Combine web content and document content
                 let combinedContent = '';
                 let contentSource = '';
@@ -797,6 +1323,11 @@ function app() {
                 if (beforeSendResult?.success && beforeSendResult.body) {
                     body = { ...body, ...beforeSendResult.body };
                 }
+                if (activeSkillNames.length > 0) {
+                    body.active_skills = activeSkillNames;
+                } else {
+                    delete body.active_skills;
+                }
                 
                 this.removeUploadedImage();
                 this.removeParsedUrl();
@@ -807,6 +1338,7 @@ function app() {
                 } else {
                     await this.handleNormalResponse(body);
                 }
+                this.activeSkillChips = [];
                 
                 // Call after_receive hooks for post-processing
                 const lastMsg = this.messages[this.messages.length - 1];
@@ -1699,6 +2231,28 @@ function app() {
                 
                 // Plugin settings
                 settings: (pluginId) => this.getPluginSettings(pluginId || this._currentLoadingPlugin),
+
+                // Composer input and completion APIs
+                input: {
+                    getValue: () => appInstance.inputMessage || '',
+                    setValue: (value) => {
+                        appInstance.setComposerValue(String(value || ''));
+                        return true;
+                    },
+                    insertText: (text) => appInstance.insertComposerText(String(text || '')),
+                    replaceRange: (start, end, text) => appInstance.replaceComposerRange(start, end, String(text || '')),
+                    getSelection: () => appInstance.getComposerSelection(),
+                    focus: () => {
+                        appInstance.focusComposer();
+                        return true;
+                    },
+                    registerCompletionProvider: (config, pluginIdOverride = null) => (
+                        appInstance.registerCompletionProvider(config, pluginIdOverride)
+                    ),
+                    unregisterCompletionProvider: (id, pluginId = null) => (
+                        appInstance.unregisterCompletionProvider(id, pluginId)
+                    )
+                },
                 
                 // Utility functions for plugin developers
                 utils: {
@@ -2021,7 +2575,7 @@ function app() {
                 
                 // Then load the plugin main.js
                 const scriptUrl = `/api/plugins/${encodeURIComponent(plugin.id)}/main.js`;
-                await this.loadScript(scriptUrl);
+                await this.loadScript(scriptUrl, { reload: true });
                 
                 this._currentLoadingPlugin = null;
                 console.log(`[Plugin] Loaded: ${plugin.id}`);
@@ -2032,13 +2586,16 @@ function app() {
         },
         
         // Load external script
-        loadScript(url) {
+        loadScript(url, options = {}) {
             return new Promise((resolve, reject) => {
                 // Check if already loaded
                 const existing = document.querySelector(`script[src="${url}"]`);
                 if (existing) {
-                    resolve();
-                    return;
+                    if (!options.reload) {
+                        resolve();
+                        return;
+                    }
+                    existing.remove();
                 }
                 
                 const script = document.createElement('script');
@@ -2104,6 +2661,26 @@ function app() {
             }
             
             delete this.pluginHookRegistry[pluginId];
+        },
+
+        // Call pre-send interceptors. Only handled=true cancels the normal send path.
+        async callSendInterceptors(context) {
+            const handlers = this.pluginHooks.send_intercept || [];
+            for (const handler of handlers) {
+                if (handler._pluginId) {
+                    const plugin = this.installedPlugins.find(p => p.id === handler._pluginId);
+                    if (plugin && !plugin.enabled) continue;
+                }
+
+                try {
+                    const result = await handler.handler(context);
+                    if (result?.success && result.handled === true) return result;
+                } catch (e) {
+                    if (e?.name === 'AbortError') throw e;
+                    console.error('[Hook send_intercept] Error:', e);
+                }
+            }
+            return null;
         },
         
         // Call hook handlers
@@ -2324,6 +2901,7 @@ function app() {
                     } else {
                         // Unregister hooks when disabled
                         this.unregisterPluginHooks(plugin.id);
+                        this.unregisterPluginCompletions(plugin.id);
                         
                         // Clean up toolbar buttons registered by this plugin
                         this.pluginToolbarButtons = this.pluginToolbarButtons.filter(
@@ -2438,6 +3016,7 @@ function app() {
             try {
                 // First unregister hooks
                 this.unregisterPluginHooks(plugin.id);
+                this.unregisterPluginCompletions(plugin.id);
                 
                 // Clean up toolbar buttons registered by this plugin
                 this.pluginToolbarButtons = this.pluginToolbarButtons.filter(

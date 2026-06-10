@@ -16,8 +16,8 @@
     
     <!-- Performance: Preload Critical Resources -->
     <link rel="preload" href="fonts/remixicon/remixicon.woff2?t=1769685282643" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="styles.min.css?v=6.0" as="style">
-    <link rel="preload" href="app.min.js?v=6.1" as="script">
+    <link rel="preload" href="styles.min.css?v=6.1" as="style">
+    <link rel="preload" href="app.min.js?v=6.3" as="script">
     <link rel="preload" href="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" as="script" crossorigin="anonymous">
     <link rel="preload" href="https://unpkg.com/marked@9.1.6/marked.min.js" as="script" crossorigin="anonymous">
     
@@ -147,7 +147,7 @@
     <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" crossorigin="anonymous"></script>
     <!-- highlight.js is lazy-loaded in app.min.js when needed -->
     <link rel="stylesheet" href="fonts/remixicon/remixicon.css">
-    <link rel="stylesheet" href="styles.min.css?v=6.0">
+    <link rel="stylesheet" href="styles.min.css?v=6.1">
 </head>
 <body x-data="app()" x-init="init()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
@@ -366,14 +366,57 @@
                         </div>
                     </div>
 
-                    <div class="input-wrapper">
+                    <div class="input-wrapper" @click.outside="closeCompletionMenu()">
+                        <div class="composer-suggestions"
+                             x-show="completionMenuOpen"
+                             x-cloak
+                             x-transition
+                             role="listbox"
+                             aria-label="Composer suggestions"
+                             @mousedown.prevent>
+                            <template x-for="(item, index) in completionItems" :key="item.providerId + ':' + item.id">
+                                <button type="button"
+                                        class="composer-suggestion-item"
+                                        role="option"
+                                        :class="{ 'active': index === completionActiveIndex }"
+                                        :aria-selected="index === completionActiveIndex"
+                                        @mouseenter="completionActiveIndex = index"
+                                        @click="acceptCompletion(item)">
+                                    <i :class="item.icon || 'ri-command-line'"></i>
+                                    <span class="composer-suggestion-main">
+                                        <span class="composer-suggestion-label" x-text="getLocalizedText(item.label, item.id)"></span>
+                                        <span class="composer-suggestion-desc" x-text="getLocalizedText(item.description, item.source || '')"></span>
+                                    </span>
+                                    <span class="composer-suggestion-source" x-text="item.source || ''"></span>
+                                </button>
+                            </template>
+                        </div>
+
+                        <div class="active-skill-chips" x-show="activeSkillChips.length > 0" x-cloak>
+                            <template x-for="skill in activeSkillChips" :key="skill.name">
+                                <button type="button"
+                                        class="active-skill-chip"
+                                        @click="removeActiveSkillChip(skill.name)"
+                                        :title="skill.description || skill.name"
+                                        :aria-label="'Remove skill /' + skill.name">
+                                    <i class="ri-flashlight-line"></i>
+                                    <span x-text="'/' + skill.name"></span>
+                                    <i class="ri-close-line"></i>
+                                </button>
+                            </template>
+                        </div>
+
                         <textarea 
                             x-model="inputMessage" 
-                            @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); sendMessage() }"
+                            @keydown="handleComposerKeydown($event)"
                             :placeholder="t('inputPlaceholder')"
                             rows="1"
                             x-ref="inputBox"
-                            @input="autoResize($refs.inputBox)"
+                            @input="handleComposerInput($event)"
+                            @click="queueCompletionRefresh()"
+                            @focus="queueCompletionRefresh()"
+                            @compositionstart="handleCompositionStart()"
+                            @compositionend="handleCompositionEnd($event)"
                         ></textarea>
                         
                         <div class="input-toolbar">
@@ -949,6 +992,6 @@
     <!-- Toast -->
     <div class="toast" x-show="toast.show" x-text="toast.message" :class="toast.type" x-transition></div>
 
-    <script src="app.min.js?v=6.1"></script>
+    <script src="app.min.js?v=6.3"></script>
 </body>
 </html>

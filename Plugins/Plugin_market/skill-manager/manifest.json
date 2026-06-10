@@ -1,0 +1,18 @@
+{
+  "id": "skill-manager",
+  "version": "1.0.0",
+  "name": {
+    "en": "Skill Manager",
+    "zh": "Skill 管理器"
+  },
+  "description": {
+    "en": "Install, preview, enable, trust, and delete local skills for explicit chat activation.",
+    "zh": "安装、预览、启用、信任和删除本地 Skills，用于聊天中的显式激活。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://github.com/massif-01/ChatRaw",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "ui_extension",
+  "hooks": ["plugin_load", "send_intercept"]
+}
