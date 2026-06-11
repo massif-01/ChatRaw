@@ -321,24 +321,30 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(boundary_response.content.read_sizes, [2])
         self.assertEqual(boundary_text, "\ufffd")
 
-    async def test_missing_api_key_does_not_call_hermes(self):
+    async def test_missing_api_key_calls_chat_without_authorization(self):
         self.enable_hermes(api_key="")
-        called = False
-
-        async def fail_if_called():
-            nonlocal called
-            called = True
-            return FakeHermesSession()
-
-        original = main.get_http_session
-        main.get_http_session = fail_if_called
-        self.addCleanup(lambda: setattr(main, "get_http_session", original))
+        self.configure_chat(stream=False)
+        fake_session = self.patch_session(FakeHermesSession())
 
         result = await main.hermes_chat(JsonRequest({"message": "hi"}))
         status, data = self.decode_result(result)
-        self.assertEqual(status, 400)
-        self.assertIn("API key", data["error"])
-        self.assertFalse(called)
+        self.assertEqual(status, 200)
+        self.assertEqual(data["content"], "ok")
+        self.assertEqual(fake_session.posts[0]["url"], "http://127.0.0.1:8642/v1/chat/completions")
+        self.assertNotIn("Authorization", fake_session.posts[0]["headers"])
+
+    async def test_hermes_health_without_api_key_omits_authorization(self):
+        self.enable_hermes(api_key="")
+        fake_session = self.patch_session(FakeHermesSession())
+
+        result = await main.hermes_health(JsonRequest(url="http://testserver/api/hermes/health"))
+        status, data = self.decode_result(result)
+
+        self.assertEqual(status, 200)
+        self.assertTrue(data["success"])
+        self.assertEqual(fake_session.gets[0]["url"], "http://127.0.0.1:8642/v1/models")
+        self.assertNotIn("Authorization", fake_session.gets[0]["headers"])
+        self.assertEqual(fake_session.posts, [])
 
     async def test_invalid_persisted_api_mode_does_not_call_hermes(self):
         self.enable_hermes(api_mode="https://evil.test/runs")
@@ -399,6 +405,7 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(status, 200)
         self.assertTrue(data["success"])
         self.assertEqual(fake_session.gets[0]["url"], "http://127.0.0.1:8642/v1/models")
+        self.assertEqual(fake_session.gets[0]["headers"]["Authorization"], "Bearer secret")
         self.assertNotIn("X-Hermes-Session-Id", fake_session.gets[0]["headers"])
         self.assertNotIn("X-Hermes-Session-Key", fake_session.gets[0]["headers"])
         self.assertFalse(fake_session.gets[0]["allow_redirects"])
@@ -676,6 +683,8 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(any('"done": true' in chunk for chunk in stream_chunks))
 
         chat_id = json.loads(stream_chunks[0])["chat_id"]
+        self.assertEqual(fake_session.posts[0]["headers"]["Authorization"], "Bearer secret")
+        self.assertEqual(fake_session.gets[0]["headers"]["Authorization"], "Bearer secret")
         self.assertEqual(fake_session.posts[0]["headers"]["X-Hermes-Session-Id"], f"chatraw-{chat_id}")
         self.assertEqual(fake_session.gets[0]["headers"]["X-Hermes-Session-Id"], f"chatraw-{chat_id}")
         messages = main.db.get_messages(chat_id)
@@ -762,10 +771,35 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('"chat_id"', stream_chunks[0])
         self.assertFalse(any('"done": true' in chunk for chunk in stream_chunks))
         chat_id = json.loads(stream_chunks[0])["chat_id"]
+        self.assertEqual(fake_session.posts[0]["headers"]["Authorization"], "Bearer secret")
+        self.assertEqual(fake_session.gets[0]["headers"]["Authorization"], "Bearer secret")
+        self.assertEqual(fake_session.posts[1]["headers"]["Authorization"], "Bearer secret")
         self.assertEqual(fake_session.posts[0]["headers"]["X-Hermes-Session-Id"], f"chatraw-{chat_id}")
         self.assertEqual(fake_session.gets[0]["headers"]["X-Hermes-Session-Id"], f"chatraw-{chat_id}")
         self.assertEqual(fake_session.posts[1]["headers"]["X-Hermes-Session-Id"], f"chatraw-{chat_id}")
         self.assertEqual(fake_session.posts[1]["url"], "http://127.0.0.1:8642/v1/runs/run-stop/stop")
+
+    async def test_hermes_runs_without_api_key_omits_authorization_on_stop_path(self):
+        self.enable_hermes(api_key="", api_mode=main.HERMES_API_MODE_RUNS)
+        self.configure_chat(stream=True)
+        fake_session = self.patch_session(FakeHermesSession(
+            post_responses=[
+                FakeHermesResponse(json_data={"run_id": "run-no-key"}),
+                FakeHermesResponse(json_data={"stopped": True}),
+            ],
+            get_response=FakeHermesResponse(stream_chunks=[b'data: {"delta":{"content":"late"}}\n\n']),
+        ))
+
+        response = await main.hermes_chat(JsonRequest({"message": "stop me"}, disconnected=True))
+        stream_chunks = await self.collect_stream(response)
+
+        self.assertIn('"chat_id"', stream_chunks[0])
+        self.assertNotIn("Authorization", fake_session.posts[0]["headers"])
+        self.assertNotIn("Authorization", fake_session.gets[0]["headers"])
+        self.assertNotIn("Authorization", fake_session.posts[1]["headers"])
+        self.assertEqual(fake_session.posts[0]["url"], "http://127.0.0.1:8642/v1/runs")
+        self.assertEqual(fake_session.gets[0]["url"], "http://127.0.0.1:8642/v1/runs/run-no-key/events")
+        self.assertEqual(fake_session.posts[1]["url"], "http://127.0.0.1:8642/v1/runs/run-no-key/stop")
 
     async def test_hermes_rejects_runs_transport_fields_before_side_effects(self):
         self.enable_hermes(api_key="")

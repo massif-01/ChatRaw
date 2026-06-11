@@ -1,6 +1,6 @@
 {
   "id": "hermes",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "name": {
     "en": "Hermes Router",
     "zh": "Hermes 路由"
@@ -65,12 +65,12 @@
     {
       "id": "hermes",
       "name": {
-        "en": "Hermes API Server Key",
-        "zh": "Hermes API Server Key"
+        "en": "Hermes API Server Key (if required)",
+        "zh": "Hermes API Server Key（如服务要求）"
       },
       "description": {
-        "en": "API_SERVER_KEY used by the local Hermes API server.",
-        "zh": "本机 Hermes API Server 使用的 API_SERVER_KEY。"
+        "en": "API_SERVER_KEY for the local Hermes API server. Official Hermes requires it; compatible no-auth servers may leave it empty.",
+        "zh": "本机 Hermes API Server 的 API_SERVER_KEY。官方 Hermes 需要填写；无鉴权兼容服务可留空。"
       }
     },
     {

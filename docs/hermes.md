@@ -19,6 +19,8 @@ API_SERVER_PORT=8642
 hermes gateway
 ```
 
+The current official Hermes API Server requires `API_SERVER_KEY`, including loopback-only binds. ChatRaw treats its saved API Server Key as optional so compatible no-auth servers can be used, but **Check** still probes `/v1/models`; official Hermes will return 401 until the matching key is saved.
+
 The default ChatRaw Hermes settings are:
 
 - Base URL: `http://127.0.0.1:8642/v1`
@@ -32,7 +34,7 @@ The default ChatRaw Hermes settings are:
 2. Install and enable **Hermes Router**.
 3. Open the Hermes plugin settings.
 4. Save the Hermes base URL and model name.
-5. Enter the Hermes `API_SERVER_KEY`. Empty API key input does not delete an existing key; use **Clear key** to remove it.
+5. Enter the Hermes `API_SERVER_KEY` if the server requires one. Official Hermes requires it. Empty API key input does not delete an existing key; use **Clear key** to remove it.
 6. Optionally enter a Session Key. Empty session key input does not delete an existing key; use **Clear session key** to remove it.
 7. Use **Save** to persist the settings, then use **Check** to call `/api/hermes/health` with the saved configuration.
 8. Turn on the Hermes toolbar toggle when a message should route through Hermes. The toggle is browser-local and defaults to off.
@@ -59,9 +61,8 @@ The execution mode is saved in the backend plugin settings as `apiMode`. It is n
 ## Troubleshooting
 
 - **Hermes plugin is not enabled**: install the Hermes Router plugin and enable it in ChatRaw's plugin panel.
-- **Hermes API key is not configured**: save the Hermes `API_SERVER_KEY` in the plugin settings.
 - **Hermes base URL must point to a loopback address**: use `http://127.0.0.1:8642/v1`, `http://localhost:8642/v1`, or an IPv6 loopback URL.
-- **Hermes API error (401)**: the saved API key does not match Hermes `API_SERVER_KEY`.
+- **Hermes API error (401)**: the saved API key is missing or does not match Hermes `API_SERVER_KEY`.
 - **Hermes network error / timeout**: confirm `hermes gateway` is running and listening on the configured host and port.
 - **Hermes run requires approval**: Runs approval events are surfaced as a clear error; ChatRaw does not implement an approval panel.
 - **Hermes run event stream ended before completion**: Hermes closed the events stream without a terminal event. ChatRaw stops the run best-effort and does not save a partial assistant message as a completed answer.
@@ -72,7 +73,7 @@ The execution mode is saved in the backend plugin settings as `apiMode`. It is n
 - Enable and disable the ChatRaw plugin; the toolbar button should appear and disappear with the plugin state.
 - Toggle Hermes off; a normal message should still use the default ChatRaw backend.
 - Toggle Hermes on; a normal message should route to `/api/hermes/chat`.
-- Save base URL, model, API key, and optional Session Key with **Save**, then use **Check**.
+- Save base URL, model, API key if required, and optional Session Key with **Save**, then use **Check**.
 - Confirm **Check** calls `/api/hermes/health` and not `/api/proxy/request`.
 - Test stream and non-stream chat settings.
 - Test `chat_completions` and `runs` modes.
@@ -101,6 +102,8 @@ API_SERVER_PORT=8642
 hermes gateway
 ```
 
+当前官方 Hermes API Server 要求设置 `API_SERVER_KEY`，即使只绑定 loopback 也一样。ChatRaw 会把保存的 API Server Key 视为可选，以兼容无鉴权服务；但 **检查** 仍会探测 `/v1/models`，因此官方 Hermes 在未保存匹配 key 时会返回 401。
+
 ChatRaw 的 Hermes 默认设置为：
 
 - Base URL：`http://127.0.0.1:8642/v1`
@@ -114,7 +117,7 @@ ChatRaw 的 Hermes 默认设置为：
 2. 安装并启用 **Hermes Router**。
 3. 打开 Hermes 插件设置。
 4. 保存 Hermes base URL 和 model name。
-5. 输入 Hermes `API_SERVER_KEY`。API key 输入框留空不会删除已有 key；需要点击 **Clear key** 才会清除。
+5. 如果服务要求，输入 Hermes `API_SERVER_KEY`。官方 Hermes 需要填写。API key 输入框留空不会删除已有 key；需要点击 **Clear key** 才会清除。
 6. 可选输入 Session Key。Session key 输入框留空不会删除已有 key；需要点击 **Clear session key** 才会清除。
 7. 点击 **保存** 保存配置，然后点击 **检查** 使用已保存配置调用 `/api/hermes/health`。
 8. 需要让某条消息走 Hermes 时，打开输入框工具栏中的 Hermes toggle。该 toggle 是浏览器本地偏好，默认关闭。
@@ -141,9 +144,8 @@ ChatRaw 的 Hermes 默认设置为：
 ## 常见错误
 
 - **Hermes plugin is not enabled**：请安装 Hermes Router 插件，并在插件面板中启用。
-- **Hermes API key is not configured**：请在插件设置中保存 Hermes `API_SERVER_KEY`。
 - **Hermes base URL must point to a loopback address**：请使用 `http://127.0.0.1:8642/v1`、`http://localhost:8642/v1` 或 IPv6 loopback URL。
-- **Hermes API error (401)**：保存的 API key 与 Hermes `API_SERVER_KEY` 不一致。
+- **Hermes API error (401)**：未保存 API key，或保存的 API key 与 Hermes `API_SERVER_KEY` 不一致。
 - **Hermes network error / timeout**：确认 `hermes gateway` 正在运行，并监听配置中的 host 和 port。
 - **Hermes run requires approval**：Runs 审批事件会显示为清晰错误；ChatRaw 当前不实现审批面板。
 - **Hermes run event stream ended before completion**：Hermes 在终态事件前关闭 events stream。ChatRaw 会 best-effort stop run，并且不会把 partial assistant message 当作完整回答保存。
@@ -154,7 +156,7 @@ ChatRaw 的 Hermes 默认设置为：
 - 启用和禁用 ChatRaw 插件；工具栏按钮应随插件状态出现和消失。
 - 关闭 Hermes toggle；普通消息仍走默认 ChatRaw 后端。
 - 打开 Hermes toggle；普通消息应路由到 `/api/hermes/chat`。
-- 点击 **保存** 保存 base URL、model、API key 和可选 Session Key，然后点击 **检查**。
+- 点击 **保存** 保存 base URL、model、按服务要求填写的 API key 和可选 Session Key，然后点击 **检查**。
 - 确认 **检查** 调用 `/api/hermes/health`，不调用 `/api/proxy/request`。
 - 测试 stream 和 non-stream 聊天设置。
 - 测试 `chat_completions` 和 `runs` 模式。

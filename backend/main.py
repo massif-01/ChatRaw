@@ -4068,9 +4068,7 @@ def get_hermes_config(require_enabled: bool = True) -> dict:
     if not isinstance(api_mode, str) or api_mode not in HERMES_API_MODES:
         raise HermesBridgeError("Unsupported Hermes API mode")
 
-    api_key = config.get("api_keys", {}).get(HERMES_API_KEY_SERVICE_ID)
-    if not api_key:
-        raise HermesBridgeError("Hermes API key is not configured")
+    api_key = config.get("api_keys", {}).get(HERMES_API_KEY_SERVICE_ID) or ""
 
     session_key = config.get("api_keys", {}).get(HERMES_SESSION_KEY_SERVICE_ID, "") or ""
     return {
@@ -4083,10 +4081,10 @@ def get_hermes_config(require_enabled: bool = True) -> dict:
 
 
 def _hermes_base_headers(config: dict) -> dict:
-    return {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {config['api_key']}",
-    }
+    headers = {"Content-Type": "application/json"}
+    if config.get("api_key"):
+        headers["Authorization"] = f"Bearer {config['api_key']}"
+    return headers
 
 
 def build_hermes_session_id(chat_id: str) -> str:
