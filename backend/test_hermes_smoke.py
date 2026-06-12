@@ -9,6 +9,7 @@ import unittest
 from aiohttp import web
 from starlette.routing import Match
 
+PREVIOUS_DATA_DIR = os.environ.get("DATA_DIR")
 TEST_DATA_DIR = tempfile.mkdtemp(prefix="chatraw-hermes-smoke-test-")
 os.environ["DATA_DIR"] = TEST_DATA_DIR
 
@@ -23,6 +24,10 @@ from backend.hermes_fake_server import FakeHermesServer  # noqa: E402
 
 def tearDownModule():
     shutil.rmtree(TEST_DATA_DIR, ignore_errors=True)
+    if PREVIOUS_DATA_DIR is None:
+        os.environ.pop("DATA_DIR", None)
+    else:
+        os.environ["DATA_DIR"] = PREVIOUS_DATA_DIR
 
 
 class JsonRequest:
@@ -337,6 +342,20 @@ class HermesSmokeTests(unittest.IsolatedAsyncioTestCase):
 
         await self.wait_until(lambda: len(self.fake.stop_requests) == 1)
         self.assertEqual(self.fake.stop_requests[0]["run_id"], run_id)
+        self.assertNotIn(run_id, main._active_hermes_runs)
+
+    async def test_real_http_sse_stopped_terminal_does_not_extra_stop(self):
+        self.configure_chat(stream=True)
+
+        chunks, task = await self.start_stream({"message": "externally stopped run"})
+        run_id = await self.wait_until(self.fake.latest_run_id)
+        await asyncio.wait_for(task, timeout=3)
+        stream = "".join(chunks)
+
+        self.assertIn('"type": "run.cancelled"', stream)
+        self.assertIn('"done": true', stream)
+        self.assertNotIn("ended before completion", stream)
+        self.assertEqual(self.fake.stop_requests, [])
         self.assertNotIn(run_id, main._active_hermes_runs)
 
     async def test_real_http_sse_non_stream_approval_requires_stream_output_and_stops(self):
