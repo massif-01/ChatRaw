@@ -4762,6 +4762,12 @@ def normalize_hermes_run_event(event: dict, run_id: str = "") -> dict:
         result["hermes_run"] = envelope
         return result
 
+    if "stopped" in type_status:
+        result["terminal"] = True
+        result["status"] = "cancelled"
+        result["hermes_run"] = _build_hermes_run_envelope("run.cancelled", event_run_id, "cancelled")
+        return result
+
     if any(token in type_status for token in ("failed", "cancelled", "canceled", "error")):
         result["terminal"] = True
         cancelled = "cancelled" in type_status or "canceled" in type_status
@@ -4826,7 +4832,7 @@ def _hermes_run_url(config: dict, run_id: str, suffix: str = "") -> str:
     return f"{config['base_url']}/runs/{quote(str(run_id), safe='')}{suffix}"
 
 
-async def _stop_hermes_run(session, submission: dict, config: dict, run_id: str):
+async def _stop_hermes_run(session, submission: dict, config: dict, run_id: str, independent_session: bool = False):
     if not run_id:
         return
 
@@ -4843,7 +4849,7 @@ async def _stop_hermes_run(session, submission: dict, config: dict, run_id: str)
                 logger.warning(f"Hermes run stop returned {resp.status}: {text}")
 
     try:
-        if isinstance(session, aiohttp.ClientSession) or getattr(session, "closed", False):
+        if (independent_session and isinstance(session, aiohttp.ClientSession)) or getattr(session, "closed", False):
             connector = aiohttp.TCPConnector(ssl=_create_ssl_context(), force_close=True)
             timeout = aiohttp.ClientTimeout(total=30, connect=5)
             async with aiohttp.ClientSession(timeout=timeout, connector=connector) as stop_session:
@@ -4867,7 +4873,7 @@ async def _iter_hermes_run_events(session, submission: dict, config: dict, reque
 
         async for event_data in _iter_hermes_sse_events(resp):
             if await _is_request_disconnected(request):
-                await _stop_hermes_run(session, submission, config, run_id)
+                await _stop_hermes_run(session, submission, config, run_id, independent_session=True)
                 raise HermesRunDisconnected()
             event = normalize_hermes_run_event(event_data, run_id=run_id)
             if event:
@@ -4887,11 +4893,11 @@ async def _consume_hermes_run(submission: dict, config: dict, request: Request, 
     registered = False
     stop_requested = False
 
-    async def request_stop():
+    async def request_stop(independent_session: bool = False):
         nonlocal stop_requested
         if run_id and not stop_requested:
             stop_requested = True
-            await _stop_hermes_run(session, submission, config, run_id)
+            await _stop_hermes_run(session, submission, config, run_id, independent_session=independent_session)
 
     try:
         run_id, references = await _create_hermes_run(session, submission, config)
@@ -4914,6 +4920,7 @@ async def _consume_hermes_run(submission: dict, config: dict, request: Request, 
                 if hermes_type == "approval.request":
                     update_active_hermes_run(run_id, status="pending_approval", pending_approval=hermes_run)
                     if not stream:
+                        await request_stop(independent_session=True)
                         raise HermesBridgeError("Hermes Runs approval requires stream output", status_code=409)
                 elif hermes_type == "approval.responded":
                     update_active_hermes_run(run_id, status="running", pending_approval=None)
@@ -4968,7 +4975,7 @@ async def _consume_hermes_run(submission: dict, config: dict, request: Request, 
         else:
             yield json.dumps({"content": full_response, "thinking": full_thinking, "references": references})
     except asyncio.CancelledError:
-        await request_stop()
+        await request_stop(independent_session=True)
         raise
     except HermesRunDisconnected:
         stop_requested = True
@@ -5000,7 +5007,7 @@ async def _consume_hermes_run(submission: dict, config: dict, request: Request, 
         raise
     finally:
         if registered and not terminal_seen and not stop_requested:
-            await request_stop()
+            await request_stop(independent_session=True)
         if registered:
             remove_active_hermes_run(run_id)
 

@@ -891,6 +891,12 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(cancelled["terminal"])
         self.assertEqual(cancelled["hermes_run"]["type"], "run.cancelled")
 
+        stopped = main.normalize_hermes_run_event({"event": "run.stopped", "data": {"status": "stopped"}})
+        self.assertTrue(stopped["terminal"])
+        self.assertEqual(stopped["status"], "cancelled")
+        self.assertEqual(stopped["hermes_run"]["type"], "run.cancelled")
+        self.assertEqual(stopped["hermes_run"]["status"], "cancelled")
+
         approval = main.normalize_hermes_run_event({
             "type": "approval.request",
             "approval": {
@@ -1364,6 +1370,31 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("run-failed", main._active_hermes_runs)
         chats = main.db.get_chats()
         self.assertEqual(len(main.db.get_messages(chats[0].id)), 1)
+
+    async def test_hermes_runs_terminal_stopped_cleans_registry_without_stop_or_eof_error(self):
+        self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
+        self.configure_chat(stream=True)
+        fake_session = self.patch_session(FakeHermesSession(
+            post_responses=[
+                FakeHermesResponse(json_data={"run_id": "run-stopped"}),
+                FakeHermesResponse(json_data={"stopped": True}),
+            ],
+            get_response=FakeHermesResponse(stream_chunks=[
+                b'event: run.stopped\ndata: {"status":"stopped"}\n\n',
+            ]),
+        ))
+
+        response = await main.hermes_chat(JsonRequest({"message": "external stop"}))
+        stream_chunks = await self.collect_stream(response)
+        chat_id = json.loads(stream_chunks[0])["chat_id"]
+        stream = "".join(stream_chunks)
+
+        self.assertIn('"type": "run.cancelled"', stream)
+        self.assertIn('"done": true', stream)
+        self.assertNotIn("ended before completion", stream)
+        self.assertEqual(len(fake_session.posts), 1)
+        self.assertNotIn("run-stopped", main._active_hermes_runs)
+        self.assertEqual(len(main.db.get_messages(chat_id)), 1)
 
     async def test_hermes_runs_disconnect_stops_run_without_done(self):
         self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
