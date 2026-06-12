@@ -268,6 +268,24 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(fake_session.gets, [])
 
         result = await main.hermes_health(JsonRequest(
+            url="http://testserver/api/hermes/health",
+            headers={"referer": "http://testserver/"},
+            fetch_site=None,
+        ))
+        status, data = self.decode_result(result)
+        self.assertEqual(status, 200)
+        self.assertTrue(data["success"])
+
+        result = await main.hermes_health(JsonRequest(
+            url="http://testserver/api/hermes/health",
+            headers={"referer": "http://evil.test/"},
+            fetch_site=None,
+        ))
+        status, data = self.decode_result(result)
+        self.assertEqual(status, 403)
+        self.assertFalse(data["success"])
+
+        result = await main.hermes_health(JsonRequest(
             origin="http://testserver",
             url="http://testserver/api/hermes/health",
         ))

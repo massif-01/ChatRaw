@@ -4008,6 +4008,10 @@ def validate_hermes_request_origin(request: Request):
         fetch_site = (request.headers.get("sec-fetch-site") or "").lower()
         if fetch_site in ("same-origin", "none"):
             return
+        referer_key = _origin_key(request.headers.get("referer", ""))
+        request_key = _origin_key(str(request.url))
+        if referer_key and request_key and referer_key == request_key:
+            return
         raise HTTPException(status_code=403, detail="Missing Origin for Hermes bridge")
 
     origin_key = _origin_key(origin)
