@@ -52,7 +52,7 @@ To use a non-loopback Hermes server:
 5. Click **Save**.
 6. Use **Check** to verify the saved configuration.
 
-The backend canonicalizes the allowed list by trimming entries, removing trailing slashes, deduplicating, sorting, and joining with newlines. If the allowed list is changed after confirmation, ChatRaw marks the confirmation as stale and the remote URL is rejected until the warning is confirmed again.
+The backend canonicalizes the allowed list by trimming entries, lowercasing and punycoding hosts, removing a single trailing slash, deduplicating, sorting, and joining with newlines. Remote Base URL paths must be empty or simple ASCII paths such as `/v1` or `/api/v1`. If the allowed list is changed after confirmation, ChatRaw marks the confirmation as stale and the remote URL is rejected until the warning is confirmed again.
 
 ## Execution Modes
 
@@ -69,7 +69,9 @@ The execution mode is saved in the backend plugin settings as `apiMode`. It is n
 - The browser never receives the Hermes API key or Session Key in plaintext.
 - Hermes base URL must be `http` or `https`.
 - Loopback hosts such as `localhost`, `127.0.0.1`, and `::1` are allowed by default.
-- Non-loopback hosts are allowed only when the normalized Base URL is listed in `allowedRemoteBaseUrls` and the saved risk-confirmation snapshot matches the current canonical list.
+- Non-loopback hosts are allowed only when the backend-normalized Base URL is listed in `allowedRemoteBaseUrls` and the saved risk-confirmation snapshot matches the current canonical list.
+- Unicode domain names are normalized to punycode before allowlist and risk-confirmation comparison.
+- Base URL paths must be empty or simple ASCII paths such as `/v1` or `/api/v1`; Unicode paths, percent escapes, dot segments, empty segments, and repeated slashes are rejected.
 - The remote URL warning is a user-facing confirmation flow, not a sandbox boundary against already trusted same-origin UI code or installed plugins. The backend enforces the saved Hermes plugin configuration.
 - URL credentials, query strings, and fragments are always rejected.
 - Hermes bridge requests use `allow_redirects=False`; any 3xx response is blocked instead of followed.
@@ -82,7 +84,7 @@ The execution mode is saved in the backend plugin settings as `apiMode`. It is n
 - **Remote Hermes base URL requires risk confirmation**: add the URL to **Allowed remote base URLs**, review the warning, confirm it, and save settings.
 - **Remote Hermes base URL risk confirmation is stale**: the allowed list changed after confirmation. Review and confirm the warning again, then save settings.
 - **Hermes base URL must be listed in allowed remote base URLs**: the saved Base URL is remote but does not match any normalized URL in the allowed list.
-- **Invalid Hermes base URL / Allowed remote Hermes base URL**: use `http` or `https`; remove credentials, query strings, and fragments.
+- **Invalid Hermes base URL / Allowed remote Hermes base URL**: use `http` or `https`; remove credentials, query strings, fragments, and complex paths.
 - **Hermes API error (401)**: the saved API key is missing or does not match Hermes `API_SERVER_KEY`.
 - **Hermes network error / timeout**: confirm `hermes gateway` is running and listening on the configured host and port.
 - **Hermes run requires approval**: Runs approval events are surfaced as a clear error; ChatRaw does not implement an approval panel.
@@ -158,7 +160,7 @@ ChatRaw 的 Hermes 默认设置为：
 5. 点击 **保存**。
 6. 点击 **检查** 验证已保存配置。
 
-后端会把允许列表规范化：trim 每一项、去掉末尾 `/`、去重、排序，并用换行拼成确认快照。确认后如果修改允许列表，ChatRaw 会把确认状态视为过期；远程 URL 会被拒绝，直到重新确认风险并保存。
+后端会把允许列表规范化：trim 每一项、host 小写并转为 punycode、去掉单个末尾 `/`、去重、排序，并用换行拼成确认快照。远程 Base URL path 必须为空或 `/v1`、`/api/v1` 这类简单 ASCII path。确认后如果修改允许列表，ChatRaw 会把确认状态视为过期；远程 URL 会被拒绝，直到重新确认风险并保存。
 
 ## 执行模式
 
@@ -175,7 +177,9 @@ ChatRaw 的 Hermes 默认设置为：
 - 浏览器永远拿不到 Hermes API key 或 Session Key 明文。
 - Hermes base URL 必须使用 `http` 或 `https`。
 - `localhost`、`127.0.0.1`、`::1` 等 loopback host 默认允许。
-- 非 loopback host 只有在规范化后的 Base URL 写入 `allowedRemoteBaseUrls`，且保存的风险确认快照与当前 canonical 列表一致时才会放行。
+- 非 loopback host 只有在后端规范化后的 Base URL 写入 `allowedRemoteBaseUrls`，且保存的风险确认快照与当前 canonical 列表一致时才会放行。
+- Unicode 域名会先规范化为 punycode，再参与 allowlist 和风险确认快照比较。
+- Base URL path 必须为空或 `/v1`、`/api/v1` 这类简单 ASCII path；Unicode path、percent escape、dot segment、空 segment 和重复 slash 都会被拒绝。
 - 远程 URL 警示是面向用户的确认流程，不是用来隔离已信任的同源 UI 代码或已安装插件的沙箱边界。后端会按已保存的 Hermes 插件配置执行校验。
 - URL 凭据、query 和 fragment 始终会被拒绝。
 - Hermes bridge 请求使用 `allow_redirects=False`；任何 3xx 响应都会被阻断，不会跟随跳转。
@@ -188,7 +192,7 @@ ChatRaw 的 Hermes 默认设置为：
 - **Remote Hermes base URL requires risk confirmation**：请把地址加入 **允许的远程 Base URL**，阅读并确认风险，然后保存设置。
 - **Remote Hermes base URL risk confirmation is stale**：允许列表在确认后发生了变化。请重新查看并确认风险，然后保存设置。
 - **Hermes base URL must be listed in allowed remote base URLs**：已保存 Base URL 是远程地址，但没有命中规范化后的允许列表。
-- **Invalid Hermes base URL / Allowed remote Hermes base URL**：请使用 `http` 或 `https`，并移除 URL 凭据、query 和 fragment。
+- **Invalid Hermes base URL / Allowed remote Hermes base URL**：请使用 `http` 或 `https`，并移除 URL 凭据、query、fragment 和复杂 path。
 - **Hermes API error (401)**：未保存 API key，或保存的 API key 与 Hermes `API_SERVER_KEY` 不一致。
 - **Hermes network error / timeout**：确认 `hermes gateway` 正在运行，并监听配置中的 host 和 port。
 - **Hermes run requires approval**：Runs 审批事件会显示为清晰错误；ChatRaw 当前不实现审批面板。

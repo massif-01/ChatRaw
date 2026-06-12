@@ -21,6 +21,7 @@ import threading
 import tempfile
 import zipfile
 import ipaddress
+from yarl import URL as YarlURL
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Optional, List, AsyncGenerator, Dict, Any, Tuple
@@ -3820,6 +3821,7 @@ HERMES_API_MODES = {HERMES_API_MODE_CHAT_COMPLETIONS, HERMES_API_MODE_RUNS}
 HERMES_REMOTE_URLS_MAX_LENGTH = 4000
 HERMES_REMOTE_URL_MAX_LENGTH = 300
 HERMES_REMOTE_URLS_MAX_COUNT = 20
+HERMES_REMOTE_URL_PATH_RE = re.compile(r"^/(?:[A-Za-z0-9._~-]+)(?:/[A-Za-z0-9._~-]+)*$")
 
 # Plugin upload size limit (10MB)
 MAX_PLUGIN_SIZE = int(os.environ.get("MAX_PLUGIN_SIZE", str(10 * 1024 * 1024)))
@@ -4026,6 +4028,48 @@ def validate_hermes_request_origin(request: Request):
     raise HTTPException(status_code=403, detail="Cross-origin Hermes bridge requests are not allowed")
 
 
+def _normalize_hermes_path(path: str) -> str:
+    raw_path = path or ""
+    if raw_path in ("", "/"):
+        return ""
+    if raw_path.endswith("//"):
+        raise HermesBridgeError("Hermes base URL path must be a simple ASCII path")
+    normalized = raw_path[:-1] if raw_path.endswith("/") else raw_path
+    if not normalized or "%" in normalized or not HERMES_REMOTE_URL_PATH_RE.fullmatch(normalized):
+        raise HermesBridgeError("Hermes base URL path must be a simple ASCII path")
+    segments = normalized.split("/")[1:]
+    if any(segment in (".", "..") for segment in segments):
+        raise HermesBridgeError("Hermes base URL path must be a simple ASCII path")
+    return normalized
+
+
+def _is_ipv4_like_hostname(hostname: str) -> bool:
+    return bool(re.fullmatch(r"[0-9.]+", hostname)) and "." in hostname
+
+
+def _canonicalize_hermes_host(raw_url: str, parsed) -> str:
+    hostname = parsed.hostname.lower()
+    if hostname == "localhost":
+        return "localhost"
+
+    try:
+        address = ipaddress.ip_address(hostname)
+    except ValueError:
+        if _is_ipv4_like_hostname(hostname):
+            raise HermesBridgeError("Invalid Hermes base URL")
+        try:
+            host = (YarlURL(raw_url).raw_host or "").lower()
+        except Exception:
+            raise HermesBridgeError("Invalid Hermes base URL")
+        if not host:
+            raise HermesBridgeError("Hermes base URL must include a host")
+        return host
+
+    if address.version == 6:
+        return f"[{address.compressed}]"
+    return address.compressed
+
+
 def _normalize_hermes_base_url(base_url: str) -> Tuple[str, Any]:
     raw_url = str(base_url or "").strip()
     if len(raw_url) > HERMES_REMOTE_URL_MAX_LENGTH:
@@ -4049,15 +4093,11 @@ def _normalize_hermes_base_url(base_url: str) -> Tuple[str, Any]:
         raise HermesBridgeError("Invalid Hermes base URL")
 
     scheme = parsed.scheme.lower()
-    hostname = parsed.hostname.lower()
-    if ":" in hostname and not hostname.startswith("["):
-        host = f"[{hostname}]"
-    else:
-        host = hostname
+    host = _canonicalize_hermes_host(raw_url, parsed)
     is_default_port = (scheme == "http" and port == 80) or (scheme == "https" and port == 443)
     if port is not None and not is_default_port:
         host = f"{host}:{port}"
-    path = (parsed.path or "").rstrip("/")
+    path = _normalize_hermes_path(parsed.path)
     return f"{scheme}://{host}{path}", parsed
 
 
@@ -4091,6 +4131,14 @@ def parse_hermes_allowed_remote_base_urls(value: Any) -> Tuple[List[str], str]:
     return unique_sorted, "\n".join(unique_sorted)
 
 
+def _parse_hermes_warning_snapshot(value: Any) -> str:
+    try:
+        _, canonical = parse_hermes_allowed_remote_base_urls(value)
+    except HermesBridgeError:
+        return ""
+    return canonical
+
+
 def validate_hermes_base_url(
     base_url: str,
     allowed_remote_base_urls: Any = "",
@@ -4105,7 +4153,7 @@ def validate_hermes_base_url(
 
     if remote_warning_accepted is not True:
         raise HermesBridgeError("Remote Hermes base URL requires risk confirmation")
-    if str(remote_warning_accepted_for or "") != canonical_allowed:
+    if _parse_hermes_warning_snapshot(remote_warning_accepted_for) != canonical_allowed:
         raise HermesBridgeError("Remote Hermes base URL risk confirmation is stale")
     if normalized_url not in allowed_urls:
         raise HermesBridgeError("Hermes base URL must be listed in allowed remote base URLs")
@@ -4687,6 +4735,37 @@ async def _stream_hermes_chat_chunks(submission: dict, config: dict) -> AsyncGen
         yield json.dumps({"error": f"Hermes network error: {str(e)}"})
     except Exception as e:
         yield json.dumps({"error": str(e)})
+
+
+@app.post("/api/hermes/remote-base-urls/normalize")
+async def hermes_normalize_remote_base_urls(request: Request):
+    try:
+        validate_hermes_request_origin(request)
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        if not isinstance(body, dict):
+            body = {}
+
+        normalized_base_url, parsed = _normalize_hermes_base_url(body.get("baseUrl") or HERMES_DEFAULT_BASE_URL)
+        allowed_urls, canonical_allowed = parse_hermes_allowed_remote_base_urls(
+            body.get("allowedRemoteBaseUrls", "")
+        )
+        return {
+            "success": True,
+            "baseUrl": normalized_base_url,
+            "baseUrlIsLoopback": _is_hermes_loopback_base_url(parsed),
+            "allowedRemoteBaseUrls": allowed_urls,
+            "canonicalAllowed": canonical_allowed,
+        }
+    except HTTPException as e:
+        return _hermes_error_response(e, success_shape=True)
+    except HermesBridgeError as e:
+        return _hermes_error_response(e, success_shape=True)
+    except Exception as e:
+        logger.error(f"Hermes remote base URL normalization error: {e}")
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
 @app.get("/api/hermes/health")

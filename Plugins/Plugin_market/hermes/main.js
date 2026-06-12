@@ -16,7 +16,6 @@
     const DEFAULT_API_MODE = 'chat_completions';
     const REMOTE_URLS_MAX_LENGTH = 4000;
     const REMOTE_URL_MAX_LENGTH = 300;
-    const REMOTE_URLS_MAX_COUNT = 20;
 
     if (!ChatRaw || !ChatRaw.hooks || !ChatRaw.ui || !ChatRaw.storage) {
         console.error('[Hermes] ChatRaw plugin APIs are not available');
@@ -47,7 +46,6 @@
             remoteUrlsInvalid: 'Invalid remote URL list',
             remoteUrlsRequired: 'Add at least one remote Base URL before enabling remote access.',
             remoteUrlsBaseUrlIsLocal: 'Current Base URL is local and does not require remote access.',
-            remoteUrlsBaseUrlInvalid: 'Current Base URL is not a valid remote URL.',
             remoteWarningTitle: 'Enable remote Hermes address access',
             remoteWarningConfirm: 'Confirm remote address access',
             remoteWarningCancel: 'Cancel',
@@ -124,7 +122,6 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             remoteUrlsInvalid: '远程地址列表无效',
             remoteUrlsRequired: '启用远程访问前，请至少填写一个远程 Base URL。',
             remoteUrlsBaseUrlIsLocal: '当前 Base URL 是本机地址，不需要远程放行。',
-            remoteUrlsBaseUrlInvalid: '当前 Base URL 不是有效的远程地址。',
             remoteWarningTitle: '启用远程 Hermes 地址放行',
             remoteWarningConfirm: '确认启用远程地址放行',
             remoteWarningCancel: '取消',
@@ -198,6 +195,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
     let maskedSessionKey = '';
     let settingsListener = null;
     let remoteWarningOverlay = null;
+    let remoteStatusRequestId = 0;
 
     function t(key) {
         const lang = ChatRaw.utils?.getLanguage?.() || 'en';
@@ -213,57 +211,37 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             .replace(/'/g, '&#39;');
     }
 
-    function normalizeRemoteBaseUrl(value) {
-        const raw = String(value || '').trim();
-        if (raw.length > REMOTE_URL_MAX_LENGTH) {
+    function assertRemoteUrlInputLengths(baseUrl, allowedRemoteBaseUrls) {
+        if (String(baseUrl || '').length > REMOTE_URL_MAX_LENGTH) {
             throw new Error(t('remoteUrlsInvalid'));
         }
-
-        let parsed;
-        try {
-            parsed = new URL(raw);
-        } catch (error) {
+        if (String(allowedRemoteBaseUrls || '').length > REMOTE_URLS_MAX_LENGTH) {
             throw new Error(t('remoteUrlsInvalid'));
-        }
-
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-            throw new Error(t('remoteUrlsInvalid'));
-        }
-        if (parsed.username || parsed.password || parsed.search || parsed.hash) {
-            throw new Error(t('remoteUrlsInvalid'));
-        }
-
-        const path = parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/+$/, '');
-        return `${parsed.protocol}//${parsed.host.toLowerCase()}${path}`;
-    }
-
-    function isLoopbackBaseUrl(value) {
-        try {
-            const parsed = new URL(String(value || '').trim());
-            let hostname = parsed.hostname.toLowerCase();
-            if (hostname.startsWith('[') && hostname.endsWith(']')) {
-                hostname = hostname.slice(1, -1);
-            }
-            return hostname === 'localhost' || hostname === '::1' || /^127(?:\.\d{1,3}){3}$/.test(hostname);
-        } catch (error) {
-            return false;
         }
     }
 
-    function canonicalizeRemoteBaseUrls(value) {
-        const raw = String(value || '');
-        if (raw.length > REMOTE_URLS_MAX_LENGTH) {
-            throw new Error(t('remoteUrlsInvalid'));
+    async function normalizeRemoteBaseUrls(formSettings) {
+        const baseUrl = formSettings?.baseUrl || DEFAULT_BASE_URL;
+        const allowedRemoteBaseUrls = formSettings?.allowedRemoteBaseUrls || '';
+        assertRemoteUrlInputLengths(baseUrl, allowedRemoteBaseUrls);
+        const res = await fetch('/api/hermes/remote-base-urls/normalize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ baseUrl, allowedRemoteBaseUrls })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.success === false) {
+            throw new Error(data.error || t('remoteUrlsInvalid'));
         }
+        return data;
+    }
 
-        const entries = raw.split(/[\n,]+/).map(item => item.trim()).filter(Boolean);
-        if (entries.length > REMOTE_URLS_MAX_COUNT) {
-            throw new Error(t('remoteUrlsInvalid'));
-        }
-
-        const unique = Array.from(new Set(entries.map(normalizeRemoteBaseUrl)));
-        unique.sort();
-        return unique.join('\n');
+    async function canonicalizeAllowedRemoteBaseUrls(value, baseUrl) {
+        const data = await normalizeRemoteBaseUrls({
+            baseUrl: baseUrl || DEFAULT_BASE_URL,
+            allowedRemoteBaseUrls: value || ''
+        });
+        return data.canonicalAllowed || '';
     }
 
     function getAppState() {
@@ -350,16 +328,25 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
 
     async function saveSettings() {
         const next = readSettingsForm();
-        const canonicalAllowed = canonicalizeRemoteBaseUrls(next.allowedRemoteBaseUrls);
-        const remoteAccepted = Boolean(
-            settings.remoteBaseUrlWarningAccepted &&
-            settings.remoteBaseUrlWarningAcceptedFor === canonicalAllowed
-        );
+        const normalized = await normalizeRemoteBaseUrls(next);
+        let acceptedForCanonical = '';
+        if (settings.remoteBaseUrlWarningAccepted && settings.remoteBaseUrlWarningAcceptedFor) {
+            try {
+                acceptedForCanonical = await canonicalizeAllowedRemoteBaseUrls(
+                    settings.remoteBaseUrlWarningAcceptedFor,
+                    normalized.baseUrl
+                );
+            } catch (error) {
+                acceptedForCanonical = '';
+            }
+        }
+        const canonicalAllowed = normalized.canonicalAllowed || '';
+        const remoteAccepted = Boolean(canonicalAllowed && acceptedForCanonical === canonicalAllowed);
         settings = {
-            baseUrl: next.baseUrl,
+            baseUrl: normalized.baseUrl,
             model: next.model,
             apiMode: next.apiMode,
-            allowedRemoteBaseUrls: next.allowedRemoteBaseUrls,
+            allowedRemoteBaseUrls: canonicalAllowed,
             remoteBaseUrlWarningAccepted: remoteAccepted,
             remoteBaseUrlWarningAcceptedFor: remoteAccepted ? canonicalAllowed : ''
         };
@@ -490,33 +477,52 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
         }
     }
 
-    function updateRemoteUrlStatus() {
+    async function updateRemoteUrlStatus() {
         const status = document.getElementById('hermes-remote-url-status');
         if (!status) return;
 
+        const requestId = ++remoteStatusRequestId;
         try {
             const value = document.getElementById('hermes-allowed-remote-base-urls')?.value || '';
-            const canonicalAllowed = canonicalizeRemoteBaseUrls(value);
+            const next = readSettingsForm();
+            next.allowedRemoteBaseUrls = value;
+            const normalized = await normalizeRemoteBaseUrls(next);
+            if (requestId !== remoteStatusRequestId) return;
+            const canonicalAllowed = normalized.canonicalAllowed || '';
             status.style.color = 'var(--text-secondary)';
             if (!canonicalAllowed) {
                 status.textContent = t('remoteUrlsEmpty');
                 return;
             }
+            let acceptedForCanonical = '';
+            if (settings.remoteBaseUrlWarningAccepted && settings.remoteBaseUrlWarningAcceptedFor) {
+                try {
+                    acceptedForCanonical = await canonicalizeAllowedRemoteBaseUrls(
+                        settings.remoteBaseUrlWarningAcceptedFor,
+                        normalized.baseUrl
+                    );
+                } catch (error) {
+                    acceptedForCanonical = '';
+                }
+            }
+            if (requestId !== remoteStatusRequestId) return;
             if (
                 settings.remoteBaseUrlWarningAccepted &&
-                settings.remoteBaseUrlWarningAcceptedFor === canonicalAllowed
+                acceptedForCanonical === canonicalAllowed
             ) {
                 status.textContent = t('remoteUrlsConfirmed');
             } else {
                 status.textContent = t('remoteUrlsNotConfirmed');
             }
         } catch (error) {
+            if (requestId !== remoteStatusRequestId) return;
             status.textContent = error.message || t('remoteUrlsInvalid');
             status.style.color = 'var(--danger-color, #dc2626)';
         }
     }
 
     function setRemoteUrlStatus(message, type) {
+        remoteStatusRequestId += 1;
         const status = document.getElementById('hermes-remote-url-status');
         if (!status) return;
         status.textContent = message || '';
@@ -530,26 +536,21 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
         }
     }
 
-    function openRemoteWarningModal() {
+    async function openRemoteWarningModal() {
         const next = readSettingsForm();
-        let canonicalAllowed = '';
+        let normalized;
         try {
-            canonicalAllowed = canonicalizeRemoteBaseUrls(next.allowedRemoteBaseUrls);
+            normalized = await normalizeRemoteBaseUrls(next);
         } catch (error) {
             setStatus(error.message || t('remoteUrlsInvalid'), 'error');
-            updateRemoteUrlStatus();
+            await updateRemoteUrlStatus();
             return;
         }
 
+        const canonicalAllowed = normalized.canonicalAllowed || '';
         if (!canonicalAllowed) {
-            if (isLoopbackBaseUrl(next.baseUrl)) {
+            if (normalized.baseUrlIsLoopback) {
                 setRemoteUrlStatus(t('remoteUrlsBaseUrlIsLocal'));
-                return;
-            }
-            try {
-                normalizeRemoteBaseUrl(next.baseUrl);
-            } catch (error) {
-                setRemoteUrlStatus(t('remoteUrlsBaseUrlInvalid'), 'error');
                 return;
             }
             setRemoteUrlStatus(t('remoteUrlsRequired'), 'error');
@@ -619,9 +620,14 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
         document.getElementById('hermes-remote-warning-cancel')?.addEventListener('click', closeRemoteWarningModal);
         confirmButton?.addEventListener('click', () => {
             if (confirmButton.disabled) return;
-            settings.allowedRemoteBaseUrls = next.allowedRemoteBaseUrls;
+            settings.baseUrl = normalized.baseUrl;
+            settings.allowedRemoteBaseUrls = canonicalAllowed;
             settings.remoteBaseUrlWarningAccepted = true;
             settings.remoteBaseUrlWarningAcceptedFor = canonicalAllowed;
+            const baseUrlInput = document.getElementById('hermes-base-url');
+            const allowedRemoteInput = document.getElementById('hermes-allowed-remote-base-urls');
+            if (baseUrlInput) baseUrlInput.value = normalized.baseUrl;
+            if (allowedRemoteInput) allowedRemoteInput.value = canonicalAllowed;
             closeRemoteWarningModal();
             updateRemoteUrlStatus();
             setStatus(t('remoteUrlsConfirmed'));

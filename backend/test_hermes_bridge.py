@@ -461,6 +461,84 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(main.HermesBridgeError):
             main.parse_hermes_allowed_remote_base_urls(f"http://10.10.99.99/{'a' * 300}")
 
+        idn_allowed = "http://例子.测试:8642/v1/\nhttp://faß.de/v1\nhttp://☃.net/v1"
+        idn_urls, idn_canonical = main.parse_hermes_allowed_remote_base_urls(idn_allowed)
+        self.assertEqual(idn_urls, [
+            "http://xn--fa-hia.de/v1",
+            "http://xn--fsqu00a.xn--0zwm56d:8642/v1",
+            "http://xn--n3h.net/v1",
+        ])
+        self.assertEqual(idn_canonical, "\n".join(idn_urls))
+        self.assertEqual(
+            main.validate_hermes_base_url(
+                "http://例子.测试:8642/v1/",
+                idn_allowed,
+                True,
+                "http://xn--fa-hia.de/v1\nhttp://xn--fsqu00a.xn--0zwm56d:8642/v1\nhttp://xn--n3h.net/v1",
+            ),
+            "http://xn--fsqu00a.xn--0zwm56d:8642/v1",
+        )
+        self.assertEqual(
+            main.validate_hermes_base_url(
+                "http://faß.de/v1",
+                "http://xn--fa-hia.de/v1",
+                True,
+                "http://faß.de/v1",
+            ),
+            "http://xn--fa-hia.de/v1",
+        )
+
+        path_or_host_rejected = [
+            "http://127.0.0.256:8642/v1",
+            "http://127.999.1.1:8642/v1",
+            "http://10.10.99.99/é",
+            "http://10.10.99.99/v%201",
+            "http://10.10.99.99/v 1",
+            "http://10.10.99.99/a/../b",
+            "http://10.10.99.99//v1",
+            "http://10.10.99.99/v1//",
+        ]
+        for url in path_or_host_rejected:
+            with self.subTest(url=url):
+                with self.assertRaises(main.HermesBridgeError):
+                    main.parse_hermes_allowed_remote_base_urls(url)
+
+    async def test_hermes_remote_base_url_normalize_endpoint(self):
+        result = await main.hermes_normalize_remote_base_urls(JsonRequest(
+            {
+                "baseUrl": "http://例子.测试:8642/v1/",
+                "allowedRemoteBaseUrls": "http://faß.de/v1\nhttp://例子.测试:8642/v1/",
+            },
+            url="http://testserver/api/hermes/remote-base-urls/normalize",
+        ))
+        status, data = self.decode_result(result)
+
+        self.assertEqual(status, 200)
+        self.assertTrue(data["success"])
+        self.assertEqual(data["baseUrl"], "http://xn--fsqu00a.xn--0zwm56d:8642/v1")
+        self.assertFalse(data["baseUrlIsLoopback"])
+        self.assertEqual(data["allowedRemoteBaseUrls"], [
+            "http://xn--fa-hia.de/v1",
+            "http://xn--fsqu00a.xn--0zwm56d:8642/v1",
+        ])
+        self.assertEqual(
+            data["canonicalAllowed"],
+            "http://xn--fa-hia.de/v1\nhttp://xn--fsqu00a.xn--0zwm56d:8642/v1",
+        )
+
+        result = await main.hermes_normalize_remote_base_urls(JsonRequest(
+            {
+                "baseUrl": "http://127.0.0.256:8642/v1",
+                "allowedRemoteBaseUrls": "",
+            },
+            url="http://testserver/api/hermes/remote-base-urls/normalize",
+        ))
+        status, data = self.decode_result(result)
+
+        self.assertEqual(status, 400)
+        self.assertFalse(data["success"])
+        self.assertIn("Invalid Hermes base URL", data["error"])
+
     async def test_hermes_health_allows_confirmed_remote_base_url(self):
         allowed = "http://10.10.99.100:8642/v1\nhttp://10.10.99.99:9119"
         _, canonical_allowed = main.parse_hermes_allowed_remote_base_urls(allowed)
@@ -479,6 +557,25 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(data["success"])
         self.assertEqual(fake_session.gets[0]["url"], "http://10.10.99.99:9119/models")
         self.assertEqual(fake_session.gets[0]["headers"]["Authorization"], "Bearer secret")
+
+    async def test_hermes_health_uses_punycode_for_unicode_remote_base_url(self):
+        allowed = "http://例子.测试:8642/v1"
+        _, canonical_allowed = main.parse_hermes_allowed_remote_base_urls(allowed)
+        self.enable_hermes(
+            base_url="http://例子.测试:8642/v1/",
+            allowed_remote_base_urls=allowed,
+            remote_warning_accepted=True,
+            remote_warning_accepted_for=canonical_allowed,
+        )
+        fake_session = self.patch_session(FakeHermesSession())
+
+        result = await main.hermes_health(JsonRequest(url="http://testserver/api/hermes/health"))
+        status, data = self.decode_result(result)
+
+        self.assertEqual(status, 200)
+        self.assertTrue(data["success"])
+        self.assertEqual(data["base_url"], "http://xn--fsqu00a.xn--0zwm56d:8642/v1")
+        self.assertEqual(fake_session.gets[0]["url"], "http://xn--fsqu00a.xn--0zwm56d:8642/v1/models")
 
     async def test_hermes_chat_allows_confirmed_remote_base_url(self):
         allowed = "http://10.10.99.100:8642/v1\nhttp://10.10.99.99:9119"
