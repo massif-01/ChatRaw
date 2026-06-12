@@ -139,6 +139,7 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
             cursor.execute(f"DELETE FROM {table}")
         conn.commit()
         main._context_compaction_locks.clear()
+        main._active_hermes_runs.clear()
 
         self.original_cors_origins = main.CORS_ORIGINS
         self.addCleanup(lambda: setattr(main, "CORS_ORIGINS", self.original_cors_origins))
@@ -832,7 +833,7 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         messages = main.db.get_messages(chat_id)
         self.assertEqual(messages[1].content, "<thinking>\n想\n</thinking>\n\n你")
 
-    def test_hermes_run_event_parser_maps_supported_fields_and_ignores_tools(self):
+    def test_hermes_run_event_parser_maps_supported_fields_and_run_envelopes(self):
         self.assertEqual(
             main.normalize_hermes_run_event({"type": "message.delta", "delta": {"content": "Hi"}})["content_delta"],
             "Hi",
@@ -856,23 +857,63 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
             main.normalize_hermes_run_event({"delta": {"reasoning_content": "Think"}})["thinking_delta"],
             "Think",
         )
-        self.assertEqual(
-            main.normalize_hermes_run_event({"type": "tool.progress", "message": "running"}),
-            {},
+        tool_started = main.normalize_hermes_run_event(
+            {"type": "tool.started", "tool": "terminal", "command": "<b>ssh</b>", "secret": "not exposed"},
+            run_id="run-tools",
         )
-        self.assertEqual(
-            main.normalize_hermes_run_event({
-                "event": "message",
-                "data": {"type": "tool.progress", "message": "running"},
-            }),
-            {},
-        )
+        self.assertEqual(tool_started["hermes_run"]["type"], "tool.started")
+        self.assertEqual(tool_started["hermes_run"]["run_id"], "run-tools")
+        self.assertEqual(tool_started["hermes_run"]["tool"], "terminal")
+        self.assertEqual(tool_started["hermes_run"]["preview"], "<b>ssh</b>")
+        self.assertNotIn("secret", tool_started["hermes_run"])
+
+        tool_completed = main.normalize_hermes_run_event({
+            "event": "tool.completed",
+            "data": {"tool_name": "terminal", "duration_ms": 42, "message": "done"},
+        })
+        self.assertEqual(tool_completed["hermes_run"]["type"], "tool.completed")
+        self.assertEqual(tool_completed["hermes_run"]["duration_ms"], 42)
+
+        reasoning = main.normalize_hermes_run_event({"event": "reasoning.available", "data": {}}, run_id="run-r")
+        self.assertEqual(reasoning["hermes_run"]["type"], "reasoning.available")
+        self.assertEqual(reasoning["hermes_run"]["run_id"], "run-r")
+
+        started = main.normalize_hermes_run_event({"event": "run.started", "data": {"status": "running"}}, run_id="run-s")
+        self.assertEqual(started["hermes_run"]["type"], "run.started")
+        self.assertEqual(started["hermes_run"]["status"], "running")
+
         failed = main.normalize_hermes_run_event({"status": "failed", "error": {"message": "boom"}})
         self.assertTrue(failed["terminal"])
         self.assertEqual(failed["error"], "boom")
-        approval = main.normalize_hermes_run_event({"type": "run.requires_action"})
+        self.assertEqual(failed["hermes_run"]["type"], "run.failed")
+
+        cancelled = main.normalize_hermes_run_event({"event": "run.cancelled", "data": {}})
+        self.assertTrue(cancelled["terminal"])
+        self.assertEqual(cancelled["hermes_run"]["type"], "run.cancelled")
+
+        approval = main.normalize_hermes_run_event({
+            "type": "approval.request",
+            "approval": {
+                "command": "rm -rf /tmp/demo",
+                "description": "Dangerous command",
+                "pattern_keys": ["shell:rm"],
+                "ignored": "not exposed",
+            },
+        }, run_id="run-approval")
         self.assertTrue(approval["approval_required"])
-        self.assertIn("approval", approval["error"])
+        self.assertFalse(approval["terminal"])
+        self.assertEqual(approval["error"], "")
+        self.assertEqual(approval["hermes_run"]["type"], "approval.request")
+        self.assertEqual(approval["hermes_run"]["run_id"], "run-approval")
+        self.assertEqual(approval["hermes_run"]["choices"], ["deny", "once", "session"])
+        self.assertNotIn("ignored", approval["hermes_run"])
+
+        responded = main.normalize_hermes_run_event(
+            {"event": "approval.responded", "data": {"choice": "once", "resolved": 1}},
+            run_id="run-approval",
+        )
+        self.assertEqual(responded["hermes_run"]["type"], "approval.responded")
+        self.assertEqual(responded["hermes_run"]["choice"], "once")
 
     async def test_hermes_runs_stream_converts_events_and_saves(self):
         self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
@@ -904,6 +945,8 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(any('"content": "Hello "' in chunk for chunk in stream_chunks))
         self.assertTrue(any('"content": "world"' in chunk for chunk in stream_chunks))
         self.assertTrue(any('"thinking": "Plan"' in chunk for chunk in stream_chunks))
+        self.assertTrue(any('"hermes_run"' in chunk and '"tool.started"' in chunk for chunk in stream_chunks))
+        self.assertTrue(any('"hermes_run"' in chunk and '"run.completed"' in chunk for chunk in stream_chunks))
         self.assertTrue(any('"done": true' in chunk for chunk in stream_chunks))
 
         chat_id = json.loads(stream_chunks[0])["chat_id"]
@@ -913,6 +956,8 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(fake_session.gets[0]["headers"]["X-Hermes-Session-Id"], f"chatraw-{chat_id}")
         messages = main.db.get_messages(chat_id)
         self.assertEqual(messages[1].content, "<thinking>\nPlan\n</thinking>\n\nHello world")
+        self.assertNotIn("ignored", messages[1].content)
+        self.assertNotIn("run-1", main._active_hermes_runs)
 
     async def test_hermes_runs_payload_uses_input_and_conversation_history(self):
         self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
@@ -971,25 +1016,312 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(fake_session.gets[0]["url"], "http://127.0.0.1:8642/v1/runs/run-2/events")
         messages = main.db.get_messages(data["chat_id"])
         self.assertEqual(messages[1].content, "<thinking>\nReason\n</thinking>\n\nFinal answer")
+        self.assertNotIn("run-2", main._active_hermes_runs)
 
-    async def test_hermes_runs_approval_returns_clear_error_without_final_content(self):
+    async def test_hermes_runs_non_stream_approval_requires_stream_output_without_partial_persistence(self):
+        self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
+        self.configure_chat(stream=False)
+        fake_session = self.patch_session(FakeHermesSession(
+            post_responses=[
+                FakeHermesResponse(json_data={"run_id": "run-non-stream-approval"}),
+                FakeHermesResponse(json_data={"stopped": True}),
+            ],
+            get_response=FakeHermesResponse(stream_chunks=[
+                b'event: message.delta\ndata: {"delta":"partial"}\n\n',
+                b'event: approval.request\ndata: {"approval":{"command":"danger"}}\n\n',
+            ]),
+        ))
+
+        result = await main.hermes_chat(JsonRequest({"message": "needs approval"}))
+        status, data = self.decode_result(result)
+
+        self.assertEqual(status, 409)
+        self.assertIn("requires stream output", data["error"])
+        self.assertEqual(fake_session.posts[1]["url"], "http://127.0.0.1:8642/v1/runs/run-non-stream-approval/stop")
+        self.assertNotIn("run-non-stream-approval", main._active_hermes_runs)
+        chats = main.db.get_chats()
+        self.assertEqual(len(main.db.get_messages(chats[0].id)), 1)
+
+    async def test_hermes_runs_duplicate_run_id_is_rejected_without_overwriting_registry(self):
+        self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
+        self.configure_chat(stream=False)
+        main.register_active_hermes_run("run-duplicate", "existing-chat", {
+            "base_url": "http://127.0.0.1:8642/v1",
+            "model": "hermes-agent",
+            "api_key": "existing-secret",
+            "session_key": "",
+            "api_mode": main.HERMES_API_MODE_RUNS,
+        })
+        fake_session = self.patch_session(FakeHermesSession(
+            post_responses=[
+                FakeHermesResponse(json_data={"run_id": "run-duplicate"}),
+                FakeHermesResponse(json_data={"stopped": True}),
+            ],
+        ))
+
+        result = await main.hermes_chat(JsonRequest({"message": "duplicate"}))
+        status, data = self.decode_result(result)
+
+        self.assertEqual(status, 409)
+        self.assertIn("already active", data["error"])
+        self.assertEqual(fake_session.posts[1]["url"], "http://127.0.0.1:8642/v1/runs/run-duplicate/stop")
+        self.assertEqual(fake_session.gets, [])
+        active = main.get_active_hermes_run("run-duplicate")
+        self.assertEqual(active["chat_id"], "existing-chat")
+        self.assertEqual(active["config"]["api_key"], "existing-secret")
+
+    async def test_hermes_runs_approval_request_streams_without_stop_and_saves_only_final_content(self):
         self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
         self.configure_chat(stream=True)
         fake_session = self.patch_session(FakeHermesSession(
             post_responses=[
                 FakeHermesResponse(json_data={"run_id": "run-approval"}),
-                FakeHermesResponse(json_data={"stopped": True}),
             ],
-            get_response=FakeHermesResponse(stream_chunks=[b'event: run.requires_action\ndata: {}\n\n']),
+            get_response=FakeHermesResponse(stream_chunks=[
+                b'event: approval.request\ndata: {"approval":{"command":"danger","description":"confirm","pattern_keys":["shell:danger"]}}\n\n',
+                b'event: approval.responded\ndata: {"choice":"once","resolved":1}\n\n',
+                b'event: message.delta\ndata: {"delta":"approved answer"}\n\n',
+                b'event: run.completed\ndata: {}\n\n',
+            ]),
         ))
 
         response = await main.hermes_chat(JsonRequest({"message": "needs approval"}))
         stream_chunks = await self.collect_stream(response)
         chat_id = json.loads(stream_chunks[0])["chat_id"]
 
-        self.assertTrue(any("requires approval" in chunk for chunk in stream_chunks))
-        self.assertEqual(len(main.db.get_messages(chat_id)), 1)
-        self.assertEqual(fake_session.posts[1]["url"], "http://127.0.0.1:8642/v1/runs/run-approval/stop")
+        self.assertTrue(any('"approval.request"' in chunk for chunk in stream_chunks))
+        self.assertTrue(any('"approval.responded"' in chunk for chunk in stream_chunks))
+        self.assertFalse(any('"error"' in chunk for chunk in stream_chunks))
+        self.assertEqual(len(fake_session.posts), 1)
+        self.assertTrue(any('"done": true' in chunk for chunk in stream_chunks))
+        messages = main.db.get_messages(chat_id)
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[1].content, "approved answer")
+        self.assertNotIn("danger", messages[1].content)
+        self.assertNotIn("run-approval", main._active_hermes_runs)
+
+    async def test_hermes_approval_endpoint_forwards_using_registry_config_snapshot(self):
+        snapshot_config = {
+            "base_url": "http://127.0.0.1:8642/v1",
+            "model": "snapshot-model",
+            "api_key": "snapshot-secret",
+            "session_key": "snapshot-session",
+            "api_mode": main.HERMES_API_MODE_RUNS,
+        }
+        main.register_active_hermes_run("run-approval", "chat-approval", snapshot_config)
+        main.update_active_hermes_run(
+            "run-approval",
+            status="pending_approval",
+            pending_approval={"type": "approval.request", "run_id": "run-approval"},
+        )
+        self.enable_hermes(
+            api_key="new-secret",
+            session_key="new-session",
+            api_mode=main.HERMES_API_MODE_RUNS,
+        )
+        fake_session = self.patch_session(FakeHermesSession(
+            post_response=FakeHermesResponse(json_data={"status": "running"})
+        ))
+
+        result = await main.hermes_run_approval(
+            "run-approval",
+            JsonRequest(
+                {"chat_id": "chat-approval", "choice": "once", "resolve_all": False},
+                url="http://testserver/api/hermes/runs/run-approval/approval",
+            ),
+        )
+        status, data = self.decode_result(result)
+
+        self.assertEqual(status, 200)
+        self.assertTrue(data["success"])
+        self.assertEqual(data["choice"], "once")
+        self.assertEqual(fake_session.posts[0]["url"], "http://127.0.0.1:8642/v1/runs/run-approval/approval")
+        self.assertEqual(fake_session.posts[0]["json"], {"choice": "once", "resolve_all": False})
+        self.assertEqual(fake_session.posts[0]["headers"]["Authorization"], "Bearer snapshot-secret")
+        self.assertEqual(fake_session.posts[0]["headers"]["X-Hermes-Session-Id"], "chatraw-chat-approval")
+        self.assertEqual(fake_session.posts[0]["headers"]["X-Hermes-Session-Key"], "snapshot-session")
+        active = main.get_active_hermes_run("run-approval")
+        self.assertEqual(active["status"], "running")
+        self.assertIsNone(active["pending_approval"])
+
+        self.assertEqual(main._hermes_upstream_error(409, "conflict").status_code, 502)
+        self.assertEqual(main._hermes_approval_upstream_error(409, "conflict").status_code, 409)
+
+        for choice in ("session", "deny"):
+            run_id = f"run-{choice}"
+            main.register_active_hermes_run(run_id, "chat-approval", snapshot_config)
+            main.update_active_hermes_run(
+                run_id,
+                status="pending_approval",
+                pending_approval={"type": "approval.request", "run_id": run_id},
+            )
+            result = await main.hermes_run_approval(
+                run_id,
+                JsonRequest(
+                    {"chat_id": "chat-approval", "choice": choice},
+                    url=f"http://testserver/api/hermes/runs/{run_id}/approval",
+                ),
+            )
+            status, data = self.decode_result(result)
+            self.assertEqual(status, 200)
+            self.assertTrue(data["success"])
+            self.assertEqual(data["choice"], choice)
+            self.assertEqual(fake_session.posts[-1]["json"], {"choice": choice, "resolve_all": False})
+
+    async def test_hermes_approval_endpoint_preserves_expected_upstream_status_and_quotes_run_id(self):
+        self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
+        snapshot_config = {
+            "base_url": "http://127.0.0.1:8642/v1",
+            "model": "snapshot-model",
+            "api_key": "snapshot-secret",
+            "session_key": "",
+            "api_mode": main.HERMES_API_MODE_RUNS,
+        }
+
+        for upstream_status in (404, 409):
+            with self.subTest(upstream_status=upstream_status):
+                run_id = f"run/{upstream_status} needs quote"
+                main.register_active_hermes_run(run_id, "chat-approval", snapshot_config)
+                main.update_active_hermes_run(
+                    run_id,
+                    status="pending_approval",
+                    pending_approval={"type": "approval.request", "run_id": run_id},
+                )
+                fake_session = self.patch_session(FakeHermesSession(
+                    post_response=FakeHermesResponse(status=upstream_status, text_data="upstream blocked")
+                ))
+
+                result = await main.hermes_run_approval(
+                    run_id,
+                    JsonRequest(
+                        {"chat_id": "chat-approval", "choice": "once"},
+                        url="http://testserver/api/hermes/runs/run%2Fquoted/approval",
+                    ),
+                )
+                status, data = self.decode_result(result)
+
+                self.assertEqual(status, upstream_status)
+                self.assertFalse(data["success"])
+                self.assertIn(f"Hermes API error ({upstream_status})", data["error"])
+                self.assertEqual(
+                    fake_session.posts[0]["url"],
+                    f"http://127.0.0.1:8642/v1/runs/run%2F{upstream_status}%20needs%20quote/approval",
+                )
+                active = main.get_active_hermes_run(run_id)
+                self.assertEqual(active["status"], "pending_approval")
+                self.assertIsNotNone(active["pending_approval"])
+
+    async def test_hermes_approval_endpoint_rejects_invalid_requests_before_side_effects(self):
+        self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
+        main.register_active_hermes_run("run-pending", "chat-pending", {
+            "base_url": "http://127.0.0.1:8642/v1",
+            "model": "hermes-agent",
+            "api_key": "",
+            "session_key": "",
+            "api_mode": main.HERMES_API_MODE_RUNS,
+        })
+        main.update_active_hermes_run(
+            "run-pending",
+            status="pending_approval",
+            pending_approval={"type": "approval.request", "run_id": "run-pending"},
+        )
+        fake_session = self.patch_session(FakeHermesSession())
+
+        cases = [
+            ("always", {"chat_id": "chat-pending", "choice": "always"}, 400),
+            ("invalid", {"chat_id": "chat-pending", "choice": "later"}, 400),
+            ("chat mismatch", {"chat_id": "other-chat", "choice": "once"}, 403),
+            ("transport", {"chat_id": "chat-pending", "choice": "once", "api_key": "evil"}, 400),
+            ("resolve_all type", {"chat_id": "chat-pending", "choice": "once", "resolve_all": "yes"}, 400),
+        ]
+        for label, body, expected_status in cases:
+            with self.subTest(label=label):
+                result = await main.hermes_run_approval(
+                    "run-pending",
+                    JsonRequest(body, url="http://testserver/api/hermes/runs/run-pending/approval"),
+                )
+                status, data = self.decode_result(result)
+                self.assertEqual(status, expected_status)
+                self.assertFalse(data["success"])
+
+        result = await main.hermes_run_approval(
+            "missing-run",
+            JsonRequest(
+                {"chat_id": "chat-pending", "choice": "once"},
+                url="http://testserver/api/hermes/runs/missing-run/approval",
+            ),
+        )
+        status, data = self.decode_result(result)
+        self.assertEqual(status, 404)
+        self.assertFalse(data["success"])
+
+        main.update_active_hermes_run("run-pending", status="completed", pending_approval=None)
+        result = await main.hermes_run_approval(
+            "run-pending",
+            JsonRequest(
+                {"chat_id": "chat-pending", "choice": "once"},
+                url="http://testserver/api/hermes/runs/run-pending/approval",
+            ),
+        )
+        status, data = self.decode_result(result)
+        self.assertEqual(status, 409)
+        self.assertFalse(data["success"])
+        self.assertEqual(fake_session.posts, [])
+
+    async def test_hermes_approval_endpoint_blocks_origin_disabled_plugin_and_stale_runs(self):
+        main.register_active_hermes_run("run-stale", "chat-stale", {
+            "base_url": "http://127.0.0.1:8642/v1",
+            "model": "hermes-agent",
+            "api_key": "",
+            "session_key": "",
+            "api_mode": main.HERMES_API_MODE_RUNS,
+        })
+        main.update_active_hermes_run(
+            "run-stale",
+            status="pending_approval",
+            pending_approval={"type": "approval.request", "run_id": "run-stale"},
+        )
+        fake_session = self.patch_session(FakeHermesSession())
+
+        result = await main.hermes_run_approval(
+            "run-stale",
+            JsonRequest(
+                {"chat_id": "chat-stale", "choice": "once"},
+                url="http://testserver/api/hermes/runs/run-stale/approval",
+                fetch_site="cross-site",
+            ),
+        )
+        status, data = self.decode_result(result)
+        self.assertEqual(status, 403)
+        self.assertFalse(data["success"])
+
+        result = await main.hermes_run_approval(
+            "run-stale",
+            JsonRequest(
+                {"chat_id": "chat-stale", "choice": "once"},
+                url="http://testserver/api/hermes/runs/run-stale/approval",
+            ),
+        )
+        status, data = self.decode_result(result)
+        self.assertEqual(status, 403)
+        self.assertFalse(data["success"])
+
+        self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
+        main._active_hermes_runs["run-stale"]["_created_at_monotonic"] = (
+            main.time_module.time() - main.HERMES_ACTIVE_RUN_TTL_SECONDS - 1
+        )
+        result = await main.hermes_run_approval(
+            "run-stale",
+            JsonRequest(
+                {"chat_id": "chat-stale", "choice": "once"},
+                url="http://testserver/api/hermes/runs/run-stale/approval",
+            ),
+        )
+        status, data = self.decode_result(result)
+        self.assertEqual(status, 404)
+        self.assertFalse(data["success"])
+        self.assertNotIn("run-stale", main._active_hermes_runs)
+        self.assertEqual(fake_session.posts, [])
 
     async def test_hermes_runs_events_error_stops_run(self):
         self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
@@ -1009,6 +1341,29 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Hermes API error (503)", data["error"])
         self.assertEqual(fake_session.posts[1]["url"], "http://127.0.0.1:8642/v1/runs/run-error/stop")
         self.assertEqual(self.chat_count(), 1)
+        self.assertNotIn("run-error", main._active_hermes_runs)
+
+    async def test_hermes_runs_terminal_failure_cleans_registry_without_stop(self):
+        self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
+        self.configure_chat(stream=False)
+        fake_session = self.patch_session(FakeHermesSession(
+            post_responses=[
+                FakeHermesResponse(json_data={"run_id": "run-failed"}),
+            ],
+            get_response=FakeHermesResponse(stream_chunks=[
+                b'event: run.failed\ndata: {"error":{"message":"tool failed"}}\n\n',
+            ]),
+        ))
+
+        result = await main.hermes_chat(JsonRequest({"message": "fail"}))
+        status, data = self.decode_result(result)
+
+        self.assertEqual(status, 502)
+        self.assertIn("tool failed", data["error"])
+        self.assertEqual(len(fake_session.posts), 1)
+        self.assertNotIn("run-failed", main._active_hermes_runs)
+        chats = main.db.get_chats()
+        self.assertEqual(len(main.db.get_messages(chats[0].id)), 1)
 
     async def test_hermes_runs_disconnect_stops_run_without_done(self):
         self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
@@ -1034,6 +1389,7 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(fake_session.gets[0]["headers"]["X-Hermes-Session-Id"], f"chatraw-{chat_id}")
         self.assertEqual(fake_session.posts[1]["headers"]["X-Hermes-Session-Id"], f"chatraw-{chat_id}")
         self.assertEqual(fake_session.posts[1]["url"], "http://127.0.0.1:8642/v1/runs/run-stop/stop")
+        self.assertNotIn("run-stop", main._active_hermes_runs)
 
     async def test_hermes_runs_without_api_key_omits_authorization_on_stop_path(self):
         self.enable_hermes(api_key="", api_mode=main.HERMES_API_MODE_RUNS)
@@ -1056,6 +1412,7 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(fake_session.posts[0]["url"], "http://127.0.0.1:8642/v1/runs")
         self.assertEqual(fake_session.gets[0]["url"], "http://127.0.0.1:8642/v1/runs/run-no-key/events")
         self.assertEqual(fake_session.posts[1]["url"], "http://127.0.0.1:8642/v1/runs/run-no-key/stop")
+        self.assertNotIn("run-no-key", main._active_hermes_runs)
 
     async def test_hermes_rejects_runs_transport_fields_before_side_effects(self):
         self.enable_hermes(api_key="")
@@ -1127,6 +1484,7 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(any('"done": true' in chunk for chunk in stream_chunks))
         self.assertEqual(fake_session.posts[1]["url"], "http://127.0.0.1:8642/v1/runs/run-eof/stop")
         self.assertEqual(len(main.db.get_messages(chat_id)), 1)
+        self.assertNotIn("run-eof", main._active_hermes_runs)
 
     async def test_stale_chat_id_creates_new_chat_without_orphan_messages(self):
         self.enable_hermes()

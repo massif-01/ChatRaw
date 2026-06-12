@@ -54,11 +54,19 @@ To use a non-loopback Hermes server:
 
 The backend canonicalizes the allowed list by trimming entries, lowercasing and punycoding hosts, removing a single trailing slash, deduplicating, sorting, and joining with newlines. Remote Base URL paths must be empty or simple ASCII paths such as `/v1` or `/api/v1`. If the allowed list is changed after confirmation, ChatRaw marks the confirmation as stale and the remote URL is rejected until the warning is confirmed again.
 
+## Loopback Deployment
+
+If ChatRaw is reachable at `http://10.10.99.99:51111`, Hermes runs on the same machine at `http://127.0.0.1:8642/v1`, and a browser connects from `10.10.99.100`, keep the Hermes Base URL as `http://127.0.0.1:8642/v1`. The browser talks only to ChatRaw at `10.10.99.99:51111`; the ChatRaw backend is the process that opens the loopback connection to Hermes.
+
+This works for native runs and Docker deployments using host networking, including the checked-in `docker-compose.yml` `network_mode: host`. With normal Docker bridge networking, `127.0.0.1` inside the ChatRaw container is the container itself, not the host machine. In that mode, configure Hermes through a reachable container/host address and use the remote Base URL allowlist flow.
+
 ## Execution Modes
 
 `chat_completions` is the default mode. The backend bridge calls Hermes `/chat/completions` and maps the response back into ChatRaw's existing JSON or NDJSON chat contract.
 
-`runs` creates a Hermes run through `/runs`, subscribes to `/runs/{run_id}/events`, and maps text and reasoning deltas into the same ChatRaw assistant bubble. Tool progress is ignored by default and is not saved into final assistant `content`. If Hermes reports that approval is required, ChatRaw shows a clear error because an approval UI is not implemented.
+`runs` creates a Hermes run through `/runs`, subscribes to `/runs/{run_id}/events`, and maps text, reasoning, tool progress, approval requests, and terminal run state into the same ChatRaw assistant bubble. Tool and approval events are shown as structured run activity and are not mixed into final assistant `content`.
+
+Runs approval requires **Stream Output**. When Hermes asks for human approval, ChatRaw shows the command, description, and pattern keys in the chat bubble. The user must explicitly choose **Allow once**, **Allow for session**, or **Deny**. ChatRaw does not auto-approve tool calls. The approval applies to tool or command execution in the Hermes API Server machine and Hermes configuration environment, not in the browser machine.
 
 The execution mode is saved in the backend plugin settings as `apiMode`. It is not a `route_message` return value and is not accepted in chat request bodies.
 
@@ -66,7 +74,8 @@ The execution mode is saved in the backend plugin settings as `apiMode`. It is n
 
 - Hermes route selection is host-limited: the plugin may only return `{ success: true, route: "hermes" }`.
 - The host maps `hermes` to the same-origin `/api/hermes/chat` endpoint.
-- The browser never receives the Hermes API key or Session Key in plaintext.
+- The browser may receive an opaque Hermes `run_id` inside structured run events so it can call the same-origin approval bridge. It never receives the Hermes Base URL, API key, Session Key, transport headers, events URL, stop URL, or approval URL.
+- Active Runs use the Hermes configuration snapshot captured when the run starts. Editing Hermes settings does not retarget an in-flight run; disable the Hermes plugin to reject pending approval actions.
 - Hermes base URL must be `http` or `https`.
 - Loopback hosts such as `localhost`, `127.0.0.1`, and `::1` are allowed by default.
 - Non-loopback hosts are allowed only when the backend-normalized Base URL is listed in `allowedRemoteBaseUrls` and the saved risk-confirmation snapshot matches the current canonical list.
@@ -87,11 +96,13 @@ The execution mode is saved in the backend plugin settings as `apiMode`. It is n
 - **Invalid Hermes base URL / Allowed remote Hermes base URL**: use `http` or `https`; remove credentials, query strings, fragments, and complex paths.
 - **Hermes API error (401)**: the saved API key is missing or does not match Hermes `API_SERVER_KEY`.
 - **Hermes network error / timeout**: confirm `hermes gateway` is running and listening on the configured host and port.
-- **Hermes run requires approval**: Runs approval events are surfaced as a clear error; ChatRaw does not implement an approval panel.
+- **Hermes Runs approval requires stream output**: turn on **Stream Output** before using Runs workflows that may require human approval.
+- **Approval request is shown in the chat bubble**: review the command and pattern keys, then choose **Allow once**, **Allow for session**, or **Deny**. Do not approve commands unless you trust the Hermes API Server machine and configuration.
 - **Hermes run event stream ended before completion**: Hermes closed the events stream without a terminal event. ChatRaw stops the run best-effort and does not save a partial assistant message as a completed answer.
 
 ## Manual QA Checklist
 
+- Optional fake server smoke: `script/hermes_fake_server.py` is a local test double for ChatRaw QA only. ChatRaw does not start it automatically, does not expose it through any production API, and it is not an official Hermes replacement. To use it manually, run `python script/hermes_fake_server.py --port 8642`, set Hermes Base URL to `http://127.0.0.1:8642/v1`, switch to Runs mode, and send messages containing `once`, `deny`, `session`, `session followup`, and `stop` to exercise approval, session reuse, and stop behavior without a real Hermes installation.
 - Install the Hermes Router plugin from the plugin market.
 - Enable and disable the ChatRaw plugin; the toolbar button should appear and disappear with the plugin state.
 - Toggle Hermes off; a normal message should still use the default ChatRaw backend.
@@ -102,9 +113,12 @@ The execution mode is saved in the backend plugin settings as `apiMode`. It is n
 - Confirm **Check** calls `/api/hermes/health` and not `/api/proxy/request`.
 - Test stream and non-stream chat settings.
 - Test `chat_completions` and `runs` modes.
+- In Runs mode with Stream Output on, verify **Allow once** continues only the current run, **Allow for session** allows a later matching command in the same ChatRaw chat session, and **Deny** blocks the run without continuing the dangerous action.
+- In Runs mode with Stream Output off, a workflow that needs approval should show `Hermes Runs approval requires stream output`.
 - Test a search/RAG-style `before_send` plugin together with Hermes routing; the enhanced body should still reach the Hermes bridge.
 - Create a new chat, switch back to an old chat, and delete a chat; Hermes session ids should remain tied to final ChatRaw `chat_id` values.
-- Stop generation while a Runs request is active; ChatRaw should request `/runs/{run_id}/stop` without exposing the run id to the browser.
+- Stop generation while a Runs request is active; ChatRaw should request `/runs/{run_id}/stop` from the backend and clear the active run so later approvals for that run are rejected as stale.
+- Validate the loopback topology: with ChatRaw on `10.10.99.99:51111`, Hermes on the same machine at `127.0.0.1:8642`, and a browser on `10.10.99.100`, the browser should never call Hermes directly.
 
 # Hermes 集成
 
@@ -162,11 +176,19 @@ ChatRaw 的 Hermes 默认设置为：
 
 后端会把允许列表规范化：trim 每一项、host 小写并转为 punycode、去掉单个末尾 `/`、去重、排序，并用换行拼成确认快照。远程 Base URL path 必须为空或 `/v1`、`/api/v1` 这类简单 ASCII path。确认后如果修改允许列表，ChatRaw 会把确认状态视为过期；远程 URL 会被拒绝，直到重新确认风险并保存。
 
+## Loopback 部署
+
+如果 ChatRaw 通过 `http://10.10.99.99:51111` 对外访问，Hermes 在同一台机器上监听 `http://127.0.0.1:8642/v1`，浏览器来自 `10.10.99.100`，Hermes Base URL 仍应保持 `http://127.0.0.1:8642/v1`。浏览器只访问 `10.10.99.99:51111` 上的 ChatRaw；真正连接 Hermes loopback 的是 ChatRaw 后端进程。
+
+这适用于原生运行和使用 host network 的 Docker 部署，包括当前 `docker-compose.yml` 中的 `network_mode: host`。如果使用普通 Docker bridge 网络，ChatRaw 容器里的 `127.0.0.1` 指容器自身，不是宿主机；这时应配置容器可达的 Hermes 地址，并走远程 Base URL 放行流程。
+
 ## 执行模式
 
 `chat_completions` 是默认模式。后端桥接调用 Hermes `/chat/completions`，并把响应映射回 ChatRaw 现有 JSON 或 NDJSON 聊天 contract。
 
-`runs` 会通过 `/runs` 创建 Hermes run，订阅 `/runs/{run_id}/events`，并把文本和 reasoning delta 映射到同一个 ChatRaw assistant 气泡。工具进度默认忽略，不保存进最终 assistant `content`。如果 Hermes 返回需要审批的事件，ChatRaw 会显示清晰错误；当前不实现审批面板。
+`runs` 会通过 `/runs` 创建 Hermes run，订阅 `/runs/{run_id}/events`，并把文本、reasoning、工具进度、审批请求和 run 终态映射到同一个 ChatRaw assistant 气泡。工具和审批事件会以结构化 run 活动展示，不会混入最终 assistant `content`。
+
+Runs 审批需要开启 **流式输出**。当 Hermes 请求人工审批时，ChatRaw 会在聊天气泡中显示命令、说明和 pattern keys。用户必须显式选择 **允许一次**、**本会话允许** 或 **拒绝**。ChatRaw 不会自动批准工具调用。审批作用于 Hermes API Server 所在机器和 Hermes 配置环境中的工具/命令执行，不是浏览器本机执行。
 
 执行模式保存在后端插件设置 `apiMode` 中。它不是 `route_message` 返回值，也不接受来自聊天请求 body 的覆盖。
 
@@ -174,7 +196,8 @@ ChatRaw 的 Hermes 默认设置为：
 
 - Hermes 路由选择由宿主限制：插件只能返回 `{ success: true, route: "hermes" }`。
 - 宿主把 `hermes` 映射到同源 `/api/hermes/chat`。
-- 浏览器永远拿不到 Hermes API key 或 Session Key 明文。
+- 浏览器可以在结构化 run events 中看到 opaque Hermes `run_id`，用于调用同源 approval bridge；但永远拿不到 Hermes Base URL、API key、Session Key、传输 headers、events URL、stop URL 或 approval URL。
+- Active Runs 使用 run 启动时捕获的 Hermes 配置快照。修改 Hermes 设置不会把正在运行的 run 重定向到新配置；如需拒绝 pending approval，请禁用 Hermes 插件。
 - Hermes base URL 必须使用 `http` 或 `https`。
 - `localhost`、`127.0.0.1`、`::1` 等 loopback host 默认允许。
 - 非 loopback host 只有在后端规范化后的 Base URL 写入 `allowedRemoteBaseUrls`，且保存的风险确认快照与当前 canonical 列表一致时才会放行。
@@ -195,11 +218,13 @@ ChatRaw 的 Hermes 默认设置为：
 - **Invalid Hermes base URL / Allowed remote Hermes base URL**：请使用 `http` 或 `https`，并移除 URL 凭据、query、fragment 和复杂 path。
 - **Hermes API error (401)**：未保存 API key，或保存的 API key 与 Hermes `API_SERVER_KEY` 不一致。
 - **Hermes network error / timeout**：确认 `hermes gateway` 正在运行，并监听配置中的 host 和 port。
-- **Hermes run requires approval**：Runs 审批事件会显示为清晰错误；ChatRaw 当前不实现审批面板。
+- **Hermes Runs approval requires stream output**：使用可能触发人工审批的 Runs 工作流前，请先开启 **流式输出**。
+- **聊天气泡中出现审批请求**：请检查命令和 pattern keys，然后选择 **允许一次**、**本会话允许** 或 **拒绝**。只有在信任 Hermes API Server 所在机器和配置时才批准命令。
 - **Hermes run event stream ended before completion**：Hermes 在终态事件前关闭 events stream。ChatRaw 会 best-effort stop run，并且不会把 partial assistant message 当作完整回答保存。
 
 ## 手动验收清单
 
+- 可选 fake server smoke：`script/hermes_fake_server.py` 只是 ChatRaw QA 使用的本地测试替身。ChatRaw 不会自动启动它，不会通过任何生产 API 暴露它，它也不是官方 Hermes 替代实现。手动使用时运行 `python script/hermes_fake_server.py --port 8642`，把 Hermes Base URL 设为 `http://127.0.0.1:8642/v1`，切到 Runs 模式，然后发送包含 `once`、`deny`、`session`、`session followup`、`stop` 的消息，在没有真实 Hermes 安装的情况下验证 approval、session 复用和 stop 行为。
 - 从插件市场安装 Hermes Router。
 - 启用和禁用 ChatRaw 插件；工具栏按钮应随插件状态出现和消失。
 - 关闭 Hermes toggle；普通消息仍走默认 ChatRaw 后端。
@@ -210,6 +235,9 @@ ChatRaw 的 Hermes 默认设置为：
 - 确认 **检查** 调用 `/api/hermes/health`，不调用 `/api/proxy/request`。
 - 测试 stream 和 non-stream 聊天设置。
 - 测试 `chat_completions` 和 `runs` 模式。
+- Runs 模式且开启流式输出时，确认 **允许一次** 只继续当前 run，**本会话允许** 会让同一 ChatRaw chat session 后续匹配命令继续执行，**拒绝** 会阻断 run 且不继续危险动作。
+- Runs 模式但关闭流式输出时，触发审批的工作流应显示 `Hermes Runs approval requires stream output`。
 - 与搜索/RAG 类 `before_send` 插件同时启用；增强后的 body 应继续到达 Hermes bridge。
 - 新建对话、切换回旧对话、删除对话；Hermes session id 应始终绑定最终有效的 ChatRaw `chat_id`。
-- Runs 请求执行中点击停止生成；ChatRaw 应请求 `/runs/{run_id}/stop`，且不把 run id 暴露给浏览器。
+- Runs 请求执行中点击停止生成；ChatRaw 后端应请求 `/runs/{run_id}/stop` 并清理 active run，后续对该 run 的 approval 应被视为 stale。
+- 验证 loopback 拓扑：ChatRaw 在 `10.10.99.99:51111`，Hermes 在同机 `127.0.0.1:8642`，浏览器来自 `10.10.99.100` 时，浏览器不应直接调用 Hermes。

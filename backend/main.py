@@ -3822,6 +3822,37 @@ HERMES_REMOTE_URLS_MAX_LENGTH = 4000
 HERMES_REMOTE_URL_MAX_LENGTH = 300
 HERMES_REMOTE_URLS_MAX_COUNT = 20
 HERMES_REMOTE_URL_PATH_RE = re.compile(r"^/(?:[A-Za-z0-9._~-]+)(?:/[A-Za-z0-9._~-]+)*$")
+HERMES_ACTIVE_RUN_TTL_SECONDS = int(os.environ.get("HERMES_ACTIVE_RUN_TTL_SECONDS", "3600"))
+HERMES_RUN_EVENT_TEXT_MAX_LENGTH = int(os.environ.get("HERMES_RUN_EVENT_TEXT_MAX_LENGTH", "2000"))
+HERMES_RUN_EVENT_PREVIEW_MAX_LENGTH = int(os.environ.get("HERMES_RUN_EVENT_PREVIEW_MAX_LENGTH", "1000"))
+HERMES_APPROVAL_CHOICES = {"once", "session", "deny"}
+HERMES_RUN_TERMINAL_STATUSES = {"completed", "succeeded", "failed", "cancelled", "canceled", "stopped"}
+HERMES_FORBIDDEN_TRANSPORT_FIELDS = {
+    "url",
+    "endpoint",
+    "path",
+    "headers",
+    "apikey",
+    "baseurl",
+    "model",
+    "session",
+    "sessionid",
+    "sessionkey",
+    "hermessessionid",
+    "hermessessionkey",
+    "xhermessessionid",
+    "xhermessessionkey",
+    "apimode",
+    "runmode",
+    "runsmode",
+    "transportmode",
+    "runid",
+    "hermesrunid",
+    "xhermesrunid",
+    "eventsurl",
+    "eventurl",
+    "stopurl",
+}
 
 # Plugin upload size limit (10MB)
 MAX_PLUGIN_SIZE = int(os.environ.get("MAX_PLUGIN_SIZE", str(10 * 1024 * 1024)))
@@ -3872,6 +3903,9 @@ auto_install_bundled_plugins()
 
 # Simple file lock for config
 _plugin_config_lock = threading.Lock()
+_active_hermes_runs: Dict[str, dict] = {}
+_active_hermes_runs_lock = threading.Lock()
+_HERMES_RUN_FIELD_UNSET = object()
 
 def validate_plugin_id(plugin_id: str) -> bool:
     """Validate plugin ID to prevent path traversal attacks"""
@@ -3931,6 +3965,10 @@ class HermesRunDisconnected(Exception):
     pass
 
 
+class HermesRunTerminalError(HermesBridgeError):
+    pass
+
+
 def _hermes_error_response(error: Exception, success_shape: bool = False) -> JSONResponse:
     status_code = getattr(error, "status_code", 500)
     message = getattr(error, "detail", None) or getattr(error, "message", None) or str(error)
@@ -3942,36 +3980,10 @@ def validate_hermes_chat_body(body: dict):
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="Hermes chat body must be a JSON object")
 
-    forbidden_normalized = {
-        "url",
-        "endpoint",
-        "path",
-        "headers",
-        "apikey",
-        "baseurl",
-        "model",
-        "session",
-        "sessionid",
-        "sessionkey",
-        "hermessessionid",
-        "hermessessionkey",
-        "xhermessessionid",
-        "xhermessessionkey",
-        "apimode",
-        "runmode",
-        "runsmode",
-        "transportmode",
-        "runid",
-        "hermesrunid",
-        "xhermesrunid",
-        "eventsurl",
-        "eventurl",
-        "stopurl",
-    }
     forbidden = []
     for key in body.keys():
         normalized = str(key).replace("_", "").replace("-", "").lower()
-        if normalized in forbidden_normalized:
+        if normalized in HERMES_FORBIDDEN_TRANSPORT_FIELDS:
             forbidden.append(str(key))
 
     if forbidden:
@@ -4241,6 +4253,154 @@ def _hermes_upstream_error(status: int, text: str) -> HermesBridgeError:
     return HermesBridgeError(f"Hermes API error ({status}): {text}", status_code=status_code)
 
 
+def _hermes_approval_upstream_error(status: int, text: str) -> HermesBridgeError:
+    if 300 <= status < 400:
+        return HermesBridgeError(f"Hermes redirect blocked ({status})", status_code=400)
+    status_code = status if status in (401, 404, 409) else 502
+    return HermesBridgeError(f"Hermes API error ({status}): {text}", status_code=status_code)
+
+
+def _hermes_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _copy_hermes_config_snapshot(config: dict) -> dict:
+    return {
+        "base_url": config.get("base_url", ""),
+        "model": config.get("model", ""),
+        "api_key": config.get("api_key", ""),
+        "session_key": config.get("session_key", ""),
+        "api_mode": config.get("api_mode", ""),
+    }
+
+
+def _purge_expired_hermes_runs_locked(now: Optional[float] = None) -> List[str]:
+    now = time_module.time() if now is None else now
+    expired = []
+    for run_id, record in list(_active_hermes_runs.items()):
+        created = float(record.get("_created_at_monotonic") or 0)
+        if now - created > HERMES_ACTIVE_RUN_TTL_SECONDS:
+            expired.append(run_id)
+            _active_hermes_runs.pop(run_id, None)
+    return expired
+
+
+def purge_expired_hermes_runs(now: Optional[float] = None) -> List[str]:
+    with _active_hermes_runs_lock:
+        return _purge_expired_hermes_runs_locked(now)
+
+
+def register_active_hermes_run(run_id: str, chat_id: str, config: dict) -> dict:
+    if not run_id:
+        raise HermesBridgeError("Hermes run id is required", status_code=502)
+    now = time_module.time()
+    with _active_hermes_runs_lock:
+        _purge_expired_hermes_runs_locked(now)
+        if run_id in _active_hermes_runs:
+            raise HermesBridgeError("Hermes run id is already active", status_code=409)
+        record = {
+            "run_id": run_id,
+            "chat_id": chat_id,
+            "config": _copy_hermes_config_snapshot(config),
+            "status": "running",
+            "pending_approval": None,
+            "created_at": _hermes_now_iso(),
+            "_created_at_monotonic": now,
+        }
+        _active_hermes_runs[run_id] = record
+        return dict(record)
+
+
+def get_active_hermes_run(run_id: str) -> Optional[dict]:
+    with _active_hermes_runs_lock:
+        _purge_expired_hermes_runs_locked()
+        record = _active_hermes_runs.get(run_id)
+        if not record:
+            return None
+        copy = dict(record)
+        copy["config"] = dict(record.get("config") or {})
+        pending = record.get("pending_approval")
+        copy["pending_approval"] = dict(pending) if isinstance(pending, dict) else pending
+        return copy
+
+
+def update_active_hermes_run(
+    run_id: str,
+    status: Any = _HERMES_RUN_FIELD_UNSET,
+    pending_approval: Any = _HERMES_RUN_FIELD_UNSET,
+) -> Optional[dict]:
+    with _active_hermes_runs_lock:
+        _purge_expired_hermes_runs_locked()
+        record = _active_hermes_runs.get(run_id)
+        if not record:
+            return None
+        if status is not _HERMES_RUN_FIELD_UNSET:
+            record["status"] = status
+        if pending_approval is not _HERMES_RUN_FIELD_UNSET:
+            record["pending_approval"] = pending_approval
+        copy = dict(record)
+        copy["config"] = dict(record.get("config") or {})
+        pending = record.get("pending_approval")
+        copy["pending_approval"] = dict(pending) if isinstance(pending, dict) else pending
+        return copy
+
+
+def remove_active_hermes_run(run_id: str):
+    if not run_id:
+        return
+    with _active_hermes_runs_lock:
+        _active_hermes_runs.pop(run_id, None)
+
+
+def validate_hermes_plugin_enabled_only():
+    config = load_plugin_config()
+    if not _is_hermes_plugin_enabled(config):
+        raise HTTPException(status_code=403, detail="Hermes plugin is not enabled")
+
+
+def validate_hermes_approval_body(body: dict) -> dict:
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="Hermes approval body must be a JSON object")
+
+    allowed_fields = {"chat_id", "choice", "resolve_all"}
+    unknown = []
+    forbidden = []
+    for key in body.keys():
+        key_text = str(key)
+        normalized = key_text.replace("_", "").replace("-", "").lower()
+        if normalized in HERMES_FORBIDDEN_TRANSPORT_FIELDS:
+            forbidden.append(key_text)
+        elif key_text not in allowed_fields:
+            unknown.append(key_text)
+
+    if forbidden:
+        fields = ", ".join(sorted(forbidden))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Hermes approval body must not include transport fields: {fields}",
+        )
+    if unknown:
+        fields = ", ".join(sorted(unknown))
+        raise HTTPException(status_code=400, detail=f"Unsupported Hermes approval fields: {fields}")
+
+    chat_id = body.get("chat_id")
+    if not isinstance(chat_id, str) or not chat_id.strip():
+        raise HTTPException(status_code=400, detail="Hermes approval requires chat_id")
+
+    choice = body.get("choice")
+    if not isinstance(choice, str):
+        raise HTTPException(status_code=400, detail="Hermes approval choice is required")
+    choice = choice.strip().lower()
+    if choice not in HERMES_APPROVAL_CHOICES:
+        raise HTTPException(status_code=400, detail="Unsupported Hermes approval choice")
+
+    resolve_all = body.get("resolve_all", False)
+    if not isinstance(resolve_all, bool):
+        raise HTTPException(status_code=400, detail="Hermes approval resolve_all must be a boolean")
+
+    return {"chat_id": chat_id.strip(), "choice": choice, "resolve_all": resolve_all}
+
+
 def _extract_openai_content(message: dict) -> str:
     content = message.get("content", "")
     if isinstance(content, str):
@@ -4385,14 +4545,161 @@ def _extract_error_message(value) -> str:
     return ""
 
 
-def normalize_hermes_run_event(event: dict) -> dict:
+def _truncate_hermes_event_text(value: Any, limit: int = HERMES_RUN_EVENT_TEXT_MAX_LENGTH) -> str:
+    text = _extract_text_value(value)
+    if not text:
+        return ""
+    limit = max(1, int(limit))
+    if len(text) <= limit:
+        return text
+    return text[:limit] + "..."
+
+
+def _extract_number(value: Any) -> Optional[float]:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _extract_hermes_run_id(event: dict, data: dict, fallback: str = "") -> str:
+    run = data.get("run") if isinstance(data.get("run"), dict) else {}
+    for value in (
+        fallback,
+        data.get("run_id"),
+        data.get("runId"),
+        data.get("id"),
+        run.get("id"),
+        event.get("run_id"),
+        event.get("runId"),
+        event.get("id"),
+    ):
+        if value:
+            return str(value)
+    return ""
+
+
+def _normalize_pattern_keys(value: Any) -> List[str]:
+    if isinstance(value, list):
+        return [
+            _truncate_hermes_event_text(item, 200)
+            for item in value
+            if _truncate_hermes_event_text(item, 200)
+        ][:20]
+    text = _truncate_hermes_event_text(value, 200)
+    return [text] if text else []
+
+
+def _approval_source(data: dict) -> dict:
+    for key in ("approval", "approval_request", "request", "pending_approval"):
+        value = data.get(key)
+        if isinstance(value, dict):
+            return value
+    return data
+
+
+def _build_hermes_run_envelope(event_type: str, run_id: str, status: str = "") -> dict:
+    envelope = {"type": event_type}
+    if run_id:
+        envelope["run_id"] = run_id
+    if status:
+        envelope["status"] = status
+    return envelope
+
+
+def _normalize_tool_run_event(data: dict, event_type: str, type_status: str, run_id: str) -> dict:
+    is_completed = any(token in type_status for token in ("completed", "succeeded", "done", "failed", "error"))
+    default_status = "failed" if any(token in type_status for token in ("failed", "error")) else ("completed" if is_completed else "started")
+    status = str(data.get("status") or default_status).lower()
+    envelope = _build_hermes_run_envelope(
+        "tool.completed" if is_completed else "tool.started",
+        run_id,
+        status,
+    )
+    tool = (
+        _truncate_hermes_event_text(data.get("tool"), 120)
+        or _truncate_hermes_event_text(data.get("tool_name"), 120)
+        or _truncate_hermes_event_text(data.get("name"), 120)
+    )
+    tool_call = data.get("tool_call") if isinstance(data.get("tool_call"), dict) else {}
+    if not tool:
+        tool = _truncate_hermes_event_text(tool_call.get("name"), 120)
+    if tool:
+        envelope["tool"] = tool
+
+    preview = (
+        _truncate_hermes_event_text(data.get("preview"), HERMES_RUN_EVENT_PREVIEW_MAX_LENGTH)
+        or _truncate_hermes_event_text(data.get("command"), HERMES_RUN_EVENT_PREVIEW_MAX_LENGTH)
+        or _truncate_hermes_event_text(data.get("message"), HERMES_RUN_EVENT_PREVIEW_MAX_LENGTH)
+        or _truncate_hermes_event_text(data.get("input"), HERMES_RUN_EVENT_PREVIEW_MAX_LENGTH)
+        or _truncate_hermes_event_text(tool_call.get("arguments"), HERMES_RUN_EVENT_PREVIEW_MAX_LENGTH)
+    )
+    if preview:
+        envelope["preview"] = preview
+
+    duration_value = data.get("duration_ms")
+    if duration_value is None:
+        duration_value = data.get("durationMs")
+    duration_ms = _extract_number(duration_value)
+    if duration_ms is None:
+        duration = _extract_number(data.get("duration"))
+        if duration is not None:
+            duration_ms = duration * 1000 if duration < 1000 else duration
+    if duration_ms is not None:
+        envelope["duration_ms"] = round(duration_ms)
+
+    error = _extract_error_message(data.get("error")) or _extract_error_message(data.get("message") if "error" in type_status else None)
+    if error:
+        envelope["error"] = _truncate_hermes_event_text(error, HERMES_RUN_EVENT_TEXT_MAX_LENGTH)
+    return envelope
+
+
+def _normalize_approval_run_event(data: dict, event_type: str, type_status: str, run_id: str) -> dict:
+    source = _approval_source(data)
+    responded = any(token in type_status for token in ("responded", "response", "resolved"))
+    envelope = _build_hermes_run_envelope(
+        "approval.responded" if responded else "approval.request",
+        run_id,
+        "running" if responded else "pending_approval",
+    )
+    choice = _truncate_hermes_event_text(source.get("choice") or source.get("decision"), 40)
+    if choice:
+        envelope["choice"] = choice
+    command = _truncate_hermes_event_text(source.get("command") or source.get("cmd"), HERMES_RUN_EVENT_TEXT_MAX_LENGTH)
+    if command:
+        envelope["command"] = command
+    description = _truncate_hermes_event_text(source.get("description") or source.get("message"), HERMES_RUN_EVENT_TEXT_MAX_LENGTH)
+    if description:
+        envelope["description"] = description
+    pattern_keys = _normalize_pattern_keys(source.get("pattern_keys"))
+    if not pattern_keys:
+        pattern_keys = _normalize_pattern_keys(source.get("pattern_key"))
+    if pattern_keys:
+        envelope["pattern_keys"] = pattern_keys
+    if responded:
+        resolved = source.get("resolved")
+        if isinstance(resolved, bool):
+            envelope["resolved"] = resolved
+        elif isinstance(resolved, int):
+            envelope["resolved"] = resolved
+    else:
+        envelope["choices"] = sorted(HERMES_APPROVAL_CHOICES)
+    return envelope
+
+
+def normalize_hermes_run_event(event: dict, run_id: str = "") -> dict:
     if not isinstance(event, dict):
         return {}
 
     data = event.get("data") if isinstance(event.get("data"), dict) else event
-    event_type = str(data.get("type") or event.get("type") or event.get("event") or "").lower()
+    event_type = str(event.get("event") or data.get("type") or event.get("type") or "").lower()
     status = str(data.get("status") or event.get("status") or "").lower()
     type_status = " ".join(part for part in (event_type, status) if part)
+    event_run_id = _extract_hermes_run_id(event, data, run_id)
 
     result = {
         "content_delta": "",
@@ -4401,16 +4708,24 @@ def normalize_hermes_run_event(event: dict) -> dict:
         "terminal": False,
         "error": "",
         "approval_required": False,
+        "hermes_run": None,
     }
+
+    if "tool" in event_type:
+        result["hermes_run"] = _normalize_tool_run_event(data, event_type, type_status, event_run_id)
+        return result
 
     if "approval" in type_status or "requires_action" in type_status or "requires-action" in type_status:
         result["approval_required"] = True
-        result["terminal"] = True
-        result["error"] = "Hermes run requires approval; approval UI is not implemented"
+        result["hermes_run"] = _normalize_approval_run_event(data, event_type, type_status, event_run_id)
         return result
 
-    if "tool" in event_type:
-        return {}
+    if event_type.startswith("run") and any(token in type_status for token in ("started", "queued", "running", "in_progress")):
+        result["hermes_run"] = _build_hermes_run_envelope("run.started", event_run_id, status or "started")
+        return result
+
+    if "reasoning" in event_type:
+        result["hermes_run"] = _build_hermes_run_envelope("reasoning.available", event_run_id, status or "running")
 
     raw_delta = data.get("delta")
     delta = raw_delta if isinstance(raw_delta, dict) else {}
@@ -4430,23 +4745,49 @@ def normalize_hermes_run_event(event: dict) -> dict:
     )
     result["content_delta"] = content
     result["thinking_delta"] = thinking
+    if thinking:
+        result["hermes_run"] = _build_hermes_run_envelope("reasoning.available", event_run_id, status or "running")
 
     if any(token in type_status for token in ("completed", "succeeded", "done")):
         result["terminal"] = True
+        result["status"] = "completed"
+        envelope = _build_hermes_run_envelope("run.completed", event_run_id, "completed")
+        usage = data.get("usage")
+        if isinstance(usage, dict):
+            envelope["usage"] = {
+                key: value
+                for key, value in usage.items()
+                if isinstance(key, str) and isinstance(value, (int, float))
+            }
+        result["hermes_run"] = envelope
         return result
 
     if any(token in type_status for token in ("failed", "cancelled", "canceled", "error")):
         result["terminal"] = True
+        cancelled = "cancelled" in type_status or "canceled" in type_status
+        result["status"] = "cancelled" if cancelled else "failed"
         result["error"] = (
             _extract_error_message(data.get("error"))
             or _extract_error_message(data.get("message"))
-            or "Hermes run failed"
+            or ("" if cancelled else "Hermes run failed")
         )
+        envelope = _build_hermes_run_envelope(
+            "run.cancelled" if cancelled else "run.failed",
+            event_run_id,
+            "cancelled" if cancelled else "failed",
+        )
+        if result["error"]:
+            envelope["error"] = _truncate_hermes_event_text(result["error"], HERMES_RUN_EVENT_TEXT_MAX_LENGTH)
+        result["hermes_run"] = envelope
         return result
 
     if data.get("error"):
         result["error"] = _extract_error_message(data.get("error")) or "Hermes run error"
         result["terminal"] = True
+        result["status"] = "failed"
+        envelope = _build_hermes_run_envelope("run.failed", event_run_id, "failed")
+        envelope["error"] = _truncate_hermes_event_text(result["error"], HERMES_RUN_EVENT_TEXT_MAX_LENGTH)
+        result["hermes_run"] = envelope
 
     return result
 
@@ -4481,12 +4822,17 @@ async def _is_request_disconnected(request: Request) -> bool:
         return False
 
 
+def _hermes_run_url(config: dict, run_id: str, suffix: str = "") -> str:
+    return f"{config['base_url']}/runs/{quote(str(run_id), safe='')}{suffix}"
+
+
 async def _stop_hermes_run(session, submission: dict, config: dict, run_id: str):
     if not run_id:
         return
-    try:
-        async with session.post(
-            f"{config['base_url']}/runs/{run_id}/stop",
+
+    async def send_stop(stop_session):
+        async with stop_session.post(
+            _hermes_run_url(config, run_id, "/stop"),
             json={},
             headers=_hermes_chat_headers(config, submission["chat_id"]),
             timeout=aiohttp.ClientTimeout(total=30, connect=5),
@@ -4495,13 +4841,22 @@ async def _stop_hermes_run(session, submission: dict, config: dict, run_id: str)
             if resp.status >= 400:
                 text = await _read_limited_response_text(resp, limit=200)
                 logger.warning(f"Hermes run stop returned {resp.status}: {text}")
+
+    try:
+        if isinstance(session, aiohttp.ClientSession) or getattr(session, "closed", False):
+            connector = aiohttp.TCPConnector(ssl=_create_ssl_context(), force_close=True)
+            timeout = aiohttp.ClientTimeout(total=30, connect=5)
+            async with aiohttp.ClientSession(timeout=timeout, connector=connector) as stop_session:
+                await send_stop(stop_session)
+            return
+        await send_stop(session)
     except Exception as e:
         logger.warning(f"Failed to stop Hermes run {run_id}: {e}")
 
 
 async def _iter_hermes_run_events(session, submission: dict, config: dict, request: Request, run_id: str):
     async with session.get(
-        f"{config['base_url']}/runs/{run_id}/events",
+        _hermes_run_url(config, run_id, "/events"),
         headers=_hermes_chat_headers(config, submission["chat_id"]),
         timeout=aiohttp.ClientTimeout(total=300, connect=10),
         allow_redirects=False,
@@ -4514,7 +4869,7 @@ async def _iter_hermes_run_events(session, submission: dict, config: dict, reque
             if await _is_request_disconnected(request):
                 await _stop_hermes_run(session, submission, config, run_id)
                 raise HermesRunDisconnected()
-            event = normalize_hermes_run_event(event_data)
+            event = normalize_hermes_run_event(event_data, run_id=run_id)
             if event:
                 yield event
             if event.get("terminal"):
@@ -4528,23 +4883,55 @@ async def _consume_hermes_run(submission: dict, config: dict, request: Request, 
     full_response = ""
     full_thinking = ""
     terminal_seen = False
+    completed = False
+    registered = False
+    stop_requested = False
+
+    async def request_stop():
+        nonlocal stop_requested
+        if run_id and not stop_requested:
+            stop_requested = True
+            await _stop_hermes_run(session, submission, config, run_id)
 
     try:
         run_id, references = await _create_hermes_run(session, submission, config)
+        register_active_hermes_run(run_id, submission["chat_id"], config)
+        registered = True
+        if stream:
+            yield json.dumps({
+                "hermes_run": {
+                    "type": "run.started",
+                    "run_id": run_id,
+                    "status": "running",
+                }
+            })
         async for event in _iter_hermes_run_events(session, submission, config, request, run_id):
             if event.get("terminal"):
                 terminal_seen = True
-            if event.get("approval_required"):
-                approval_thinking = "Hermes run requires approval..."
+            hermes_run = event.get("hermes_run")
+            if isinstance(hermes_run, dict):
+                hermes_type = hermes_run.get("type", "")
+                if hermes_type == "approval.request":
+                    update_active_hermes_run(run_id, status="pending_approval", pending_approval=hermes_run)
+                    if not stream:
+                        raise HermesBridgeError("Hermes Runs approval requires stream output", status_code=409)
+                elif hermes_type == "approval.responded":
+                    update_active_hermes_run(run_id, status="running", pending_approval=None)
+                elif hermes_type == "run.completed":
+                    completed = True
+                    update_active_hermes_run(run_id, status="completed", pending_approval=None)
+                elif hermes_type == "run.failed":
+                    update_active_hermes_run(run_id, status="failed", pending_approval=None)
+                elif hermes_type == "run.cancelled":
+                    update_active_hermes_run(run_id, status="cancelled", pending_approval=None)
+                elif hermes_type == "run.started":
+                    update_active_hermes_run(run_id, status=hermes_run.get("status") or "running")
+
                 if stream:
-                    await _stop_hermes_run(session, submission, config, run_id)
-                    yield json.dumps({"thinking": approval_thinking})
-                    yield json.dumps({"error": event["error"]})
-                    return
-                raise HermesBridgeError(event["error"], status_code=409)
+                    yield json.dumps({"hermes_run": hermes_run})
 
             thinking = event.get("thinking_delta") or ""
-            if thinking:
+            if thinking and submission["use_thinking"]:
                 full_thinking += thinking
                 if stream:
                     yield json.dumps({"thinking": thinking})
@@ -4556,26 +4943,23 @@ async def _consume_hermes_run(submission: dict, config: dict, request: Request, 
                     yield json.dumps({"content": content})
 
             if event.get("error"):
-                if full_response or full_thinking:
-                    save_assistant_message(db, submission["chat_id"], submission["message"], full_response, full_thinking)
                 if stream:
                     yield json.dumps({"error": event["error"]})
                     return
-                raise HermesBridgeError(event["error"], status_code=502)
+                raise HermesRunTerminalError(event["error"], status_code=502)
 
             if event.get("terminal"):
                 break
 
         if not terminal_seen:
             message = "Hermes run event stream ended before completion"
-            if run_id:
-                await _stop_hermes_run(session, submission, config, run_id)
+            await request_stop()
             if stream:
                 yield json.dumps({"error": message})
                 return
             raise HermesBridgeError(message, status_code=502)
 
-        if full_response or full_thinking:
+        if completed and (full_response or full_thinking):
             save_assistant_message(db, submission["chat_id"], submission["message"], full_response, full_thinking)
         if stream and references:
             yield json.dumps({"references": references})
@@ -4584,38 +4968,41 @@ async def _consume_hermes_run(submission: dict, config: dict, request: Request, 
         else:
             yield json.dumps({"content": full_response, "thinking": full_thinking, "references": references})
     except asyncio.CancelledError:
-        if run_id:
-            await _stop_hermes_run(session, submission, config, run_id)
-        if full_response or full_thinking:
-            save_assistant_message(db, submission["chat_id"], submission["message"], full_response, full_thinking)
+        await request_stop()
         raise
     except HermesRunDisconnected:
-        if full_response or full_thinking:
-            save_assistant_message(db, submission["chat_id"], submission["message"], full_response, full_thinking)
+        stop_requested = True
         return
     except asyncio.TimeoutError:
         message = "Hermes run request timeout"
-        if run_id:
-            await _stop_hermes_run(session, submission, config, run_id)
+        await request_stop()
         if stream:
             yield json.dumps({"error": message})
             return
         raise HermesBridgeError(message, status_code=504)
     except aiohttp.ClientError as e:
         message = f"Hermes network error: {str(e)}"
-        if run_id:
-            await _stop_hermes_run(session, submission, config, run_id)
+        await request_stop()
         if stream:
             yield json.dumps({"error": message})
             return
         raise HermesBridgeError(message, status_code=502)
-    except HermesBridgeError as e:
-        if run_id:
-            await _stop_hermes_run(session, submission, config, run_id)
+    except HermesRunTerminalError as e:
         if stream:
             yield json.dumps({"error": e.message})
             return
         raise
+    except HermesBridgeError as e:
+        await request_stop()
+        if stream:
+            yield json.dumps({"error": e.message})
+            return
+        raise
+    finally:
+        if registered and not terminal_seen and not stop_requested:
+            await request_stop()
+        if registered:
+            remove_active_hermes_run(run_id)
 
 
 async def _stream_hermes_run_chunks(submission: dict, config: dict, request: Request) -> AsyncGenerator[str, None]:
@@ -4624,8 +5011,12 @@ async def _stream_hermes_run_chunks(submission: dict, config: dict, request: Req
 
 
 async def _call_hermes_run_non_stream(submission: dict, config: dict, request: Request) -> dict:
-    async for chunk in _consume_hermes_run(submission, config, request, stream=False):
-        return json.loads(chunk)
+    chunks = _consume_hermes_run(submission, config, request, stream=False)
+    try:
+        async for chunk in chunks:
+            return json.loads(chunk)
+    finally:
+        await chunks.aclose()
     return {"content": "", "thinking": "", "references": []}
 
 
@@ -4865,6 +5256,73 @@ async def hermes_health(request: Request):
         return JSONResponse({"success": False, "error": str(e)}, status_code=500)
 
 
+@app.post("/api/hermes/runs/{run_id:path}/approval")
+async def hermes_run_approval(run_id: str, request: Request):
+    try:
+        validate_hermes_request_origin(request)
+        validate_hermes_plugin_enabled_only()
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        approval = validate_hermes_approval_body(body)
+
+        record = get_active_hermes_run(run_id)
+        if not record:
+            raise HermesBridgeError("Unknown or stale Hermes run", status_code=404)
+        if record.get("chat_id") != approval["chat_id"]:
+            raise HermesBridgeError("Hermes approval chat_id does not match active run", status_code=403)
+        status = str(record.get("status") or "").lower()
+        if status in HERMES_RUN_TERMINAL_STATUSES:
+            raise HermesBridgeError("Hermes run is no longer active", status_code=409)
+        if not record.get("pending_approval"):
+            raise HermesBridgeError("Hermes run has no pending approval", status_code=409)
+
+        config = record["config"]
+        session = await get_http_session()
+        payload = {
+            "choice": approval["choice"],
+            "resolve_all": approval["resolve_all"],
+        }
+        async with session.post(
+            _hermes_run_url(config, run_id, "/approval"),
+            json=payload,
+            headers=_hermes_chat_headers(config, record["chat_id"]),
+            timeout=aiohttp.ClientTimeout(total=60, connect=10),
+            allow_redirects=False,
+        ) as resp:
+            if resp.status < 200 or resp.status >= 300:
+                text = await _read_limited_response_text(resp)
+                raise _hermes_approval_upstream_error(resp.status, text)
+            try:
+                data = await resp.json()
+            except Exception:
+                data = {}
+
+        next_status = data.get("status") if isinstance(data, dict) else ""
+        if not isinstance(next_status, str) or not next_status:
+            next_status = "running"
+        update_active_hermes_run(run_id, status=next_status.lower(), pending_approval=None)
+        return {
+            "success": True,
+            "run_id": run_id,
+            "choice": approval["choice"],
+            "resolve_all": approval["resolve_all"],
+            "status": next_status.lower(),
+        }
+    except HTTPException as e:
+        return _hermes_error_response(e, success_shape=True)
+    except HermesBridgeError as e:
+        return _hermes_error_response(e, success_shape=True)
+    except asyncio.TimeoutError:
+        return JSONResponse({"success": False, "error": "Hermes approval request timeout"}, status_code=504)
+    except aiohttp.ClientError as e:
+        return JSONResponse({"success": False, "error": f"Hermes network error: {str(e)}"}, status_code=502)
+    except Exception as e:
+        logger.error(f"Hermes approval error: {e}")
+        return JSONResponse({"success": False, "error": str(e)}, status_code=500)
+
+
 @app.post("/api/hermes/chat")
 async def hermes_chat(request: Request):
     try:
@@ -4885,12 +5343,18 @@ async def hermes_chat(request: Request):
     if settings.chat_settings.stream:
         async def generate():
             yield json.dumps({"chat_id": submission["chat_id"]}) + "\n"
+            stream_chunks = None
             if config["api_mode"] == HERMES_API_MODE_RUNS:
                 stream_chunks = _stream_hermes_run_chunks(submission, config, request)
             else:
                 stream_chunks = _stream_hermes_chat_chunks(submission, config)
-            async for chunk in stream_chunks:
-                yield chunk + "\n"
+            try:
+                async for chunk in stream_chunks:
+                    yield chunk + "\n"
+            finally:
+                closer = getattr(stream_chunks, "aclose", None)
+                if callable(closer):
+                    await closer()
 
         return StreamingResponse(
             generate(),
