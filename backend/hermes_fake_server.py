@@ -89,6 +89,8 @@ class FakeHermesServer:
             return "approval_once"
         if "quiet stop" in text:
             return "quiet_stop"
+        if "stopped" in text:
+            return "stopped"
         if "stop" in text or "abort" in text:
             return "stop"
         if "eof" in text:
@@ -194,6 +196,10 @@ class FakeHermesServer:
             if scenario == "quiet_stop":
                 with contextlib.suppress(asyncio.TimeoutError):
                     await asyncio.wait_for(run["stop_event"].wait(), timeout=5)
+                return resp
+
+            if scenario == "stopped":
+                await _write_sse(resp, "run.stopped", {"status": "stopped"})
                 return resp
 
             if scenario == "eof":
