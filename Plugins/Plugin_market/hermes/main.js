@@ -103,7 +103,18 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             sessionKeyCleared: 'Session key cleared',
             healthOk: 'Hermes is reachable',
             healthFailed: 'Hermes check failed',
-            requestFailed: 'Request failed'
+            requestFailed: 'Request failed',
+            settingsHelp: 'Settings help',
+            settingsHelpTitle: 'Hermes settings guide',
+            settingsHelpClose: 'Close settings guide',
+            settingsHelpIntro: 'These settings tell ChatRaw which Hermes API Server to use and how to send messages to it. Hermes is the agent runtime; this is not where you choose the underlying base model.',
+            settingsHelpRecommended: 'Recommended starting point',
+            settingsHelpBaseUrlTitle: 'Hermes base URL',
+            settingsHelpRemoteTitle: 'Remote Base URL access',
+            settingsHelpModelTitle: 'Model name',
+            settingsHelpModeTitle: 'Execution mode',
+            settingsHelpApiKeyTitle: 'API Server Key',
+            settingsHelpSessionKeyTitle: 'Session Key'
         },
         zh: {
             toggle: 'Hermes',
@@ -179,7 +190,18 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             sessionKeyCleared: 'Session key 已清空',
             healthOk: 'Hermes 可连接',
             healthFailed: 'Hermes 检查失败',
-            requestFailed: '请求失败'
+            requestFailed: '请求失败',
+            settingsHelp: '配置说明',
+            settingsHelpTitle: 'Hermes 配置说明',
+            settingsHelpClose: '关闭配置说明',
+            settingsHelpIntro: '这些设置决定 ChatRaw 连接哪个 Hermes API Server，以及用什么方式把消息发给它。Hermes 是 agent 运行时；这里不是选择 GPT、Claude、DeepSeek 等基座模型的地方。',
+            settingsHelpRecommended: '推荐起步配置',
+            settingsHelpBaseUrlTitle: 'Hermes 基础 URL',
+            settingsHelpRemoteTitle: '远程 Base URL 放行',
+            settingsHelpModelTitle: '模型名称',
+            settingsHelpModeTitle: '执行模式',
+            settingsHelpApiKeyTitle: 'API Server Key',
+            settingsHelpSessionKeyTitle: 'Session Key'
         }
     };
 
@@ -196,6 +218,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
     let maskedSessionKey = '';
     let settingsListener = null;
     let remoteWarningOverlay = null;
+    let settingsHelpOverlay = null;
     let remoteStatusRequestId = 0;
     let remoteStatusDebounceTimer = null;
 
@@ -253,6 +276,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
     }
 
     function closeSettings() {
+        closeSettingsHelpModal();
         const app = getAppState();
         if (app) {
             app.showPluginSettings = false;
@@ -670,12 +694,185 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
         }
     }
 
+    function closeSettingsHelpModal() {
+        if (settingsHelpOverlay) {
+            settingsHelpOverlay.remove();
+            settingsHelpOverlay = null;
+        }
+    }
+
+    function getSettingsHelpContent() {
+        const lang = ChatRaw.utils?.getLanguage?.() || 'en';
+        if (lang === 'zh') {
+            return [
+                {
+                    title: t('settingsHelpRecommended'),
+                    items: [
+                        '本机 Hermes: http://127.0.0.1:8642/v1；远程 Hermes: http://服务器地址:端口/v1。',
+                        '模型名称先填 hermes-agent；如果 /v1/models 返回了别的 id，就填返回值。',
+                        '执行模式先选 Chat Completions；确认基本聊天正常后，再按需要测试 Runs。',
+                        '官方 Hermes 通常需要填写 API_SERVER_KEY；Session Key 可先留空。'
+                    ]
+                },
+                {
+                    title: t('settingsHelpBaseUrlTitle'),
+                    items: [
+                        '这是 ChatRaw 后端要连接的 Hermes API Server 根地址，应填到 /v1 层，不要填到 /chat/completions、/models 或 /runs。',
+                        '少写 /v1 时，健康检查会访问 /models，官方 Hermes 通常会返回 404。',
+                        '如果出现 timeout，通常表示 ChatRaw 后端连不上这个 IP 或端口。'
+                    ]
+                },
+                {
+                    title: t('settingsHelpRemoteTitle'),
+                    items: [
+                        '当基础 URL 不是 localhost、127.0.0.1 或 ::1 时，必须把完全对应的远程 Base URL 写进允许列表并确认风险。',
+                        '一行一个或用逗号分隔；只写你控制或信任的 Hermes 服务地址。',
+                        '不要填写路由器、NAS、数据库控制台、云元数据服务、未知代理或任何不可信地址。'
+                    ]
+                },
+                {
+                    title: t('settingsHelpModelTitle'),
+                    items: [
+                        '这里填 Hermes API Server 对外暴露的 agent model id，不是基座模型名。',
+                        '默认通常是 hermes-agent；最准的值来自 GET /v1/models 返回的 data[0].id。',
+                        '真实基座模型在 Hermes 服务端配置；在这里填 gpt-4o、claude-sonnet 或 deepseek-r1 不会切换 Hermes 内部模型。'
+                    ]
+                },
+                {
+                    title: t('settingsHelpModeTitle'),
+                    items: [
+                        'Chat Completions 会调用 /v1/chat/completions，兼容性最好，日常优先使用。',
+                        'Runs 会调用 /v1/runs 并订阅 /v1/runs/{id}/events，更适合长任务、进度事件和停止任务。',
+                        '当前 ChatRaw 还没有完整的 Hermes tool approval UI；Runs 遇到需要人工审批的工具调用时，可能会返回审批相关错误。'
+                    ]
+                },
+                {
+                    title: t('settingsHelpApiKeyTitle'),
+                    items: [
+                        '这里填 Hermes 服务端 .env 里的 API_SERVER_KEY。',
+                        'ChatRaw 后端会保存它，并在请求 Hermes 时作为 Authorization: Bearer <key> 发送。',
+                        '只有确认对方是无鉴权兼容服务时才留空；远程地址必须是你控制或信任的服务。'
+                    ]
+                },
+                {
+                    title: t('settingsHelpSessionKeyTitle'),
+                    items: [
+                        '这是可选的长期状态隔离键，会作为 X-Hermes-Session-Key 发送给 Hermes。',
+                        '单人单环境使用可以先留空。',
+                        '多人、多渠道或多个 ChatRaw 共用同一个 Hermes 服务时，建议填一个稳定且互不相同的值，避免长期记忆混用。'
+                    ]
+                }
+            ];
+        }
+        return [
+            {
+                title: t('settingsHelpRecommended'),
+                items: [
+                    'Local Hermes: http://127.0.0.1:8642/v1. Remote Hermes: http://server:port/v1.',
+                    'Start with hermes-agent for the model name; if /v1/models returns another id, use that id.',
+                    'Start with Chat Completions; test Runs only after basic chat works.',
+                    'Official Hermes usually requires API_SERVER_KEY. Session Key can stay empty at first.'
+                ]
+            },
+            {
+                title: t('settingsHelpBaseUrlTitle'),
+                items: [
+                    'This is the Hermes API Server root URL used by the ChatRaw backend. It should point to /v1, not /chat/completions, /models, or /runs.',
+                    'If /v1 is missing, the health check calls /models and official Hermes will usually return 404.',
+                    'A timeout usually means the ChatRaw backend cannot reach that IP address or port.'
+                ]
+            },
+            {
+                title: t('settingsHelpRemoteTitle'),
+                items: [
+                    'When the base URL is not localhost, 127.0.0.1, or ::1, the matching remote Base URL must be listed here and risk-confirmed.',
+                    'Use one URL per line or comma-separated values. Add only Hermes services you control or trust.',
+                    'Do not add routers, NAS devices, database consoles, cloud metadata services, unknown proxies, or untrusted addresses.'
+                ]
+            },
+            {
+                title: t('settingsHelpModelTitle'),
+                items: [
+                    'This is the agent model id exposed by the Hermes API Server, not the underlying base model name.',
+                    'The default is usually hermes-agent. The most accurate value is data[0].id from GET /v1/models.',
+                    'The real base model is configured inside Hermes; entering gpt-4o, claude-sonnet, or deepseek-r1 here will not switch Hermes internals.'
+                ]
+            },
+            {
+                title: t('settingsHelpModeTitle'),
+                items: [
+                    'Chat Completions calls /v1/chat/completions and is the most compatible everyday mode.',
+                    'Runs calls /v1/runs and subscribes to /v1/runs/{id}/events, which is better for long tasks, progress events, and stopping runs.',
+                    'ChatRaw does not yet provide a full Hermes tool approval UI, so Runs may return approval-related errors when a tool call requires human approval.'
+                ]
+            },
+            {
+                title: t('settingsHelpApiKeyTitle'),
+                items: [
+                    'Enter the API_SERVER_KEY from the Hermes server .env file.',
+                    'ChatRaw stores it in the backend and sends it to Hermes as Authorization: Bearer <key>.',
+                    'Leave it empty only for a compatible no-auth service. For remote URLs, use only services you control or trust.'
+                ]
+            },
+            {
+                title: t('settingsHelpSessionKeyTitle'),
+                items: [
+                    'This optional long-term state isolation key is sent to Hermes as X-Hermes-Session-Key.',
+                    'For a single-user setup, leaving it empty is fine.',
+                    'When multiple people, channels, or ChatRaw instances share one Hermes service, use stable distinct values to avoid mixing long-term memory.'
+                ]
+            }
+        ];
+    }
+
+    function openSettingsHelpModal() {
+        closeSettingsHelpModal();
+        const sectionsHtml = getSettingsHelpContent().map(section => `
+            <section style="display:grid; gap:8px; padding:0 0 16px 0;">
+                <h4 style="margin:0; font-size:0.95rem; font-weight:600; color:var(--text-primary);">${escapeHtml(section.title)}</h4>
+                <ul style="margin:0; padding-left:18px; color:var(--text-secondary); font-size:0.86rem; line-height:1.55;">
+                    ${section.items.map(item => `<li style="margin:0 0 6px 0;">${escapeHtml(item)}</li>`).join('')}
+                </ul>
+            </section>
+        `).join('');
+
+        settingsHelpOverlay = document.createElement('div');
+        settingsHelpOverlay.style.cssText = 'position:fixed; inset:0; z-index:10001; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(0,0,0,0.42);';
+        settingsHelpOverlay.innerHTML = `
+            <div role="dialog" aria-modal="true" aria-labelledby="hermes-settings-help-title" style="position:relative; width:min(720px, 100%); max-height:min(720px, 88vh); display:grid; grid-template-rows:auto 1fr; background:var(--bg-primary); color:var(--text-primary); border:1px solid var(--border-color); border-radius:var(--radius-lg); box-shadow:0 24px 80px rgba(0,0,0,0.24); overflow:hidden;">
+                <button id="hermes-settings-help-close" class="btn-secondary" type="button" aria-label="${escapeHtml(t('settingsHelpClose'))}" style="position:absolute; top:18px; right:22px; z-index:1; width:28px; height:28px; min-width:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--border-color); border-radius:999px; background:var(--bg-primary); color:var(--text-secondary); cursor:pointer;">
+                    <span aria-hidden="true" style="position:absolute; left:50%; top:50%; width:12px; height:2px; border-radius:999px; background:currentColor; transform:translate(-50%, -50%) rotate(45deg);"></span>
+                    <span aria-hidden="true" style="position:absolute; left:50%; top:50%; width:12px; height:2px; border-radius:999px; background:currentColor; transform:translate(-50%, -50%) rotate(-45deg);"></span>
+                </button>
+                <div style="padding:18px 66px 18px 22px; border-bottom:1px solid var(--border-color);">
+                    <div style="min-width:0;">
+                        <h3 id="hermes-settings-help-title" style="margin:0; font-size:1.05rem; font-weight:600;">${escapeHtml(t('settingsHelpTitle'))}</h3>
+                        <p style="margin:8px 0 0 0; color:var(--text-secondary); font-size:0.86rem; line-height:1.5;">${escapeHtml(t('settingsHelpIntro'))}</p>
+                    </div>
+                </div>
+                <div style="overflow:auto; padding:18px 22px 6px 22px;">
+                    ${sectionsHtml}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(settingsHelpOverlay);
+        settingsHelpOverlay.addEventListener('click', event => {
+            if (event.target === settingsHelpOverlay) {
+                closeSettingsHelpModal();
+            }
+        });
+        document.getElementById('hermes-settings-help-close')?.addEventListener('click', closeSettingsHelpModal);
+    }
+
     function createSettingsMarkup() {
         const remoteSectionExpanded = false;
         return `
             <div class="hermes-settings" style="padding:0;">
                 <div style="padding:20px 24px; border-bottom:1px solid var(--border-color);">
-                    <h3 style="margin:0 0 8px 0; font-size:1.05rem; font-weight:600;">${escapeHtml(t('title'))}</h3>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 8px 0;">
+                        <h3 style="margin:0; font-size:1.05rem; font-weight:600; line-height:1.3;">${escapeHtml(t('title'))}</h3>
+                        <button id="hermes-settings-help" class="btn-secondary" type="button" title="${escapeHtml(t('settingsHelp'))}" aria-label="${escapeHtml(t('settingsHelp'))}" style="width:28px; height:28px; min-width:28px; padding:0; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--border-color); border-radius:999px; background:var(--bg-primary); color:var(--text-secondary); cursor:pointer; font:inherit; font-size:0.95rem; font-weight:600; line-height:1;">?</button>
+                    </div>
                     <p style="margin:0; color:var(--text-secondary); font-size:0.86rem; line-height:1.5;">${escapeHtml(t('description'))}</p>
                 </div>
                 <div style="padding:20px 24px; border-bottom:1px solid var(--border-color); display:grid; gap:16px;">
@@ -778,6 +975,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
         document.getElementById('hermes-remote-section-toggle')?.addEventListener('click', toggleRemoteSection);
         allowedRemoteInput?.addEventListener('input', scheduleRemoteUrlStatusUpdate);
         document.getElementById('hermes-review-remote-urls')?.addEventListener('click', openRemoteWarningModal);
+        document.getElementById('hermes-settings-help')?.addEventListener('click', openSettingsHelpModal);
     }
 
     async function openSettings() {
@@ -841,6 +1039,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
 
     window._chatrawHermesPlugin = {
         destroy() {
+            closeSettingsHelpModal();
             closeRemoteWarningModal();
             if (settingsListener) {
                 window.removeEventListener('plugin-settings-open', settingsListener);
