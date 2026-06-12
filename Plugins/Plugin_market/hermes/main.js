@@ -16,6 +16,7 @@
     const DEFAULT_API_MODE = 'chat_completions';
     const REMOTE_URLS_MAX_LENGTH = 4000;
     const REMOTE_URL_MAX_LENGTH = 300;
+    const REMOTE_STATUS_DEBOUNCE_MS = 300;
 
     if (!ChatRaw || !ChatRaw.hooks || !ChatRaw.ui || !ChatRaw.storage) {
         console.error('[Hermes] ChatRaw plugin APIs are not available');
@@ -196,6 +197,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
     let settingsListener = null;
     let remoteWarningOverlay = null;
     let remoteStatusRequestId = 0;
+    let remoteStatusDebounceTimer = null;
 
     function t(key) {
         const lang = ChatRaw.utils?.getLanguage?.() || 'en';
@@ -478,6 +480,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
     }
 
     async function updateRemoteUrlStatus() {
+        clearRemoteUrlStatusDebounce();
         const status = document.getElementById('hermes-remote-url-status');
         if (!status) return;
 
@@ -521,7 +524,24 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
         }
     }
 
+    function clearRemoteUrlStatusDebounce() {
+        if (remoteStatusDebounceTimer !== null) {
+            clearTimeout(remoteStatusDebounceTimer);
+            remoteStatusDebounceTimer = null;
+        }
+    }
+
+    function scheduleRemoteUrlStatusUpdate() {
+        clearRemoteUrlStatusDebounce();
+        remoteStatusRequestId += 1;
+        remoteStatusDebounceTimer = setTimeout(() => {
+            remoteStatusDebounceTimer = null;
+            updateRemoteUrlStatus();
+        }, REMOTE_STATUS_DEBOUNCE_MS);
+    }
+
     function setRemoteUrlStatus(message, type) {
+        clearRemoteUrlStatusDebounce();
         remoteStatusRequestId += 1;
         const status = document.getElementById('hermes-remote-url-status');
         if (!status) return;
@@ -756,7 +776,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
         document.getElementById('hermes-clear-key')?.addEventListener('click', handleClearKey);
         document.getElementById('hermes-clear-session-key')?.addEventListener('click', handleClearSessionKey);
         document.getElementById('hermes-remote-section-toggle')?.addEventListener('click', toggleRemoteSection);
-        allowedRemoteInput?.addEventListener('input', updateRemoteUrlStatus);
+        allowedRemoteInput?.addEventListener('input', scheduleRemoteUrlStatusUpdate);
         document.getElementById('hermes-review-remote-urls')?.addEventListener('click', openRemoteWarningModal);
     }
 
