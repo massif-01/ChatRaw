@@ -895,8 +895,12 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('"chat_id"', stream_chunks[0])
         self.assertEqual(fake_session.posts[0]["url"], "http://127.0.0.1:8642/v1/runs")
         self.assertEqual(fake_session.gets[0]["url"], "http://127.0.0.1:8642/v1/runs/run-1/events")
-        self.assertEqual(fake_session.posts[0]["json"]["model"], "hermes-agent")
-        self.assertNotIn("stream", fake_session.posts[0]["json"])
+        run_payload = fake_session.posts[0]["json"]
+        self.assertEqual(run_payload["model"], "hermes-agent")
+        self.assertEqual(run_payload["input"], "run please")
+        self.assertEqual(run_payload["instructions"], "Base system prompt.")
+        self.assertNotIn("messages", run_payload)
+        self.assertNotIn("stream", run_payload)
         self.assertTrue(any('"content": "Hello "' in chunk for chunk in stream_chunks))
         self.assertTrue(any('"content": "world"' in chunk for chunk in stream_chunks))
         self.assertTrue(any('"thinking": "Plan"' in chunk for chunk in stream_chunks))
@@ -909,6 +913,38 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(fake_session.gets[0]["headers"]["X-Hermes-Session-Id"], f"chatraw-{chat_id}")
         messages = main.db.get_messages(chat_id)
         self.assertEqual(messages[1].content, "<thinking>\nPlan\n</thinking>\n\nHello world")
+
+    async def test_hermes_runs_payload_uses_input_and_conversation_history(self):
+        self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
+        self.configure_chat(stream=False, system_prompt="Run system prompt.")
+        chat = main.db.create_chat("Existing")
+        main.db.add_message(chat.id, "user", "previous question")
+        main.db.add_message(chat.id, "assistant", "previous answer")
+        fake_session = self.patch_session(FakeHermesSession(
+            post_responses=[FakeHermesResponse(json_data={"run_id": "run-history"})],
+            get_response=FakeHermesResponse(stream_chunks=[
+                b'data: {"delta":"done"}\n\n',
+                b'event: run.completed\ndata: {}\n\n',
+            ]),
+        ))
+
+        result = await main.hermes_chat(JsonRequest({
+            "chat_id": chat.id,
+            "message": "next run",
+        }))
+        status, data = self.decode_result(result)
+
+        self.assertEqual(status, 200)
+        self.assertEqual(data["content"], "done")
+        run_payload = fake_session.posts[0]["json"]
+        self.assertEqual(run_payload["input"], "next run")
+        self.assertEqual(run_payload["instructions"], "Run system prompt.")
+        self.assertEqual(run_payload["conversation_history"], [
+            {"role": "user", "content": "previous question"},
+            {"role": "assistant", "content": "previous answer"},
+        ])
+        self.assertNotIn("messages", run_payload)
+        self.assertNotIn("stream", run_payload)
 
     async def test_hermes_runs_non_stream_aggregates_events_and_saves(self):
         self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)

@@ -4289,9 +4289,73 @@ async def _build_hermes_chat_payload(submission: dict, config: dict, stream: boo
     return payload, references
 
 
+def _hermes_run_text_content(content) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict):
+                item_type = str(item.get("type") or "").strip().lower()
+                if item_type in {"text", "input_text", "output_text"} and item.get("text"):
+                    parts.append(str(item["text"]))
+                elif item.get("text"):
+                    parts.append(str(item["text"]))
+        return "\n".join(part for part in parts if part)
+    if content is None:
+        return ""
+    return str(content)
+
+
+def _hermes_run_input_content(content):
+    if isinstance(content, str):
+        return content
+    return [{"role": "user", "content": content}]
+
+
 async def _build_hermes_run_payload(submission: dict, config: dict) -> Tuple[dict, List[dict]]:
-    payload, references = await _build_hermes_chat_payload(submission, config, stream=False)
-    payload.pop("stream", None)
+    chat_payload, references = await _build_hermes_chat_payload(submission, config, stream=False)
+    messages = chat_payload.pop("messages", [])
+    chat_payload.pop("stream", None)
+
+    last_user_index = None
+    for idx, message in enumerate(messages):
+        if isinstance(message, dict) and message.get("role") == "user":
+            last_user_index = idx
+    if last_user_index is None:
+        raise HermesBridgeError("Hermes run input is empty")
+
+    instructions = []
+    conversation_history = []
+    input_content = messages[last_user_index].get("content", "")
+    for idx, message in enumerate(messages):
+        if not isinstance(message, dict):
+            continue
+        role = str(message.get("role") or "").strip()
+        content = message.get("content", "")
+        if role == "system":
+            text = _hermes_run_text_content(content).strip()
+            if text:
+                instructions.append(text)
+            continue
+        if idx == last_user_index:
+            continue
+        text = _hermes_run_text_content(content)
+        if role and text:
+            conversation_history.append({"role": role, "content": text})
+
+    payload = {
+        key: value
+        for key, value in chat_payload.items()
+        if key in {"model", "temperature", "top_p", "enable_thinking"}
+    }
+    payload["input"] = _hermes_run_input_content(input_content)
+    if instructions:
+        payload["instructions"] = "\n\n".join(instructions)
+    if conversation_history:
+        payload["conversation_history"] = conversation_history
     return payload, references
 
 
