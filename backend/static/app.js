@@ -182,6 +182,34 @@ const i18n = {
         enterApiKey: 'Enter API Key',
         apiKeySet: 'API Key is already set. Clear and enter new key to change.',
         onlyZipSupported: 'Only .zip files are supported',
+        hermesRun: 'Hermes Run',
+        hermesRunStatusStarted: 'Started',
+        hermesRunStatusRunning: 'Running',
+        hermesRunStatusPendingApproval: 'Pending approval',
+        hermesRunStatusCompleted: 'Completed',
+        hermesRunStatusFailed: 'Failed',
+        hermesRunStatusCancelled: 'Cancelled',
+        hermesRunEventRunStarted: 'Run started',
+        hermesRunEventToolStarted: 'Tool started',
+        hermesRunEventToolCompleted: 'Tool completed',
+        hermesRunEventReasoning: 'Reasoning available',
+        hermesRunEventApprovalRequest: 'Approval required',
+        hermesRunEventApprovalResponded: 'Approval responded',
+        hermesRunEventRunCompleted: 'Run completed',
+        hermesRunEventRunFailed: 'Run failed',
+        hermesRunEventRunCancelled: 'Run cancelled',
+        hermesRunTool: 'Tool',
+        hermesRunPreview: 'Preview',
+        hermesRunCommand: 'Command',
+        hermesRunDescription: 'Description',
+        hermesRunPatterns: 'Patterns',
+        hermesRunDuration: 'Duration',
+        hermesRunChoice: 'Choice',
+        hermesApprovalOnce: 'Allow once',
+        hermesApprovalSession: 'Allow for session',
+        hermesApprovalDeny: 'Deny',
+        hermesApprovalSubmitting: 'Submitting...',
+        hermesApprovalError: 'Approval failed',
         close: 'Close'
     },
     zh: {
@@ -316,6 +344,34 @@ const i18n = {
         enterApiKey: '输入 API Key',
         apiKeySet: 'API Key 已设置。清空后输入新密钥可更改。',
         onlyZipSupported: '仅支持 .zip 文件',
+        hermesRun: 'Hermes Run',
+        hermesRunStatusStarted: '已开始',
+        hermesRunStatusRunning: '运行中',
+        hermesRunStatusPendingApproval: '等待审批',
+        hermesRunStatusCompleted: '已完成',
+        hermesRunStatusFailed: '失败',
+        hermesRunStatusCancelled: '已取消',
+        hermesRunEventRunStarted: 'Run 已开始',
+        hermesRunEventToolStarted: '工具已启动',
+        hermesRunEventToolCompleted: '工具已完成',
+        hermesRunEventReasoning: '推理可用',
+        hermesRunEventApprovalRequest: '需要审批',
+        hermesRunEventApprovalResponded: '审批已响应',
+        hermesRunEventRunCompleted: 'Run 已完成',
+        hermesRunEventRunFailed: 'Run 失败',
+        hermesRunEventRunCancelled: 'Run 已取消',
+        hermesRunTool: '工具',
+        hermesRunPreview: '预览',
+        hermesRunCommand: '命令',
+        hermesRunDescription: '说明',
+        hermesRunPatterns: '规则',
+        hermesRunDuration: '耗时',
+        hermesRunChoice: '选择',
+        hermesApprovalOnce: '允许一次',
+        hermesApprovalSession: '本会话允许',
+        hermesApprovalDeny: '拒绝',
+        hermesApprovalSubmitting: '提交中...',
+        hermesApprovalError: '审批失败',
         close: '关闭'
     }
 };
@@ -727,6 +783,13 @@ function app() {
         
         // Select chat
         async selectChat(chatId) {
+            if (this.currentChatId === chatId) {
+                this.closeSidebarOnMobile();
+                return;
+            }
+            if (this.isGenerating) {
+                this.stopGeneration();
+            }
             this.currentChatId = chatId;
             await this.loadMessages(chatId);
             this.closeSidebarOnMobile();
@@ -748,6 +811,9 @@ function app() {
         // Delete chat
         async deleteChat(chatId) {
             try {
+                if (this.currentChatId === chatId && this.isGenerating) {
+                    this.stopGeneration();
+                }
                 await fetch(`/api/chats/${chatId}`, { method: 'DELETE' });
                 this.chats = this.chats.filter(c => c.id !== chatId);
                 if (this.currentChatId === chatId) {
@@ -762,6 +828,9 @@ function app() {
         // Clear all chats
         async clearAllChats() {
             if (!confirm(this.t('confirmClearAll'))) return;
+            if (this.isGenerating) {
+                this.stopGeneration();
+            }
             
             try {
                 // Delete all chats one by one
@@ -780,6 +849,7 @@ function app() {
         // Stop generation
         stopGeneration() {
             if (this.abortController) {
+                this.markActiveHermesRunCancelled();
                 this.abortController.abort();
                 this.abortController = null;
                 this.isGenerating = false;
@@ -1611,6 +1681,313 @@ function app() {
                 }
             }
         },
+
+        createHermesRunState(chatId = '') {
+            return {
+                runId: '',
+                status: '',
+                events: [],
+                pendingApproval: null,
+                approvalSubmitting: false,
+                approvalError: '',
+                approvalBridgeResolvedKey: '',
+                chatId: chatId || this.currentChatId || ''
+            };
+        },
+
+        ensureHermesRunState(message) {
+            if (!message.hermesRun) {
+                message.hermesRun = this.createHermesRunState();
+            }
+            if (!message.hermesRun.events) {
+                message.hermesRun.events = [];
+            }
+            if (!message.hermesRun.chatId && this.currentChatId) {
+                message.hermesRun.chatId = this.currentChatId;
+            }
+            return message.hermesRun;
+        },
+
+        normalizeHermesRunEvent(event) {
+            if (!event || typeof event !== 'object' || Array.isArray(event)) {
+                return null;
+            }
+
+            const type = typeof event.type === 'string' ? event.type : '';
+            if (!type) return null;
+
+            const normalized = { type };
+            const stringFields = [
+                'run_id',
+                'status',
+                'tool',
+                'preview',
+                'error',
+                'command',
+                'description',
+                'choice'
+            ];
+            for (const field of stringFields) {
+                if (event[field] !== undefined && event[field] !== null) {
+                    normalized[field] = String(event[field]);
+                }
+            }
+
+            if (Array.isArray(event.pattern_keys)) {
+                normalized.pattern_keys = event.pattern_keys
+                    .map(item => String(item))
+                    .filter(Boolean)
+                    .slice(0, 20);
+            }
+            if (Array.isArray(event.choices)) {
+                normalized.choices = event.choices
+                    .map(item => String(item))
+                    .filter(Boolean);
+            }
+            if (Number.isFinite(event.duration_ms)) {
+                normalized.duration_ms = Math.round(event.duration_ms);
+            }
+            if (typeof event.resolved === 'boolean' || Number.isFinite(event.resolved)) {
+                normalized.resolved = event.resolved;
+            }
+            if (event.usage && typeof event.usage === 'object' && !Array.isArray(event.usage)) {
+                normalized.usage = {};
+                for (const [key, value] of Object.entries(event.usage)) {
+                    if (Number.isFinite(value)) {
+                        normalized.usage[key] = value;
+                    }
+                }
+            }
+            return normalized;
+        },
+
+        hermesApprovalRequestKey(event) {
+            if (!event) return '';
+            const patterns = Array.isArray(event.pattern_keys) ? event.pattern_keys.join('|') : '';
+            return [
+                event.run_id || '',
+                event.command || '',
+                event.description || '',
+                patterns
+            ].join('\n');
+        },
+
+        isHermesRunTerminalStatus(status) {
+            return ['completed', 'succeeded', 'failed', 'cancelled', 'canceled', 'stopped'].includes(status || '');
+        },
+
+        markActiveHermesRunCancelled() {
+            for (let i = this.messages.length - 1; i >= 0; i -= 1) {
+                const msg = this.messages[i];
+                const run = msg?.hermesRun;
+                if (!run || !Array.isArray(run.events) || !run.events.length) continue;
+                if (this.isHermesRunTerminalStatus(run.status)) return;
+                this.applyHermesRunEvent(msg, {
+                    type: 'run.cancelled',
+                    run_id: run.runId || '',
+                    status: 'cancelled'
+                }, i);
+                return;
+            }
+        },
+
+        applyHermesRunEvent(message, event, msgIndex = -1) {
+            const normalized = this.normalizeHermesRunEvent(event);
+            if (!normalized) return;
+
+            const hermesRun = this.ensureHermesRunState(message);
+            if (
+                normalized.type === 'approval.request' &&
+                (
+                    (
+                        hermesRun.pendingApproval &&
+                        this.hermesApprovalRequestKey(hermesRun.pendingApproval) === this.hermesApprovalRequestKey(normalized)
+                    ) ||
+                    hermesRun.approvalBridgeResolvedKey === this.hermesApprovalRequestKey(normalized)
+                )
+            ) {
+                return;
+            }
+
+            normalized._id = `${normalized.type}-${hermesRun.events.length}`;
+            if (normalized.run_id) {
+                hermesRun.runId = normalized.run_id;
+            }
+            if (normalized.status) {
+                hermesRun.status = normalized.status;
+            }
+
+            if (normalized.type === 'approval.request') {
+                hermesRun.status = 'pending_approval';
+                hermesRun.pendingApproval = normalized;
+                hermesRun.approvalSubmitting = false;
+                hermesRun.approvalError = '';
+            } else if (normalized.type === 'approval.responded') {
+                hermesRun.pendingApproval = null;
+                hermesRun.approvalSubmitting = false;
+                hermesRun.approvalError = '';
+                hermesRun.approvalBridgeResolvedKey = '';
+                hermesRun.status = normalized.status || 'running';
+            } else if (normalized.type === 'run.completed') {
+                hermesRun.pendingApproval = null;
+                hermesRun.approvalSubmitting = false;
+                hermesRun.approvalError = '';
+                hermesRun.approvalBridgeResolvedKey = '';
+                hermesRun.status = 'completed';
+            } else if (normalized.type === 'run.failed') {
+                hermesRun.pendingApproval = null;
+                hermesRun.approvalSubmitting = false;
+                hermesRun.approvalBridgeResolvedKey = '';
+                hermesRun.status = 'failed';
+            } else if (normalized.type === 'run.cancelled') {
+                hermesRun.pendingApproval = null;
+                hermesRun.approvalSubmitting = false;
+                hermesRun.approvalBridgeResolvedKey = '';
+                hermesRun.status = 'cancelled';
+            } else if (normalized.type === 'run.started' && !hermesRun.status) {
+                hermesRun.status = normalized.status || 'running';
+            }
+
+            hermesRun.events.push(normalized);
+            this.commitHermesRunMessage(message, msgIndex);
+        },
+
+        commitHermesRunMessage(message, msgIndex = -1) {
+            if (!message.hermesRun) return;
+            message.hermesRun = {
+                ...message.hermesRun,
+                events: [...message.hermesRun.events],
+                pendingApproval: message.hermesRun.pendingApproval ? { ...message.hermesRun.pendingApproval } : null
+            };
+            if (msgIndex >= 0) {
+                this.messages[msgIndex] = { ...message };
+            }
+            this.$nextTick(() => this.scrollToBottom());
+        },
+
+        hermesRunStatusLabel(status) {
+            const normalized = String(status || '').toLowerCase();
+            const labels = {
+                started: this.t('hermesRunStatusStarted'),
+                queued: this.t('hermesRunStatusStarted'),
+                running: this.t('hermesRunStatusRunning'),
+                in_progress: this.t('hermesRunStatusRunning'),
+                pending_approval: this.t('hermesRunStatusPendingApproval'),
+                completed: this.t('hermesRunStatusCompleted'),
+                succeeded: this.t('hermesRunStatusCompleted'),
+                failed: this.t('hermesRunStatusFailed'),
+                cancelled: this.t('hermesRunStatusCancelled'),
+                canceled: this.t('hermesRunStatusCancelled')
+            };
+            return labels[normalized] || status || this.t('hermesRunStatusRunning');
+        },
+
+        hermesRunEventTitle(event) {
+            const titles = {
+                'run.started': this.t('hermesRunEventRunStarted'),
+                'tool.started': this.t('hermesRunEventToolStarted'),
+                'tool.completed': this.t('hermesRunEventToolCompleted'),
+                'reasoning.available': this.t('hermesRunEventReasoning'),
+                'approval.request': this.t('hermesRunEventApprovalRequest'),
+                'approval.responded': this.t('hermesRunEventApprovalResponded'),
+                'run.completed': this.t('hermesRunEventRunCompleted'),
+                'run.failed': this.t('hermesRunEventRunFailed'),
+                'run.cancelled': this.t('hermesRunEventRunCancelled')
+            };
+            return titles[event?.type] || event?.type || this.t('hermesRun');
+        },
+
+        hermesRunEventIcon(event) {
+            const icons = {
+                'run.started': 'ri-play-circle-line',
+                'tool.started': 'ri-tools-line',
+                'tool.completed': 'ri-checkbox-circle-line',
+                'reasoning.available': 'ri-lightbulb-line',
+                'approval.request': 'ri-shield-keyhole-line',
+                'approval.responded': 'ri-check-double-line',
+                'run.completed': 'ri-checkbox-circle-line',
+                'run.failed': 'ri-error-warning-line',
+                'run.cancelled': 'ri-stop-circle-line'
+            };
+            return icons[event?.type] || 'ri-terminal-box-line';
+        },
+
+        hermesRunEventClass(event) {
+            const typeClass = String(event?.type || 'event').replace(/[^a-z0-9_-]+/gi, '-').toLowerCase();
+            const statusClass = String(event?.status || '').replace(/[^a-z0-9_-]+/gi, '-').toLowerCase();
+            return {
+                [`hermes-event-${typeClass}`]: true,
+                [`status-${statusClass}`]: Boolean(statusClass)
+            };
+        },
+
+        formatHermesDuration(ms) {
+            if (!Number.isFinite(ms)) return '';
+            if (ms < 1000) return `${ms} ms`;
+            return `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0)} s`;
+        },
+
+        hasHermesDuration(event) {
+            return Number.isFinite(event?.duration_ms);
+        },
+
+        isHermesPendingApprovalEvent(message, event) {
+            const pending = message?.hermesRun?.pendingApproval;
+            return Boolean(pending && event && pending._id === event._id);
+        },
+
+        async submitHermesApproval(message, choice, msgIndex = -1) {
+            const targetIndex = msgIndex >= 0 ? msgIndex : this.messages.indexOf(message);
+            if (
+                targetIndex >= 0 &&
+                this.messages[targetIndex] !== message &&
+                this.messages[targetIndex]?.hermesRun?.runId !== message?.hermesRun?.runId
+            ) {
+                return;
+            }
+            const targetMessage = targetIndex >= 0 ? this.messages[targetIndex] : message;
+            const hermesRun = targetMessage?.hermesRun;
+            const runId = hermesRun?.runId;
+            const chatId = hermesRun?.chatId;
+            if (!hermesRun || !runId || !chatId || hermesRun.approvalSubmitting) {
+                return;
+            }
+
+            hermesRun.approvalSubmitting = true;
+            hermesRun.approvalError = '';
+            this.commitHermesRunMessage(targetMessage, targetIndex);
+
+            try {
+                const response = await fetch(`/api/hermes/runs/${encodeURIComponent(runId)}/approval`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        choice,
+                        resolve_all: false
+                    })
+                });
+                let data = {};
+                try {
+                    data = await response.json();
+                } catch (_) {
+                    data = {};
+                }
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.error || this.t('hermesApprovalError'));
+                }
+                hermesRun.status = data.status || hermesRun.status || 'running';
+                hermesRun.approvalBridgeResolvedKey = this.hermesApprovalRequestKey(hermesRun.pendingApproval);
+                hermesRun.pendingApproval = null;
+                hermesRun.approvalSubmitting = false;
+                hermesRun.approvalError = '';
+                this.commitHermesRunMessage(targetMessage, targetIndex);
+            } catch (error) {
+                hermesRun.approvalSubmitting = false;
+                hermesRun.approvalError = error.message || this.t('hermesApprovalError');
+                this.commitHermesRunMessage(targetMessage, targetIndex);
+            }
+        },
         
         // Handle stream response (NDJSON format) - TRUE STREAMING
         async handleStreamResponse(body, endpoint = DEFAULT_CHAT_ENDPOINT, signal = this.abortController?.signal) {
@@ -1627,7 +2004,14 @@ function app() {
                 throw new Error(errText || 'Request failed');
             }
             
-            const assistantMsg = { role: 'assistant', content: '', thinking: '', references: [], showThinking: false };
+            const assistantMsg = {
+                role: 'assistant',
+                content: '',
+                thinking: '',
+                references: [],
+                showThinking: false,
+                hermesRun: this.createHermesRunState()
+            };
             this.messages.push(assistantMsg);
             const msgIndex = this.messages.length - 1;
             
@@ -1655,6 +2039,13 @@ function app() {
                             
                             if (parsed.chat_id) {
                                 this.currentChatId = parsed.chat_id;
+                                if (assistantMsg.hermesRun) {
+                                    assistantMsg.hermesRun.chatId = parsed.chat_id;
+                                }
+                            }
+
+                            if (parsed.hermes_run) {
+                                this.applyHermesRunEvent(assistantMsg, parsed.hermes_run, msgIndex);
                             }
                             
                             // Handle thinking/reasoning content

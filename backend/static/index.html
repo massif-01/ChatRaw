@@ -16,8 +16,8 @@
     
     <!-- Performance: Preload Critical Resources -->
     <link rel="preload" href="fonts/remixicon/remixicon.woff2?t=1769685282643" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="styles.min.css?v=7.5" as="style">
-    <link rel="preload" href="app.min.js?v=7.5" as="script">
+    <link rel="preload" href="styles.min.css?v=7.6" as="style">
+    <link rel="preload" href="app.min.js?v=7.7" as="script">
     <link rel="preload" href="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" as="script" crossorigin="anonymous">
     <link rel="preload" href="https://unpkg.com/marked@9.1.6/marked.min.js" as="script" crossorigin="anonymous">
     
@@ -147,7 +147,7 @@
     <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" crossorigin="anonymous"></script>
     <!-- highlight.js is lazy-loaded in app.min.js when needed -->
     <link rel="stylesheet" href="fonts/remixicon/remixicon.css">
-    <link rel="stylesheet" href="styles.min.css?v=7.5">
+    <link rel="stylesheet" href="styles.min.css?v=7.6">
 </head>
 <body x-data="app()" x-init="init()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
@@ -260,7 +260,7 @@
                         </div>
                         <div class="message-content">
                             <!-- Show typing indicator for empty assistant message while generating -->
-                            <div class="typing-indicator" x-show="msg.role === 'assistant' && !msg.content && isGenerating">
+                            <div class="typing-indicator" x-show="msg.role === 'assistant' && !msg.content && !(msg.hermesRun && msg.hermesRun.events && msg.hermesRun.events.length) && isGenerating">
                                 <span></span><span></span><span></span>
                             </div>
                             <!-- Thinking/Reasoning Block -->
@@ -274,6 +274,91 @@
                                     <div x-html="renderMarkdown(msg.thinking)"></div>
                                 </div>
                             </div>
+
+                            <!-- Hermes Runs events -->
+                            <template x-if="msg.hermesRun && msg.hermesRun.events && msg.hermesRun.events.length">
+                                <div class="hermes-run-block">
+                                    <div class="hermes-run-header">
+                                        <div class="hermes-run-title">
+                                            <i class="ri-terminal-box-line"></i>
+                                            <span x-text="t('hermesRun')"></span>
+                                        </div>
+                                        <span class="hermes-run-status" :class="'status-' + (msg.hermesRun.status || 'running')" x-text="hermesRunStatusLabel(msg.hermesRun.status)"></span>
+                                    </div>
+                                    <div class="hermes-run-events">
+                                        <template x-for="(event, eventIdx) in msg.hermesRun.events" :key="event._id || eventIdx">
+                                            <div class="hermes-run-event" :class="hermesRunEventClass(event)">
+                                                <div class="hermes-run-event-title">
+                                                    <i :class="hermesRunEventIcon(event)"></i>
+                                                    <span x-text="hermesRunEventTitle(event)"></span>
+                                                    <span class="hermes-event-status" :class="'status-' + event.status" x-show="event.status" x-text="hermesRunStatusLabel(event.status)"></span>
+                                                </div>
+                                                <div class="hermes-run-event-body">
+                                                    <div class="hermes-run-meta" x-show="event.tool || hasHermesDuration(event)">
+                                                        <span x-show="event.tool">
+                                                            <strong x-text="t('hermesRunTool')"></strong>
+                                                            <span x-text="event.tool"></span>
+                                                        </span>
+                                                        <span x-show="hasHermesDuration(event)">
+                                                            <strong x-text="t('hermesRunDuration')"></strong>
+                                                            <span x-text="formatHermesDuration(event.duration_ms)"></span>
+                                                        </span>
+                                                    </div>
+                                                    <template x-if="event.preview">
+                                                        <div class="hermes-run-text">
+                                                            <div class="hermes-run-text-label" x-text="t('hermesRunPreview')"></div>
+                                                            <pre><code x-text="event.preview"></code></pre>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="event.command">
+                                                        <div class="hermes-run-text hermes-run-command">
+                                                            <div class="hermes-run-text-label" x-text="t('hermesRunCommand')"></div>
+                                                            <pre><code x-text="event.command"></code></pre>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="event.description">
+                                                        <div class="hermes-run-description">
+                                                            <strong x-text="t('hermesRunDescription')"></strong>
+                                                            <span x-text="event.description"></span>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="event.pattern_keys && event.pattern_keys.length">
+                                                        <div class="hermes-run-patterns">
+                                                            <strong x-text="t('hermesRunPatterns')"></strong>
+                                                            <template x-for="pattern in event.pattern_keys" :key="pattern">
+                                                                <span class="hermes-run-pattern" x-text="pattern"></span>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="event.error">
+                                                        <div class="hermes-run-error" x-text="event.error"></div>
+                                                    </template>
+                                                    <template x-if="event.choice">
+                                                        <div class="hermes-run-choice">
+                                                            <strong x-text="t('hermesRunChoice')"></strong>
+                                                            <span x-text="event.choice"></span>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="isHermesPendingApprovalEvent(msg, event)">
+                                                        <div class="hermes-approval-actions">
+                                                            <button type="button" class="hermes-approval-btn" @click="submitHermesApproval(msg, 'once', index)" :disabled="msg.hermesRun.approvalSubmitting">
+                                                                <span x-text="msg.hermesRun.approvalSubmitting ? t('hermesApprovalSubmitting') : t('hermesApprovalOnce')"></span>
+                                                            </button>
+                                                            <button type="button" class="hermes-approval-btn" @click="submitHermesApproval(msg, 'session', index)" :disabled="msg.hermesRun.approvalSubmitting">
+                                                                <span x-text="t('hermesApprovalSession')"></span>
+                                                            </button>
+                                                            <button type="button" class="hermes-approval-btn danger" @click="submitHermesApproval(msg, 'deny', index)" :disabled="msg.hermesRun.approvalSubmitting">
+                                                                <span x-text="t('hermesApprovalDeny')"></span>
+                                                            </button>
+                                                        </div>
+                                                    </template>
+                                                    <div class="hermes-approval-error" x-show="isHermesPendingApprovalEvent(msg, event) && msg.hermesRun.approvalError" x-text="msg.hermesRun.approvalError"></div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
                             
                             <!-- Show actual content -->
                             <div x-show="msg.content" x-html="renderMarkdown(msg.content)"></div>
@@ -987,6 +1072,6 @@
         <div class="plugin-fullscreen-content" x-html="pluginFullscreenModal.content"></div>
     </div>
 
-    <script src="app.min.js?v=7.5"></script>
+    <script src="app.min.js?v=7.7"></script>
 </body>
 </html>

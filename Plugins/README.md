@@ -167,16 +167,21 @@ URLs directly.
 Hermes can optionally use a backend-saved execution mode. `apiMode: runs` tells the Hermes bridge to
 create `/v1/runs` and subscribe to run events behind the same `/api/hermes/chat` ChatRaw contract. This
 setting is not a `route_message` return value and must not be provided in request bodies. Run tool
-progress is intentionally not mixed into final assistant `content`; ChatRaw continues to render the
-existing chat UI, and the bridge maps only final text/reasoning/error state into the existing response
-contract.
+progress and approval requests are rendered as structured assistant-bubble activity and are intentionally
+not mixed into final assistant `content`. Runs approval is only interactive when ChatRaw Stream Output is
+enabled. The browser may receive an opaque `run_id` for the same-origin approval bridge, but it must never
+receive the Hermes Base URL, API key, Session Key, transport headers, events URL, stop URL, or approval
+URL. ChatRaw continues to render the existing chat UI while the host bridge streams final text/reasoning,
+tool lifecycle events, approval events, and terminal run state.
 
 Hermes integration QA should cover the plugin lifecycle and the host bridge together: install and
 enable/disable the plugin, toggle Hermes on/off, send default and Hermes-routed messages, verify
 `before_send` search/RAG enhancers still modify the same body, switch/new/delete chats, test stream and
-non-stream modes, stop generation in Runs mode, save Hermes settings, and confirm **Check** calls `/api/hermes/health`
-instead of `/api/proxy/request`. QA for remote Hermes should also cover a confirmed allowed remote URL,
-a stale confirmation after editing the allowed list, and invalid allowed-list entries. User setup and troubleshooting are documented in
+non-stream modes, verify Runs approval choices `once`/`session`/`deny`, stop generation in Runs mode,
+save Hermes settings, and confirm **Check** calls `/api/hermes/health` instead of `/api/proxy/request`.
+QA for loopback deployments should cover a browser reaching ChatRaw on a LAN address while the backend
+uses same-machine `127.0.0.1` for Hermes. QA for remote Hermes should also cover a confirmed allowed
+remote URL, a stale confirmation after editing the allowed list, and invalid allowed-list entries. User setup and troubleshooting are documented in
 [`docs/hermes.md`](../docs/hermes.md).
 
 ### Settings Types
@@ -1462,15 +1467,21 @@ Loopback Hermes Base URL 默认允许。非 loopback Base URL 只有在保存到
 
 Hermes 可以选择后端保存的执行模式。`apiMode: runs` 表示 Hermes bridge 在同一个
 `/api/hermes/chat` ChatRaw contract 后面创建 `/v1/runs` 并订阅 run events。这个设置不是
-`route_message` 返回值，也不得由请求 body 提供。run tool progress 不会混入最终 assistant
-`content`；ChatRaw 继续使用现有聊天 UI，bridge 只把最终文本、reasoning 和错误状态映射回现有响应
-contract。
+`route_message` 返回值，也不得由请求 body 提供。run tool progress 和 approval requests 会以
+结构化 assistant 气泡活动展示，不会混入最终 assistant `content`。Runs approval 只有在 ChatRaw
+开启流式输出时才承诺可交互。浏览器可以拿到用于同源 approval bridge 的 opaque `run_id`，但不得拿到
+Hermes Base URL、API key、Session Key、传输 headers、events URL、stop URL 或 approval URL。
+ChatRaw 继续使用现有聊天 UI，bridge 会流式输出最终文本/reasoning、tool lifecycle events、
+approval events 和 terminal run state。
 
 Hermes 集成验收应同时覆盖插件生命周期和宿主桥接：安装并启用/禁用插件、打开/关闭 Hermes
 toggle、发送默认模式和 Hermes 路由消息、确认 `before_send` 搜索/RAG 增强仍修改同一个 body、
-新建/切换/删除对话、测试 stream 与 non-stream、在 Runs 模式停止生成、保存 Hermes 设置，并确认
-**检查** 调用 `/api/hermes/health` 而不是 `/api/proxy/request`。远程 Hermes QA 还应覆盖已确认的
-允许远程 URL、修改允许列表后的 stale confirmation，以及非法允许列表条目。用户配置和排错说明见
+新建/切换/删除对话、测试 stream 与 non-stream、验证 Runs approval 的 `once`/`session`/`deny`、
+在 Runs 模式停止生成、保存 Hermes 设置，并确认 **检查** 调用 `/api/hermes/health` 而不是
+`/api/proxy/request`。Loopback 部署 QA 应覆盖浏览器通过局域网地址访问 ChatRaw，而后端使用同机
+`127.0.0.1` 访问 Hermes。远程 Hermes QA 还应覆盖已确认的允许远程 URL、修改允许列表后的 stale
+confirmation，以及非法允许列表条目。`script/hermes_fake_server.py` 只用于本地 smoke 和手动验收；
+ChatRaw 不会自动启动它，不会把它挂到生产 API，它也不是官方 Hermes 替代实现。用户配置和排错说明见
 [`docs/hermes.md`](../docs/hermes.md)。
 
 ### 设置类型

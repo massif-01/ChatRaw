@@ -80,7 +80,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             apiMode: 'Execution mode',
             apiModeChat: 'Chat Completions',
             apiModeRuns: 'Runs',
-            apiModeHint: 'Runs uses Hermes /v1/runs while keeping the ChatRaw chat UI.',
+            apiModeHint: 'Runs shows Hermes tool events and approval controls in the ChatRaw chat UI.',
             apiKey: 'API Server Key (if required)',
             apiKeyHint: 'Stored by ChatRaw backend. Official Hermes requires API_SERVER_KEY; leave empty only for compatible servers that do not require auth.',
             apiKeySaved: 'API key saved',
@@ -167,7 +167,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             apiMode: '执行模式',
             apiModeChat: 'Chat Completions',
             apiModeRuns: 'Runs',
-            apiModeHint: 'Runs 使用 Hermes /v1/runs，同时保留 ChatRaw 聊天 UI。',
+            apiModeHint: 'Runs 会在 ChatRaw 聊天 UI 中显示 Hermes 工具事件和审批控件。',
             apiKey: 'API Server Key（如服务要求）',
             apiKeyHint: '由 ChatRaw 后端保存。官方 Hermes 需要 API_SERVER_KEY；仅无鉴权兼容服务可留空。',
             apiKeySaved: 'API key 已保存',
@@ -742,8 +742,9 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
                     title: t('settingsHelpModeTitle'),
                     items: [
                         'Chat Completions 会调用 /v1/chat/completions，兼容性最好，日常优先使用。',
-                        'Runs 会调用 /v1/runs 并订阅 /v1/runs/{id}/events，更适合长任务、进度事件和停止任务。',
-                        '当前 ChatRaw 还没有完整的 Hermes tool approval UI；Runs 遇到需要人工审批的工具调用时，可能会返回审批相关错误。'
+                        'Runs 会调用 /v1/runs 并订阅 /v1/runs/{id}/events，更适合工具、SSH、长任务、进度事件、停止任务和人工审批。',
+                        '需要人工审批时，ChatRaw 会在聊天气泡中显示命令和规则，并要求你显式选择允许一次、本会话允许或拒绝。',
+                        '批准的是 Hermes API Server 所在机器和 Hermes 配置环境中的工具/命令执行；ChatRaw 不会自动批准工具调用。'
                     ]
                 },
                 {
@@ -802,8 +803,9 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
                 title: t('settingsHelpModeTitle'),
                 items: [
                     'Chat Completions calls /v1/chat/completions and is the most compatible everyday mode.',
-                    'Runs calls /v1/runs and subscribes to /v1/runs/{id}/events, which is better for long tasks, progress events, and stopping runs.',
-                    'ChatRaw does not yet provide a full Hermes tool approval UI, so Runs may return approval-related errors when a tool call requires human approval.'
+                    'Runs calls /v1/runs and subscribes to /v1/runs/{id}/events, which is better for tools, SSH, long tasks, progress events, stopping runs, and human approval.',
+                    'When approval is required, ChatRaw shows the command and patterns in the chat bubble and requires you to explicitly allow once, allow for the session, or deny.',
+                    'Approval applies to tool or command execution in the Hermes API Server machine and configuration environment; ChatRaw never auto-approves tool calls.'
                 ]
             },
             {

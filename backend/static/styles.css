@@ -626,6 +626,199 @@ select:focus:not(:focus-visible),
     color: var(--text-primary);
 }
 
+/* Hermes Runs */
+.hermes-run-block {
+    margin: 0 0 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    overflow: hidden;
+}
+
+.hermes-run-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-hover);
+}
+
+.hermes-run-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.hermes-run-status,
+.hermes-event-status {
+    flex-shrink: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 3px 8px;
+}
+
+.hermes-run-status.status-completed,
+.hermes-run-status.status-succeeded,
+.hermes-event-status.status-completed,
+.hermes-event-status.status-succeeded {
+    color: var(--success-color);
+}
+
+.hermes-run-status.status-failed,
+.hermes-event-status.status-failed,
+.hermes-run-status.status-cancelled,
+.hermes-run-status.status-canceled,
+.hermes-event-status.status-cancelled,
+.hermes-event-status.status-canceled {
+    color: var(--error-color);
+}
+
+.hermes-run-status.status-pending_approval,
+.hermes-event-status.status-pending_approval {
+    color: var(--text-primary);
+}
+
+.hermes-run-events {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+}
+
+.hermes-run-event {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-primary);
+    padding: 10px 12px;
+}
+
+.hermes-run-event-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.hermes-run-event-title i {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.hermes-run-event-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.hermes-run-meta,
+.hermes-run-description,
+.hermes-run-choice,
+.hermes-run-patterns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    align-items: baseline;
+}
+
+.hermes-run-meta strong,
+.hermes-run-description strong,
+.hermes-run-choice strong,
+.hermes-run-patterns strong,
+.hermes-run-text-label {
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0;
+}
+
+.hermes-run-text pre {
+    margin: 6px 0 0;
+    max-width: 100%;
+    padding: 10px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.hermes-run-text code {
+    font-size: 0.82rem;
+}
+
+.hermes-run-pattern {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    padding: 3px 8px;
+}
+
+.hermes-run-error,
+.hermes-approval-error {
+    color: var(--error-color);
+    font-size: 0.85rem;
+}
+
+.hermes-approval-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.hermes-approval-btn {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 7px 10px;
+    transition: var(--transition-colors);
+}
+
+.hermes-approval-btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+}
+
+.hermes-approval-btn.danger {
+    background: transparent;
+    color: var(--error-color);
+}
+
+.hermes-approval-btn.danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.hermes-approval-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 /* Markdown Tables */
 .message-content table {
     width: 100%;
@@ -2227,6 +2420,30 @@ input[type=range]::-webkit-slider-thumb:hover {
         margin: 12px 0;
         font-size: 0.85rem;
         max-width: calc(100vw - 48px);
+    }
+
+    .hermes-run-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .hermes-run-events {
+        padding: 10px;
+    }
+
+    .hermes-run-text pre {
+        max-width: 100%;
+        padding: 10px;
+        font-size: 0.8rem;
+    }
+
+    .hermes-approval-actions {
+        flex-direction: column;
+    }
+
+    .hermes-approval-btn {
+        min-height: 40px;
+        width: 100%;
     }
     
     /* Table responsive on mobile */
