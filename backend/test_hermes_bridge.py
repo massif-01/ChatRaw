@@ -849,10 +849,23 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
             })["content_delta"],
             "Hi",
         )
-        self.assertEqual(
-            main.normalize_hermes_run_event({"output_text": "Answer"})["content_delta"],
-            "Answer",
-        )
+        output_text = main.normalize_hermes_run_event({"output_text": "Answer"})
+        self.assertEqual(output_text["content_delta"], "")
+        self.assertEqual(output_text["content_ambiguous"], "Answer")
+        completed_output = main.normalize_hermes_run_event({
+            "event": "run.completed",
+            "data": {"output_text": "Final answer"},
+        })
+        self.assertEqual(completed_output["content_delta"], "")
+        self.assertEqual(completed_output["content_snapshot"], "Final answer")
+        self.assertEqual(completed_output["hermes_run"]["type"], "run.completed")
+        completed_delta = main.normalize_hermes_run_event({
+            "event": "run.completed",
+            "data": {"delta": "Final delta"},
+        })
+        self.assertEqual(completed_delta["content_delta"], "Final delta")
+        self.assertEqual(completed_delta["content_snapshot"], "")
+        self.assertEqual(completed_delta["hermes_run"]["type"], "run.completed")
         self.assertEqual(
             main.normalize_hermes_run_event({"delta": {"reasoning_content": "Think"}})["thinking_delta"],
             "Think",
@@ -964,6 +977,80 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(messages[1].content, "<thinking>\nPlan\n</thinking>\n\nHello world")
         self.assertNotIn("ignored", messages[1].content)
         self.assertNotIn("run-1", main._active_hermes_runs)
+
+    async def test_hermes_runs_stream_collapses_ambiguous_snapshots_and_completed_final_output(self):
+        self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
+        self.configure_chat(stream=True)
+        fake_session = self.patch_session(FakeHermesSession(
+            post_responses=[FakeHermesResponse(json_data={"run_id": "run-snapshots"})],
+            get_response=FakeHermesResponse(stream_chunks=[
+                b'data: {"output_text":"A"}\n\n',
+                b'data: {"output_text":"AB"}\n\n',
+                b'event: run.completed\ndata: {"output_text":"AB"}\n\n',
+            ]),
+        ))
+
+        response = await main.hermes_chat(JsonRequest({"message": "snapshot run"}))
+        stream_chunks = await self.collect_stream(response)
+        events = [json.loads(chunk) for chunk in stream_chunks]
+        content_chunks = [event["content"] for event in events if "content" in event]
+
+        self.assertEqual(content_chunks, ["A", "B"])
+        self.assertTrue(any(event.get("done") is True for event in events))
+        chat_id = events[0]["chat_id"]
+        messages = main.db.get_messages(chat_id)
+        self.assertEqual(messages[1].content, "AB")
+        self.assertNotIn("run-snapshots", main._active_hermes_runs)
+        self.assertEqual(fake_session.gets[0]["url"], "http://127.0.0.1:8642/v1/runs/run-snapshots/events")
+
+    async def test_hermes_runs_completed_snapshot_emits_only_missing_suffix(self):
+        self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
+        self.configure_chat(stream=True)
+        self.patch_session(FakeHermesSession(
+            post_responses=[FakeHermesResponse(json_data={"run_id": "run-final-suffix"})],
+            get_response=FakeHermesResponse(stream_chunks=[
+                b'event: message.delta\ndata: {"delta":"Hello "}\n\n',
+                b'event: run.completed\ndata: {"output_text":"Hello world"}\n\n',
+            ]),
+        ))
+
+        response = await main.hermes_chat(JsonRequest({"message": "snapshot suffix"}))
+        stream_chunks = await self.collect_stream(response)
+        events = [json.loads(chunk) for chunk in stream_chunks]
+        content_chunks = [event["content"] for event in events if "content" in event]
+
+        self.assertEqual(content_chunks, ["Hello ", "world"])
+        chat_id = events[0]["chat_id"]
+        messages = main.db.get_messages(chat_id)
+        self.assertEqual(messages[1].content, "Hello world")
+
+    async def test_hermes_runs_completed_snapshot_skips_duplicate_or_incompatible_text(self):
+        cases = [
+            ("duplicate", "Complete", "Complete"),
+            ("prefix", "Hello world", "Hello"),
+            ("rewrite", "Original answer", "Different final answer"),
+        ]
+        for label, delta_text, final_text in cases:
+            with self.subTest(label=label):
+                self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)
+                self.configure_chat(stream=True)
+                self.patch_session(FakeHermesSession(
+                    post_responses=[FakeHermesResponse(json_data={"run_id": f"run-final-{label}"})],
+                    get_response=FakeHermesResponse(stream_chunks=[
+                        f'event: message.delta\ndata: {json.dumps({"delta": delta_text})}\n\n'.encode("utf-8"),
+                        f'event: run.completed\ndata: {json.dumps({"output_text": final_text})}\n\n'.encode("utf-8"),
+                    ]),
+                ))
+
+                response = await main.hermes_chat(JsonRequest({"message": f"snapshot {label}"}))
+                stream_chunks = await self.collect_stream(response)
+                events = [json.loads(chunk) for chunk in stream_chunks]
+                content_chunks = [event["content"] for event in events if "content" in event]
+                chat_id = events[0]["chat_id"]
+                messages = main.db.get_messages(chat_id)
+
+                self.assertEqual(content_chunks, [delta_text])
+                self.assertEqual(messages[1].content, delta_text)
 
     async def test_hermes_runs_payload_uses_input_and_conversation_history(self):
         self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS)

@@ -4703,6 +4703,8 @@ def normalize_hermes_run_event(event: dict, run_id: str = "") -> dict:
 
     result = {
         "content_delta": "",
+        "content_snapshot": "",
+        "content_ambiguous": "",
         "thinking_delta": "",
         "status": status,
         "terminal": False,
@@ -4730,10 +4732,12 @@ def normalize_hermes_run_event(event: dict, run_id: str = "") -> dict:
     raw_delta = data.get("delta")
     delta = raw_delta if isinstance(raw_delta, dict) else {}
     scalar_delta = _extract_text_value(raw_delta) if raw_delta is not None and not isinstance(raw_delta, dict) else ""
-    content = (
+    delta_content = (
         scalar_delta
         or _extract_text_value(delta.get("content"))
-        or _extract_text_value(data.get("content"))
+    )
+    field_content = (
+        _extract_text_value(data.get("content"))
         or _extract_text_value(data.get("text"))
         or _extract_text_value(data.get("output_text"))
         or _extract_text_value(data.get("output"))
@@ -4743,7 +4747,6 @@ def normalize_hermes_run_event(event: dict, run_id: str = "") -> dict:
         or _extract_text_value(delta.get("reasoning"))
         or _extract_text_value(delta.get("thinking"))
     )
-    result["content_delta"] = content
     result["thinking_delta"] = thinking
     if thinking:
         result["hermes_run"] = _build_hermes_run_envelope("reasoning.available", event_run_id, status or "running")
@@ -4751,6 +4754,8 @@ def normalize_hermes_run_event(event: dict, run_id: str = "") -> dict:
     if any(token in type_status for token in ("completed", "succeeded", "done")):
         result["terminal"] = True
         result["status"] = "completed"
+        result["content_delta"] = delta_content
+        result["content_snapshot"] = field_content
         envelope = _build_hermes_run_envelope("run.completed", event_run_id, "completed")
         usage = data.get("usage")
         if isinstance(usage, dict):
@@ -4794,6 +4799,12 @@ def normalize_hermes_run_event(event: dict, run_id: str = "") -> dict:
         envelope = _build_hermes_run_envelope("run.failed", event_run_id, "failed")
         envelope["error"] = _truncate_hermes_event_text(result["error"], HERMES_RUN_EVENT_TEXT_MAX_LENGTH)
         result["hermes_run"] = envelope
+        return result
+
+    if delta_content:
+        result["content_delta"] = delta_content
+    elif field_content:
+        result["content_ambiguous"] = field_content
 
     return result
 
@@ -4899,6 +4910,26 @@ async def _consume_hermes_run(submission: dict, config: dict, request: Request, 
             stop_requested = True
             await _stop_hermes_run(session, submission, config, run_id, independent_session=independent_session)
 
+    def emitted_content_for(text: str, mode: str) -> str:
+        nonlocal full_response
+        if not text:
+            return ""
+        if mode == "delta":
+            chunk = text
+        elif not full_response:
+            chunk = text
+        elif text == full_response:
+            chunk = ""
+        elif text.startswith(full_response):
+            chunk = text[len(full_response):]
+        elif mode == "ambiguous":
+            chunk = text
+        else:
+            chunk = ""
+        if chunk:
+            full_response += chunk
+        return chunk
+
     try:
         run_id, references = await _create_hermes_run(session, submission, config)
         register_active_hermes_run(run_id, submission["chat_id"], config)
@@ -4945,8 +4976,18 @@ async def _consume_hermes_run(submission: dict, config: dict, request: Request, 
 
             content = event.get("content_delta") or ""
             if content:
-                full_response += content
+                content = emitted_content_for(content, "delta")
                 if stream:
+                    yield json.dumps({"content": content})
+            content = event.get("content_snapshot") or ""
+            if content:
+                content = emitted_content_for(content, "snapshot")
+                if content and stream:
+                    yield json.dumps({"content": content})
+            content = event.get("content_ambiguous") or ""
+            if content:
+                content = emitted_content_for(content, "ambiguous")
+                if content and stream:
                     yield json.dumps({"content": content})
 
             if event.get("error"):

@@ -299,6 +299,22 @@ class HermesSmokeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(messages), 4)
         self.assertEqual(messages[-1].content, "session reused answer")
 
+    async def test_real_http_sse_snapshot_final_output_does_not_duplicate(self):
+        self.configure_chat(stream=True)
+        chunks, task = await self.start_stream({"message": "snapshot final output"})
+
+        await asyncio.wait_for(task, timeout=3)
+        events = [json.loads(chunk) for chunk in chunks]
+        content_chunks = [event["content"] for event in events if "content" in event]
+        chat_id = events[0]["chat_id"]
+
+        self.assertEqual(content_chunks, ["Fake ", "snapshot"])
+        self.assertTrue(any(event.get("done") is True for event in events))
+        messages = main.db.get_messages(chat_id)
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[1].content, "Fake snapshot")
+        self.assertEqual(self.fake.stop_requests, [])
+
     async def test_real_http_sse_disconnect_stops_and_stale_approval_does_not_forward(self):
         self.configure_chat(stream=True)
         chunks, task = await self.start_stream({"message": "stop generation"}, disconnected=True)

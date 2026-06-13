@@ -87,6 +87,8 @@ class FakeHermesServer:
             return "approval_once"
         if "non stream" in text or "non-stream" in text:
             return "approval_once"
+        if "snapshot" in text:
+            return "snapshot_final"
         if "quiet stop" in text:
             return "quiet_stop"
         if "stopped" in text:
@@ -185,6 +187,12 @@ class FakeHermesServer:
                 })
                 await _write_sse(resp, "message.delta", {"delta": {"content": "session reused answer"}})
                 await _write_sse(resp, "run.completed", {})
+                return resp
+
+            if scenario == "snapshot_final":
+                await _write_sse(resp, "message.delta", {"delta": {"content": "Fake "}})
+                await _write_sse(resp, "message", {"output_text": "Fake snapshot"})
+                await _write_sse(resp, "run.completed", {"output_text": "Fake snapshot"})
                 return resp
 
             if scenario == "stop":
