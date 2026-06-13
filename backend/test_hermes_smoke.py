@@ -344,7 +344,7 @@ class HermesSmokeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.fake.stop_requests[0]["run_id"], run_id)
         self.assertNotIn(run_id, main._active_hermes_runs)
 
-    async def test_real_http_sse_stopped_terminal_does_not_extra_stop(self):
+    async def test_real_http_sse_terminal_stopped_event_does_not_trigger_extra_stop_request(self):
         self.configure_chat(stream=True)
 
         chunks, task = await self.start_stream({"message": "externally stopped run"})
