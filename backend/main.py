@@ -3822,6 +3822,9 @@ HERMES_REMOTE_URLS_MAX_LENGTH = 4000
 HERMES_REMOTE_URL_MAX_LENGTH = 300
 HERMES_REMOTE_URLS_MAX_COUNT = 20
 HERMES_REMOTE_URL_PATH_RE = re.compile(r"^/(?:[A-Za-z0-9._~-]+)(?:/[A-Za-z0-9._~-]+)*$")
+HERMES_REQUEST_TIMEOUT_SECONDS_DEFAULT = 600
+HERMES_REQUEST_TIMEOUT_SECONDS_MIN = 30
+HERMES_REQUEST_TIMEOUT_SECONDS_MAX = 3600
 HERMES_ACTIVE_RUN_TTL_SECONDS = int(os.environ.get("HERMES_ACTIVE_RUN_TTL_SECONDS", "3600"))
 HERMES_RUN_EVENT_TEXT_MAX_LENGTH = int(os.environ.get("HERMES_RUN_EVENT_TEXT_MAX_LENGTH", "2000"))
 HERMES_RUN_EVENT_PREVIEW_MAX_LENGTH = int(os.environ.get("HERMES_RUN_EVENT_PREVIEW_MAX_LENGTH", "1000"))
@@ -3852,6 +3855,28 @@ HERMES_FORBIDDEN_TRANSPORT_FIELDS = {
     "eventsurl",
     "eventurl",
     "stopurl",
+    "timeout",
+    "timeoutms",
+    "timeoutseconds",
+    "requesttimeout",
+    "requesttimeoutms",
+    "requesttimeoutseconds",
+    "readtimeout",
+    "readtimeoutms",
+    "readtimeoutseconds",
+    "responsetimeout",
+    "responsetimeoutms",
+    "responsetimeoutseconds",
+    "totaltimeout",
+    "totaltimeoutms",
+    "totaltimeoutseconds",
+    "connecttimeout",
+    "connecttimeoutms",
+    "connecttimeoutseconds",
+    "sockread",
+    "sockreadtimeout",
+    "sockreadtimeoutms",
+    "sockreadtimeoutseconds",
 }
 
 # Plugin upload size limit (10MB)
@@ -3992,6 +4017,32 @@ def validate_hermes_chat_body(body: dict):
             status_code=400,
             detail=f"Hermes chat body must not include transport fields: {fields}",
         )
+
+
+def _parse_hermes_request_timeout_seconds(value) -> int:
+    if value is None or isinstance(value, bool):
+        return HERMES_REQUEST_TIMEOUT_SECONDS_DEFAULT
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return HERMES_REQUEST_TIMEOUT_SECONDS_DEFAULT
+    try:
+        parsed = int(float(value))
+    except (TypeError, ValueError, OverflowError):
+        return HERMES_REQUEST_TIMEOUT_SECONDS_DEFAULT
+    if not math.isfinite(float(parsed)):
+        return HERMES_REQUEST_TIMEOUT_SECONDS_DEFAULT
+    return max(
+        HERMES_REQUEST_TIMEOUT_SECONDS_MIN,
+        min(HERMES_REQUEST_TIMEOUT_SECONDS_MAX, parsed),
+    )
+
+
+def _hermes_request_timeout(config: dict, stream: bool = False) -> aiohttp.ClientTimeout:
+    seconds = _parse_hermes_request_timeout_seconds(config.get("request_timeout_seconds"))
+    if stream:
+        return aiohttp.ClientTimeout(total=None, connect=10, sock_read=seconds)
+    return aiohttp.ClientTimeout(total=seconds, connect=10)
 
 
 def _is_hermes_plugin_enabled(config: Optional[dict] = None) -> bool:
@@ -4208,6 +4259,7 @@ def get_hermes_config(require_enabled: bool = True) -> dict:
         "api_key": api_key,
         "session_key": session_key,
         "api_mode": api_mode,
+        "request_timeout_seconds": _parse_hermes_request_timeout_seconds(settings.get("requestTimeoutSeconds")),
     }
 
 
@@ -4271,6 +4323,7 @@ def _copy_hermes_config_snapshot(config: dict) -> dict:
         "api_key": config.get("api_key", ""),
         "session_key": config.get("session_key", ""),
         "api_mode": config.get("api_mode", ""),
+        "request_timeout_seconds": _parse_hermes_request_timeout_seconds(config.get("request_timeout_seconds")),
     }
 
 
@@ -4875,7 +4928,7 @@ async def _iter_hermes_run_events(session, submission: dict, config: dict, reque
     async with session.get(
         _hermes_run_url(config, run_id, "/events"),
         headers=_hermes_chat_headers(config, submission["chat_id"]),
-        timeout=aiohttp.ClientTimeout(total=300, connect=10),
+        timeout=_hermes_request_timeout(config, stream=True),
         allow_redirects=False,
     ) as resp:
         if resp.status != 200:
@@ -5076,7 +5129,7 @@ async def _call_hermes_non_stream(submission: dict, config: dict) -> dict:
             f"{config['base_url']}/chat/completions",
             json=payload,
             headers=_hermes_chat_headers(config, submission["chat_id"]),
-            timeout=aiohttp.ClientTimeout(total=300, connect=10),
+            timeout=_hermes_request_timeout(config),
             allow_redirects=False,
         ) as resp:
             if resp.status != 200:
@@ -5200,7 +5253,7 @@ async def _stream_hermes_chat_chunks(submission: dict, config: dict) -> AsyncGen
             f"{config['base_url']}/chat/completions",
             json=payload,
             headers=_hermes_chat_headers(config, submission["chat_id"]),
-            timeout=aiohttp.ClientTimeout(total=300, connect=10),
+            timeout=_hermes_request_timeout(config, stream=True),
             allow_redirects=False,
         ) as resp:
             if resp.status != 200:

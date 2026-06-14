@@ -1,6 +1,6 @@
 {
   "id": "hermes",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "name": {
     "en": "Hermes Router",
     "zh": "Hermes 路由"
@@ -59,6 +59,17 @@
           }
         }
       ]
+    },
+    {
+      "id": "requestTimeoutSeconds",
+      "type": "number",
+      "label": {
+        "en": "Request timeout (seconds)",
+        "zh": "请求超时时间（秒）"
+      },
+      "default": 600,
+      "min": 30,
+      "max": 3600
     }
   ],
   "proxy": [

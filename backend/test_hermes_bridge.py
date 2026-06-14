@@ -156,6 +156,7 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         allowed_remote_base_urls="",
         remote_warning_accepted=False,
         remote_warning_accepted_for="",
+        request_timeout_seconds=None,
     ):
         if installed:
             plugin_dir = os.path.join(main.PLUGINS_INSTALLED_DIR, main.HERMES_PLUGIN_ID)
@@ -168,6 +169,8 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         }
         if api_mode is not None:
             settings_values["apiMode"] = api_mode
+        if request_timeout_seconds is not None:
+            settings_values["requestTimeoutSeconds"] = request_timeout_seconds
         if allowed_remote_base_urls:
             settings_values["allowedRemoteBaseUrls"] = allowed_remote_base_urls
         if remote_warning_accepted:
@@ -209,6 +212,12 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         if isinstance(result, main.JSONResponse):
             return result.status_code, json.loads(result.body.decode("utf-8"))
         return 200, result
+
+    def assert_timeout(self, timeout, total=None, connect=None, sock_read=None):
+        self.assertIsInstance(timeout, main.aiohttp.ClientTimeout)
+        self.assertEqual(timeout.total, total)
+        self.assertEqual(timeout.connect, connect)
+        self.assertEqual(timeout.sock_read, sock_read)
 
     async def collect_stream(self, response):
         chunks = []
@@ -383,6 +392,44 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("Authorization", fake_session.gets[0]["headers"])
         self.assertEqual(fake_session.posts, [])
 
+    async def test_hermes_control_plane_keeps_fixed_timeouts(self):
+        self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS, request_timeout_seconds=1200)
+        fake_session = self.patch_session(FakeHermesSession(
+            post_response=FakeHermesResponse(json_data={"status": "running"})
+        ))
+
+        result = await main.hermes_health(JsonRequest(url="http://testserver/api/hermes/health"))
+        status, data = self.decode_result(result)
+
+        self.assertEqual(status, 200)
+        self.assertTrue(data["success"])
+        self.assert_timeout(fake_session.gets[0]["timeout"], total=10, connect=5)
+
+        snapshot_config = main.get_hermes_config()
+        main.register_active_hermes_run("run-control-timeout", "chat-control-timeout", snapshot_config)
+        self.assertEqual(
+            main.get_active_hermes_run("run-control-timeout")["config"]["request_timeout_seconds"],
+            1200,
+        )
+        main.update_active_hermes_run(
+            "run-control-timeout",
+            status="pending_approval",
+            pending_approval={"type": "approval.request", "run_id": "run-control-timeout"},
+        )
+
+        result = await main.hermes_run_approval(
+            "run-control-timeout",
+            JsonRequest(
+                {"chat_id": "chat-control-timeout", "choice": "once", "resolve_all": False},
+                url="http://testserver/api/hermes/runs/run-control-timeout/approval",
+            ),
+        )
+        status, data = self.decode_result(result)
+
+        self.assertEqual(status, 200)
+        self.assertTrue(data["success"])
+        self.assert_timeout(fake_session.posts[0]["timeout"], total=60, connect=10)
+
     async def test_invalid_persisted_api_mode_does_not_call_hermes(self):
         self.enable_hermes(api_mode="https://evil.test/runs")
         called = False
@@ -402,6 +449,27 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Unsupported Hermes API mode", data["error"])
         self.assertFalse(called)
         self.assertEqual(self.chat_count(), 0)
+
+    def test_hermes_request_timeout_config_defaults_and_clamps(self):
+        self.enable_hermes()
+        self.assertEqual(
+            main.get_hermes_config()["request_timeout_seconds"],
+            main.HERMES_REQUEST_TIMEOUT_SECONDS_DEFAULT,
+        )
+
+        cases = [
+            ("string", "45", 45),
+            ("float", 45.9, 45),
+            ("low", "1", main.HERMES_REQUEST_TIMEOUT_SECONDS_MIN),
+            ("high", 99999, main.HERMES_REQUEST_TIMEOUT_SECONDS_MAX),
+            ("blank", "", main.HERMES_REQUEST_TIMEOUT_SECONDS_DEFAULT),
+            ("invalid", "slow", main.HERMES_REQUEST_TIMEOUT_SECONDS_DEFAULT),
+            ("bool", True, main.HERMES_REQUEST_TIMEOUT_SECONDS_DEFAULT),
+        ]
+        for label, value, expected in cases:
+            with self.subTest(label=label):
+                self.enable_hermes(request_timeout_seconds=value)
+                self.assertEqual(main.get_hermes_config()["request_timeout_seconds"], expected)
 
     def test_hermes_base_url_validation(self):
         accepted = [
@@ -677,6 +745,40 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         chats = main.db.get_chats()
         self.assertEqual(chats[0].title, "hello hermes")
 
+    async def test_hermes_generation_timeouts_use_saved_plugin_setting(self):
+        self.enable_hermes(request_timeout_seconds=45)
+        self.configure_chat(stream=False)
+        fake_session = self.patch_session(FakeHermesSession(post_response=FakeHermesResponse(
+            json_data={"choices": [{"message": {"content": "non stream answer"}}]}
+        )))
+
+        result = await main.hermes_chat(JsonRequest({"message": "non stream timeout"}))
+        status, _ = self.decode_result(result)
+
+        self.assertEqual(status, 200)
+        self.assert_timeout(fake_session.posts[0]["timeout"], total=45, connect=10)
+
+        self.enable_hermes(request_timeout_seconds=46)
+        self.configure_chat(stream=True)
+        fake_session = self.patch_session(FakeHermesSession(post_response=FakeHermesResponse(
+            stream_chunks=[b'data: {"choices":[{"delta":{"content":"stream"}}]}\n', b"data: [DONE]\n"]
+        )))
+        response = await main.hermes_chat(JsonRequest({"message": "stream timeout"}))
+        await self.collect_stream(response)
+
+        self.assert_timeout(fake_session.posts[0]["timeout"], total=None, connect=10, sock_read=46)
+
+        self.enable_hermes(api_mode=main.HERMES_API_MODE_RUNS, request_timeout_seconds=47)
+        fake_session = self.patch_session(FakeHermesSession(
+            post_responses=[FakeHermesResponse(json_data={"run_id": "run-timeout"})],
+            get_response=FakeHermesResponse(stream_chunks=[b'event: run.completed\ndata: {}\n\n']),
+        ))
+        response = await main.hermes_chat(JsonRequest({"message": "run timeout"}))
+        await self.collect_stream(response)
+
+        self.assert_timeout(fake_session.posts[0]["timeout"], total=60, connect=10)
+        self.assert_timeout(fake_session.gets[0]["timeout"], total=None, connect=10, sock_read=47)
+
     async def test_hermes_rejects_transport_fields_before_side_effects(self):
         self.enable_hermes()
         fake_session = self.patch_session(FakeHermesSession())
@@ -689,6 +791,11 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
             "headers": {"Authorization": "Bearer leaked"},
             "session_id": "attacker-session",
             "x-hermes-session-key": "attacker-key",
+            "requestTimeoutSeconds": 3600,
+            "timeoutSeconds": 3600,
+            "totalTimeout": 3600,
+            "readTimeoutMs": 3600000,
+            "sock_read_timeout": 3600,
         }))
         status, data = self.decode_result(result)
 
@@ -1507,6 +1614,7 @@ class HermesBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(fake_session.gets[0]["headers"]["X-Hermes-Session-Id"], f"chatraw-{chat_id}")
         self.assertEqual(fake_session.posts[1]["headers"]["X-Hermes-Session-Id"], f"chatraw-{chat_id}")
         self.assertEqual(fake_session.posts[1]["url"], "http://127.0.0.1:8642/v1/runs/run-stop/stop")
+        self.assert_timeout(fake_session.posts[1]["timeout"], total=30, connect=5)
         self.assertNotIn("run-stop", main._active_hermes_runs)
 
     async def test_hermes_runs_without_api_key_omits_authorization_on_stop_path(self):

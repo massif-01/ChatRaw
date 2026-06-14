@@ -14,6 +14,9 @@
     const DEFAULT_BASE_URL = 'http://127.0.0.1:8642/v1';
     const DEFAULT_MODEL = 'hermes-agent';
     const DEFAULT_API_MODE = 'chat_completions';
+    const DEFAULT_REQUEST_TIMEOUT_SECONDS = 600;
+    const MIN_REQUEST_TIMEOUT_SECONDS = 30;
+    const MAX_REQUEST_TIMEOUT_SECONDS = 3600;
     const REMOTE_URLS_MAX_LENGTH = 4000;
     const REMOTE_URL_MAX_LENGTH = 300;
     const REMOTE_STATUS_DEBOUNCE_MS = 300;
@@ -81,6 +84,8 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             apiModeChat: 'Chat Completions',
             apiModeRuns: 'Runs',
             apiModeHint: 'Runs shows Hermes tool events and approval controls in the ChatRaw chat UI.',
+            requestTimeout: 'Request timeout (seconds)',
+            requestTimeoutHint: 'Applies to Hermes chat generation and run event streams. Use a larger value for long tool chains; health checks, approval, and stop stay short.',
             apiKey: 'API Server Key (if required)',
             apiKeyHint: 'Stored by ChatRaw backend. Official Hermes requires API_SERVER_KEY; leave empty only for compatible servers that do not require auth.',
             apiKeySaved: 'API key saved',
@@ -113,6 +118,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             settingsHelpRemoteTitle: 'Remote Base URL access',
             settingsHelpModelTitle: 'Model name',
             settingsHelpModeTitle: 'Execution mode',
+            settingsHelpTimeoutTitle: 'Request timeout',
             settingsHelpApiKeyTitle: 'API Server Key',
             settingsHelpSessionKeyTitle: 'Session Key'
         },
@@ -168,6 +174,8 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             apiModeChat: 'Chat Completions',
             apiModeRuns: 'Runs',
             apiModeHint: 'Runs 会在 ChatRaw 聊天 UI 中显示 Hermes 工具事件和审批控件。',
+            requestTimeout: '请求超时时间（秒）',
+            requestTimeoutHint: '只作用于 Hermes 聊天生成和 Run 事件流等待。复杂工具链可调大；检查、审批和停止仍保持短超时。',
             apiKey: 'API Server Key（如服务要求）',
             apiKeyHint: '由 ChatRaw 后端保存。官方 Hermes 需要 API_SERVER_KEY；仅无鉴权兼容服务可留空。',
             apiKeySaved: 'API key 已保存',
@@ -200,6 +208,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             settingsHelpRemoteTitle: '远程 Base URL 放行',
             settingsHelpModelTitle: '模型名称',
             settingsHelpModeTitle: '执行模式',
+            settingsHelpTimeoutTitle: '请求超时时间',
             settingsHelpApiKeyTitle: 'API Server Key',
             settingsHelpSessionKeyTitle: 'Session Key'
         }
@@ -210,6 +219,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
         baseUrl: DEFAULT_BASE_URL,
         model: DEFAULT_MODEL,
         apiMode: DEFAULT_API_MODE,
+        requestTimeoutSeconds: DEFAULT_REQUEST_TIMEOUT_SECONDS,
         allowedRemoteBaseUrls: '',
         remoteBaseUrlWarningAccepted: false,
         remoteBaseUrlWarningAcceptedFor: ''
@@ -308,6 +318,14 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
         ChatRaw.utils?.showToast?.(active ? t('enabled') : t('disabled'), active ? 'success' : '');
     }
 
+    function normalizeRequestTimeoutSeconds(value) {
+        const parsed = Number.parseInt(String(value ?? '').trim(), 10);
+        if (!Number.isFinite(parsed)) return DEFAULT_REQUEST_TIMEOUT_SECONDS;
+        if (parsed < MIN_REQUEST_TIMEOUT_SECONDS) return MIN_REQUEST_TIMEOUT_SECONDS;
+        if (parsed > MAX_REQUEST_TIMEOUT_SECONDS) return MAX_REQUEST_TIMEOUT_SECONDS;
+        return parsed;
+    }
+
     async function loadSavedSettings() {
         const res = await fetch('/api/plugins');
         if (!res.ok) return;
@@ -318,6 +336,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             baseUrl: saved.baseUrl || DEFAULT_BASE_URL,
             model: saved.model || DEFAULT_MODEL,
             apiMode: saved.apiMode || DEFAULT_API_MODE,
+            requestTimeoutSeconds: normalizeRequestTimeoutSeconds(saved.requestTimeoutSeconds),
             allowedRemoteBaseUrls: saved.allowedRemoteBaseUrls || '',
             remoteBaseUrlWarningAccepted: saved.remoteBaseUrlWarningAccepted === true,
             remoteBaseUrlWarningAcceptedFor: saved.remoteBaseUrlWarningAcceptedFor || ''
@@ -338,6 +357,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
         const baseUrlInput = document.getElementById('hermes-base-url');
         const modelInput = document.getElementById('hermes-model');
         const apiModeInput = document.getElementById('hermes-api-mode');
+        const timeoutInput = document.getElementById('hermes-request-timeout');
         const allowedRemoteInput = document.getElementById('hermes-allowed-remote-base-urls');
         const keyInput = document.getElementById('hermes-api-key');
         const sessionKeyInput = document.getElementById('hermes-session-key');
@@ -346,6 +366,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             baseUrl: (baseUrlInput?.value || '').trim() || DEFAULT_BASE_URL,
             model: (modelInput?.value || '').trim() || DEFAULT_MODEL,
             apiMode,
+            requestTimeoutSeconds: normalizeRequestTimeoutSeconds(timeoutInput?.value),
             allowedRemoteBaseUrls: allowedRemoteInput?.value || '',
             apiKey: (keyInput?.value || '').trim(),
             sessionKey: (sessionKeyInput?.value || '').trim()
@@ -372,6 +393,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
             baseUrl: normalized.baseUrl,
             model: next.model,
             apiMode: next.apiMode,
+            requestTimeoutSeconds: next.requestTimeoutSeconds,
             allowedRemoteBaseUrls: canonicalAllowed,
             remoteBaseUrlWarningAccepted: remoteAccepted,
             remoteBaseUrlWarningAcceptedFor: remoteAccepted ? canonicalAllowed : ''
@@ -719,7 +741,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
                     items: [
                         '这是 ChatRaw 后端要连接的 Hermes API Server 根地址，应填到 /v1 层，不要填到 /chat/completions、/models 或 /runs。',
                         '少写 /v1 时，健康检查会访问 /models，官方 Hermes 通常会返回 404。',
-                        '如果出现 timeout，通常表示 ChatRaw 后端连不上这个 IP 或端口。'
+                        '如果检查时出现 timeout，通常表示 ChatRaw 后端连不上这个 IP 或端口。'
                     ]
                 },
                 {
@@ -745,6 +767,14 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
                         'Runs 会调用 /v1/runs 并订阅 /v1/runs/{id}/events，更适合工具、SSH、长任务、进度事件、停止任务和人工审批。',
                         '需要人工审批时，ChatRaw 会在聊天气泡中显示命令和规则，并要求你显式选择允许一次、本会话允许或拒绝。',
                         '批准的是 Hermes API Server 所在机器和 Hermes 配置环境中的工具/命令执行；ChatRaw 不会自动批准工具调用。'
+                    ]
+                },
+                {
+                    title: t('settingsHelpTimeoutTitle'),
+                    items: [
+                        '这个时间只用于等待 Hermes 聊天生成和 Runs 事件流，不会拉长检查、审批或停止请求。',
+                        '复杂问题、工具链或 SSH 任务可能需要更久；建议开启流式输出，并按需调大到 600 秒以上。',
+                        '如果是保存后点击检查就 timeout，优先排查 Base URL、Docker 网络和 Hermes 是否在监听。'
                     ]
                 },
                 {
@@ -780,7 +810,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
                 items: [
                     'This is the Hermes API Server root URL used by the ChatRaw backend. It should point to /v1, not /chat/completions, /models, or /runs.',
                     'If /v1 is missing, the health check calls /models and official Hermes will usually return 404.',
-                    'A timeout usually means the ChatRaw backend cannot reach that IP address or port.'
+                    'A timeout during Check usually means the ChatRaw backend cannot reach that IP address or port.'
                 ]
             },
             {
@@ -806,6 +836,14 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
                     'Runs calls /v1/runs and subscribes to /v1/runs/{id}/events, which is better for tools, SSH, long tasks, progress events, stopping runs, and human approval.',
                     'When approval is required, ChatRaw shows the command and patterns in the chat bubble and requires you to explicitly allow once, allow for the session, or deny.',
                     'Approval applies to tool or command execution in the Hermes API Server machine and configuration environment; ChatRaw never auto-approves tool calls.'
+                ]
+            },
+            {
+                title: t('settingsHelpTimeoutTitle'),
+                items: [
+                    'This timeout only applies while waiting for Hermes chat generation and Runs event streams. Health checks, approval, and stop requests stay short.',
+                    'Complex prompts, tool chains, or SSH work may need longer waits. Prefer Stream Output and increase this value above 600 seconds when needed.',
+                    'If Check times out right after saving, troubleshoot the Base URL, Docker networking, and whether Hermes is listening first.'
                 ]
             },
             {
@@ -915,6 +953,11 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
                         </div>
                         <span style="color:var(--text-secondary); font-size:0.82rem;">${escapeHtml(t('apiModeHint'))}</span>
                     </label>
+                    <label style="display:grid; gap:8px;">
+                        <span style="font-weight:500;">${escapeHtml(t('requestTimeout'))}</span>
+                        <input id="hermes-request-timeout" type="number" min="${MIN_REQUEST_TIMEOUT_SECONDS}" max="${MAX_REQUEST_TIMEOUT_SECONDS}" step="1" class="input-minimal" style="width:100%; padding:10px 12px; border:1px solid var(--border-color); border-radius:var(--radius-sm); background:var(--bg-primary);">
+                        <span style="color:var(--text-secondary); font-size:0.82rem;">${escapeHtml(t('requestTimeoutHint'))}</span>
+                    </label>
                 </div>
                 <div style="padding:20px 24px; border-bottom:1px solid var(--border-color); display:grid; gap:12px;">
                     <label style="display:grid; gap:8px;">
@@ -957,6 +1000,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
         const baseUrlInput = document.getElementById('hermes-base-url');
         const modelInput = document.getElementById('hermes-model');
         const apiModeInput = document.getElementById('hermes-api-mode');
+        const timeoutInput = document.getElementById('hermes-request-timeout');
         const allowedRemoteInput = document.getElementById('hermes-allowed-remote-base-urls');
         const keyInput = document.getElementById('hermes-api-key');
         const sessionKeyInput = document.getElementById('hermes-session-key');
@@ -964,6 +1008,7 @@ After enabling, ChatRaw only allows remote Hermes Base URLs explicitly listed in
         if (allowedRemoteInput) allowedRemoteInput.value = settings.allowedRemoteBaseUrls || '';
         if (modelInput) modelInput.value = settings.model || DEFAULT_MODEL;
         if (apiModeInput) apiModeInput.value = settings.apiMode === 'runs' ? 'runs' : DEFAULT_API_MODE;
+        if (timeoutInput) timeoutInput.value = normalizeRequestTimeoutSeconds(settings.requestTimeoutSeconds);
         if (keyInput) keyInput.placeholder = maskedApiKey ? t('apiKeyPlaceholder') : '';
         if (sessionKeyInput) sessionKeyInput.placeholder = maskedSessionKey ? t('sessionKeyPlaceholder') : '';
         updateApiKeyStatus();
