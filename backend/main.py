@@ -3810,6 +3810,32 @@ async def delete_skill(skill_name: str):
 PLUGINS_DIR = os.path.join(DATA_DIR, "plugins")
 PLUGINS_INSTALLED_DIR = os.path.join(PLUGINS_DIR, "installed")
 PLUGINS_CONFIG_FILE = os.path.join(PLUGINS_DIR, "config.json")
+LINKDB_AGENT_DEFAULT_TIMEOUT_SECONDS = 120
+LINKDB_AGENT_DEFAULT_PRINCIPAL = "organization-default/chatraw-local"
+LINKDB_AGENT_TIMEOUT_SECONDS_MIN = 1
+LINKDB_AGENT_TIMEOUT_SECONDS_MAX = 3600
+LINKDB_AGENT_RESPONSE_MAX_BYTES = 1024 * 1024
+LINKDB_AGENT_ERROR_MAX_BYTES = 4096
+LINKDB_AGENT_BODY_MAX_DEPTH = 32
+LINKDB_AGENT_BODY_MAX_NODES = 10000
+LINKDB_AGENT_FORBIDDEN_BROWSER_FIELDS = frozenset({
+    "url",
+    "endpoint",
+    "path",
+    "headers",
+    "authorization",
+    "apikey",
+    "token",
+    "baseurl",
+    "principal",
+    "session",
+    "sessionid",
+    "timeout",
+    "timeoutms",
+    "timeoutseconds",
+    "requesttimeout",
+    "requesttimeoutseconds",
+})
 HERMES_PLUGIN_ID = "hermes"
 HERMES_API_KEY_SERVICE_ID = "hermes"
 HERMES_SESSION_KEY_SERVICE_ID = "hermes-session-key"
@@ -3977,6 +4003,450 @@ def save_plugin_config(config: dict):
                 json.dump(config, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.error(f"Failed to save plugin config: {e}")
+
+
+class LinkDBAgentBridgeError(Exception):
+    def __init__(self, message: str, status_code: int, code: str):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+        self.code = code
+
+
+def _normalize_linkdb_agent_field_name(value: Any) -> str:
+    return str(value).replace("_", "").replace("-", "").lower()
+
+
+def _linkdb_agent_enabled() -> bool:
+    return os.environ.get("CHATRAW_LINKDB_AGENT_ENABLED", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _parse_linkdb_agent_timeout_seconds(value: Any) -> int:
+    raw_value = str(value or LINKDB_AGENT_DEFAULT_TIMEOUT_SECONDS).strip()
+    if not raw_value.isdigit():
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge timeout is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+    timeout_seconds = int(raw_value)
+    if not LINKDB_AGENT_TIMEOUT_SECONDS_MIN <= timeout_seconds <= LINKDB_AGENT_TIMEOUT_SECONDS_MAX:
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge timeout is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+    return timeout_seconds
+
+
+def _validate_linkdb_agent_base_url(value: Any) -> str:
+    base_url = str(value or "").strip()
+    if not base_url:
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge is not configured",
+            status_code=503,
+            code="agent_unavailable",
+        )
+    if len(base_url) > 2048 or any(ord(char) < 32 or char.isspace() for char in base_url):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge base URL is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+
+    try:
+        parsed = urlparse(base_url)
+        port = parsed.port
+    except (TypeError, ValueError):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge base URL is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+
+    if (
+        parsed.scheme.lower() not in {"http", "https"}
+        or not parsed.netloc
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+        or port is not None and not 1 <= port <= 65535
+    ):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge base URL is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+
+    path_segments = [segment for segment in parsed.path.split("/") if segment]
+    if "%" in parsed.path or any(segment in {".", ".."} for segment in path_segments):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge base URL is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+    return base_url.rstrip("/")
+
+
+def get_linkdb_agent_config(require_enabled: bool = True) -> dict:
+    if require_enabled and not _linkdb_agent_enabled():
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent route is disabled",
+            status_code=503,
+            code="agent_unavailable",
+        )
+
+    base_url = _validate_linkdb_agent_base_url(
+        os.environ.get("CHATRAW_LINKDB_AGENT_BASE_URL", "")
+    )
+    api_key = os.environ.get("CHATRAW_LINKDB_AGENT_API_KEY", "").strip()
+    if (
+        not api_key
+        or len(api_key) > 4096
+        or any(ord(char) < 33 or char.isspace() for char in api_key)
+    ):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge is not configured",
+            status_code=503,
+            code="agent_unavailable",
+        )
+
+    principal = os.environ.get(
+        "CHATRAW_LINKDB_AGENT_PRINCIPAL",
+        LINKDB_AGENT_DEFAULT_PRINCIPAL,
+    ).strip()
+    if (
+        not principal
+        or len(principal) > 256
+        or any(ord(char) < 32 or ord(char) == 127 for char in principal)
+    ):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge principal is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+
+    return {
+        "base_url": base_url,
+        "api_key": api_key,
+        "timeout_seconds": _parse_linkdb_agent_timeout_seconds(
+            os.environ.get("CHATRAW_LINKDB_AGENT_TIMEOUT_SECONDS")
+        ),
+        "principal": principal,
+    }
+
+
+def _linkdb_agent_timeout(config: dict) -> aiohttp.ClientTimeout:
+    timeout_seconds = config["timeout_seconds"]
+    return aiohttp.ClientTimeout(
+        total=timeout_seconds,
+        connect=min(10, timeout_seconds),
+    )
+
+
+def _linkdb_agent_headers(config: dict, include_principal: bool = False) -> dict:
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {config['api_key']}",
+    }
+    if include_principal:
+        headers["Content-Type"] = "application/json"
+        headers["X-ChatRaw-Principal"] = config["principal"]
+    return headers
+
+
+def validate_linkdb_agent_request_origin(request: Request):
+    origin = request.headers.get("origin")
+    if not origin:
+        fetch_site = (request.headers.get("sec-fetch-site") or "").lower()
+        if fetch_site in {"same-origin", "none"}:
+            return
+        referer_key = _origin_key(request.headers.get("referer", ""))
+        request_key = _origin_key(str(request.url))
+        if referer_key and request_key and referer_key == request_key:
+            return
+        raise LinkDBAgentBridgeError(
+            "Missing Origin for LinkDB Agent bridge",
+            status_code=403,
+            code="unauthorized",
+        )
+
+    origin_key = _origin_key(origin)
+    if not origin_key:
+        raise LinkDBAgentBridgeError(
+            "Invalid Origin for LinkDB Agent bridge",
+            status_code=403,
+            code="unauthorized",
+        )
+
+    request_key = _origin_key(str(request.url))
+    if request_key and origin_key == request_key:
+        return
+
+    if CORS_ORIGINS != "*":
+        for allowed_origin in [item.strip() for item in CORS_ORIGINS.split(",") if item.strip()]:
+            if allowed_origin != "*" and origin_key == _origin_key(allowed_origin):
+                return
+
+    raise LinkDBAgentBridgeError(
+        "Cross-origin LinkDB Agent bridge requests are not allowed",
+        status_code=403,
+        code="unauthorized",
+    )
+
+
+def validate_linkdb_agent_chat_body(body: Any):
+    if not isinstance(body, dict):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent chat body must be a JSON object",
+            status_code=400,
+            code="invalid_request",
+        )
+
+    forbidden = set()
+    node_count = 0
+    stack = [(body, 0)]
+    while stack:
+        value, depth = stack.pop()
+        node_count += 1
+        if depth > LINKDB_AGENT_BODY_MAX_DEPTH or node_count > LINKDB_AGENT_BODY_MAX_NODES:
+            raise LinkDBAgentBridgeError(
+                "LinkDB Agent chat body is too deeply nested",
+                status_code=400,
+                code="invalid_request",
+            )
+        if isinstance(value, dict):
+            for key, nested_value in value.items():
+                if _normalize_linkdb_agent_field_name(key) in LINKDB_AGENT_FORBIDDEN_BROWSER_FIELDS:
+                    forbidden.add(str(key))
+                stack.append((nested_value, depth + 1))
+        elif isinstance(value, list):
+            stack.extend((item, depth + 1) for item in value)
+
+    if forbidden:
+        fields = ", ".join(sorted(forbidden))
+        raise LinkDBAgentBridgeError(
+            f"LinkDB Agent chat body must not include host-owned fields: {fields}",
+            status_code=400,
+            code="invalid_request",
+        )
+
+    message = body.get("message")
+    if not isinstance(message, str) or not message.strip():
+        raise LinkDBAgentBridgeError(
+            "Message is required",
+            status_code=400,
+            code="invalid_request",
+        )
+    if len(message) > 20000:
+        raise LinkDBAgentBridgeError(
+            "Message is too long",
+            status_code=400,
+            code="invalid_request",
+        )
+
+    chat_id = body.get("chat_id")
+    if chat_id is not None and not isinstance(chat_id, str):
+        raise LinkDBAgentBridgeError(
+            "chat_id must be a string",
+            status_code=400,
+            code="invalid_request",
+        )
+
+
+def build_linkdb_agent_session_id(chat_id: str) -> str:
+    if not chat_id:
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent chat session is unavailable",
+            status_code=500,
+            code="agent_unavailable",
+        )
+    session_id = f"chatraw-{chat_id}"
+    if len(session_id) > 160:
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent chat session is unavailable",
+            status_code=500,
+            code="agent_unavailable",
+        )
+    return session_id
+
+
+async def _read_limited_linkdb_agent_bytes(response, limit: int) -> bytes:
+    content = getattr(response, "content", None)
+    reader = getattr(content, "read", None)
+    if not callable(reader):
+        reader = getattr(response, "read", None)
+    if not callable(reader):
+        raise LinkDBAgentBridgeError(
+            "ChatRaw Agent returned an invalid response",
+            status_code=502,
+            code="upstream_invalid_response",
+        )
+
+    chunks = []
+    total = 0
+    while True:
+        chunk = await reader(limit + 1 - total)
+        if not chunk:
+            break
+        if isinstance(chunk, str):
+            chunk = chunk.encode("utf-8")
+        else:
+            chunk = bytes(chunk)
+        total += len(chunk)
+        if total > limit:
+            raise LinkDBAgentBridgeError(
+                "ChatRaw Agent response exceeded the size limit",
+                status_code=502,
+                code="upstream_invalid_response",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+async def _read_linkdb_agent_json(response) -> dict:
+    raw = await _read_limited_linkdb_agent_bytes(
+        response,
+        LINKDB_AGENT_RESPONSE_MAX_BYTES,
+    )
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError):
+        raise LinkDBAgentBridgeError(
+            "ChatRaw Agent returned invalid JSON",
+            status_code=502,
+            code="upstream_invalid_response",
+        )
+    if not isinstance(data, dict):
+        raise LinkDBAgentBridgeError(
+            "ChatRaw Agent returned an invalid response",
+            status_code=502,
+            code="upstream_invalid_response",
+        )
+    return data
+
+
+async def _discard_linkdb_agent_error_body(response):
+    try:
+        await _read_limited_linkdb_agent_bytes(response, LINKDB_AGENT_ERROR_MAX_BYTES)
+    except LinkDBAgentBridgeError:
+        pass
+
+
+def _redact_linkdb_agent_value(
+    value: Any,
+    secrets: Tuple[str, ...] = (),
+    redact_urls: bool = False,
+) -> Any:
+    if isinstance(value, dict):
+        redacted = {}
+        for key, nested_value in value.items():
+            if _normalize_linkdb_agent_field_name(key) in {
+                "authorization",
+                "apikey",
+                "token",
+                "headers",
+                "principal",
+                "session",
+                "sessionid",
+            }:
+                redacted[key] = "[REDACTED]"
+            else:
+                redacted[key] = _redact_linkdb_agent_value(
+                    nested_value,
+                    secrets,
+                    redact_urls,
+                )
+        return redacted
+    if isinstance(value, list):
+        return [
+            _redact_linkdb_agent_value(item, secrets, redact_urls)
+            for item in value
+        ]
+    if not isinstance(value, str):
+        return value
+
+    redacted = value
+    for secret in sorted((item for item in secrets if item), key=len, reverse=True):
+        if len(secret) >= 4:
+            redacted = redacted.replace(secret, "[REDACTED]")
+        elif redacted == secret:
+            redacted = "[REDACTED]"
+    redacted = re.sub(
+        r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+",
+        "Bearer [REDACTED]",
+        redacted,
+    )
+    redacted = re.sub(
+        r"(?i)\b(api[_-]?key|authorization|token)\s*[:=]\s*[^\s,;]+",
+        lambda match: f"{match.group(1)}=[REDACTED]",
+        redacted,
+    )
+    if redact_urls:
+        redacted = re.sub(r"https?://[^\s,;]+", "[REDACTED_URL]", redacted)
+    return redacted
+
+
+def _linkdb_agent_error_response(
+    error: Exception,
+    success_shape: bool = False,
+    secrets: Tuple[str, ...] = (),
+) -> JSONResponse:
+    status_code = getattr(error, "status_code", 500)
+    code = getattr(error, "code", "agent_unavailable")
+    message = getattr(error, "message", None) or "LinkDB Agent bridge failed"
+    payload = {"error": message, "code": code}
+    if success_shape:
+        payload["success"] = False
+    return JSONResponse(
+        _redact_linkdb_agent_value(payload, secrets, redact_urls=True),
+        status_code=status_code,
+    )
+
+
+def _linkdb_agent_upstream_error(status: int) -> LinkDBAgentBridgeError:
+    if status == 401:
+        return LinkDBAgentBridgeError(
+            "ChatRaw Agent authentication failed",
+            status_code=401,
+            code="unauthorized",
+        )
+    if status == 403:
+        return LinkDBAgentBridgeError(
+            "ChatRaw Agent request was forbidden",
+            status_code=403,
+            code="unauthorized",
+        )
+    if status in {408, 504}:
+        return LinkDBAgentBridgeError(
+            "ChatRaw Agent request timed out",
+            status_code=504,
+            code="upstream_timeout",
+        )
+    if 300 <= status < 400:
+        return LinkDBAgentBridgeError(
+            "ChatRaw Agent redirect was blocked",
+            status_code=502,
+            code="upstream_invalid_response",
+        )
+    if status >= 500:
+        return LinkDBAgentBridgeError(
+            "ChatRaw Agent is unavailable",
+            status_code=502,
+            code="agent_unavailable",
+        )
+    return LinkDBAgentBridgeError(
+        "ChatRaw Agent rejected the bridge request",
+        status_code=502,
+        code="upstream_invalid_response",
+    )
 
 
 class HermesBridgeError(Exception):
@@ -5480,6 +5950,219 @@ async def hermes_chat(request: Request):
         }
     except HermesBridgeError as e:
         return _hermes_error_response(e)
+
+
+@app.get("/api/linkdb-agent/health")
+async def linkdb_agent_health(request: Request):
+    config = None
+    try:
+        validate_linkdb_agent_request_origin(request)
+        config = get_linkdb_agent_config(require_enabled=True)
+        session = await get_http_session()
+        async with session.get(
+            f"{config['base_url']}/health",
+            headers=_linkdb_agent_headers(config),
+            timeout=_linkdb_agent_timeout(config),
+            allow_redirects=False,
+        ) as response:
+            if response.status < 200 or response.status >= 300:
+                await _discard_linkdb_agent_error_body(response)
+                raise _linkdb_agent_upstream_error(response.status)
+            data = await _read_linkdb_agent_json(response)
+
+        status = data.get("status")
+        service = data.get("service")
+        version = data.get("version")
+        if (
+            status != "healthy"
+            or service != "chatraw-agent"
+            or not isinstance(version, str)
+            or not version
+        ):
+            raise LinkDBAgentBridgeError(
+                "ChatRaw Agent returned an invalid health response",
+                status_code=502,
+                code="upstream_invalid_response",
+            )
+        return {
+            "success": True,
+            "status": "healthy",
+            "service": service,
+            "version": version,
+        }
+    except LinkDBAgentBridgeError as error:
+        secrets = () if config is None else (
+            config["api_key"],
+            config["base_url"],
+            config["principal"],
+        )
+        return _linkdb_agent_error_response(error, success_shape=True, secrets=secrets)
+    except asyncio.TimeoutError:
+        return _linkdb_agent_error_response(
+            LinkDBAgentBridgeError(
+                "ChatRaw Agent health check timed out",
+                status_code=504,
+                code="upstream_timeout",
+            ),
+            success_shape=True,
+        )
+    except aiohttp.ClientError:
+        return _linkdb_agent_error_response(
+            LinkDBAgentBridgeError(
+                "ChatRaw Agent is unavailable",
+                status_code=502,
+                code="agent_unavailable",
+            ),
+            success_shape=True,
+        )
+    except Exception as error:
+        logger.error(
+            "LinkDB Agent health bridge failed (%s)",
+            type(error).__name__,
+        )
+        return _linkdb_agent_error_response(
+            LinkDBAgentBridgeError(
+                "LinkDB Agent health bridge failed",
+                status_code=500,
+                code="agent_unavailable",
+            ),
+            success_shape=True,
+        )
+
+
+@app.post("/api/linkdb-agent/chat")
+async def linkdb_agent_chat(request: Request):
+    config = None
+    try:
+        validate_linkdb_agent_request_origin(request)
+        try:
+            body = await request.json()
+        except Exception:
+            raise LinkDBAgentBridgeError(
+                "LinkDB Agent chat body must be valid JSON",
+                status_code=400,
+                code="invalid_request",
+            )
+        validate_linkdb_agent_chat_body(body)
+        config = get_linkdb_agent_config(require_enabled=True)
+        try:
+            submission = await prepare_chat_submission(body)
+        except HTTPException as error:
+            raise LinkDBAgentBridgeError(
+                str(error.detail),
+                status_code=error.status_code,
+                code="invalid_request",
+            )
+
+        payload = {
+            "session_id": build_linkdb_agent_session_id(submission["chat_id"]),
+            "message": submission["message"],
+            "polish": True,
+            "stream": False,
+            "options": {
+                "show_trace": True,
+                "timeout_seconds": config["timeout_seconds"],
+                "max_iterations": 4,
+            },
+        }
+        session = await get_http_session()
+        async with session.post(
+            f"{config['base_url']}/chat",
+            json=payload,
+            headers=_linkdb_agent_headers(config, include_principal=True),
+            timeout=_linkdb_agent_timeout(config),
+            allow_redirects=False,
+        ) as response:
+            if response.status < 200 or response.status >= 300:
+                await _discard_linkdb_agent_error_body(response)
+                raise _linkdb_agent_upstream_error(response.status)
+            data = await _read_linkdb_agent_json(response)
+
+        if not isinstance(data.get("answer"), str):
+            raise LinkDBAgentBridgeError(
+                "ChatRaw Agent response did not include an answer",
+                status_code=502,
+                code="upstream_invalid_response",
+            )
+        need_clarification = data.get("need_clarification", False)
+        clarification_question = data.get("clarification_question")
+        if (
+            not isinstance(need_clarification, bool)
+            or clarification_question is not None and not isinstance(clarification_question, str)
+            or not isinstance(data.get("trace", []), list)
+            or not isinstance(data.get("result_sets", []), list)
+        ):
+            raise LinkDBAgentBridgeError(
+                "ChatRaw Agent returned an invalid response",
+                status_code=502,
+                code="upstream_invalid_response",
+            )
+
+        answer = _redact_linkdb_agent_value(
+            data["answer"],
+            (
+                config["api_key"],
+                config["base_url"],
+                config["principal"],
+            ),
+        )
+        content = answer
+        if not content.strip() and need_clarification and clarification_question:
+            content = _redact_linkdb_agent_value(
+                clarification_question,
+                (
+                    config["api_key"],
+                    config["base_url"],
+                    config["principal"],
+                ),
+            )
+        save_assistant_message(
+            db,
+            submission["chat_id"],
+            submission["message"],
+            content,
+        )
+        return {
+            "chat_id": submission["chat_id"],
+            "content": content,
+            "thinking": "",
+            "references": [],
+        }
+    except LinkDBAgentBridgeError as error:
+        secrets = () if config is None else (
+            config["api_key"],
+            config["base_url"],
+            config["principal"],
+        )
+        return _linkdb_agent_error_response(error, secrets=secrets)
+    except asyncio.TimeoutError:
+        return _linkdb_agent_error_response(
+            LinkDBAgentBridgeError(
+                "ChatRaw Agent request timed out",
+                status_code=504,
+                code="upstream_timeout",
+            )
+        )
+    except aiohttp.ClientError:
+        return _linkdb_agent_error_response(
+            LinkDBAgentBridgeError(
+                "ChatRaw Agent is unavailable",
+                status_code=502,
+                code="agent_unavailable",
+            )
+        )
+    except Exception as error:
+        logger.error(
+            "LinkDB Agent chat bridge failed (%s)",
+            type(error).__name__,
+        )
+        return _linkdb_agent_error_response(
+            LinkDBAgentBridgeError(
+                "LinkDB Agent chat bridge failed",
+                status_code=500,
+                code="agent_unavailable",
+            )
+        )
 
 
 def get_installed_plugins() -> List[dict]:
