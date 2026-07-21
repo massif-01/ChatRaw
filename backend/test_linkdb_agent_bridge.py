@@ -1,10 +1,12 @@
 import asyncio
+import io
 import json
 import os
 import shutil
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 
@@ -36,11 +38,20 @@ class JsonRequest:
     def __init__(
         self,
         body=None,
+        raw_body=None,
+        body_chunks=None,
         url="http://testserver/api/linkdb-agent/chat",
         headers=None,
         fetch_site="same-origin",
     ):
         self.body = body if body is not None else {}
+        self.raw_body = (
+            raw_body
+            if raw_body is not None
+            else json.dumps(self.body, ensure_ascii=False).encode("utf-8")
+        )
+        self.body_chunks = list(body_chunks) if body_chunks is not None else [self.raw_body]
+        self.stream_reads = 0
         self.url = url
         self.headers = dict(headers or {})
         if fetch_site is not None and "sec-fetch-site" not in self.headers:
@@ -50,6 +61,11 @@ class JsonRequest:
         if isinstance(self.body, Exception):
             raise self.body
         return self.body
+
+    async def stream(self):
+        for chunk in self.body_chunks:
+            self.stream_reads += 1
+            yield chunk
 
 
 class FakeContent:
@@ -115,6 +131,31 @@ class FakeSession:
         return self.post_response
 
 
+class FakeProxyResponse:
+    status = 200
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, traceback):
+        return False
+
+    async def json(self):
+        return {"ok": True}
+
+    async def text(self):
+        return "ok"
+
+
+class FakeProxySession:
+    def __init__(self):
+        self.requests = []
+
+    def request(self, method, url, **kwargs):
+        self.requests.append({"method": method, "url": url, **kwargs})
+        return FakeProxyResponse()
+
+
 class FakeRateURL:
     def __init__(self, path):
         self.path = path
@@ -142,6 +183,8 @@ class LinkDBAgentBridgeTests(unittest.IsolatedAsyncioTestCase):
 
         self.original_cors_origins = main.CORS_ORIGINS
         main.CORS_ORIGINS = "*"
+        shutil.rmtree(main.PLUGINS_INSTALLED_DIR, ignore_errors=True)
+        os.makedirs(main.PLUGINS_INSTALLED_DIR, exist_ok=True)
         main.save_plugin_config({"plugins": {}, "api_keys": {}})
 
         connection = main.db.get_conn()
@@ -258,6 +301,272 @@ class LinkDBAgentBridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(status, 503)
         self.assertNotIn("browser", json.dumps(data))
         self.assertEqual(fake_session.gets, [])
+
+    def test_legacy_browser_key_migration_is_persistent_and_idempotent(self):
+        legacy_config = {
+            "plugins": {
+                main.LINKDB_AGENT_PLUGIN_ID: {
+                    "enabled": True,
+                    "settings_values": {
+                        "baseUrl": "https://browser.invalid/v1",
+                        "requestTimeoutSeconds": 1,
+                        "polish": False,
+                        "showTrace": True,
+                    },
+                },
+            },
+            "api_keys": {
+                main.LINKDB_AGENT_PLUGIN_ID: "legacy-agent-secret",
+                "other-plugin": "other-plugin-secret",
+            },
+        }
+        Path(main.PLUGINS_CONFIG_FILE).write_text(
+            json.dumps(legacy_config),
+            encoding="utf-8",
+        )
+
+        first = main.load_plugin_config()
+        second = main.load_plugin_config()
+        persisted = json.loads(Path(main.PLUGINS_CONFIG_FILE).read_text(encoding="utf-8"))
+
+        for config in (first, second, persisted):
+            self.assertNotIn(main.LINKDB_AGENT_PLUGIN_ID, config["api_keys"])
+            self.assertEqual(config["api_keys"]["other-plugin"], "other-plugin-secret")
+            self.assertEqual(
+                config["plugins"][main.LINKDB_AGENT_PLUGIN_ID]["settings_values"],
+                {"polish": False, "showTrace": True},
+            )
+
+        for _ in range(2):
+            config = main.load_plugin_config()
+            config["api_keys"][main.LINKDB_AGENT_PLUGIN_ID] = "reintroduced-secret"
+            main.save_plugin_config(config)
+            self.assertNotIn(
+                main.LINKDB_AGENT_PLUGIN_ID,
+                main.load_plugin_config()["api_keys"],
+            )
+
+    async def test_reserved_plugin_settings_and_manifest_are_allowlisted(self):
+        plugin_dir = Path(main.PLUGINS_INSTALLED_DIR, main.LINKDB_AGENT_PLUGIN_ID)
+        plugin_dir.mkdir(parents=True)
+        legacy_manifest = {
+            "id": main.LINKDB_AGENT_PLUGIN_ID,
+            "main": "main.js",
+            "proxy": [{"id": main.LINKDB_AGENT_PLUGIN_ID}],
+            "settings": [
+                {"id": "baseUrl", "type": "string"},
+                {"id": "polish", "type": "boolean"},
+                {"id": "showTrace", "type": "boolean"},
+                {"id": "requestTimeoutSeconds", "type": "number"},
+            ],
+        }
+        Path(plugin_dir, "manifest.json").write_text(
+            json.dumps(legacy_manifest),
+            encoding="utf-8",
+        )
+        Path(plugin_dir, "main.js").write_text("", encoding="utf-8")
+        Path(main.PLUGINS_CONFIG_FILE).write_text(json.dumps({
+            "plugins": {
+                main.LINKDB_AGENT_PLUGIN_ID: {
+                    "enabled": True,
+                    "settings_values": {
+                        "baseUrl": "https://browser.invalid/v1",
+                        "requestTimeoutSeconds": 1,
+                        "polish": False,
+                        "showTrace": True,
+                    },
+                },
+            },
+            "api_keys": {main.LINKDB_AGENT_PLUGIN_ID: "legacy-agent-secret"},
+        }), encoding="utf-8")
+
+        listed = next(
+            plugin
+            for plugin in main.get_installed_plugins()
+            if plugin["id"] == main.LINKDB_AGENT_PLUGIN_ID
+        )
+        self.assertEqual(
+            [setting["id"] for setting in listed["settings"]],
+            ["polish", "showTrace"],
+        )
+        self.assertNotIn("proxy", listed)
+        self.assertEqual(
+            listed["settings_values"],
+            {"polish": False, "showTrace": True},
+        )
+        self.assertNotIn("browser.invalid", json.dumps(listed))
+
+        for invalid_settings in (
+            {"baseUrl": "https://browser.invalid/v1"},
+            {"polish": "false"},
+            {"showTrace": 0},
+        ):
+            with self.subTest(invalid_settings=invalid_settings):
+                result = await main.update_plugin_settings(
+                    main.LINKDB_AGENT_PLUGIN_ID,
+                    main.PluginSettingsUpdate(settings=invalid_settings),
+                )
+                status, data = self.decode_result(result)
+                self.assertEqual(status, 400)
+                self.assertIn("Only polish and showTrace", data["error"])
+
+        accepted = await main.update_plugin_settings(
+            main.LINKDB_AGENT_PLUGIN_ID,
+            main.PluginSettingsUpdate(settings={"polish": False, "showTrace": False}),
+        )
+        accepted_status, accepted_data = self.decode_result(accepted)
+        self.assertEqual(accepted_status, 200)
+        self.assertTrue(accepted_data["success"])
+        self.assertEqual(
+            main.get_linkdb_agent_preferences(),
+            {"polish": False, "showTrace": False},
+        )
+
+        manifest_result = await main.get_plugin_manifest(main.LINKDB_AGENT_PLUGIN_ID)
+        manifest_status, manifest_data = self.decode_result(manifest_result)
+        self.assertEqual(manifest_status, 200)
+        self.assertNotIn("proxy", manifest_data)
+        self.assertEqual(
+            [setting["id"] for setting in manifest_data["settings"]],
+            ["polish", "showTrace"],
+        )
+        self.assertEqual(
+            manifest_data["settings_values"],
+            {"polish": False, "showTrace": False},
+        )
+
+    async def test_reserved_plugin_upload_migration_is_idempotent(self):
+        legacy_manifest = {
+            "id": main.LINKDB_AGENT_PLUGIN_ID,
+            "main": "main.js",
+            "proxy": [{"id": main.LINKDB_AGENT_PLUGIN_ID}],
+            "settings": [
+                {"id": "baseUrl", "type": "string"},
+                {"id": "polish", "type": "boolean"},
+                {"id": "showTrace", "type": "boolean"},
+                {"id": "requestTimeoutSeconds", "type": "number"},
+            ],
+        }
+        archive_buffer = io.BytesIO()
+        with zipfile.ZipFile(archive_buffer, "w") as archive:
+            archive.writestr(
+                "chatraw-linkdb-agent/manifest.json",
+                json.dumps(legacy_manifest),
+            )
+            archive.writestr("chatraw-linkdb-agent/main.js", "")
+        archive_bytes = archive_buffer.getvalue()
+
+        for _ in range(2):
+            Path(main.PLUGINS_CONFIG_FILE).write_text(json.dumps({
+                "plugins": {
+                    main.LINKDB_AGENT_PLUGIN_ID: {
+                        "enabled": True,
+                        "settings_values": {
+                            "baseUrl": "https://browser.invalid/v1",
+                            "polish": False,
+                        },
+                    },
+                },
+                "api_keys": {
+                    main.LINKDB_AGENT_PLUGIN_ID: "legacy-agent-secret",
+                    "other-plugin": "other-plugin-secret",
+                },
+            }), encoding="utf-8")
+            upload = main.UploadFile(
+                filename="chatraw-linkdb-agent.zip",
+                file=io.BytesIO(archive_bytes),
+            )
+
+            result = await main.upload_plugin(upload)
+            status, data = self.decode_result(result)
+
+            self.assertEqual(status, 200)
+            self.assertTrue(data["success"])
+            self.assertNotIn("proxy", data["manifest"])
+            self.assertEqual(
+                [setting["id"] for setting in data["manifest"]["settings"]],
+                ["polish", "showTrace"],
+            )
+            config = main.load_plugin_config()
+            self.assertNotIn(main.LINKDB_AGENT_PLUGIN_ID, config["api_keys"])
+            self.assertEqual(config["api_keys"]["other-plugin"], "other-plugin-secret")
+            self.assertEqual(
+                config["plugins"][main.LINKDB_AGENT_PLUGIN_ID]["settings_values"],
+                {},
+            )
+            installed_manifest = json.loads(Path(
+                main.PLUGINS_INSTALLED_DIR,
+                main.LINKDB_AGENT_PLUGIN_ID,
+                "manifest.json",
+            ).read_text(encoding="utf-8"))
+            self.assertNotIn("proxy", installed_manifest)
+            self.assertEqual(
+                [setting["id"] for setting in installed_manifest["settings"]],
+                ["polish", "showTrace"],
+            )
+
+    async def test_reserved_agent_service_id_is_closed_across_generic_key_apis(self):
+        fake_session = self.patch_session(FakeProxySession())
+
+        save_result = await main.save_api_key(JsonRequest({
+            "service_id": main.LINKDB_AGENT_PLUGIN_ID,
+            "api_key": "browser-secret",
+        }))
+        save_status, save_data = self.decode_result(save_result)
+        self.assertEqual(save_status, 400)
+        self.assertIn("Reserved", save_data["error"])
+
+        proxy_result = await main.proxy_request(main.ProxyRequest(
+            service_id=main.LINKDB_AGENT_PLUGIN_ID,
+            url="https://collector.example/capture",
+        ))
+        proxy_status, proxy_data = self.decode_result(proxy_result)
+        self.assertEqual(proxy_status, 400)
+        self.assertIn("Reserved", proxy_data["error"])
+
+        upload_result = await main.proxy_upload(
+            file=None,
+            service_id=main.LINKDB_AGENT_PLUGIN_ID,
+            url="https://collector.example/upload",
+        )
+        upload_status, upload_data = self.decode_result(upload_result)
+        self.assertEqual(upload_status, 400)
+        self.assertIn("Reserved", upload_data["error"])
+        self.assertEqual(fake_session.requests, [])
+
+    async def test_generic_key_proxy_remains_available_to_other_plugins(self):
+        save_result = await main.save_api_key(JsonRequest({
+            "service_id": "other-plugin",
+            "api_key": "other-plugin-secret",
+        }))
+        save_status, save_data = self.decode_result(save_result)
+        self.assertEqual(save_status, 200)
+        self.assertTrue(save_data["success"])
+
+        keys_result = await main.get_api_keys()
+        keys_status, keys_data = self.decode_result(keys_result)
+        self.assertEqual(keys_status, 200)
+        self.assertIn("other-plugin", keys_data["api_keys"])
+        self.assertNotIn("other-plugin-secret", keys_data["api_keys"]["other-plugin"])
+        self.assertNotIn(main.LINKDB_AGENT_PLUGIN_ID, keys_data["api_keys"])
+
+        fake_session = self.patch_session(FakeProxySession())
+        proxy_result = await main.proxy_request(main.ProxyRequest(
+            service_id="other-plugin",
+            url="https://api.example/v1/query",
+            body={"query": "ok"},
+        ))
+        proxy_status, proxy_data = self.decode_result(proxy_result)
+        self.assertEqual(proxy_status, 200)
+        self.assertTrue(proxy_data["success"])
+        self.assertEqual(len(fake_session.requests), 1)
+        outgoing = fake_session.requests[0]
+        self.assertEqual(outgoing["url"], "https://api.example/v1/query")
+        self.assertEqual(
+            outgoing["headers"]["Authorization"],
+            "Bearer other-plugin-secret",
+        )
+        self.assertFalse(outgoing["allow_redirects"])
 
     async def test_health_uses_only_fixed_server_transport(self):
         self.configure_bridge(principal=None)
@@ -388,6 +697,76 @@ class LinkDBAgentBridgeTests(unittest.IsolatedAsyncioTestCase):
             with self.subTest(body=body):
                 with self.assertRaises(main.LinkDBAgentBridgeError):
                     main.validate_linkdb_agent_chat_body(body)
+
+    async def test_request_body_limit_precedes_json_parsing_and_persistence(self):
+        self.configure_bridge()
+        fake_session = self.patch_session(FakeSession())
+
+        declared_oversize = JsonRequest(
+            {"message": "small"},
+            headers={"content-length": str(main.LINKDB_AGENT_REQUEST_MAX_BYTES + 1)},
+        )
+        result = await main.linkdb_agent_chat(declared_oversize)
+        status, data = self.decode_result(result)
+        self.assertEqual(status, 413)
+        self.assertEqual(data["code"], "invalid_request")
+        self.assertEqual(declared_oversize.stream_reads, 0)
+
+        prefix = b'{"message":"ok","web_content":"'
+        streamed_oversize = JsonRequest(
+            raw_body=b"",
+            body_chunks=[prefix, b"x" * main.LINKDB_AGENT_REQUEST_MAX_BYTES],
+        )
+        result = await main.linkdb_agent_chat(streamed_oversize)
+        status, data = self.decode_result(result)
+        self.assertEqual(status, 413)
+        self.assertEqual(data["code"], "invalid_request")
+        self.assertEqual(streamed_oversize.stream_reads, 2)
+
+        invalid_length = JsonRequest(
+            {"message": "small"},
+            headers={"content-length": "not-a-number"},
+        )
+        result = await main.linkdb_agent_chat(invalid_length)
+        status, data = self.decode_result(result)
+        self.assertEqual(status, 400)
+        self.assertEqual(data["code"], "invalid_request")
+        self.assertEqual(invalid_length.stream_reads, 0)
+
+        self.assertEqual(fake_session.posts, [])
+        self.assertEqual(self.chat_count(), 0)
+        self.assertEqual(self.message_count(), 0)
+
+    async def test_agent_payload_uses_only_allowlisted_presentation_preferences(self):
+        self.configure_bridge()
+        main.save_plugin_config({
+            "plugins": {
+                main.LINKDB_AGENT_PLUGIN_ID: {
+                    "enabled": True,
+                    "settings_values": {
+                        "polish": False,
+                        "showTrace": False,
+                        "baseUrl": "https://browser.invalid/v1",
+                    },
+                },
+            },
+            "api_keys": {main.LINKDB_AGENT_PLUGIN_ID: "browser-secret"},
+        })
+        fake_session = self.patch_session(FakeSession())
+
+        result = await main.linkdb_agent_chat(JsonRequest({"message": "query"}))
+        status, _data = self.decode_result(result)
+
+        self.assertEqual(status, 200)
+        outgoing = fake_session.posts[0]
+        self.assertFalse(outgoing["json"]["polish"])
+        self.assertFalse(outgoing["json"]["options"]["show_trace"])
+        self.assertEqual(outgoing["url"], "http://agent.internal:8767/v1/chat")
+        self.assertEqual(outgoing["timeout"].total, 120)
+        self.assertEqual(outgoing["headers"]["X-ChatRaw-Principal"], "organization-default/chatraw-local")
+        serialized = json.dumps(outgoing["json"])
+        self.assertNotIn("browser.invalid", serialized)
+        self.assertNotIn("browser-secret", serialized)
 
     async def test_chat_generates_stable_principal_and_session_and_persists_messages(self):
         self.configure_bridge(principal="trusted-organization")
@@ -562,6 +941,37 @@ class LinkDBAgentBridgeTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(status, expected_status)
                 self.assertEqual(data["code"], expected_code)
                 self.assertNotIn("agent-secret-key", json.dumps(data))
+                self.assertNotIn("chat_id", data)
+                self.assertEqual(self.chat_count(), 0)
+                self.assertEqual(self.message_count(), 0)
+
+    async def test_db_failure_after_upstream_success_rolls_back_and_returns_no_chat_id(self):
+        self.configure_bridge()
+        fake_session = self.patch_session(FakeSession())
+        connection = main.db.get_conn()
+        connection.execute("""
+            CREATE TRIGGER fail_linkdb_assistant_insert
+            BEFORE INSERT ON messages
+            WHEN NEW.role = 'assistant'
+            BEGIN
+                SELECT RAISE(ABORT, 'forced assistant failure');
+            END;
+        """)
+        connection.commit()
+        self.addCleanup(lambda: (
+            connection.execute("DROP TRIGGER IF EXISTS fail_linkdb_assistant_insert"),
+            connection.commit(),
+        ))
+
+        result = await main.linkdb_agent_chat(JsonRequest({"message": "query"}))
+        status, data = self.decode_result(result)
+
+        self.assertEqual(status, 500)
+        self.assertEqual(data["code"], "agent_unavailable")
+        self.assertNotIn("chat_id", data)
+        self.assertEqual(len(fake_session.posts), 1)
+        self.assertEqual(self.chat_count(), 0)
+        self.assertEqual(self.message_count(), 0)
 
     def test_recursive_redaction_removes_nested_secrets(self):
         value = {
