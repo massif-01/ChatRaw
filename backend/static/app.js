@@ -413,9 +413,11 @@ const SKILL_CATALOG_CACHE_MS = 30000;
 const MAX_ACTIVE_SKILLS_PER_REQUEST = 5;
 const DEFAULT_CHAT_ENDPOINT = '/api/chat';
 const CHAT_ROUTE_ENDPOINTS = Object.freeze({
-    hermes: '/api/hermes/chat'
+    hermes: '/api/hermes/chat',
+    'chatraw-linkdb-agent': '/api/linkdb-agent/chat'
 });
 const ALLOWED_CHAT_ENDPOINTS = new Set([DEFAULT_CHAT_ENDPOINT, ...Object.values(CHAT_ROUTE_ENDPOINTS)]);
+const NON_STREAMING_CHAT_ENDPOINTS = new Set(['/api/linkdb-agent/chat']);
 const ROUTE_MESSAGE_RESULT_KEYS = new Set(['success', 'route']);
 const RESERVED_SLASH_COMMANDS = new Set(['plugins', 'settings', 'help', 'clear', 'compact', 'api']);
 const COMMON_PATH_ROOTS = new Set(['tmp', 'var', 'usr', 'etc', 'home', 'users', 'opt', 'private', 'volumes', 'mnt']);
@@ -1648,7 +1650,7 @@ function app() {
                 this.removeParsedUrl();
                 this.removeAttachedDocument();
                 
-                if (this.settings.chat_settings.stream) {
+                if (this.settings.chat_settings.stream && !NON_STREAMING_CHAT_ENDPOINTS.has(endpoint)) {
                     await this.handleStreamResponse(body, endpoint, sendController.signal);
                 } else {
                     await this.handleNormalResponse(body, endpoint, sendController.signal);

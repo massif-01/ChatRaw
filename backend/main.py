@@ -481,11 +481,8 @@ class Database:
             created_at=row["created_at"],
             updated_at=row["updated_at"]
         ) for row in rows]
-    
-    def create_chat(self, title: str = "New Chat") -> Chat:
-        conn = self.get_conn()
-        cursor = conn.cursor()
-        # Cleanup old chats and their messages
+
+    def _delete_stale_chats(self, cursor) -> List[str]:
         cursor.execute("SELECT id FROM chats ORDER BY updated_at DESC LIMIT -1 OFFSET 9")
         stale_chat_ids = [row["id"] for row in cursor.fetchall()]
         if stale_chat_ids:
@@ -494,16 +491,109 @@ class Database:
             cursor.execute(f"DELETE FROM chat_skill_activations WHERE chat_id IN ({stale_chats_subquery})")
             cursor.execute(f"DELETE FROM messages WHERE chat_id IN ({stale_chats_subquery})")
             cursor.execute(f"DELETE FROM chats WHERE id IN ({stale_chats_subquery})")
-            for stale_chat_id in stale_chat_ids:
-                _context_compaction_locks.pop(stale_chat_id, None)
+        return stale_chat_ids
+
+    def create_chat(self, title: str = "New Chat") -> Chat:
+        conn = self.get_conn()
+        cursor = conn.cursor()
+        # Cleanup old chats and their messages
+        stale_chat_ids = self._delete_stale_chats(cursor)
         
         chat_id = str(uuid.uuid4())
         now = datetime.now().isoformat()
         cursor.execute("INSERT INTO chats (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
                       (chat_id, title, now, now))
         conn.commit()
+        for stale_chat_id in stale_chat_ids:
+            _context_compaction_locks.pop(stale_chat_id, None)
         
         return Chat(id=chat_id, title=title, created_at=now, updated_at=now)
+
+    def save_chat_exchange(
+        self,
+        chat_id: str,
+        original_user_message: str,
+        user_content: str,
+        assistant_content: str,
+        skill_activations: List[dict],
+        create_chat: bool,
+    ) -> None:
+        """Atomically persist one complete user/assistant exchange."""
+        conn = self.get_conn()
+        cursor = conn.cursor()
+        stale_chat_ids = []
+        try:
+            cursor.execute("BEGIN")
+            if create_chat:
+                stale_chat_ids = self._delete_stale_chats(cursor)
+                created_at = datetime.now().isoformat()
+                cursor.execute(
+                    "INSERT INTO chats (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                    (chat_id, "New Chat", created_at, created_at),
+                )
+            else:
+                cursor.execute("SELECT 1 FROM chats WHERE id = ? LIMIT 1", (chat_id,))
+                if cursor.fetchone() is None:
+                    raise ValueError("Chat no longer exists")
+
+            user_message_id = str(uuid.uuid4())
+            user_created_at = datetime.now().isoformat()
+            cursor.execute(
+                "INSERT INTO messages (id, chat_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)",
+                (user_message_id, chat_id, "user", user_content, user_created_at),
+            )
+
+            if skill_activations:
+                activation_rows = [
+                    (
+                        str(uuid.uuid4()),
+                        chat_id,
+                        user_message_id,
+                        activation.get("name", ""),
+                        json.dumps(activation.get("source", {}), ensure_ascii=False),
+                        user_created_at,
+                    )
+                    for activation in skill_activations
+                ]
+                cursor.executemany(
+                    """
+                    INSERT INTO chat_skill_activations
+                        (id, chat_id, message_id, skill_name, source_json, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    activation_rows,
+                )
+
+            assistant_created_at = datetime.now().isoformat()
+            cursor.execute(
+                "INSERT INTO messages (id, chat_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)",
+                (
+                    str(uuid.uuid4()),
+                    chat_id,
+                    "assistant",
+                    assistant_content,
+                    assistant_created_at,
+                ),
+            )
+            cursor.execute("SELECT COUNT(*) AS count FROM messages WHERE chat_id = ?", (chat_id,))
+            if cursor.fetchone()["count"] <= 2:
+                title = (
+                    original_user_message[:30] + "..."
+                    if len(original_user_message) > 30
+                    else original_user_message
+                )
+                cursor.execute("UPDATE chats SET title = ? WHERE id = ?", (title, chat_id))
+            cursor.execute(
+                "UPDATE chats SET updated_at = ? WHERE id = ?",
+                (assistant_created_at, chat_id),
+            )
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+
+        for stale_chat_id in stale_chat_ids:
+            _context_compaction_locks.pop(stale_chat_id, None)
     
     def update_chat_title(self, chat_id: str, title: str):
         conn = self.get_conn()
@@ -2238,7 +2328,7 @@ def save_assistant_message(db_instance: Database, chat_id: str, original_user_me
     return message
 
 
-async def prepare_chat_submission(body: dict) -> dict:
+async def prepare_chat_submission(body: dict, persist: bool = True) -> dict:
     chat_id = body.get("chat_id", "") or ""
     message = body.get("message", "") or ""
     use_rag = body.get("use_rag", False) or False
@@ -2256,9 +2346,13 @@ async def prepare_chat_submission(body: dict) -> dict:
         raise HTTPException(status_code=400, detail="Skill Manager plugin is not enabled")
     active_skill_context, skill_activations = build_active_skill_context(active_skill_names)
 
-    if not chat_id or not db.chat_exists(chat_id):
-        chat_obj = db.create_chat("New Chat")
-        chat_id = chat_obj.id
+    chat_is_new = not chat_id or not db.chat_exists(chat_id)
+    if chat_is_new:
+        if persist:
+            chat_obj = db.create_chat("New Chat")
+            chat_id = chat_obj.id
+        else:
+            chat_id = str(uuid.uuid4())
 
     settings = db.get_settings()
     effective_system_prompt = build_effective_system_prompt(
@@ -2268,19 +2362,20 @@ async def prepare_chat_submission(body: dict) -> dict:
 
     # Save user message after automatic compaction so the current question is not summarized.
     message_to_save = build_message_to_save(message, web_content, web_url)
-    compressor_config = get_context_compressor_config()
-    if compressor_config["enabled"] and compressor_config["auto_compress"]:
-        auto_result = await llm_service.maybe_auto_compact(
-            chat_id,
-            message_to_save,
-            compressor_config["threshold_percent"],
-            effective_system_prompt,
-        )
-        if not auto_result.get("success"):
-            raise HTTPException(status_code=400, detail=auto_result.get("error", "Context compaction failed"))
+    if persist:
+        compressor_config = get_context_compressor_config()
+        if compressor_config["enabled"] and compressor_config["auto_compress"]:
+            auto_result = await llm_service.maybe_auto_compact(
+                chat_id,
+                message_to_save,
+                compressor_config["threshold_percent"],
+                effective_system_prompt,
+            )
+            if not auto_result.get("success"):
+                raise HTTPException(status_code=400, detail=auto_result.get("error", "Context compaction failed"))
 
-    user_message = db.add_message(chat_id, "user", message_to_save)
-    db.add_skill_activations(chat_id, user_message.id, skill_activations)
+        user_message = db.add_message(chat_id, "user", message_to_save)
+        db.add_skill_activations(chat_id, user_message.id, skill_activations)
 
     return {
         "chat_id": chat_id,
@@ -2292,6 +2387,9 @@ async def prepare_chat_submission(body: dict) -> dict:
         "web_url": web_url,
         "settings": settings,
         "effective_system_prompt": effective_system_prompt,
+        "message_to_save": message_to_save,
+        "skill_activations": skill_activations,
+        "chat_is_new": chat_is_new,
     }
 
 
@@ -3810,6 +3908,39 @@ async def delete_skill(skill_name: str):
 PLUGINS_DIR = os.path.join(DATA_DIR, "plugins")
 PLUGINS_INSTALLED_DIR = os.path.join(PLUGINS_DIR, "installed")
 PLUGINS_CONFIG_FILE = os.path.join(PLUGINS_DIR, "config.json")
+LINKDB_AGENT_PLUGIN_ID = "chatraw-linkdb-agent"
+RESERVED_PLUGIN_API_KEY_SERVICE_IDS = frozenset({LINKDB_AGENT_PLUGIN_ID})
+LINKDB_AGENT_BROWSER_SETTING_DEFAULTS = {
+    "polish": True,
+    "showTrace": True,
+}
+LINKDB_AGENT_DEFAULT_TIMEOUT_SECONDS = 120
+LINKDB_AGENT_DEFAULT_PRINCIPAL = "organization-default/chatraw-local"
+LINKDB_AGENT_TIMEOUT_SECONDS_MIN = 1
+LINKDB_AGENT_TIMEOUT_SECONDS_MAX = 3600
+LINKDB_AGENT_RESPONSE_MAX_BYTES = 1024 * 1024
+LINKDB_AGENT_ERROR_MAX_BYTES = 4096
+LINKDB_AGENT_BODY_MAX_DEPTH = 32
+LINKDB_AGENT_BODY_MAX_NODES = 10000
+LINKDB_AGENT_REQUEST_MAX_BYTES = 1024 * 1024
+LINKDB_AGENT_FORBIDDEN_BROWSER_FIELDS = frozenset({
+    "url",
+    "endpoint",
+    "path",
+    "headers",
+    "authorization",
+    "apikey",
+    "token",
+    "baseurl",
+    "principal",
+    "session",
+    "sessionid",
+    "timeout",
+    "timeoutms",
+    "timeoutseconds",
+    "requesttimeout",
+    "requesttimeoutseconds",
+})
 HERMES_PLUGIN_ID = "hermes"
 HERMES_API_KEY_SERVICE_ID = "hermes"
 HERMES_SESSION_KEY_SERVICE_ID = "hermes-session-key"
@@ -3945,13 +4076,85 @@ def validate_plugin_id(plugin_id: str) -> bool:
         return False
     return True
 
+
+def _is_reserved_plugin_api_key_service_id(service_id: Any) -> bool:
+    return isinstance(service_id, str) and service_id in RESERVED_PLUGIN_API_KEY_SERVICE_IDS
+
+
+def _remove_reserved_plugin_api_keys(config: dict) -> bool:
+    """Remove keys whose credentials are owned by dedicated server configuration."""
+    api_keys = config.get("api_keys")
+    if not isinstance(api_keys, dict):
+        return False
+
+    removed = False
+    for service_id in RESERVED_PLUGIN_API_KEY_SERVICE_IDS:
+        if service_id in api_keys:
+            del api_keys[service_id]
+            removed = True
+    return removed
+
+
+def _sanitize_linkdb_agent_settings(value: Any) -> dict:
+    if not isinstance(value, dict):
+        return {}
+    return {
+        setting_id: value[setting_id]
+        for setting_id in LINKDB_AGENT_BROWSER_SETTING_DEFAULTS
+        if setting_id in value and isinstance(value[setting_id], bool)
+    }
+
+
+def _sanitize_linkdb_agent_plugin_config(config: dict) -> bool:
+    changed = _remove_reserved_plugin_api_keys(config)
+    plugins = config.get("plugins")
+    if not isinstance(plugins, dict):
+        return changed
+    plugin_config = plugins.get(LINKDB_AGENT_PLUGIN_ID)
+    if not isinstance(plugin_config, dict):
+        return changed
+
+    settings = plugin_config.get("settings_values", {})
+    sanitized = _sanitize_linkdb_agent_settings(settings)
+    if settings != sanitized:
+        plugin_config["settings_values"] = sanitized
+        changed = True
+    return changed
+
+
+def _sanitize_linkdb_agent_manifest(manifest: dict) -> dict:
+    if manifest.get("id") != LINKDB_AGENT_PLUGIN_ID:
+        return manifest
+
+    manifest.pop("proxy", None)
+    settings = manifest.get("settings")
+    if isinstance(settings, list):
+        manifest["settings"] = [
+            setting
+            for setting in settings
+            if isinstance(setting, dict)
+            and setting.get("id") in LINKDB_AGENT_BROWSER_SETTING_DEFAULTS
+        ]
+    else:
+        manifest["settings"] = []
+    return manifest
+
+
 def load_plugin_config() -> dict:
     """Load plugin configuration from file (thread-safe)"""
     with _plugin_config_lock:
         if os.path.exists(PLUGINS_CONFIG_FILE):
             try:
                 with open(PLUGINS_CONFIG_FILE, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    config = json.load(f)
+                if _sanitize_linkdb_agent_plugin_config(config):
+                    try:
+                        with open(PLUGINS_CONFIG_FILE, "w", encoding="utf-8") as f:
+                            json.dump(config, f, ensure_ascii=False, indent=2)
+                        logger.info("Migrated legacy browser-owned LinkDB Agent configuration")
+                    except Exception as e:
+                        logger.error(f"Failed to persist LinkDB Agent config migration: {e}")
+                return config
             except Exception as e:
                 logger.error(f"Failed to load plugin config: {e}")
         return {"plugins": {}, "api_keys": {}}
@@ -3973,10 +4176,512 @@ def save_plugin_config(config: dict):
     """Save plugin configuration to file (thread-safe)"""
     with _plugin_config_lock:
         try:
+            _sanitize_linkdb_agent_plugin_config(config)
             with open(PLUGINS_CONFIG_FILE, "w", encoding="utf-8") as f:
                 json.dump(config, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.error(f"Failed to save plugin config: {e}")
+
+
+class LinkDBAgentBridgeError(Exception):
+    def __init__(self, message: str, status_code: int, code: str):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+        self.code = code
+
+
+def _normalize_linkdb_agent_field_name(value: Any) -> str:
+    return str(value).replace("_", "").replace("-", "").lower()
+
+
+def _linkdb_agent_enabled() -> bool:
+    return os.environ.get("CHATRAW_LINKDB_AGENT_ENABLED", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _parse_linkdb_agent_timeout_seconds(value: Any) -> int:
+    raw_value = str(value or LINKDB_AGENT_DEFAULT_TIMEOUT_SECONDS).strip()
+    if not raw_value.isdigit():
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge timeout is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+    timeout_seconds = int(raw_value)
+    if not LINKDB_AGENT_TIMEOUT_SECONDS_MIN <= timeout_seconds <= LINKDB_AGENT_TIMEOUT_SECONDS_MAX:
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge timeout is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+    return timeout_seconds
+
+
+def _validate_linkdb_agent_base_url(value: Any) -> str:
+    base_url = str(value or "").strip()
+    if not base_url:
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge is not configured",
+            status_code=503,
+            code="agent_unavailable",
+        )
+    if len(base_url) > 2048 or any(ord(char) < 32 or char.isspace() for char in base_url):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge base URL is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+
+    try:
+        parsed = urlparse(base_url)
+        port = parsed.port
+    except (TypeError, ValueError):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge base URL is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+
+    if (
+        parsed.scheme.lower() not in {"http", "https"}
+        or not parsed.netloc
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+        or port is not None and not 1 <= port <= 65535
+    ):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge base URL is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+
+    path_segments = [segment for segment in parsed.path.split("/") if segment]
+    if "%" in parsed.path or any(segment in {".", ".."} for segment in path_segments):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge base URL is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+    return base_url.rstrip("/")
+
+
+def get_linkdb_agent_config(require_enabled: bool = True) -> dict:
+    if require_enabled and not _linkdb_agent_enabled():
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent route is disabled",
+            status_code=503,
+            code="agent_unavailable",
+        )
+
+    base_url = _validate_linkdb_agent_base_url(
+        os.environ.get("CHATRAW_LINKDB_AGENT_BASE_URL", "")
+    )
+    api_key = os.environ.get("CHATRAW_LINKDB_AGENT_API_KEY", "").strip()
+    if (
+        not api_key
+        or len(api_key) > 4096
+        or any(ord(char) < 33 or char.isspace() for char in api_key)
+    ):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge is not configured",
+            status_code=503,
+            code="agent_unavailable",
+        )
+
+    principal = os.environ.get(
+        "CHATRAW_LINKDB_AGENT_PRINCIPAL",
+        LINKDB_AGENT_DEFAULT_PRINCIPAL,
+    ).strip()
+    if (
+        not principal
+        or len(principal) > 256
+        or any(ord(char) < 32 or ord(char) == 127 for char in principal)
+    ):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent bridge principal is invalid",
+            status_code=503,
+            code="agent_unavailable",
+        )
+
+    return {
+        "base_url": base_url,
+        "api_key": api_key,
+        "timeout_seconds": _parse_linkdb_agent_timeout_seconds(
+            os.environ.get("CHATRAW_LINKDB_AGENT_TIMEOUT_SECONDS")
+        ),
+        "principal": principal,
+    }
+
+
+def _linkdb_agent_timeout(config: dict) -> aiohttp.ClientTimeout:
+    timeout_seconds = config["timeout_seconds"]
+    return aiohttp.ClientTimeout(
+        total=timeout_seconds,
+        connect=min(10, timeout_seconds),
+    )
+
+
+def _linkdb_agent_headers(config: dict, include_principal: bool = False) -> dict:
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {config['api_key']}",
+    }
+    if include_principal:
+        headers["Content-Type"] = "application/json"
+        headers["X-ChatRaw-Principal"] = config["principal"]
+    return headers
+
+
+def get_linkdb_agent_preferences() -> dict:
+    config = load_plugin_config()
+    plugin_config = config.get("plugins", {}).get(LINKDB_AGENT_PLUGIN_ID, {})
+    settings = _sanitize_linkdb_agent_settings(plugin_config.get("settings_values", {}))
+    return {
+        setting_id: settings.get(setting_id, default)
+        for setting_id, default in LINKDB_AGENT_BROWSER_SETTING_DEFAULTS.items()
+    }
+
+
+def validate_linkdb_agent_request_origin(request: Request):
+    origin = request.headers.get("origin")
+    if not origin:
+        fetch_site = (request.headers.get("sec-fetch-site") or "").lower()
+        if fetch_site in {"same-origin", "none"}:
+            return
+        referer_key = _origin_key(request.headers.get("referer", ""))
+        request_key = _origin_key(str(request.url))
+        if referer_key and request_key and referer_key == request_key:
+            return
+        raise LinkDBAgentBridgeError(
+            "Missing Origin for LinkDB Agent bridge",
+            status_code=403,
+            code="unauthorized",
+        )
+
+    origin_key = _origin_key(origin)
+    if not origin_key:
+        raise LinkDBAgentBridgeError(
+            "Invalid Origin for LinkDB Agent bridge",
+            status_code=403,
+            code="unauthorized",
+        )
+
+    request_key = _origin_key(str(request.url))
+    if request_key and origin_key == request_key:
+        return
+
+    if CORS_ORIGINS != "*":
+        for allowed_origin in [item.strip() for item in CORS_ORIGINS.split(",") if item.strip()]:
+            if allowed_origin != "*" and origin_key == _origin_key(allowed_origin):
+                return
+
+    raise LinkDBAgentBridgeError(
+        "Cross-origin LinkDB Agent bridge requests are not allowed",
+        status_code=403,
+        code="unauthorized",
+    )
+
+
+async def read_linkdb_agent_json_body(request: Request) -> Any:
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            declared_length = int(content_length)
+        except (TypeError, ValueError):
+            raise LinkDBAgentBridgeError(
+                "LinkDB Agent chat Content-Length is invalid",
+                status_code=400,
+                code="invalid_request",
+            )
+        if declared_length < 0:
+            raise LinkDBAgentBridgeError(
+                "LinkDB Agent chat Content-Length is invalid",
+                status_code=400,
+                code="invalid_request",
+            )
+        if declared_length > LINKDB_AGENT_REQUEST_MAX_BYTES:
+            raise LinkDBAgentBridgeError(
+                "LinkDB Agent chat body is too large",
+                status_code=413,
+                code="invalid_request",
+            )
+
+    chunks = []
+    total = 0
+    try:
+        async for chunk in request.stream():
+            total += len(chunk)
+            if total > LINKDB_AGENT_REQUEST_MAX_BYTES:
+                raise LinkDBAgentBridgeError(
+                    "LinkDB Agent chat body is too large",
+                    status_code=413,
+                    code="invalid_request",
+                )
+            chunks.append(chunk)
+        return json.loads(b"".join(chunks))
+    except LinkDBAgentBridgeError:
+        raise
+    except Exception:
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent chat body must be valid JSON",
+            status_code=400,
+            code="invalid_request",
+        )
+
+
+def validate_linkdb_agent_chat_body(body: Any):
+    if not isinstance(body, dict):
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent chat body must be a JSON object",
+            status_code=400,
+            code="invalid_request",
+        )
+
+    forbidden = set()
+    node_count = 0
+    stack = [(body, 0)]
+    while stack:
+        value, depth = stack.pop()
+        node_count += 1
+        if depth > LINKDB_AGENT_BODY_MAX_DEPTH or node_count > LINKDB_AGENT_BODY_MAX_NODES:
+            raise LinkDBAgentBridgeError(
+                "LinkDB Agent chat body is too deeply nested",
+                status_code=400,
+                code="invalid_request",
+            )
+        if isinstance(value, dict):
+            for key, nested_value in value.items():
+                if _normalize_linkdb_agent_field_name(key) in LINKDB_AGENT_FORBIDDEN_BROWSER_FIELDS:
+                    forbidden.add(str(key))
+                stack.append((nested_value, depth + 1))
+        elif isinstance(value, list):
+            stack.extend((item, depth + 1) for item in value)
+
+    if forbidden:
+        fields = ", ".join(sorted(forbidden))
+        raise LinkDBAgentBridgeError(
+            f"LinkDB Agent chat body must not include host-owned fields: {fields}",
+            status_code=400,
+            code="invalid_request",
+        )
+
+    message = body.get("message")
+    if not isinstance(message, str) or not message.strip():
+        raise LinkDBAgentBridgeError(
+            "Message is required",
+            status_code=400,
+            code="invalid_request",
+        )
+    if len(message) > 20000:
+        raise LinkDBAgentBridgeError(
+            "Message is too long",
+            status_code=400,
+            code="invalid_request",
+        )
+
+    chat_id = body.get("chat_id")
+    if chat_id is not None and not isinstance(chat_id, str):
+        raise LinkDBAgentBridgeError(
+            "chat_id must be a string",
+            status_code=400,
+            code="invalid_request",
+        )
+
+
+def build_linkdb_agent_session_id(chat_id: str) -> str:
+    if not chat_id:
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent chat session is unavailable",
+            status_code=500,
+            code="agent_unavailable",
+        )
+    session_id = f"chatraw-{chat_id}"
+    if len(session_id) > 160:
+        raise LinkDBAgentBridgeError(
+            "LinkDB Agent chat session is unavailable",
+            status_code=500,
+            code="agent_unavailable",
+        )
+    return session_id
+
+
+async def _read_limited_linkdb_agent_bytes(response, limit: int) -> bytes:
+    content = getattr(response, "content", None)
+    reader = getattr(content, "read", None)
+    if not callable(reader):
+        reader = getattr(response, "read", None)
+    if not callable(reader):
+        raise LinkDBAgentBridgeError(
+            "ChatRaw Agent returned an invalid response",
+            status_code=502,
+            code="upstream_invalid_response",
+        )
+
+    chunks = []
+    total = 0
+    while True:
+        chunk = await reader(limit + 1 - total)
+        if not chunk:
+            break
+        if isinstance(chunk, str):
+            chunk = chunk.encode("utf-8")
+        else:
+            chunk = bytes(chunk)
+        total += len(chunk)
+        if total > limit:
+            raise LinkDBAgentBridgeError(
+                "ChatRaw Agent response exceeded the size limit",
+                status_code=502,
+                code="upstream_invalid_response",
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+async def _read_linkdb_agent_json(response) -> dict:
+    raw = await _read_limited_linkdb_agent_bytes(
+        response,
+        LINKDB_AGENT_RESPONSE_MAX_BYTES,
+    )
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError):
+        raise LinkDBAgentBridgeError(
+            "ChatRaw Agent returned invalid JSON",
+            status_code=502,
+            code="upstream_invalid_response",
+        )
+    if not isinstance(data, dict):
+        raise LinkDBAgentBridgeError(
+            "ChatRaw Agent returned an invalid response",
+            status_code=502,
+            code="upstream_invalid_response",
+        )
+    return data
+
+
+async def _discard_linkdb_agent_error_body(response):
+    try:
+        await _read_limited_linkdb_agent_bytes(response, LINKDB_AGENT_ERROR_MAX_BYTES)
+    except LinkDBAgentBridgeError:
+        pass
+
+
+def _redact_linkdb_agent_value(
+    value: Any,
+    secrets: Tuple[str, ...] = (),
+    redact_urls: bool = False,
+) -> Any:
+    if isinstance(value, dict):
+        redacted = {}
+        for key, nested_value in value.items():
+            if _normalize_linkdb_agent_field_name(key) in {
+                "authorization",
+                "apikey",
+                "token",
+                "headers",
+                "principal",
+                "session",
+                "sessionid",
+            }:
+                redacted[key] = "[REDACTED]"
+            else:
+                redacted[key] = _redact_linkdb_agent_value(
+                    nested_value,
+                    secrets,
+                    redact_urls,
+                )
+        return redacted
+    if isinstance(value, list):
+        return [
+            _redact_linkdb_agent_value(item, secrets, redact_urls)
+            for item in value
+        ]
+    if not isinstance(value, str):
+        return value
+
+    redacted = value
+    for secret in sorted((item for item in secrets if item), key=len, reverse=True):
+        if len(secret) >= 4:
+            redacted = redacted.replace(secret, "[REDACTED]")
+        elif redacted == secret:
+            redacted = "[REDACTED]"
+    redacted = re.sub(
+        r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]+",
+        "Bearer [REDACTED]",
+        redacted,
+    )
+    redacted = re.sub(
+        r"(?i)\b(api[_-]?key|authorization|token)\s*[:=]\s*[^\s,;]+",
+        lambda match: f"{match.group(1)}=[REDACTED]",
+        redacted,
+    )
+    if redact_urls:
+        redacted = re.sub(r"https?://[^\s,;]+", "[REDACTED_URL]", redacted)
+    return redacted
+
+
+def _linkdb_agent_error_response(
+    error: Exception,
+    success_shape: bool = False,
+    secrets: Tuple[str, ...] = (),
+) -> JSONResponse:
+    status_code = getattr(error, "status_code", 500)
+    code = getattr(error, "code", "agent_unavailable")
+    message = getattr(error, "message", None) or "LinkDB Agent bridge failed"
+    payload = {"error": message, "code": code}
+    if success_shape:
+        payload["success"] = False
+    return JSONResponse(
+        _redact_linkdb_agent_value(payload, secrets, redact_urls=True),
+        status_code=status_code,
+    )
+
+
+def _linkdb_agent_upstream_error(status: int) -> LinkDBAgentBridgeError:
+    if status == 401:
+        return LinkDBAgentBridgeError(
+            "ChatRaw Agent authentication failed",
+            status_code=401,
+            code="unauthorized",
+        )
+    if status == 403:
+        return LinkDBAgentBridgeError(
+            "ChatRaw Agent request was forbidden",
+            status_code=403,
+            code="unauthorized",
+        )
+    if status in {408, 504}:
+        return LinkDBAgentBridgeError(
+            "ChatRaw Agent request timed out",
+            status_code=504,
+            code="upstream_timeout",
+        )
+    if 300 <= status < 400:
+        return LinkDBAgentBridgeError(
+            "ChatRaw Agent redirect was blocked",
+            status_code=502,
+            code="upstream_invalid_response",
+        )
+    if status >= 500:
+        return LinkDBAgentBridgeError(
+            "ChatRaw Agent is unavailable",
+            status_code=502,
+            code="agent_unavailable",
+        )
+    return LinkDBAgentBridgeError(
+        "ChatRaw Agent rejected the bridge request",
+        status_code=502,
+        code="upstream_invalid_response",
+    )
 
 
 class HermesBridgeError(Exception):
@@ -5482,6 +6187,215 @@ async def hermes_chat(request: Request):
         return _hermes_error_response(e)
 
 
+@app.get("/api/linkdb-agent/health")
+async def linkdb_agent_health(request: Request):
+    config = None
+    try:
+        validate_linkdb_agent_request_origin(request)
+        config = get_linkdb_agent_config(require_enabled=True)
+        session = await get_http_session()
+        async with session.get(
+            f"{config['base_url']}/health",
+            headers=_linkdb_agent_headers(config),
+            timeout=_linkdb_agent_timeout(config),
+            allow_redirects=False,
+        ) as response:
+            if response.status < 200 or response.status >= 300:
+                await _discard_linkdb_agent_error_body(response)
+                raise _linkdb_agent_upstream_error(response.status)
+            data = await _read_linkdb_agent_json(response)
+
+        status = data.get("status")
+        service = data.get("service")
+        version = data.get("version")
+        if (
+            status != "healthy"
+            or service != "chatraw-agent"
+            or not isinstance(version, str)
+            or not version
+        ):
+            raise LinkDBAgentBridgeError(
+                "ChatRaw Agent returned an invalid health response",
+                status_code=502,
+                code="upstream_invalid_response",
+            )
+        return {
+            "success": True,
+            "status": "healthy",
+            "service": service,
+            "version": version,
+        }
+    except LinkDBAgentBridgeError as error:
+        secrets = () if config is None else (
+            config["api_key"],
+            config["base_url"],
+            config["principal"],
+        )
+        return _linkdb_agent_error_response(error, success_shape=True, secrets=secrets)
+    except asyncio.TimeoutError:
+        return _linkdb_agent_error_response(
+            LinkDBAgentBridgeError(
+                "ChatRaw Agent health check timed out",
+                status_code=504,
+                code="upstream_timeout",
+            ),
+            success_shape=True,
+        )
+    except aiohttp.ClientError:
+        return _linkdb_agent_error_response(
+            LinkDBAgentBridgeError(
+                "ChatRaw Agent is unavailable",
+                status_code=502,
+                code="agent_unavailable",
+            ),
+            success_shape=True,
+        )
+    except Exception as error:
+        logger.error(
+            "LinkDB Agent health bridge failed (%s)",
+            type(error).__name__,
+        )
+        return _linkdb_agent_error_response(
+            LinkDBAgentBridgeError(
+                "LinkDB Agent health bridge failed",
+                status_code=500,
+                code="agent_unavailable",
+            ),
+            success_shape=True,
+        )
+
+
+@app.post("/api/linkdb-agent/chat")
+async def linkdb_agent_chat(request: Request):
+    config = None
+    try:
+        validate_linkdb_agent_request_origin(request)
+        body = await read_linkdb_agent_json_body(request)
+        validate_linkdb_agent_chat_body(body)
+        config = get_linkdb_agent_config(require_enabled=True)
+        preferences = get_linkdb_agent_preferences()
+        try:
+            submission = await prepare_chat_submission(body, persist=False)
+        except HTTPException as error:
+            raise LinkDBAgentBridgeError(
+                str(error.detail),
+                status_code=error.status_code,
+                code="invalid_request",
+            )
+
+        payload = {
+            "session_id": build_linkdb_agent_session_id(submission["chat_id"]),
+            "message": submission["message"],
+            "polish": preferences["polish"],
+            "stream": False,
+            "options": {
+                "show_trace": preferences["showTrace"],
+                "timeout_seconds": config["timeout_seconds"],
+                "max_iterations": 4,
+            },
+        }
+        session = await get_http_session()
+        async with session.post(
+            f"{config['base_url']}/chat",
+            json=payload,
+            headers=_linkdb_agent_headers(config, include_principal=True),
+            timeout=_linkdb_agent_timeout(config),
+            allow_redirects=False,
+        ) as response:
+            if response.status < 200 or response.status >= 300:
+                await _discard_linkdb_agent_error_body(response)
+                raise _linkdb_agent_upstream_error(response.status)
+            data = await _read_linkdb_agent_json(response)
+
+        if not isinstance(data.get("answer"), str):
+            raise LinkDBAgentBridgeError(
+                "ChatRaw Agent response did not include an answer",
+                status_code=502,
+                code="upstream_invalid_response",
+            )
+        need_clarification = data.get("need_clarification", False)
+        clarification_question = data.get("clarification_question")
+        if (
+            not isinstance(need_clarification, bool)
+            or clarification_question is not None and not isinstance(clarification_question, str)
+            or not isinstance(data.get("trace", []), list)
+            or not isinstance(data.get("result_sets", []), list)
+        ):
+            raise LinkDBAgentBridgeError(
+                "ChatRaw Agent returned an invalid response",
+                status_code=502,
+                code="upstream_invalid_response",
+            )
+
+        answer = _redact_linkdb_agent_value(
+            data["answer"],
+            (
+                config["api_key"],
+                config["base_url"],
+                config["principal"],
+            ),
+        )
+        content = answer
+        if not content.strip() and need_clarification and clarification_question:
+            content = _redact_linkdb_agent_value(
+                clarification_question,
+                (
+                    config["api_key"],
+                    config["base_url"],
+                    config["principal"],
+                ),
+            )
+        db.save_chat_exchange(
+            chat_id=submission["chat_id"],
+            original_user_message=submission["message"],
+            user_content=submission["message_to_save"],
+            assistant_content=content,
+            skill_activations=submission["skill_activations"],
+            create_chat=submission["chat_is_new"],
+        )
+        return {
+            "chat_id": submission["chat_id"],
+            "content": content,
+            "thinking": "",
+            "references": [],
+        }
+    except LinkDBAgentBridgeError as error:
+        secrets = () if config is None else (
+            config["api_key"],
+            config["base_url"],
+            config["principal"],
+        )
+        return _linkdb_agent_error_response(error, secrets=secrets)
+    except asyncio.TimeoutError:
+        return _linkdb_agent_error_response(
+            LinkDBAgentBridgeError(
+                "ChatRaw Agent request timed out",
+                status_code=504,
+                code="upstream_timeout",
+            )
+        )
+    except aiohttp.ClientError:
+        return _linkdb_agent_error_response(
+            LinkDBAgentBridgeError(
+                "ChatRaw Agent is unavailable",
+                status_code=502,
+                code="agent_unavailable",
+            )
+        )
+    except Exception as error:
+        logger.error(
+            "LinkDB Agent chat bridge failed (%s)",
+            type(error).__name__,
+        )
+        return _linkdb_agent_error_response(
+            LinkDBAgentBridgeError(
+                "LinkDB Agent chat bridge failed",
+                status_code=500,
+                code="agent_unavailable",
+            )
+        )
+
+
 def get_installed_plugins() -> List[dict]:
     """Get list of installed plugins with their config"""
     plugins = []
@@ -5498,6 +6412,7 @@ def get_installed_plugins() -> List[dict]:
             try:
                 with open(manifest_path, "r", encoding="utf-8") as f:
                     manifest = json.load(f)
+                _sanitize_linkdb_agent_manifest(manifest)
                 
                 # Merge with config
                 plugin_config = config.get("plugins", {}).get(plugin_id, {})
@@ -5637,12 +6552,17 @@ async def install_plugin(request: PluginInstallRequest):
                 # Validate plugin ID
                 if not validate_plugin_id(plugin_id):
                     return JSONResponse({"success": False, "error": "Invalid plugin ID (only alphanumeric, dash, underscore allowed)"}, status_code=400)
+
+                _sanitize_linkdb_agent_manifest(manifest)
                 
                 # Copy to installed directory
                 plugin_dest_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
                 if os.path.exists(plugin_dest_dir):
                     shutil.rmtree(plugin_dest_dir)
                 shutil.copytree(plugin_source_dir, plugin_dest_dir)
+                if plugin_id == LINKDB_AGENT_PLUGIN_ID:
+                    with open(os.path.join(plugin_dest_dir, "manifest.json"), "w", encoding="utf-8") as f:
+                        json.dump(manifest, f, ensure_ascii=False, indent=2)
         else:
             # It's a GitHub raw directory URL, download individual files
             # First get manifest.json
@@ -5664,6 +6584,8 @@ async def install_plugin(request: PluginInstallRequest):
             # Validate plugin ID
             if not validate_plugin_id(plugin_id):
                 return JSONResponse({"success": False, "error": "Invalid plugin ID (only alphanumeric, dash, underscore allowed)"}, status_code=400)
+
+            _sanitize_linkdb_agent_manifest(manifest)
             
             # Create plugin directory
             plugin_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
@@ -5797,12 +6719,17 @@ async def upload_plugin(file: UploadFile = File(...)):
             # Validate plugin ID
             if not validate_plugin_id(plugin_id):
                 return JSONResponse({"success": False, "error": "Invalid plugin ID (only alphanumeric, dash, underscore allowed)"}, status_code=400)
+
+            _sanitize_linkdb_agent_manifest(manifest)
             
             # Copy to installed directory
             plugin_dest_dir = os.path.join(PLUGINS_INSTALLED_DIR, plugin_id)
             if os.path.exists(plugin_dest_dir):
                 shutil.rmtree(plugin_dest_dir)
             shutil.copytree(plugin_source_dir, plugin_dest_dir)
+            if plugin_id == LINKDB_AGENT_PLUGIN_ID:
+                with open(os.path.join(plugin_dest_dir, "manifest.json"), "w", encoding="utf-8") as f:
+                    json.dump(manifest, f, ensure_ascii=False, indent=2)
         
         # Add to config
         config = load_plugin_config()
@@ -5831,7 +6758,7 @@ async def uninstall_plugin(plugin_id: str):
     
     if not os.path.exists(plugin_dir):
         return JSONResponse({"success": False, "error": "Plugin not found"}, status_code=404)
-    
+
     try:
         shutil.rmtree(plugin_dir)
         
@@ -5858,7 +6785,7 @@ async def toggle_plugin(plugin_id: str, request: PluginToggleRequest):
     
     if not os.path.exists(plugin_dir):
         return JSONResponse({"success": False, "error": "Plugin not found"}, status_code=404)
-    
+
     config = load_plugin_config()
     if "plugins" not in config:
         config["plugins"] = {}
@@ -5881,6 +6808,17 @@ async def update_plugin_settings(plugin_id: str, request: PluginSettingsUpdate):
     
     if not os.path.exists(plugin_dir):
         return JSONResponse({"success": False, "error": "Plugin not found"}, status_code=404)
+
+    if plugin_id == LINKDB_AGENT_PLUGIN_ID:
+        allowed_setting_ids = set(LINKDB_AGENT_BROWSER_SETTING_DEFAULTS)
+        if (
+            set(request.settings) - allowed_setting_ids
+            or any(not isinstance(value, bool) for value in request.settings.values())
+        ):
+            return JSONResponse(
+                {"success": False, "error": "Only polish and showTrace boolean settings are allowed"},
+                status_code=400,
+            )
     
     config = load_plugin_config()
     if "plugins" not in config:
@@ -6014,6 +6952,7 @@ async def get_plugin_manifest(plugin_id: str):
     try:
         with open(manifest_path, "r", encoding="utf-8") as f:
             manifest = json.load(f)
+        _sanitize_linkdb_agent_manifest(manifest)
         
         # Merge with config
         config = load_plugin_config()
@@ -6029,6 +6968,12 @@ async def get_plugin_manifest(plugin_id: str):
 async def proxy_request(request: ProxyRequest):
     """Generic HTTP proxy for plugins - protects API keys"""
     from urllib.parse import urlparse
+
+    if _is_reserved_plugin_api_key_service_id(request.service_id):
+        return JSONResponse(
+            {"success": False, "error": "Reserved service_id"},
+            status_code=400,
+        )
     
     # Validate URL
     try:
@@ -6117,6 +7062,12 @@ async def proxy_upload(
         extra_fields: JSON string of additional form fields
         file_field_name: Name of the file field in the multipart form (default: "file")
     """
+    if _is_reserved_plugin_api_key_service_id(service_id):
+        return JSONResponse(
+            {"success": False, "error": "Reserved service_id"},
+            status_code=400,
+        )
+
     from urllib.parse import urlparse
     import aiohttp
     
@@ -6224,6 +7175,8 @@ async def get_api_keys():
         # Return masked keys for display
         masked = {}
         for service_id, key in api_keys.items():
+            if _is_reserved_plugin_api_key_service_id(service_id):
+                continue
             if key and len(key) > 10:
                 masked[service_id] = key[:4] + '*' * (len(key) - 8) + key[-4:]
             elif key:
@@ -6245,6 +7198,12 @@ async def save_api_key(request: Request):
         
         if not service_id:
             return JSONResponse({"success": False, "error": "service_id required"}, status_code=400)
+
+        if _is_reserved_plugin_api_key_service_id(service_id):
+            return JSONResponse(
+                {"success": False, "error": "Reserved service_id"},
+                status_code=400,
+            )
         
         # Validate service_id format (alphanumeric, dash, underscore, dot)
         if not re.match(r'^[a-zA-Z0-9_.-]+$', service_id):
