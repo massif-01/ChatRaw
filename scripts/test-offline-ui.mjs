@@ -62,32 +62,51 @@ const provider = createServer(async (request, response) => {
     response.end('data: [DONE]\n\n');
 });
 
-const pluginIds = ['csv-parser', 'excel-parser', 'markdown-enhancer', 'mindmap-renderer', 'enhanced-export'];
 const data = await mkdtemp(join(tmpdir(), 'chatraw-offline-'));
 const plugins = join(data, 'plugins');
+const installed = join(plugins, 'installed');
+const markdownSettings = { enableCopyButton: false };
 let browser;
 let backend;
 const blocked = [];
 const failures = [];
 try {
-    await mkdir(join(plugins, 'installed'), { recursive: true });
-    for (const id of pluginIds) {
-        await cp(join(root, 'Plugins/Plugin_market', id), join(plugins, 'installed', id), { recursive: true });
+    await mkdir(installed, { recursive: true });
+    for (const id of ['csv-parser', 'markdown-enhancer']) {
+        await cp(join(root, 'Plugins/Plugin_market', id), join(installed, id), { recursive: true });
     }
     // Verify compatibility with the manifest persisted by existing installs.
-    const csvPath = join(plugins, 'installed/csv-parser/manifest.json');
+    const csvPath = join(installed, 'csv-parser/manifest.json');
     const csvManifest = JSON.parse(await readFile(csvPath, 'utf8'));
     csvManifest.dependencies.papaparse = 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
     await writeFile(csvPath, JSON.stringify(csvManifest));
+    // Older URL installs could copy listed libraries and omit nested fonts.
+    const markdownPath = join(installed, 'markdown-enhancer/manifest.json');
+    const markdownManifest = JSON.parse(await readFile(markdownPath, 'utf8'));
+    markdownManifest.version = '1.0.0';
+    await writeFile(markdownPath, JSON.stringify(markdownManifest));
+    await rm(join(installed, 'markdown-enhancer/lib/fonts'), { recursive: true });
     await writeFile(join(plugins, 'config.json'), JSON.stringify({
-        plugins: Object.fromEntries(pluginIds.map(id => [id, { enabled: id !== 'markdown-enhancer' }])),
+        plugins: {
+            'csv-parser': { enabled: true },
+            'markdown-enhancer': { enabled: false, settings_values: markdownSettings },
+        },
     }));
 
     provider.listen(0, '127.0.0.1');
     await once(provider, 'listening');
     backend = spawn(process.env.PYTHON || 'python3', [
         '-m', 'uvicorn', 'backend.main:app', '--host', '127.0.0.1', '--port', '0',
-    ], { cwd: root, env: { ...process.env, DATA_DIR: data }, stdio: ['ignore', 'ignore', 'pipe'] });
+    ], {
+        cwd: root,
+        env: {
+            ...process.env,
+            DATA_DIR: data,
+            CHATRAW_RUNNER_URL: 'http://127.0.0.1:51112',
+            CHATRAW_RUNNER_TOKEN_FILE: '',
+        },
+        stdio: ['ignore', 'ignore', 'pipe'],
+    });
     const origin = await new Promise((resolve, reject) => {
         let startup = '';
         const timeout = setTimeout(() => reject(new Error(`ChatRaw startup timed out\n${startup}`)), 15000);
@@ -160,7 +179,40 @@ try {
         await page.locator('textarea[x-ref="inputBox"]').fill(text);
         await page.locator('.btn-send:visible').click();
     };
+    const market = page.locator('.plugin-modal');
+    const installFromMarket = async (id, name, action = 'Install plugin') => {
+        const card = market.locator('.plugin-card-market').filter({ has: page.getByText(name, { exact: true }) });
+        const [response] = await Promise.all([
+            page.waitForResponse(result =>
+                new URL(result.url()).pathname === '/api/plugins/install-bundled'
+                && result.request().method() === 'POST'
+                && result.request().postDataJSON().plugin_id === id),
+            card.getByRole('button', { name: action, exact: true }).click(),
+        ]);
+        const body = await response.json();
+        assert.ok(response.ok() && body.success, `Bundled ${id}: ${JSON.stringify(body)}`);
+        assert.equal(body.plugin_id, id);
+        await page.waitForFunction(pluginId => {
+            const state = Alpine.$data(document.body);
+            return state.installedPlugins.some(plugin => plugin.id === pluginId) && !state.pluginInstalling;
+        }, id);
+    };
     await page.goto(origin);
+    const marketIcon = page.waitForResponse(response =>
+        response.ok() && /\/api\/plugins\/market\/[^/]+\/icon$/.test(new URL(response.url()).pathname));
+    await page.locator('.btn-plugins:visible').click();
+    await marketIcon;
+    await installFromMarket('excel-parser', 'Excel Parser Pro');
+    await installFromMarket('mindmap-renderer', 'Mindmap Renderer');
+    await installFromMarket('enhanced-export', 'Enhanced Export');
+    await installFromMarket('markdown-enhancer', 'Markdown Renderer Plus', 'Update plugin');
+    const installedPlugins = await (await fetch(origin + '/api/plugins')).json();
+    const upgraded = installedPlugins.find(plugin => plugin.id === 'markdown-enhancer');
+    assert.notEqual(upgraded.version, markdownManifest.version);
+    assert.equal(upgraded.enabled, false);
+    assert.deepEqual(upgraded.settings_values, markdownSettings);
+    await market.getByRole('button', { name: 'Close', exact: true }).click();
+    console.log('Bundled market: three fresh installs, partial Markdown Enhancer upgrade and retained settings passed.');
     await page.waitForFunction(() => window.Papa && window.XLSX && window.html2pdf && window.markmap);
     await page.locator('.thinking-toggle').click();
     await send('Check normal chat without Markdown Enhancer');
@@ -197,11 +249,6 @@ try {
     await assistant.locator('.btn-export-ee').click();
     const pdf = await pdfEvent;
     assert.equal((await readFile(await pdf.path())).subarray(0, 5).toString(), '%PDF-');
-    const marketIcon = page.waitForResponse(response =>
-        response.ok() && /\/api\/plugins\/market\/[^/]+\/icon$/.test(new URL(response.url()).pathname));
-    await page.locator('.btn-plugins:visible').click();
-    await page.locator('.plugin-grid .plugin-card').first().waitFor({ state: 'visible' });
-    await marketIcon;
     console.log('Plugins: legacy CSV upload, KaTeX fonts, Mermaid, Markmap, PDF download and market icons passed.');
 
     assert.deepEqual(blocked, [], 'External browser requests were attempted');
