@@ -4,6 +4,8 @@
 用户已确认：宿主执行服务、独立持久任务目录/显式项目选择、总控/A/F Astra high。
 当前：本地完整实现已集成165a509，E真实109/离线验收通过，F已关闭全部本地已知P0/P1；总控最终网关与断网Docker同卷重建通过。全项目目标仍未完成，等待现场安装授权、真实模型认证、手机实机与整机重启验收。逐项门槛见VALIDATION.md。
 
+部署准备：e91d32f固定源码包及Linux amd64镜像已生成、导出并校验；本机仿真断网/同卷重建通过。产物在outputs/agent-platform/deployment-e91d32f，证据见reviews/deployment-e91d32f/README.md，尚未上传现场。
+
 |Owner|模型/思考|阶段|thread/worktree|证据|
 |---|---|---|---|---|
 |A|astra/high|完整后端及标题增量已集成|01a1cc3e-4ff3-7410-94b5-43ef8740fb19 / .codex/worktrees/04ec/ChatRaw|a688cc8/7057c6e/cb4d9fc；集成5430b39/2d770f0/e822294；153执行通过23可选跳过，标题4项通过|

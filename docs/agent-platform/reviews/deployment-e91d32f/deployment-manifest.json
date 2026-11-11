@@ -1,0 +1,39 @@
+{
+  "source_commit": "e91d32f3674389be2c94c3a939c6a4179246e4c2",
+  "archive": "ChatRaw-e91d32f.tar.gz",
+  "sha256": "9f86e7d2c8920d36577778171d723d38fe8e9bf46a9480f27b9ff0d36a412d2c",
+  "bytes": 20632816,
+  "files": 340,
+  "required_entries_checked": [
+    "Dockerfile",
+    "docker-compose.yml",
+    "deploy/install-runner.sh",
+    "deploy/chatraw-runner.service",
+    "deploy/docker-compose.agent.yml",
+    "backend/static/app.min.js",
+    "backend/static/styles.min.css",
+    "backend/static/agents.js",
+    "backend/static/stream-markdown.js",
+    "package-lock.json",
+    "agent_runner/adapters/hermes.py",
+    "agent_runner/adapters/pi.py",
+    "agent_runner/adapters/deepseek.py",
+    "agent_runner/adapters/codex.py",
+    "agent_runner/adapters/claude.py",
+    "Plugins/Plugin_market/hermes/manifest.json",
+    "Plugins/Plugin_market/pi/manifest.json",
+    "Plugins/Plugin_market/deepseek/manifest.json",
+    "Plugins/Plugin_market/codex/manifest.json",
+    "Plugins/Plugin_market/claude/manifest.json"
+  ],
+  "boundary": "Tracked source only; no host config, credentials or runtime data included.",
+  "image_archive": {
+    "file": "ChatRaw-e91d32f-linux-amd64.docker.tar.gz",
+    "bytes": 200049612,
+    "sha256": "7a15b08f4baa40339e6dbdd98215bdb1e5f6f791980a8e748c7add1427bc6450",
+    "image_id": "sha256:faeb75dc86eb10583fa0af6a800e3c630247e2a193d7c7f2cd232d48162a45a9",
+    "platform": "linux/amd64",
+    "tag": "chatraw-agent-integration:e91d32f-amd64"
+  },
+  "verification_host": "macOS arm64 with OrbStack x86_64 emulation; not RM-01"
+}
