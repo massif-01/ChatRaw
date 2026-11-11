@@ -9,6 +9,8 @@
 
 Claude SDK 是可选依赖。未安装时模块仍可注册并报告不可用。两个适配器的 `model` 和 `reasoning` 均为可编辑的非秘密设置，留空沿用各 Agent 默认值。Codex 另提供 `mode`，设为 `plan` 可启用原生计划模式下的提问。模型目录取自原生握手，目录存在不代表账号已经获准调用其中的模型。
 
+Claude 执行使用原生 `claude_code` 系统提示预设。SDK 0.2.180 在执行时按 CLI 默认加载用户、项目和本地设置，发现项目 `CLAUDE.md` 和 Skills。Skill 正文由 Claude 在调用时加载。适配器只提交本轮消息和附件。
+
 健康探测验证程序和协议。Codex 使用 `account/read(refreshToken=false)` 读取配置状态，Claude 检查服务账户环境是否提供 API key。探测不发起模型请求，也不返回账号身份和凭据。配置存在时，认证验证仍为 `unknown`，实际模型调用为 `not_checked`。
 
 ## 能力与边界
@@ -30,7 +32,8 @@ Claude SDK 是可选依赖。未安装时模块仍可注册并报告不可用。
 - `python3 -m unittest agent_runner.tests.test_adapter_base agent_runner.tests.test_c_adapter_protocol` 验证公共契约和确定性边界，包括 EOF、错误 thread/turn、秘密问答、超时后迟到回复、非图片附件、取消 ACK 无终态与恢复不重发。
 - `CHATRAW_C_NATIVE_TESTS=1 python -m unittest agent_runner.tests.test_c_native_adapters` 使用两个实际原生程序、临时目录和仅监听 loopback 的模型替身。覆盖文本和跨客户端续接、Codex 已保存 turn 的恢复、问答、审批正反例、停止与下一轮、停止时拒绝迟到批准、压缩和图片出站。审批用临时工作区文件是否实际创建核验，图片用替身收到的模型请求核验。
 - 本机原生测试使用 macOS arm64、Python 3.14.2 和表中版本。另在无凭据的临时账户目录验证两边健康探测报告已握手、认证未配置、模型调用未检查。
+- Claude 原生上下文测试在本地模型端点确认三种设置来源的原生 Hook 均生效，收到原生预设、项目 `CLAUDE.md` 和 Skill 描述，直接发 slash 指令后才收到 Skill 正文。另在执行请求携带普通聊天的 system、历史、摘要、RAG 和 Skill 测试标记，连续两轮模型请求均未收到这些标记。
 - 将 C 叶文件叠加到 A 的 `44013238` 快照，在临时目录跑通两边原生问答经 Runner 注册、SQLite 持久化、回复和原生确认的链路。两边均只发布一次 `done`，原生键及私有绑定未进入公共事件。
 - G02、G05、G06、G08 已有本地原生协议配合模型替身的证据。RM-01 的 Linux 服务账户、实际模型认证、浏览器到 Runner 的完整链路与现场重启仍待总控协调。现场需使用总控授权的真实 Codex 认证及 Claude API key 分别核验，测试替身不计为 `real_pass`。
 
-协议来源 [OpenAI Docs 的 Codex App Server](https://learn.chatgpt.com/docs/app-server)、[Claude Agent SDK Python](https://code.claude.com/docs/en/agent-sdk/python)、[Claude SDK 问答与审批](https://code.claude.com/docs/en/agent-sdk/user-input)、[Claude SDK 认证](https://code.claude.com/docs/en/agent-sdk/quickstart)。
+协议来源 [OpenAI Docs 的 Codex App Server](https://learn.chatgpt.com/docs/app-server)、[Claude Agent SDK Python](https://code.claude.com/docs/en/agent-sdk/python)、[Claude SDK 系统提示](https://code.claude.com/docs/en/agent-sdk/modifying-system-prompts)、[Claude SDK Skills](https://code.claude.com/docs/en/agent-sdk/skills)、[Claude SDK 问答与审批](https://code.claude.com/docs/en/agent-sdk/user-input)、[Claude SDK 认证](https://code.claude.com/docs/en/agent-sdk/quickstart)。

@@ -405,6 +405,105 @@ class NativeAdapterTests(unittest.IsolatedAsyncioTestCase):
         ]
         self.assertIn("hello", json.dumps(requests[-1]["messages"]))
 
+    async def test_claude_native_context_at_model_endpoint(self):
+        project_config = self.workspace / ".claude"
+        skill_name = "native-context-fixture"
+        skill = project_config / "skills" / skill_name
+        skill.mkdir(parents=True)
+        project_memory = "fixture-project-memory-4318"
+        skill_description = "fixture-project-skill-description-4318"
+        skill_body = "fixture-project-skill-body-4318"
+        (self.workspace / "CLAUDE.md").write_text(f"# Project\n\n{project_memory}\n")
+        (skill / "SKILL.md").write_text(
+            f"---\nname: {skill_name}\ndescription: {skill_description}\n---\n\n"
+            f"{skill_body}\n"
+        )
+
+        settings = {
+            Path(os.environ["CLAUDE_CONFIG_DIR"])
+            / "settings.json": "fixture-user-settings-4318",
+            project_config / "settings.json": "fixture-project-settings-4318",
+            project_config / "settings.local.json": "fixture-local-settings-4318",
+        }
+        for path, marker in settings.items():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(
+                json.dumps(
+                    {
+                        "hooks": {
+                            "UserPromptSubmit": [
+                                {
+                                    "hooks": [
+                                        {
+                                            "type": "command",
+                                            "command": f"printf '%s\\n' {marker}",
+                                        },
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                )
+            )
+
+        adapter = ClaudeAdapter()
+        await self._start(adapter, {})
+        chatraw_context = {
+            "system_prompt": "fixture-chatraw-system-4318",
+            "history": "fixture-chatraw-history-4318",
+            "summary": "fixture-chatraw-summary-4318",
+            "rag": "fixture-chatraw-rag-4318",
+            "active_skills": "fixture-chatraw-skill-4318",
+        }
+        prompt = "native context fixture prompt"
+        # Only the documented fields should affect the outgoing SDK request.
+        result = await asyncio.wait_for(
+            adapter.run(
+                self.sink.binding,
+                {
+                    "run_id": "context",
+                    "message": prompt,
+                    "attachments": [],
+                    **chatraw_context,
+                },
+                self.sink.emit,
+            ),
+            25,
+        )
+        self.assertEqual(result["status"], "completed", result)
+
+        def latest_request():
+            return next(
+                body
+                for path, body in reversed(self.model.requests)
+                if path.startswith("/v1/messages") and body.get("stream")
+            )
+
+        first = latest_request()
+        outbound = json.dumps(first)
+        self.assertTrue(
+            "Claude Code" in json.dumps(first["system"]), "missing Claude Code preset"
+        )
+        for marker in [prompt, project_memory, skill_description, *settings.values()]:
+            self.assertTrue(
+                marker in outbound, f"missing native context marker {marker}"
+            )
+        self.assertFalse(skill_body in outbound, "skill body loaded before invocation")
+        self.assertTrue(
+            all(marker not in outbound for marker in chatraw_context.values())
+        )
+
+        result = await self.sink.run(adapter, "skill", f"/{skill_name}")
+        self.assertEqual(result["status"], "completed", result)
+        outbound = json.dumps(latest_request())
+        self.assertTrue(
+            skill_body in outbound,
+            "native slash did not load skill",
+        )
+        self.assertTrue(
+            all(marker not in outbound for marker in chatraw_context.values())
+        )
+
     async def _exercise_question(self, adapter, config, answers):
         await self._start(adapter, config)
         task = asyncio.create_task(self.sink.run(adapter, "ask", "ask-fixture"))

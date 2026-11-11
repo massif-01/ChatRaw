@@ -170,6 +170,7 @@ class ClaudeAdapter(AgentAdapter):
     def _options(sdk, **kwargs):
         return sdk.ClaudeAgentOptions(
             **kwargs,
+            system_prompt={"type": "preset", "preset": "claude_code"},
             permission_mode="default",
             # This integration uses the documented API-key path. Do not pass
             # a browser key or fall back to Claude Code subscription tokens.
@@ -382,6 +383,7 @@ class ClaudeAdapter(AgentAdapter):
                 resume=turn.native_id,
                 model=self._config.get("model"),
                 effort=self._config.get("reasoning"),
+                # Leave setting_sources and skills unset to use CLI discovery.
                 include_partial_messages=True,
                 can_use_tool=can_use_tool,
             )
