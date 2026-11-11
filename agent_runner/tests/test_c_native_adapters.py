@@ -520,6 +520,7 @@ class NativeAdapterTests(unittest.IsolatedAsyncioTestCase):
         event = await self._interaction(task)
         self.assertEqual(event["data"]["kind"], "question")
         self.assertEqual(event["data"]["questions"][0]["text"], "Which color?")
+        requests_before_reply = len(self.model.requests)
         with self.assertRaisesRegex(AdapterError, "Answer each"):
             await adapter.respond(
                 self.sink.binding, event["native_key"], {"answers": []}
@@ -530,6 +531,8 @@ class NativeAdapterTests(unittest.IsolatedAsyncioTestCase):
                 event["native_key"],
                 {"answers": answers},
             )
+        self.assertEqual(len(self.model.requests), requests_before_reply)
+        self.assertFalse(task.done())
         await adapter.respond(
             self.sink.binding, event["native_key"], {"answers": answers}
         )
@@ -569,6 +572,30 @@ class NativeAdapterTests(unittest.IsolatedAsyncioTestCase):
         latest = [body for path, body in self.model.requests if body.get("stream")][-1]
         self.assertIn("Crimson", json.dumps(latest["messages"][-1]))
         self.assertIn("Large", json.dumps(latest["messages"][-1]))
+
+    async def test_claude_native_selected_answers_with_custom_text(self):
+        await self._exercise_question(
+            ClaudeAdapter(),
+            {},
+            [
+                {"question_id": "0", "option_ids": ["0"], "text": "For the header"},
+                {"question_id": "1", "option_ids": ["0", "1"], "text": "Custom size"},
+            ],
+        )
+        body = self.model.requests[-1][1]
+        tool_result = next(
+            block
+            for message in body["messages"]
+            if isinstance(message["content"], list)
+            for block in message["content"]
+            if block.get("type") == "tool_result"
+            and block.get("tool_use_id") == "toolu_fixture_question"
+        )
+        self.assertFalse(tool_result.get("is_error"))
+        self.assertIn(
+            "Blue\nAdditional details: For the header", tool_result["content"]
+        )
+        self.assertIn("Small,Large,Custom size", tool_result["content"])
 
     async def _exercise_approval(self, adapter, allow, deny):
         await self._start(adapter, {})

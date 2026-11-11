@@ -771,6 +771,7 @@ class ClaudeAdapter(AgentAdapter):
             qid = answer["question_id"]
             question = questions.get(qid)
             selected, custom = answer["option_ids"], answer.get("text", "")
+            has_custom = bool(custom.strip())
             choices = (
                 {option["id"]: option["label"] for option in question["options"]}
                 if question
@@ -782,7 +783,7 @@ class ClaudeAdapter(AgentAdapter):
                 or len(set(selected)) != len(selected)
                 or (question["type"] != "multi" and len(selected) > 1)
                 or any(choice not in choices for choice in selected)
-                or bool(selected) == bool(custom.strip())
+                or (not selected and not has_custom)
             ):
                 raise AdapterError(
                     "invalid_reply",
@@ -790,11 +791,18 @@ class ClaudeAdapter(AgentAdapter):
                 )
             seen.add(qid)
             labels = [choices[choice] for choice in selected]
-            result[question["text"]] = (
-                (labels if question["type"] == "multi" else labels[0])
-                if labels
-                else custom
-            )
+            if not labels:
+                value = custom
+            elif question["type"] == "multi":
+                value = [*labels, custom] if has_custom else labels
+            else:
+                # Claude accepts one string for a single-choice answer.
+                value = (
+                    f"{labels[0]}\nAdditional details: {custom}"
+                    if has_custom
+                    else labels[0]
+                )
+            result[question["text"]] = value
         if seen != questions.keys():
             raise AdapterError(
                 "invalid_reply", "Answer each Claude question before submitting."

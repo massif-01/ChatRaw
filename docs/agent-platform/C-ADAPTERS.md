@@ -18,7 +18,7 @@ Claude 执行使用原生 `claude_code` 系统提示预设。SDK 0.2.180 在执�
 | 能力 | Codex | Claude |
 |---|---|---|
 | 文本与工具 | `turn/start` 提交本轮文本，读取增量、原生推理摘要和工具生命周期。工具事件省略原始参数和输出。 | `ClaudeSDKClient` 流式输入与输出。流式文本按消息 ID 与 SDK 完整消息合并，展示工具调用状态和原生用量。 |
-| 问答 | 转发原生 `request_user_input` 的批次、单选与可用自由输入。Secret 类型拒绝进入 ChatRaw 记录，原生定时输入到期以空答案收敛。 | `AskUserQuestion` 支持批次、单选、多选和自由输入，按原生问题文本与选项标签回传。 |
+| 问答 | 转发原生 `request_user_input` 的批次、单选与可用自由输入。Secret 类型拒绝进入 ChatRaw 记录，原生定时输入到期以空答案收敛。 | `AskUserQuestion` 支持批次、单选、多选和自由输入。选项带补充文字时，单选在原生字符串中保留两者，多选将文字作为原生答案列表的一项。 |
 | 审批 | 支持命令、文件更改和受管网络审批，按原生选项限制回复。单独的权限授权、终端 stdin 审批、命令额外权限、策略修订及 MCP elicitation 目前不可用。 | `can_use_tool` 支持当次允许、拒绝和取消。收到带计划正文的 `ExitPlanMode` 时以计划审批展示。CLI 的原生权限规则仍决定何时弹出回调。 |
 | 停止 | 匹配的 `turn/completed` 确认模型轮次结束。对本轮登记的后台终端调用原生终止接口，并复查终端列表。工具终止无法核实时保留 `unknown`。 | SDK 原生 interrupt，读取当前查询终止结果后释放该次专属 CLI。后续操作用新的客户端续接同一会话，旧流不会成为下一轮输入。 |
 | 续接与恢复 | 空闲会话按已持久化 thread ID 续接。恢复只接受同一原生 turn 的明确完成或失败记录。已请求停止、原生中断或工具状态无法核实的执行保留 `unknown`。 | 空闲会话用已保存的 SDK session ID 与项目目录续接。失联执行仍为 `unknown`，因为 SDK 转录不能确认未完成操作的终态。 |
@@ -37,6 +37,7 @@ Claude 执行使用原生 `claude_code` 系统提示预设。SDK 0.2.180 在执�
 - Claude 原生上下文测试在本地模型端点确认三种设置来源的原生 Hook 均生效，收到原生预设、项目 `CLAUDE.md` 和 Skill 描述，直接发 slash 指令后才收到 Skill 正文。另在执行请求携带普通聊天的 system、历史、摘要、RAG 和 Skill 测试标记，连续两轮模型请求均未收到这些标记。
 - 停止回归在 Codex 已返回运行中 shell 的会话 ID 后取消，并确认实际文件系统没有延迟写入。协议测试覆盖后台进程稍晚登记、跳过其他轮次的进程，以及未核实的停止在恢复后仍占用活动位。两边的命令审批都验证了 2,300 字符后的后缀可见且可执行，超出公共上限时标记文件未创建。
 - 将 C 叶文件叠加到 A 的 `44013238` 快照，在临时目录跑通两边原生问答经 Runner 注册、SQLite 持久化、回复和原生确认的链路。两边均只发布一次 `done`，原生键及私有绑定未进入公共事件。
+- Claude 混合答案回归核对原生工具结果中的单选、多选和补充文字。F 的 UI 编码器与 Runner 联调脚本复验通过。另验证无效选项在公共校验阶段被拒绝，待答记录和回复回执保持原状，修正后仍能提交。
 - G02、G05、G06、G08 已有本地原生协议配合模型替身的证据。RM-01 的 Linux 服务账户、实际模型认证、浏览器到 Runner 的完整链路与现场重启仍待总控协调。现场需使用总控授权的真实 Codex 认证及 Claude API key 分别核验，测试替身不计为 `real_pass`。
 
 协议来源 [OpenAI Docs 的 Codex App Server](https://learn.chatgpt.com/docs/app-server)、[Claude Agent SDK Python](https://code.claude.com/docs/en/agent-sdk/python)、[Claude SDK 系统提示](https://code.claude.com/docs/en/agent-sdk/modifying-system-prompts)、[Claude SDK Skills](https://code.claude.com/docs/en/agent-sdk/skills)、[Claude SDK 问答与审批](https://code.claude.com/docs/en/agent-sdk/user-input)、[Claude SDK 认证](https://code.claude.com/docs/en/agent-sdk/quickstart)。
