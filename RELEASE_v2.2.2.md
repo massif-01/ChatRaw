@@ -1,5 +1,7 @@
 # ChatRaw v2.2.2
 
+> 后续更新已撤回本版本的 LinkDB Agent bridge 功能；以下内容仅记录 v2.2.2 发布时的状态。
+
 ## 新增功能
 
 ### Server-owned LinkDB Agent bridge (#45)
