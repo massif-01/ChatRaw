@@ -126,6 +126,15 @@ class AgentStorage:
                 return  # Deleted settled chat must never be recreated by reconciliation.
             if submission["kind"] == "run":
                 body = json.loads(submission["body"])
+                # Match ordinary chat naming, once, in the message transaction.
+                # Existing user rows fence replays even if their title is "New Chat".
+                message = body["message"]
+                title = message[:30] + "..." if len(message) > 30 else message
+                self.db.execute(
+                    "UPDATE chats SET title=? WHERE id=? AND title='New Chat' "
+                    "AND NOT EXISTS (SELECT 1 FROM messages WHERE chat_id=? AND role='user')",
+                    (title, submission["chat_id"], submission["chat_id"]),
+                )
                 self._message(
                     run_id,
                     submission["chat_id"],
