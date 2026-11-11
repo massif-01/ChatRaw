@@ -34,6 +34,11 @@ _MAX_IMAGE_BYTES = 5 * 1024 * 1024
 _MAX_IMAGES = 4
 _STOP_TIMEOUT = 30
 _STOP_RPC_TIMEOUT = 5
+_APPROVAL_TEXT_LIMIT = 100_000  # Runner operation field limit.
+_INLINE_CREDENTIAL = re.compile(
+    r"(?i)(\b(?:[\w-]*(?:token|secret|password|api[_-]?key)[\w-]*)"
+    r'(?:\s*[:=]\s*|\s+)|\bBearer\s+)(?:"[^"]*"|\x27[^\x27]*\x27|[^\s]+)'
+)
 
 
 def _load_sdk():
@@ -57,13 +62,7 @@ def _read_image(path: Path) -> bytes:
 
 
 def _safe_preview(value: str) -> str:
-    value = re.sub(
-        r"(?i)(\b(?:[\w-]*(?:token|secret|password|api[_-]?key)[\w-]*)"
-        r'(?:\s*[:=]\s*|\s+)|\bBearer\s+)(?:"[^"]*"|\x27[^\x27]*\x27|[^\s]+)',
-        r"\1[redacted]",
-        value,
-    )
-    return value[:2048]
+    return _INLINE_CREDENTIAL.sub(r"\1[redacted]", value)[:2048]
 
 
 def _failure(
@@ -613,13 +612,23 @@ class ClaudeAdapter(AgentAdapter):
             }
         else:
             questions = {}
-            operation = {"tool": name[:128]}
-            if name == "Bash" and isinstance(tool_input.get("command"), str):
-                operation["command"] = _safe_preview(tool_input["command"])
+            operation = {"tool": name}
+            if name in {"Bash", "PowerShell"} or "command" in tool_input:
+                command = tool_input.get("command")
+                if (
+                    not isinstance(command, str)
+                    or not command.strip()
+                    or len(command) > _APPROVAL_TEXT_LIMIT
+                    or _INLINE_CREDENTIAL.search(command)
+                ):
+                    return await self._deny_unreviewable(turn, "command")
+                operation["command"] = command
             if isinstance(
                 path := tool_input.get("file_path") or context.blocked_path, str
             ):
-                operation["paths"] = [path[:512]]
+                if len(path) > 4000:
+                    return await self._deny_unreviewable(turn, "path")
+                operation["paths"] = [path]
             data = {
                 "kind": "approval",
                 "title": "Claude requests approval",
@@ -632,10 +641,12 @@ class ClaudeAdapter(AgentAdapter):
             }
             if name == "ExitPlanMode":
                 plan = tool_input.get("plan")
-                if not isinstance(plan, str) or not plan.strip():
-                    return sdk.PermissionResultDeny(
-                        message="Claude did not provide a plan to review."
-                    )
+                if (
+                    not isinstance(plan, str)
+                    or not plan.strip()
+                    or len(plan) > _APPROVAL_TEXT_LIMIT
+                ):
+                    return await self._deny_unreviewable(turn, "plan")
                 data.update(presentation="plan", detail=plan)
             elif isinstance(
                 description := context.description or context.decision_reason, str
@@ -684,6 +695,15 @@ class ClaudeAdapter(AgentAdapter):
                             "data": {"outcome": "invalidated"},
                         }
                     )
+
+    @staticmethod
+    async def _deny_unreviewable(turn: _Turn, field: str):
+        error = AdapterError(
+            "approval_unreviewable",
+            f"Claude approval denied because the {field} cannot be shown in full.",
+        )
+        await turn.emit({"type": "error", "data": error.as_data()})
+        return turn.sdk.PermissionResultDeny(message=error.message)
 
     @staticmethod
     def _questions(tool_input: dict) -> dict:

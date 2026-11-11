@@ -1,6 +1,7 @@
 """Deterministic edge cases at the native protocol and callback boundaries."""
 
 import asyncio
+from collections import deque
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
@@ -24,6 +25,7 @@ class _CodexWire:
         self.broken = False
         self.calls = []
         self.sent = []
+        self.background = deque()
 
     async def call(self, method, params):
         self.calls.append((method, params))
@@ -31,6 +33,10 @@ class _CodexWire:
             return {"thread": {"id": "thread"}, "model": "model"}
         if method == "turn/start":
             return {"turn": {"id": "turn"}}
+        if method == "thread/backgroundTerminals/list":
+            return {"data": self.background.popleft() if self.background else []}
+        if method == "thread/backgroundTerminals/terminate":
+            return {"terminated": True}
         if method == "thread/turns/list":
             return {
                 "data": [{"id": "some-other-turn", "status": "completed", "items": []}]
@@ -191,6 +197,72 @@ class CodexProtocolTests(unittest.IsolatedAsyncioTestCase):
             )
             self.assertEqual(mismatch["status"], "unknown")
         self.assertEqual([method for method, _ in wire.calls], ["thread/turns/list"])
+
+    async def _interrupt_running_tool(self, pages):
+        wire = _CodexWire(
+            {
+                "method": "item/started",
+                "params": {
+                    "threadId": "thread",
+                    "turnId": "turn",
+                    "item": {
+                        "id": "owned-tool",
+                        "type": "commandExecution",
+                        "status": "inProgress",
+                    },
+                },
+            }
+        )
+        wire.background.extend(pages)
+        task = asyncio.create_task(self._run(wire))
+        async with asyncio.timeout(1):
+            while not any(event["type"] == "tool_started" for event in self.events):
+                await asyncio.sleep(0)
+        await self.adapter.cancel(self.binding, "r")
+        wire.events.put_nowait(
+            {
+                "method": "turn/completed",
+                "params": {
+                    "threadId": "thread",
+                    "turn": {
+                        "id": "turn",
+                        "status": "interrupted",
+                    },
+                },
+            }
+        )
+        return await task, wire
+
+    async def test_stop_finds_newly_registered_background_tool_without_stopping_other_turns(
+        self,
+    ):
+        other = {"itemId": "old-tool", "processId": "other-process"}
+        owned = {"itemId": "owned-tool", "processId": "owned-process"}
+        result, wire = await self._interrupt_running_tool(
+            [[other], [other, owned], [other]]
+        )
+        self.assertEqual(result["status"], "cancelled")
+        self.assertEqual(
+            [params for method, params in wire.calls if method.endswith("/terminate")],
+            [{"threadId": "thread", "processId": "owned-process"}],
+        )
+
+    async def test_unverified_tool_stop_stays_unknown_across_recovery(self):
+        result, wire = await self._interrupt_running_tool([])
+        self.assertEqual(result["status"], "unknown")
+        self.assertEqual(result["error"]["code"], "codex_tool_stop_unverified")
+        checkpoint = [
+            event["data"] for event in self.events if event["type"] == "binding_updated"
+        ][-1]
+        self.assertTrue(checkpoint["native"]["stop_requested"])
+        with patch(
+            "agent_runner.adapters.codex._AppServer.open", AsyncMock(return_value=wire)
+        ) as open_server:
+            recovered = await self.adapter.recover_run(
+                checkpoint, {"run_id": "r"}, {}, None
+            )
+        self.assertEqual(recovered["status"], "unknown")
+        open_server.assert_not_called()
 
 
 class _NativeMessage:

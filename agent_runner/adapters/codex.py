@@ -31,6 +31,11 @@ from .base import (
 _RPC_TIMEOUT = 15
 _STOP_RPC_TIMEOUT = 5
 _STOP_TIMEOUT = 30
+_APPROVAL_TEXT_LIMIT = 100_000  # Runner operation field limit.
+_INLINE_CREDENTIAL = re.compile(
+    r"(?i)(\b(?:[\w-]*(?:token|secret|password|api[_-]?key)[\w-]*)"
+    r'(?:\s*[:=]\s*|\s+)|\bBearer\s+)(?:"[^"]*"|\x27[^\x27]*\x27|[^\s]+)'
+)
 _IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
 _TOOL_TYPES = {
     "commandExecution",
@@ -185,33 +190,31 @@ class _Interaction:
     questions: dict = field(default_factory=dict)
     deadline: float | None = None
     sent_outcome: str | None = None
+    approval_item_id: str | None = None
 
 
 @dataclass
 class _Turn:
     binding: SessionBinding
     run_id: str
+    emit: Emit
     server: _AppServer | None = None
     thread_id: str | None = None
     turn_id: str | None = None
     stopping: bool = False
+    interrupt_sent: bool = False
     stop_timeout: asyncio.Timeout | None = None
     pending: dict[str, _Interaction] = field(default_factory=dict)
     request_keys: dict[int | str, str] = field(default_factory=dict)
     texts: dict[str, str] = field(default_factory=dict)
     tools: dict[str, dict] = field(default_factory=dict)
+    command_items: set[str] = field(default_factory=set)
+    yielded_commands: set[str] = field(default_factory=set)
+    approval_gates: dict[str, bool] = field(default_factory=dict)
 
 
 def _preview(text: str) -> str:
-    # Tool progress omits command bodies, arguments and output. Approval previews
-    # retain the operation while masking common inline credential forms.
-    text = re.sub(
-        r"(?i)(\b(?:[\w-]*(?:token|secret|password|api[_-]?key)[\w-]*)"
-        r'(?:\s*[:=]\s*|\s+)|\bBearer\s+)(?:"[^"]*"|\x27[^\x27]*\x27|[^\s]+)',
-        r"\1[redacted]",
-        text,
-    )
-    return text[:2048]
+    return _INLINE_CREDENTIAL.sub(r"\1[redacted]", text)[:2048]
 
 
 def _result(status: str, text: str = "") -> RunResult:
@@ -486,7 +489,7 @@ class CodexAdapter(AgentAdapter):
         method: str,
         params: dict,
     ) -> RunResult:
-        turn = _Turn(binding, run_id)
+        turn = _Turn(binding, run_id, emit)
         self._active = turn
         dispatched = False
         try:
@@ -529,7 +532,7 @@ class CodexAdapter(AgentAdapter):
             async with asyncio.timeout(None) as timeout:
                 turn.stop_timeout = timeout
                 if method == "turn/start":
-                    await self._set_turn(turn, response["turn"]["id"], emit)
+                    await self._set_turn(turn, response["turn"]["id"])
                 elif turn.stopping:
                     timeout.reschedule(
                         asyncio.get_running_loop().time() + _STOP_TIMEOUT
@@ -583,25 +586,29 @@ class CodexAdapter(AgentAdapter):
                     }
                 )
 
-    async def _set_turn(self, turn: _Turn, turn_id: str, emit: Emit) -> None:
+    async def _set_turn(self, turn: _Turn, turn_id: str) -> None:
         if not isinstance(turn_id, str) or not turn_id:
             raise _Disconnected()
         turn.turn_id = turn_id
-        await emit(
-            {
-                "type": "binding_updated",
-                "data": {
-                    **turn.binding,
-                    "native": {
-                        "thread_id": self._thread_id,
-                        "turn_id": turn_id,
-                        "run_id": turn.run_id,
-                    },
-                },
-            }
-        )
+        await self._checkpoint_turn(turn)
         if turn.stopping:
             await self._interrupt(turn)
+
+    @staticmethod
+    async def _checkpoint_turn(turn: _Turn) -> None:
+        native = {
+            "thread_id": turn.thread_id,
+            "turn_id": turn.turn_id,
+            "run_id": turn.run_id,
+        }
+        if turn.stopping:
+            native["stop_requested"] = True
+        await turn.emit(
+            {
+                "type": "binding_updated",
+                "data": {**turn.binding, "native": native},
+            }
+        )
 
     async def _event(
         self, turn: _Turn, message: dict, emit: Emit, *, compact: bool
@@ -634,7 +641,7 @@ class CodexAdapter(AgentAdapter):
         if method in {"turn/started", "turn/completed"}:
             turn_id = params["turn"]["id"]
         if compact and turn.turn_id is None and method == "turn/started":
-            await self._set_turn(turn, turn_id, emit)
+            await self._set_turn(turn, turn_id)
         if turn.turn_id is None or turn_id != turn.turn_id:
             if request_id is not None:
                 await self._reject_request(turn.server, request_id)
@@ -644,12 +651,24 @@ class CodexAdapter(AgentAdapter):
         elif method == "turn/completed":
             status = params["turn"]["status"]
             if status in {"completed", "failed", "interrupted"}:
-                if status == "interrupted" and turn.stopping:
-                    status = "cancelled"
                 for item in params["turn"].get("items", []):
                     if item["type"] in {"agentMessage", "plan"}:
                         turn.texts[item["id"]] = item["text"]
-                return _result(status, "".join(turn.texts.values()))
+                text = "".join(turn.texts.values())
+                if turn.stopping or status == "interrupted":
+                    if not await self._confirm_tool_stop(turn):
+                        error = AdapterError(
+                            "codex_tool_stop_unverified",
+                            "Codex ended the turn, but an owned tool could not be confirmed stopped.",
+                        )
+                        return {
+                            "status": "unknown",
+                            "final_text": text,
+                            "error": error.as_data(),
+                        }
+                    if status == "interrupted" and turn.stopping:
+                        status = "cancelled"
+                return _result(status, text)
         elif method in {"item/agentMessage/delta", "item/plan/delta"}:
             item_id, delta = params["itemId"], params["delta"]
             turn.texts[item_id] = turn.texts.get(item_id, "") + delta
@@ -689,6 +708,13 @@ class CodexAdapter(AgentAdapter):
                 )
         elif kind in _TOOL_TYPES:
             turn.tools[item_id] = item
+            if kind == "commandExecution":
+                turn.command_items.add(item_id)
+                if completed:
+                    if item.get("processId") and item.get("exitCode") is None:
+                        turn.yielded_commands.add(item_id)
+                    else:
+                        turn.yielded_commands.discard(item_id)
             data = {
                 "tool_call_id": item_id,
                 "name": str(item.get("tool") or kind)[:128],
@@ -707,13 +733,17 @@ class CodexAdapter(AgentAdapter):
                 turn.tools.pop(item_id, None)
 
     @staticmethod
-    async def _reject_request(server: _AppServer, request_id: int | str) -> None:
+    async def _reject_request(
+        server: _AppServer,
+        request_id: int | str,
+        message: str = "This request is unavailable in ChatRaw.",
+    ) -> None:
         await server.send(
             {
                 "id": request_id,
                 "error": {
                     "code": -32602,
-                    "message": "This request is unavailable in ChatRaw.",
+                    "message": message,
                 },
             }
         )
@@ -725,10 +755,23 @@ class CodexAdapter(AgentAdapter):
             raise _Disconnected()
         if request_id in turn.request_keys:
             return
+        approval_item_id = None
+        # Only the initial approval can prove that a command has not started.
+        # Stdin, subcommand and network prompts can belong to running tools.
+        if method == "item/fileChange/requestApproval" or (
+            method == "item/commandExecution/requestApproval"
+            and params.get("kind", "command") == "command"
+            and params.get("approvalId") is None
+            and not params.get("networkApprovalContext")
+        ):
+            approval_item_id = params["itemId"]
+            turn.approval_gates.setdefault(approval_item_id, False)
         if turn.stopping:
             await self._reject_request(turn.server, request_id)
             return
-        pending = _Interaction(request_id, turn.turn_id)
+        pending = _Interaction(
+            request_id, turn.turn_id, approval_item_id=approval_item_id
+        )
         if method == "item/tool/requestUserInput":
             data = self._question(params, pending)
             delay = params.get("autoResolutionMs")
@@ -745,7 +788,12 @@ class CodexAdapter(AgentAdapter):
             "item/commandExecution/requestApproval",
             "item/fileChange/requestApproval",
         }:
-            data = self._approval(turn, method, params, pending)
+            try:
+                data = self._approval(turn, method, params, pending)
+            except AdapterError as error:
+                await self._reject_request(turn.server, request_id, error.message)
+                await emit({"type": "error", "data": error.as_data()})
+                return
         else:
             await self._reject_request(turn.server, request_id)
             return
@@ -811,20 +859,39 @@ class CodexAdapter(AgentAdapter):
         operation = {"tool": "fileChange" if file_change else "commandExecution"}
         if network:
             operation = {
-                "tool": f"network ({str(network['protocol'])[:32]})",
-                "host_label": str(network["host"])[:256],
+                "tool": f"network ({network['protocol']})",
+                "host_label": network["host"],
             }
         elif file_change:
             item = turn.tools.get(params["itemId"], {})
-            operation["paths"] = [
-                str(change["path"])[:512] for change in item.get("changes", [])[:32]
-            ]
+            operation["paths"] = [change["path"] for change in item.get("changes", [])]
             if params.get("grantRoot"):
-                operation["paths"].append(str(params["grantRoot"])[:512])
-        elif params.get("command"):
-            operation["command"] = _preview(params["command"])
+                operation["paths"].append(params["grantRoot"])
+            if (
+                not operation["paths"]
+                or len(operation["paths"]) > 200
+                or any(len(path) > 4000 for path in operation["paths"])
+            ):
+                raise AdapterError(
+                    "approval_unreviewable",
+                    "Codex file approval denied because its paths cannot be shown in full.",
+                )
+        else:
+            command = params.get("command")
+            if (
+                params.get("kind", "command") != "command"
+                or not isinstance(command, str)
+                or not command.strip()
+                or len(command) > _APPROVAL_TEXT_LIMIT
+                or _INLINE_CREDENTIAL.search(command)
+            ):
+                raise AdapterError(
+                    "approval_unreviewable",
+                    "Codex command approval denied because the command cannot be shown in full.",
+                )
+            operation["command"] = command
         if params.get("cwd"):
-            operation["cwd_label"] = str(params["cwd"])[:512]
+            operation["cwd_label"] = str(params["cwd"])
         native = params.get("availableDecisions")
         if native is None:
             native = ["accept", "decline", "cancel"]
@@ -876,6 +943,11 @@ class CodexAdapter(AgentAdapter):
                     "invalid_reply", "Choose an available Codex decision."
                 )
             result = {"decision": pending.decisions[decision]}
+            if pending.approval_item_id is not None and decision in {
+                "accept",
+                "acceptForSession",
+            }:
+                turn.approval_gates[pending.approval_item_id] = True
         pending.sent_outcome = "cancelled" if reply.get("cancelled") else "answered"
         try:
             await turn.server.send({"id": pending.request_id, "result": result})
@@ -932,23 +1004,70 @@ class CodexAdapter(AgentAdapter):
         if turn.turn_id is not None and turn.stop_timeout is not None:
             await self._interrupt(turn)
 
-    @staticmethod
-    async def _interrupt(turn: _Turn) -> None:
+    async def _interrupt(self, turn: _Turn) -> None:
+        if turn.interrupt_sent:
+            return
+        turn.interrupt_sent = True
         turn.stop_timeout.reschedule(asyncio.get_running_loop().time() + _STOP_TIMEOUT)
         try:
-            await asyncio.wait_for(
-                turn.server.call(
-                    "turn/interrupt",
-                    {
-                        "threadId": turn.thread_id,
-                        "turnId": turn.turn_id,
-                    },
-                ),
-                _STOP_RPC_TIMEOUT,
-            )
-        except (_Disconnected, _Rejected, TimeoutError):
-            # The terminal notification may have raced the interrupt response.
+            # Recovery on a new transport cannot inspect this server's tools.
+            await self._checkpoint_turn(turn)
+        finally:
+            try:
+                await asyncio.wait_for(
+                    turn.server.call(
+                        "turn/interrupt",
+                        {"threadId": turn.thread_id, "turnId": turn.turn_id},
+                    ),
+                    _STOP_RPC_TIMEOUT,
+                )
+            except (_Disconnected, _Rejected, TimeoutError):
+                # The terminal notification may have raced the interrupt response.
+                pass
+
+    @staticmethod
+    async def _owned_background(turn: _Turn) -> dict[str, str]:
+        params = {"threadId": turn.thread_id}
+        processes = {}
+        while True:
+            page = await turn.server.call("thread/backgroundTerminals/list", params)
+            for row in page["data"]:
+                if row["itemId"] in turn.command_items:
+                    processes[row["processId"]] = row["itemId"]
+            if not (cursor := page.get("nextCursor")):
+                return processes
+            params["cursor"] = cursor
+
+    async def _confirm_tool_stop(self, turn: _Turn) -> bool:
+        gated = {item for item, approved in turn.approval_gates.items() if not approved}
+        unsettled = (turn.tools.keys() | turn.yielded_commands) - gated
+        if not (turn.command_items - gated):
+            return not unsettled
+
+        try:
+            async with asyncio.timeout(_STOP_RPC_TIMEOUT):
+                terminated = set()
+                for attempt in range(3):
+                    owned = await self._owned_background(turn)
+                    if not owned and not unsettled:
+                        return True
+                    for process_id, item_id in owned.items():
+                        if process_id in terminated:
+                            continue
+                        reply = await turn.server.call(
+                            "thread/backgroundTerminals/terminate",
+                            {"threadId": turn.thread_id, "processId": process_id},
+                        )
+                        if reply.get("terminated") is not True:
+                            return False
+                        terminated.add(process_id)
+                        unsettled.discard(item_id)
+                    if not owned and attempt < 2:
+                        # An exec session can become visible just after the turn ends.
+                        await asyncio.sleep(0.1)
+        except (_Disconnected, _Rejected, TimeoutError, KeyError, TypeError):
             pass
+        return False
 
     async def recover_run(
         self,
@@ -959,7 +1078,11 @@ class CodexAdapter(AgentAdapter):
     ) -> RunResult:
         self.validate_config(config)
         native = binding["native"]
-        if native.get("run_id") != request["run_id"] or not native.get("turn_id"):
+        if (
+            native.get("run_id") != request["run_id"]
+            or not native.get("turn_id")
+            or native.get("stop_requested")
+        ):
             return await super().recover_run(binding, request, config, emit)
         server = None
         try:
@@ -976,7 +1099,7 @@ class CodexAdapter(AgentAdapter):
             if (
                 latest
                 and latest["id"] == native["turn_id"]
-                and latest["status"] in {"completed", "failed", "interrupted"}
+                and latest["status"] in {"completed", "failed"}
             ):
                 return _result(
                     latest["status"],

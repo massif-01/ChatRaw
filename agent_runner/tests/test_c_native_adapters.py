@@ -28,6 +28,8 @@ class _ModelServer(ThreadingHTTPServer):
         super().__init__(("127.0.0.1", 0), _ModelHandler)
         self.requests = []
         self.counts = Counter()
+        self.approval_command = None
+        self.hold_after_codex_tool = False
 
 
 class _ModelHandler(BaseHTTPRequestHandler):
@@ -154,7 +156,8 @@ class _ModelHandler(BaseHTTPRequestHandler):
                 "id": "toolu_fixture_bash",
                 "name": "Bash",
                 "input": {
-                    "command": "touch claude-approval-fixture",
+                    "command": self.server.approval_command
+                    or "touch claude-approval-fixture",
                     "description": "Create fixture file",
                 },
             }
@@ -228,7 +231,9 @@ class _ModelHandler(BaseHTTPRequestHandler):
                 "status": "completed",
                 "arguments": json.dumps(
                     {
-                        "cmd": "touch codex-approval-fixture",
+                        "cmd": self.server.approval_command
+                        or "touch codex-approval-fixture",
+                        "yield_time_ms": 1000,
                         "sandbox_permissions": "require_escalated",
                         "justification": "Create fixture file",
                     }
@@ -245,6 +250,11 @@ class _ModelHandler(BaseHTTPRequestHandler):
         yield {"type": "response.created", "response": response}
         if "stop-fixture" in text:
             time.sleep(5)
+        if (
+            self.server.hold_after_codex_tool
+            and last.get("type") == "function_call_output"
+        ):
+            time.sleep(6)
         yield {
             "type": "response.output_item.added",
             "output_index": 0,
@@ -609,6 +619,47 @@ class NativeAdapterTests(unittest.IsolatedAsyncioTestCase):
     async def test_claude_native_approval(self):
         await self._exercise_approval(ClaudeAdapter(), "allow", "deny")
 
+    async def _exercise_approval_fidelity(self, adapter, allow):
+        marker = self.workspace / "command-tail-fixture"
+        suffix = f"printf visible > {marker.name}"
+        self.model.approval_command = ": " + "x" * 2300 + "; " + suffix
+        await self._start(adapter, {})
+        task = asyncio.create_task(self.sink.run(adapter, "long", "approval-fixture"))
+        event = await self._interaction(task)
+        command = event["data"]["operation"]["command"]
+        self.assertTrue(
+            self.model.approval_command in command, "approval omitted command text"
+        )
+        self.assertFalse(marker.exists())
+        await adapter.respond(
+            self.sink.binding, event["native_key"], {"decision_id": allow}
+        )
+        self.assertEqual((await task)["status"], "completed")
+        self.assertEqual(marker.read_text(), "visible")
+        marker.unlink()
+
+        self.model.approval_command = ": " + "x" * 100_001 + "; " + suffix
+        start_event_index = len(self.sink.events)
+        await self.sink.run(adapter, "oversize", "approval-fixture")
+        events = self.sink.events[start_event_index:]
+        self.assertFalse(
+            any(event["type"] == "interaction_requested" for event in events)
+        )
+        self.assertTrue(
+            any(
+                event["type"] == "error"
+                and event["data"]["code"] == "approval_unreviewable"
+                for event in events
+            )
+        )
+        self.assertFalse(marker.exists())
+
+    async def test_codex_native_long_and_oversize_approval(self):
+        await self._exercise_approval_fidelity(CodexAdapter(), "accept")
+
+    async def test_claude_native_long_and_oversize_approval(self):
+        await self._exercise_approval_fidelity(ClaudeAdapter(), "allow")
+
     async def _exercise_stop(self, adapter):
         await self._start(adapter, {})
         task = asyncio.create_task(self.sink.run(adapter, "stop", "stop-fixture"))
@@ -625,6 +676,29 @@ class NativeAdapterTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_codex_native_stop(self):
         await self._exercise_stop(CodexAdapter())
+
+    async def test_codex_native_stop_terminates_background_shell(self):
+        adapter = CodexAdapter()
+        self.model.approval_command = "touch shell-started; sleep 4; touch shell-late"
+        self.model.hold_after_codex_tool = True
+        await self._start(adapter, {})
+        task = asyncio.create_task(self.sink.run(adapter, "shell", "approval-fixture"))
+        event = await self._interaction(task)
+        await adapter.respond(
+            self.sink.binding, event["native_key"], {"decision_id": "accept"}
+        )
+        async with asyncio.timeout(6):
+            while not any(
+                item.get("type") == "function_call_output"
+                for _, body in self.model.requests
+                for item in body.get("input", [])
+            ):
+                await asyncio.sleep(0.02)
+        self.assertTrue((self.workspace / "shell-started").exists())
+        await adapter.cancel(self.sink.binding, "shell")
+        self.assertEqual((await task)["status"], "cancelled")
+        await asyncio.sleep(4.1)
+        self.assertFalse((self.workspace / "shell-late").exists())
 
     async def test_claude_native_stop(self):
         await self._exercise_stop(ClaudeAdapter())
