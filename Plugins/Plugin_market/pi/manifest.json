@@ -1,0 +1,22 @@
+{
+  "id": "pi",
+  "version": "1.0.0",
+  "name": {
+    "en": "Pi",
+    "zh": "Pi"
+  },
+  "description": {
+    "en": "Use Pi in ChatRaw with its own conversation, workspace, and capability check.",
+    "zh": "在 ChatRaw 中使用 Pi，支持独立会话、工作目录和能力检查。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://github.com/massif-01/ChatRaw",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "agent",
+  "agent": {
+    "id": "pi"
+  },
+  "hooks": [],
+  "settings": []
+}

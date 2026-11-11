@@ -128,11 +128,11 @@
             await loadScript(`${LIB_BASE}/mermaid.min.js`);
             
             if (window.mermaid) {
-                // Initialize mermaid (loose required for Unicode; sandbox uses btoa which fails on Chinese/etc.)
+                // Diagrams can originate in Agent or model output.
                 window.mermaid.initialize({
                     startOnLoad: false,
                     theme: theme === 'dark' ? 'dark' : theme,
-                    securityLevel: 'loose',
+                    securityLevel: 'strict',
                     fontFamily: 'inherit',
                     // Disable flowchart htmlLabels to prevent CSS issues
                     flowchart: {
@@ -536,7 +536,12 @@
     }
     
     // ============ Main Processing Function ============
+    function canProcess(element) {
+        return element.isConnected && !element.querySelector('[data-markdown-streaming]');
+    }
+
     async function processElement(element) {
+        if (!canProcess(element)) return;
         // Load dependencies if needed
         if (settings.enableKatex !== false) {
             await initKatex();
@@ -549,8 +554,10 @@
             await initExtraLanguages();
         }
         
+        if (!canProcess(element)) return;
         // Process in order: Mermaid first (replaces pre blocks), then KaTeX, then code copy buttons
         await processMermaidInElement(element);
+        if (!canProcess(element)) return;
         processKatexInElement(element);
         addCodeCopyButtons(element);
     }
@@ -566,6 +573,11 @@
             clearTimeout(existingTimer);
         }
         
+        if (!canProcess(element)) {
+            contentStabilityMap.delete(key);
+            return;
+        }
+
         // Schedule new processing after stability delay
         const timer = setTimeout(async () => {
             contentStabilityMap.delete(key);
@@ -601,7 +613,7 @@
                 }
                 
                 // Handle character data changes (streaming content updates)
-                if (mutation.type === 'characterData' || mutation.type === 'childList') {
+                if (mutation.type === 'characterData' || mutation.type === 'childList' || mutation.type === 'attributes') {
                     // mutation.target can be a Text node (no .closest). Normalize to an Element first.
                     const targetEl = mutation.target?.nodeType === Node.TEXT_NODE
                         ? mutation.target.parentElement
@@ -624,7 +636,8 @@
         observer.observe(container, {
             childList: true,
             subtree: true,
-            characterData: true
+            characterData: true,
+            attributeFilter: ['data-markdown-streaming']
         });
         
         // Process existing content

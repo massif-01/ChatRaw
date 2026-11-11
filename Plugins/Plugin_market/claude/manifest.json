@@ -1,0 +1,22 @@
+{
+  "id": "claude",
+  "version": "1.0.0",
+  "name": {
+    "en": "Claude Code",
+    "zh": "Claude Code"
+  },
+  "description": {
+    "en": "Use Claude Code in ChatRaw with its own conversation, workspace, and capability check.",
+    "zh": "在 ChatRaw 中使用 Claude Code，支持独立会话、工作目录和能力检查。"
+  },
+  "author": "ChatRaw",
+  "homepage": "https://github.com/massif-01/ChatRaw",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "agent",
+  "agent": {
+    "id": "claude"
+  },
+  "hooks": [],
+  "settings": []
+}

@@ -85,7 +85,7 @@
                 if (!papaLib) {
                     return {
                         success: false,
-                        error: 'Papa Parse library not loaded. Please check your internet connection and try again.'
+                        error: 'CSV parser library failed to load. Reload ChatRaw and try again.'
                     };
                 }
                 

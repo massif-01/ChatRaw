@@ -10,16 +10,12 @@
     <title>ChatRaw</title>
     <link rel="icon" id="favicon" href="data:,">
     
-    <!-- Performance: DNS Prefetch & Preconnect for CDN -->
-    <link rel="dns-prefetch" href="https://unpkg.com">
-    <link rel="preconnect" href="https://unpkg.com" crossorigin="anonymous">
-    
     <!-- Performance: Preload Critical Resources -->
     <link rel="preload" href="fonts/remixicon/remixicon.woff2?t=1769685282643" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="styles.min.css?v=7.6" as="style">
-    <link rel="preload" href="app.min.js?v=7.7" as="script">
-    <link rel="preload" href="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" as="script" crossorigin="anonymous">
-    <link rel="preload" href="https://unpkg.com/marked@9.1.6/marked.min.js" as="script" crossorigin="anonymous">
+    <link rel="preload" href="styles.min.css?v=8.0" as="style">
+    <link rel="preload" href="app.min.js?v=8.0" as="script">
+    <link rel="preload" href="vendor/alpinejs/3.13.3/alpine.min.js" as="script">
+    <link rel="preload" href="vendor/marked/9.1.6/marked.min.js" as="script">
     
     <!-- Critical CSS: Inline for faster first paint -->
     <style>
@@ -141,15 +137,15 @@
         }
     </style>
     
-    <!-- External Scripts -->
-    <script src="https://unpkg.com/marked@9.1.6/marked.min.js" crossorigin="anonymous"></script>
-    <script defer src="https://unpkg.com/@alpinejs/collapse@3.13.3/dist/cdn.min.js" crossorigin="anonymous"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" crossorigin="anonymous"></script>
+    <!-- Vendor scripts: register Collapse before Alpine starts -->
+    <script src="vendor/marked/9.1.6/marked.min.js"></script>
+    <script defer src="vendor/collapse/3.13.3/collapse.min.js"></script>
+    <script defer src="vendor/alpinejs/3.13.3/alpine.min.js"></script>
     <!-- highlight.js is lazy-loaded in app.min.js when needed -->
     <link rel="stylesheet" href="fonts/remixicon/remixicon.css">
-    <link rel="stylesheet" href="styles.min.css?v=7.6">
+    <link rel="stylesheet" href="styles.min.css?v=8.0">
 </head>
-<body x-data="app()" x-init="init()" :data-theme="settings.ui_settings.theme_mode">
+<body x-data="app()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
     <div class="sidebar-overlay" x-show="isMobileView && !sidebarCollapsed" @click="closeSidebar()" x-transition:enter="fade-enter" x-transition:leave="fade-leave"></div>
     
@@ -177,10 +173,12 @@
 
         <div class="chat-list" x-show="!sidebarCollapsed">
             <template x-for="chat in chats" :key="chat.id">
-                <div class="chat-item" :class="{ 'active': currentChatId === chat.id }" @click="selectChat(chat.id)">
-                    <i class="ri-message-3-line"></i>
-                    <span class="chat-title" x-text="chat.title"></span>
-                    <button class="btn-delete" @click.stop="deleteChat(chat.id)" :title="t('delete')">
+                <div class="chat-item" :class="{ 'active': currentChatId === chat.id }">
+                    <button type="button" class="chat-select" @click="selectChat(chat.id)" :aria-current="currentChatId === chat.id ? 'true' : null">
+                        <i class="ri-message-3-line" aria-hidden="true"></i>
+                        <span class="chat-title" x-text="chat.title"></span>
+                    </button>
+                    <button class="btn-delete" @click="deleteChat(chat.id)" :title="t('delete')" :aria-label="t('delete') + ' ' + chat.title">
                         <i class="ri-close-line"></i>
                     </button>
                 </div>
@@ -215,7 +213,7 @@
     <main class="main-content">
         <!-- Mobile Header -->
         <div class="mobile-header" x-show="isMobileView">
-            <button class="btn-icon" @click="openSidebar()">
+            <button class="btn-icon" @click="openSidebar()" :aria-label="at('openChats')">
                 <i class="ri-menu-line"></i>
             </button>
             <span class="mobile-title">ChatRaw</span>
@@ -247,8 +245,8 @@
             </div>
 
             <!-- Messages -->
-            <div class="messages" x-show="messages.length > 0" x-ref="messagesContainer" aria-live="polite">
-                <template x-for="(msg, index) in messages" :key="index">
+            <div class="messages" x-show="messages.length > 0" x-ref="messagesContainer" @scroll.passive="trackOutputScroll($event)">
+                <template x-for="(msg, index) in messages" :key="msg.id || (msg.run_id ? msg.role + msg.run_id : index)">
                     <div class="message" :class="msg.role">
                         <div class="message-avatar" :class="msg.role">
                             <!-- User avatar -->
@@ -260,11 +258,11 @@
                         </div>
                         <div class="message-content">
                             <!-- Show typing indicator for empty assistant message while generating -->
-                            <div class="typing-indicator" x-show="msg.role === 'assistant' && !msg.content && !(msg.hermesRun && msg.hermesRun.events && msg.hermesRun.events.length) && isGenerating">
+                            <div class="typing-indicator" x-show="Boolean(msg.role === 'assistant' && !msg.content && msg.streaming)">
                                 <span></span><span></span><span></span>
                             </div>
                             <!-- Thinking/Reasoning Block -->
-                            <div class="thinking-block" x-show="msg.thinking && msg.thinking.length > 0">
+                            <div class="thinking-block" x-show="Boolean(msg.thinking && msg.thinking.length > 0)">
                                 <div class="thinking-header" @click="msg.showThinking = !msg.showThinking" role="button" :aria-expanded="msg.showThinking">
                                     <i class="ri-lightbulb-line"></i>
                                     <span x-text="t('thinkingProcess')"></span>
@@ -275,106 +273,99 @@
                                 </div>
                             </div>
 
-                            <!-- Hermes Runs events -->
-                            <template x-if="msg.hermesRun && msg.hermesRun.events && msg.hermesRun.events.length">
-                                <div class="hermes-run-block">
-                                    <div class="hermes-run-header">
-                                        <div class="hermes-run-title">
-                                            <i class="ri-terminal-box-line"></i>
-                                            <span x-text="t('hermesRun')"></span>
+                            <div class="message-markdown" x-show="Boolean(messageText(msg))"
+                                 x-effect="renderMessage($el, messageText(msg), messageLive(msg), !!getMessageRun(msg)?.replaying)"></div>
+
+                            <ul class="agent-attachments sent-attachments" x-show="Boolean(msg.role === 'user' && msg.attachments?.length)" :aria-label="at('attachments')">
+                                <template x-for="file in msg.attachments || []" :key="file.attachment_id">
+                                    <li><i class="ri-attachment-2" aria-hidden="true"></i><span x-text="file.name"></span></li>
+                                </template>
+                            </ul>
+
+                            <template x-if="msg.role === 'assistant' && msg.run_id">
+                                <section class="agent-activity" :aria-label="at('run')">
+                                    <template x-for="run in [getMessageRun(msg)].filter(Boolean)" :key="run.id">
+                                        <div>
+                                            <div class="agent-status" role="status">
+                                                <i class="ri-loader-4-line spin" x-show="run.connecting" aria-hidden="true"></i>
+                                                <span x-text="run.status ? at(run.status) : at('checking')"></span>
+                                                <span x-show="Boolean(run.reason)" x-text="run.reason"></span>
+                                                <span x-show="run.disconnected" x-text="at('reconnecting')"></span>
+                                            </div>
+                                            <p class="agent-error" x-show="Boolean(run.error)" x-text="run.error"></p>
+                                            <template x-for="item in run.interactions.filter(item => item.open)" :key="item.data.interaction_id">
+                                                <button type="button" class="agent-request" @click="openAgentInteraction(run, item)">
+                                                    <i :class="item.data.kind === 'approval' ? 'ri-shield-check-line' : 'ri-question-line'" aria-hidden="true"></i>
+                                                    <span>
+                                                        <strong x-text="item.data.title"></strong>
+                                                        <small x-text="interactionStatus(item) || at(item.data.presentation === 'plan' ? 'plan' : item.data.kind)"></small>
+                                                    </span>
+                                                    <i class="ri-arrow-right-s-line" aria-hidden="true"></i>
+                                                </button>
+                                            </template>
+                                            <ul class="agent-artifacts" x-show="Boolean(run.artifacts.length)" :aria-label="at('artifacts')">
+                                                <template x-for="file in run.artifacts" :key="file.artifact_id">
+                                                    <li>
+                                                        <a :href="artifactUrl(file.artifact_id)" :download="file.name">
+                                                            <i class="ri-download-2-line" aria-hidden="true"></i>
+                                                            <span x-text="file.name"></span>
+                                                        </a>
+                                                    </li>
+                                                </template>
+                                            </ul>
                                         </div>
-                                        <span class="hermes-run-status" :class="'status-' + (msg.hermesRun.status || 'running')" x-text="hermesRunStatusLabel(msg.hermesRun.status)"></span>
-                                    </div>
-                                    <div class="hermes-run-events">
-                                        <template x-for="(event, eventIdx) in msg.hermesRun.events" :key="event._id || eventIdx">
-                                            <div class="hermes-run-event" :class="hermesRunEventClass(event)">
-                                                <div class="hermes-run-event-title">
-                                                    <i :class="hermesRunEventIcon(event)"></i>
-                                                    <span x-text="hermesRunEventTitle(event)"></span>
-                                                    <span class="hermes-event-status" :class="'status-' + event.status" x-show="event.status" x-text="hermesRunStatusLabel(event.status)"></span>
+                                    </template>
+                                    <details class="agent-run-details" @toggle="openRunDetails($event, msg.run_id)">
+                                        <summary x-text="at('details')"></summary>
+                                        <template x-for="run in [getMessageRun(msg)].filter(Boolean)" :key="run.id">
+                                            <div class="agent-details-body">
+                                                <div class="agent-reasoning" x-show="Boolean(run.reasoning)">
+                                                    <strong x-text="t('thinkingProcess')"></strong>
+                                                    <pre x-text="run.reasoning"></pre>
                                                 </div>
-                                                <div class="hermes-run-event-body">
-                                                    <div class="hermes-run-meta" x-show="event.tool || hasHermesDuration(event)">
-                                                        <span x-show="event.tool">
-                                                            <strong x-text="t('hermesRunTool')"></strong>
-                                                            <span x-text="event.tool"></span>
-                                                        </span>
-                                                        <span x-show="hasHermesDuration(event)">
-                                                            <strong x-text="t('hermesRunDuration')"></strong>
-                                                            <span x-text="formatHermesDuration(event.duration_ms)"></span>
-                                                        </span>
+                                                <template x-for="tool in run.tools" :key="tool.tool_call_id">
+                                                    <div class="agent-tool">
+                                                        <strong x-text="tool.title || tool.name"></strong>
+                                                        <small x-text="[tool.status && at(tool.status), Number.isFinite(tool.duration_ms) ? tool.duration_ms + ' ms' : ''].filter(Boolean).join(' · ')"></small>
+                                                        <pre x-show="Boolean(tool.input_preview)" x-text="tool.input_preview"></pre>
+                                                        <pre x-show="Boolean(tool.output_preview)" x-text="tool.output_preview"></pre>
                                                     </div>
-                                                    <template x-if="event.preview">
-                                                        <div class="hermes-run-text">
-                                                            <div class="hermes-run-text-label" x-text="t('hermesRunPreview')"></div>
-                                                            <pre><code x-text="event.preview"></code></pre>
-                                                        </div>
-                                                    </template>
-                                                    <template x-if="event.command">
-                                                        <div class="hermes-run-text hermes-run-command">
-                                                            <div class="hermes-run-text-label" x-text="t('hermesRunCommand')"></div>
-                                                            <pre><code x-text="event.command"></code></pre>
-                                                        </div>
-                                                    </template>
-                                                    <template x-if="event.description">
-                                                        <div class="hermes-run-description">
-                                                            <strong x-text="t('hermesRunDescription')"></strong>
-                                                            <span x-text="event.description"></span>
-                                                        </div>
-                                                    </template>
-                                                    <template x-if="event.pattern_keys && event.pattern_keys.length">
-                                                        <div class="hermes-run-patterns">
-                                                            <strong x-text="t('hermesRunPatterns')"></strong>
-                                                            <template x-for="pattern in event.pattern_keys" :key="pattern">
-                                                                <span class="hermes-run-pattern" x-text="pattern"></span>
-                                                            </template>
-                                                        </div>
-                                                    </template>
-                                                    <template x-if="event.error">
-                                                        <div class="hermes-run-error" x-text="event.error"></div>
-                                                    </template>
-                                                    <template x-if="event.choice">
-                                                        <div class="hermes-run-choice">
-                                                            <strong x-text="t('hermesRunChoice')"></strong>
-                                                            <span x-text="event.choice"></span>
-                                                        </div>
-                                                    </template>
-                                                    <template x-if="isHermesPendingApprovalEvent(msg, event)">
-                                                        <div class="hermes-approval-actions">
-                                                            <button type="button" class="hermes-approval-btn" @click="submitHermesApproval(msg, 'once', index)" :disabled="msg.hermesRun.approvalSubmitting">
-                                                                <span x-text="msg.hermesRun.approvalSubmitting ? t('hermesApprovalSubmitting') : t('hermesApprovalOnce')"></span>
-                                                            </button>
-                                                            <button type="button" class="hermes-approval-btn" @click="submitHermesApproval(msg, 'session', index)" :disabled="msg.hermesRun.approvalSubmitting">
-                                                                <span x-text="t('hermesApprovalSession')"></span>
-                                                            </button>
-                                                            <button type="button" class="hermes-approval-btn danger" @click="submitHermesApproval(msg, 'deny', index)" :disabled="msg.hermesRun.approvalSubmitting">
-                                                                <span x-text="t('hermesApprovalDeny')"></span>
-                                                            </button>
-                                                        </div>
-                                                    </template>
-                                                    <div class="hermes-approval-error" x-show="isHermesPendingApprovalEvent(msg, event) && msg.hermesRun.approvalError" x-text="msg.hermesRun.approvalError"></div>
-                                                </div>
+                                                </template>
+                                                <template x-for="item in run.interactions.filter(item => !item.open)" :key="item.data.interaction_id">
+                                                    <button type="button" class="agent-request" @click="openAgentInteraction(run, item)">
+                                                        <span>
+                                                            <strong x-text="item.data.title"></strong>
+                                                            <small x-text="interactionStatus(item)"></small>
+                                                        </span>
+                                                        <i class="ri-arrow-right-s-line" aria-hidden="true"></i>
+                                                    </button>
+                                                </template>
+                                                <dl class="agent-facts" x-show="Boolean(run.usage)">
+                                                    <dt x-show="run.usage?.input_tokens != null" x-text="at('inputTokens')"></dt>
+                                                    <dd x-show="run.usage?.input_tokens != null" x-text="run.usage?.input_tokens"></dd>
+                                                    <dt x-show="run.usage?.output_tokens != null" x-text="at('outputTokens')"></dt>
+                                                    <dd x-show="run.usage?.output_tokens != null" x-text="run.usage?.output_tokens"></dd>
+                                                    <dt x-show="run.usage?.cost != null" x-text="at('cost')"></dt>
+                                                    <dd x-show="run.usage?.cost != null" x-text="[run.usage?.cost, run.usage?.currency].filter(value => value != null).join(' ')"></dd>
+                                                </dl>
                                             </div>
                                         </template>
-                                    </div>
-                                </div>
+                                    </details>
+                                </section>
                             </template>
-                            
-                            <!-- Show actual content -->
-                            <div x-show="msg.content" x-html="renderMarkdown(msg.content)"></div>
-                            
+
                             <!-- Message Actions (assistant only) -->
-                            <div class="message-actions" x-show="msg.role === 'assistant' && msg.content && !isGenerating">
+                            <div class="message-actions" x-show="Boolean(msg.role === 'assistant' && messageText(msg) && !messageLive(msg))">
                                 <button class="btn-copy"
-                                        @click="copyMessage(msg.content, $event)"
-                                        :title="t('copyMessage')">
+                                        @click="copyMessage(messageText(msg), $event)"
+                                        :title="t('copyMessage')" :aria-label="t('copyMessage')">
                                     <i class="ri-file-copy-line"></i>
                                 </button>
                                 <div class="message-actions-plugin-slot" :data-msg-index="index"></div>
                             </div>
                             
                             <!-- RAG References -->
-                            <div class="rag-references" x-show="msg.references && msg.references.length > 0">
+                            <div class="rag-references" x-show="Boolean(msg.references && msg.references.length > 0)">
                                 <div class="rag-references-header" @click="msg.showRefs = !msg.showRefs" role="button" :aria-expanded="msg.showRefs">
                                     <i class="ri-file-text-line"></i>
                                     <span x-text="t('ragReferences') + ' (' + (msg.references?.length || 0) + ')'"></span>
@@ -412,27 +403,27 @@
             <!-- Input Area -->
             <div class="input-area">
                 <div class="input-container-inner">
-                    <div class="uploaded-image-preview" x-show="uploadedImage && chatModelSupportsVision()">
+                    <div class="uploaded-image-preview" x-show="Boolean(!agentId && uploadedImage && chatModelSupportsVision())">
                         <img :src="uploadedImage ? 'data:image/jpeg;base64,' + uploadedImageBase64 : ''" alt="Preview" width="60" height="60">
                         <button class="btn-delete-overlay" @click="removeUploadedImage()" aria-label="Remove image"><i class="ri-close-circle-fill"></i></button>
                     </div>
                     
                     <!-- Parsed URL Preview -->
-                    <div class="parsed-url-preview" x-show="parsedUrl" x-cloak>
+                    <div class="parsed-url-preview" x-show="Boolean(!agentId && parsedUrl)" x-cloak>
                         <i class="ri-link"></i>
                         <span class="parsed-url-title" x-text="parsedUrlTitle"></span>
                         <button class="btn-remove-url" @click="removeParsedUrl()" aria-label="Remove URL"><i class="ri-close-circle-fill"></i></button>
                     </div>
                     
                     <!-- Attached Document Preview -->
-                    <div class="attached-doc-preview" x-show="attachedDocument" x-cloak>
+                    <div class="attached-doc-preview" x-show="Boolean(!agentId && attachedDocument)" x-cloak>
                         <i class="ri-file-text-line"></i>
                         <span class="attached-doc-name" x-text="attachedDocument?.filename"></span>
                         <button class="btn-remove-doc" @click="removeAttachedDocument()" aria-label="Remove document"><i class="ri-close-circle-fill"></i></button>
                     </div>
 
                     <!-- URL Input Popup -->
-                    <div class="url-input-popup" x-show="showUrlInput" x-cloak @click.outside="cancelUrlInput()">
+                    <div class="url-input-popup" x-show="!agentId && showUrlInput" x-cloak @click.outside="cancelUrlInput()">
                         <div class="url-input-header" x-text="t('enterUrl')"></div>
                         <input
                             type="text"
@@ -450,6 +441,29 @@
                             </button>
                         </div>
                     </div>
+
+                    <div class="agent-composer-status" x-show="Boolean(agentBindingError || agentAdmission || agentBinding?.active_run_id || (agentId && !canSendAgent))"
+                         role="status" x-cloak>
+                        <span x-text="agentBindingError || (agentAdmission ? at('admissionUnknown') :
+                              (agentBinding?.active_run_id ? at('busy') : agentInfo?.reason || at('noReady')))"></span>
+                        <button type="button" class="btn-secondary" x-show="Boolean(agentAdmission && !agentSubmitBusy)"
+                                @click="checkAgentAdmission()" :disabled="agentAdmission?.checking" x-text="at('verify')"></button>
+                        <button type="button" class="btn-secondary" x-show="Boolean(agentBindingError)"
+                                @click="selectChat(currentChatId, true)" x-text="t('retry')"></button>
+                    </div>
+
+                    <ul class="agent-attachments" x-show="Boolean(agentId && agentAttachments.length)" :aria-label="at('attachments')" x-cloak>
+                        <template x-for="file in agentAttachments" :key="file.attachment_id">
+                            <li>
+                                <i class="ri-attachment-2" aria-hidden="true"></i>
+                                <span x-text="file.name"></span>
+                                <button type="button" class="btn-icon" :aria-label="at('remove') + ' ' + file.name"
+                                        @click="removeAgentAttachment(file.attachment_id)" :disabled="!!agentAdmission || agentSubmitBusy">
+                                    <i class="ri-close-line" aria-hidden="true"></i>
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
 
                     <div class="input-wrapper" @click.outside="closeCompletionMenu()">
                         <div class="composer-suggestions"
@@ -497,31 +511,88 @@
                             @compositionend="handleCompositionEnd($event)"
                         ></textarea>
                         
+                        <div class="agent-mode" @click.outside="closeAgentMenu()" @keydown.escape.stop="closeAgentMenu(true)">
+                            <button type="button" class="agent-mode-button" x-ref="agentModeButton" @click="openAgentMenu()"
+                                    :aria-label="at('agentMode') + ' — ' + agentName(agentId)" :aria-expanded="agentMenu"
+                                    :title="agentBinding?.workspace?.label || at('agentMode')"
+                                    :disabled="agentViewLoading || agentMenuBusy || isGenerating" aria-controls="agent-mode-panel">
+                                <i :class="agentId ? 'ri-terminal-box-line' : 'ri-chat-3-line'" aria-hidden="true"></i>
+                                <span x-text="agentButtonName(agentId)"></span>
+                                <i class="ri-arrow-up-s-line" aria-hidden="true"></i>
+                            </button>
+                            <div class="agent-mode-panel" id="agent-mode-panel" x-ref="agentModePanel" x-show="agentMenu" x-cloak>
+                                <fieldset class="agent-options">
+                                    <legend x-text="at('mode')"></legend>
+                                    <label class="agent-option">
+                                        <input type="radio" name="agent-mode" value="" x-model="agentMenuChoice">
+                                        <span x-text="at('ordinary')"></span>
+                                    </label>
+                                    <template x-for="agent in selectableAgents" :key="agent.id">
+                                        <label class="agent-option">
+                                            <input type="radio" name="agent-mode" :value="agent.id" x-model="agentMenuChoice">
+                                            <span>
+                                                <span x-text="agentName(agent.id)"></span>
+                                                <small x-show="agent.availability !== 'ready'" x-text="agent.reason || at(agent.availability)"></small>
+                                            </span>
+                                        </label>
+                                    </template>
+                                    <p class="agent-error" x-show="Boolean(agentCatalogError)" x-text="agentCatalogError"></p>
+                                </fieldset>
+                                <label class="agent-workspace" x-show="Boolean(agentMenuChoice)">
+                                    <span x-text="at('workspace')"></span>
+                                    <select class="input-minimal" x-model="agentProjectChoice">
+                                        <option value="" x-text="at('managed')"></option>
+                                        <template x-for="project in agentWorkspaces" :key="project.id">
+                                            <option :value="project.id" x-text="project.label"></option>
+                                        </template>
+                                    </select>
+                                    <small class="agent-error" x-show="Boolean(agentWorkspaceError)" x-text="agentWorkspaceError"></small>
+                                </label>
+                                <div class="agent-menu-actions">
+                                    <button type="button" class="btn-secondary" @click="closeAgentMenu(); openPluginsPanel()" x-text="at('agentPlugins')"></button>
+                                    <button type="button" class="btn-primary" @click="applyAgentMode()"
+                                            :disabled="agentMenuBusy || !!agentBindingError" x-text="at('apply')"></button>
+                                </div>
+                                <div class="agent-compact-action" x-show="Boolean(agentId)">
+                                    <button type="button" class="btn-secondary" @click="closeAgentMenu(true); sendAgentRun('compact')"
+                                            :disabled="agentBlocked" x-text="at('compact')"></button>
+                                    <small x-show="!agentInfo?.capabilities?.compact" x-text="at('noCompact')"></small>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="input-toolbar">
+                            <button type="button" class="btn-tool" x-show="Boolean(agentId && (agentInfo?.capabilities?.images || agentInfo?.capabilities?.files))"
+                                    :title="at('attach')" :aria-label="at('attach')" :disabled="agentBlocked || !canSendAgent"
+                                    @click="$refs.agentFileInput.click()">
+                                <i :class="agentUploads ? 'ri-loader-4-line spin' : 'ri-attachment-2'" aria-hidden="true"></i>
+                            </button>
+                            <input type="file" hidden multiple x-ref="agentFileInput" @change="uploadAgentAttachments($event)"
+                                   :accept="agentAttachmentAccept">
                             <!-- Thinking Mode Toggle -->
-                            <div class="thinking-toggle" :class="{ 'active': useThinking }" @click="useThinking = !useThinking" :title="t('thinkingMode')">
+                            <div class="thinking-toggle" x-show="!agentId" :class="{ 'active': useThinking }" @click="useThinking = !useThinking" :title="t('thinkingMode')">
                                 <i class="ri-lightbulb-line"></i>
                                 <div class="thinking-slider">
                                     <div class="thinking-slider-handle"></div>
                                 </div>
                             </div>
-                            <template x-if="chatModelSupportsVision()">
+                            <template x-if="!agentId && chatModelSupportsVision()">
                                 <label class="btn-tool btn-tool-upload" :title="t('uploadImage')">
                                     <input type="file" @change="handleImageUpload($event)" accept="image/*" class="file-input-hidden">
                                     <i class="ri-image-line"></i>
                                 </label>
                             </template>
-                            <label class="btn-tool btn-tool-upload" :title="t('uploadDocument')" :class="{ 'active': attachedDocument }">
+                            <label class="btn-tool btn-tool-upload" x-show="!agentId" :title="t('uploadDocument')" :class="{ 'active': attachedDocument }">
                                 <input type="file" @change="handleDocumentUpload($event)" :accept="getDocumentAcceptTypes()" class="file-input-hidden" :disabled="isUploadingDocument">
                                 <i class="ri-file-text-line" x-show="!isUploadingDocument"></i>
                                 <i class="ri-loader-4-line spin" x-show="isUploadingDocument"></i>
                             </label>
-                            <button class="btn-tool" @click="toggleUrlInput()" :title="t('parseUrl')" :class="{ 'active': parsedUrl }">
+                            <button class="btn-tool" x-show="!agentId" @click="toggleUrlInput()" :title="t('parseUrl')" :class="{ 'active': parsedUrl }">
                                 <i class="ri-link"></i>
                             </button>
                             
                             <!-- Plugin Toolbar Buttons Extension Area -->
-                            <div class="plugin-toolbar-area" x-show="pluginToolbarButtons.length > 0" x-cloak>
+                            <div class="plugin-toolbar-area" x-show="Boolean(visiblePluginButtons.length || hiddenPluginButtons.length)" x-cloak>
                                 <div class="plugin-toolbar-divider"></div>
                                 
                                 <!-- Visible buttons (max 5) -->
@@ -536,35 +607,34 @@
                                     </button>
                                 </template>
                                 
-                                <!-- More menu (shown when > 5 buttons) -->
-                                <div class="plugin-more-dropdown" x-show="hiddenPluginButtons.length > 0" x-cloak>
-                                    <button class="btn-tool" @click="showPluginMoreMenu = !showPluginMoreMenu" :title="t('plugins')">
-                                        <i class="ri-more-2-fill"></i>
-                                    </button>
-                                    <div class="plugin-more-menu" 
-                                         x-show="showPluginMoreMenu" 
-                                         x-cloak
-                                         x-transition
-                                         @click.outside="showPluginMoreMenu = false">
-                                        <template x-for="btn in hiddenPluginButtons" :key="btn.fullId">
-                                            <div class="plugin-more-item" 
-                                                 :class="{ 'active': btn.active, 'loading': btn.loading }"
-                                                 @click="handlePluginButtonClick(btn); showPluginMoreMenu = false">
-                                                <i :class="btn.loading ? 'ri-loader-4-line spin' : btn.icon"></i>
-                                                <span x-text="getPluginButtonLabel(btn)"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
+                                <button type="button" class="btn-tool" x-show="Boolean(hiddenPluginButtons.length)"
+                                        @click="showPluginMoreMenu = !showPluginMoreMenu; closeAgentMenu()"
+                                        :aria-label="t('plugins')" :aria-expanded="showPluginMoreMenu">
+                                    <i class="ri-more-2-fill" aria-hidden="true"></i>
+                                </button>
                             </div>
                         </div>
 
+                        <div class="plugin-more-menu composer-plugin-menu" x-show="showPluginMoreMenu" x-cloak
+                             @click.outside="showPluginMoreMenu = false" @keydown.escape.stop="showPluginMoreMenu = false">
+                            <template x-for="btn in hiddenPluginButtons" :key="btn.fullId">
+                                <button type="button" class="plugin-more-item" :class="{ active: btn.active }"
+                                        :disabled="btn.loading" @click="handlePluginButtonClick(btn); showPluginMoreMenu = false">
+                                    <i :class="btn.loading ? 'ri-loader-4-line spin' : btn.icon" aria-hidden="true"></i>
+                                    <span x-text="getPluginButtonLabel(btn)"></span>
+                                </button>
+                            </template>
+                        </div>
+
                         <!-- Send Button -->
-                        <button class="btn-send" x-show="!isGenerating" @click="sendMessage()" :disabled="!inputMessage.trim()" :aria-label="t('send')">
+                        <button class="btn-send" x-show="!isGenerating && !showAgentStop" @click="sendMessage()" :disabled="!canSendMessage" :aria-label="t('send')">
                             <i class="ri-send-plane-2-line"></i>
                         </button>
                         <!-- Stop Button -->
-                        <button class="btn-stop" x-show="isGenerating" @click="stopGeneration()" :title="t('stopGeneration')">
+                        <button class="btn-stop" x-show="isGenerating || showAgentStop"
+                                @click="isGenerating ? stopGeneration() : stopAgentRun()"
+                                :disabled="!isGenerating && (activeAgentRun?.stopPending || activeAgentRun?.status === 'stopping')"
+                                :title="t('stopGeneration')" :aria-label="t('stopGeneration')">
                             <i class="ri-stop-circle-line"></i>
                         </button>
                     </div>
@@ -573,7 +643,7 @@
         </div>
 
         <!-- Toast -->
-        <div class="toast" x-show="toast.show" x-text="toast.message" :class="toast.type" x-transition></div>
+        <div class="toast" x-show="toast.show" x-text="toast.message" :class="toast.type" role="status"></div>
     </main>
 
     <!-- New Settings Modal -->
@@ -794,7 +864,7 @@
     </div>
 
     <!-- Plugin Modal -->
-    <div class="modal-overlay" x-show="showPlugins" x-cloak @click.self="showPlugins = false" @keydown.escape.window="showPlugins && (showPlugins = false)" x-transition role="dialog" aria-modal="true" aria-labelledby="plugins-modal-title">
+    <div class="modal-overlay" x-show="showPlugins" x-cloak @click.self="showPlugins = false" @keydown.escape.window="showPlugins && !showPluginSettings && (showPlugins = false)" x-transition role="dialog" aria-modal="true" aria-labelledby="plugins-modal-title">
         <div class="settings-modal plugin-modal">
             <!-- Left Nav -->
             <div class="settings-nav" role="tablist" aria-label="Plugin navigation">
@@ -869,11 +939,12 @@
                                         </div>
                                         <button class="btn-icon btn-icon-sm" 
                                                 @click="installPlugin(plugin)" 
-                                                :disabled="isPluginInstalled(plugin.id) || pluginInstalling === plugin.id"
-                                                :title="pluginInstalling === plugin.id ? t('installing') : (isPluginInstalled(plugin.id) ? t('installed') : t('install'))"
-                                                aria-label="Install plugin">
+                                                :disabled="(isPluginInstalled(plugin.id) && !canUpdateBundledPlugin(plugin)) || pluginInstalling === plugin.id"
+                                                :title="pluginInstalling === plugin.id ? t('installing') : (canUpdateBundledPlugin(plugin) ? at('updatePlugin') : isPluginInstalled(plugin.id) ? t('installed') : t('install'))"
+                                                :aria-label="canUpdateBundledPlugin(plugin) ? at('updatePlugin') : 'Install plugin'">
                                             <i class="ri-loader-4-line spin" x-show="pluginInstalling === plugin.id"></i>
-                                            <i class="ri-check-line" x-show="isPluginInstalled(plugin.id) && pluginInstalling !== plugin.id"></i>
+                                            <i class="ri-refresh-line" x-show="canUpdateBundledPlugin(plugin) && pluginInstalling !== plugin.id"></i>
+                                            <i class="ri-check-line" x-show="isPluginInstalled(plugin.id) && !canUpdateBundledPlugin(plugin) && pluginInstalling !== plugin.id"></i>
                                             <i class="ri-download-2-line" x-show="!isPluginInstalled(plugin.id) && pluginInstalling !== plugin.id"></i>
                                         </button>
                                     </div>
@@ -969,10 +1040,12 @@
     </div>
     
     <!-- Plugin Settings Modal -->
-    <div class="modal-overlay" x-show="showPluginSettings" x-cloak @click.self="showPluginSettings = false" x-transition>
+    <div class="modal-overlay" x-show="showPluginSettings" x-cloak @click.self="showPluginSettings = false"
+         @keydown.escape.window="showPluginSettings && (showPluginSettings = false)" x-transition
+         role="dialog" aria-modal="true" aria-labelledby="plugin-settings-title">
         <div class="plugin-settings-modal" :class="{ 'custom-settings-modal': currentPluginSettings?.customSettings }">
             <div class="plugin-settings-header" x-show="!currentPluginSettings?.customSettings">
-                <h3 x-text="currentPluginSettings?.name?.[lang] || currentPluginSettings?.name?.en || currentPluginSettings?.id || ''"></h3>
+                <h3 id="plugin-settings-title" x-text="currentPluginSettings?.name?.[lang] || currentPluginSettings?.name?.en || currentPluginSettings?.id || ''"></h3>
             </div>
             <div class="plugin-settings-content" :class="{ 'custom-settings-content': currentPluginSettings?.customSettings }">
                 <!-- Custom Settings Container (for plugins with customSettings: true) -->
@@ -982,8 +1055,69 @@
                     </div>
                 </template>
                 
+                <template x-if="currentPluginSettings?.agent">
+                    <section class="agent-health">
+                        <p x-text="at('hostSettings')"></p>
+                        <button type="button" class="btn-secondary" @click="checkAgentHealth(currentPluginSettings.id)"
+                                :disabled="agentChecking" x-text="at(agentChecking ? 'checking' : 'check')"></button>
+                        <form id="agent-settings-fields" @submit.prevent="saveAgentSettings()">
+                            <p x-show="agentSettingsLoading" role="status" x-text="at('checking')"></p>
+                            <p x-show="!agentSettingsLoading && agentSettingsSchema && !agentSettingFields.length"
+                               x-text="at('noEditableSettings')"></p>
+                            <div x-show="!agentSettingsLoading && !agentSettingsSchema">
+                                <p class="agent-error" x-text="at('settingsUnavailable')"></p>
+                                <button type="button" class="btn-secondary" @click="openAgentSettings(currentPluginSettings)" x-text="t('retry')"></button>
+                            </div>
+                            <template x-for="field in agentSettingsLoading ? [] : agentSettingFields" :key="field.name">
+                                <label class="form-group agent-setting-field">
+                                    <span class="form-label" x-text="field.title || at(field.name)"></span>
+                                    <small x-show="Boolean(field.description)" x-text="field.description"></small>
+                                    <template x-if="field.enum || field.type === 'boolean'">
+                                        <select class="input-minimal" x-model="agentSettingValues[field.name]" :required="field.required">
+                                            <option value="" x-text="at('nativeDefault')"></option>
+                                            <template x-for="value in (field.enum || [true, false])" :key="JSON.stringify(value)">
+                                                <option :value="JSON.stringify(value)" x-text="String(value)"></option>
+                                            </template>
+                                        </select>
+                                    </template>
+                                    <template x-if="!field.enum && field.type === 'string'">
+                                        <input type="text" class="input-minimal" :required="field.required"
+                                               :minlength="field.minLength ?? null" :maxlength="field.maxLength ?? null" :pattern="field.pattern ?? null"
+                                               :list="field.name === 'model' && agentModelSuggestions.length ? 'agent-model-options' : null"
+                                               :placeholder="String(field.default ?? at('nativeDefault'))" x-model="agentSettingValues[field.name]">
+                                    </template>
+                                    <template x-if="!field.enum && (field.type === 'number' || field.type === 'integer')">
+                                        <input type="number" class="input-minimal" :required="field.required"
+                                               :min="field.minimum ?? null" :max="field.maximum ?? null" :step="field.type === 'integer' ? 1 : 'any'"
+                                               :placeholder="String(field.default ?? at('nativeDefault'))" x-model="agentSettingValues[field.name]">
+                                    </template>
+                                </label>
+                            </template>
+                            <datalist id="agent-model-options">
+                                <template x-for="model in agentModelSuggestions" :key="model.id">
+                                    <option :value="model.id" :label="model.label"></option>
+                                </template>
+                            </datalist>
+                            <p class="agent-error" role="status" x-show="Boolean(agentSettingsError)" x-text="agentSettingsError"></p>
+                        </form>
+                        <p class="agent-error" role="status" x-show="Boolean(agentHealthError)" x-text="agentHealthError"></p>
+                        <div x-show="Boolean(agentHealth)" role="status">
+                            <strong x-text="[agentHealth && at(agentHealth.availability), agentHealth?.version].filter(Boolean).join(' · ')"></strong>
+                            <p x-text="agentHealth?.reason"></p>
+                            <dl class="agent-facts">
+                                <template x-for="name in ['program', 'protocol', 'authentication', 'model_request']" :key="name">
+                                    <div>
+                                        <dt x-text="at(name)"></dt>
+                                        <dd x-text="at(agentHealth?.checks?.[name] || 'not_checked')"></dd>
+                                    </div>
+                                </template>
+                            </dl>
+                        </div>
+                    </section>
+                </template>
+
                 <!-- Standard Settings (only when no customSettings) -->
-                <template x-if="!currentPluginSettings?.customSettings && currentPluginSettings?.settings?.length > 0">
+                <template x-if="!currentPluginSettings?.agent && !currentPluginSettings?.customSettings && currentPluginSettings?.settings?.length > 0">
                     <div>
                         <template x-for="setting in currentPluginSettings.settings" :key="setting.id">
                             <div class="form-group">
@@ -1016,7 +1150,7 @@
                                 <template x-if="setting.type === 'select'">
                                     <select class="input-minimal" x-model="pluginSettingsValues[setting.id]">
                                         <template x-for="(opt, idx) in (setting.options || [])" :key="setting.id + '-' + idx">
-                                            <option :value="(typeof opt === 'object' && opt && 'value' in opt) ? opt.value : opt" x-text="(typeof opt === 'object' && opt && 'label' in opt) ? opt.label : opt"></option>
+                                            <option :value="(typeof opt === 'object' && opt && 'value' in opt) ? opt.value : opt" x-text="(typeof opt === 'object' && opt && 'label' in opt) ? getLocalizedText(opt.label, String(opt.value)) : opt"></option>
                                         </template>
                                     </select>
                                 </template>
@@ -1033,12 +1167,12 @@
                 </template>
                 
                 <!-- No Settings (only when no customSettings AND no standard settings) -->
-                <template x-if="!currentPluginSettings?.customSettings && (!currentPluginSettings?.settings || currentPluginSettings.settings.length === 0)">
+                <template x-if="!currentPluginSettings?.customSettings && !currentPluginSettings?.agent && (!currentPluginSettings?.settings || currentPluginSettings.settings.length === 0)">
                     <div class="plugin-no-settings" x-text="t('noPluginSettings')"></div>
                 </template>
                 
                 <!-- Proxy/API Key settings (only for non-custom settings plugins) -->
-                <template x-if="!currentPluginSettings?.customSettings && currentPluginSettings && currentPluginSettings.proxy && currentPluginSettings.proxy.length > 0">
+                <template x-if="!currentPluginSettings?.agent && !currentPluginSettings?.customSettings && currentPluginSettings && currentPluginSettings.proxy && currentPluginSettings.proxy.length > 0">
                     <div class="plugin-proxy-settings">
                         <h4 x-text="t('apiKeySettings')"></h4>
                         <template x-for="proxy in currentPluginSettings.proxy" :key="proxy.id">
@@ -1057,10 +1191,97 @@
             </div>
             <div class="plugin-settings-footer" x-show="!currentPluginSettings?.customSettings">
                 <button class="btn-secondary" @click="showPluginSettings = false" x-text="t('cancel')"></button>
-                <button class="btn-primary" @click="savePluginSettings()" x-text="t('save')"></button>
+                <button class="btn-primary" x-show="!currentPluginSettings?.agent" @click="savePluginSettings()" x-text="t('save')"></button>
+                <button type="submit" form="agent-settings-fields" class="btn-primary" x-show="Boolean(currentPluginSettings?.agent && agentSettingFields.length)"
+                        :disabled="agentSettingsLoading || agentSettingsSaving" x-text="t('save')"></button>
             </div>
         </div>
     </div>
+
+    <dialog class="agent-dialog" x-ref="agentDialog" aria-labelledby="agent-dialog-title"
+            @close="if (!$event.target.open) agentInteraction = null">
+        <template x-for="entry in agentInteraction ? [agentInteraction] : []" :key="entry.interaction.data.interaction_id">
+            <form class="agent-dialog-form" @submit.prevent="submitAgentInteraction(entry.run, entry.interaction)">
+                <header class="agent-dialog-header">
+                    <div>
+                        <small x-text="at(entry.interaction.data.presentation === 'plan' ? 'plan' : entry.interaction.data.kind)"></small>
+                        <h2 id="agent-dialog-title" x-text="entry.interaction.data.title"></h2>
+                    </div>
+                    <button type="button" class="btn-icon" @click="closeAgentInteraction()" :aria-label="t('close')" autofocus>
+                        <i class="ri-close-line" aria-hidden="true"></i>
+                    </button>
+                </header>
+                <div class="agent-dialog-body">
+                    <div class="agent-plan" x-show="Boolean(entry.interaction.data.detail)" x-html="renderMarkdown(entry.interaction.data.detail)"></div>
+                    <dl class="agent-facts" x-show="Boolean(entry.interaction.data.operation)">
+                        <dt x-show="Boolean(entry.interaction.data.operation?.tool)" x-text="at('tool')"></dt>
+                        <dd x-show="Boolean(entry.interaction.data.operation?.tool)" x-text="entry.interaction.data.operation?.tool"></dd>
+                        <dt x-show="Boolean(entry.interaction.data.operation?.cwd_label)" x-text="at('workspace')"></dt>
+                        <dd x-show="Boolean(entry.interaction.data.operation?.cwd_label)" x-text="entry.interaction.data.operation?.cwd_label"></dd>
+                        <dt x-show="Boolean(entry.interaction.data.operation?.host_label)" x-text="at('host')"></dt>
+                        <dd x-show="Boolean(entry.interaction.data.operation?.host_label)" x-text="entry.interaction.data.operation?.host_label"></dd>
+                        <dt x-show="Boolean(entry.interaction.data.operation?.paths?.length)" x-text="at('paths')"></dt>
+                        <dd x-show="Boolean(entry.interaction.data.operation?.paths?.length)"><pre x-text="entry.interaction.data.operation?.paths?.join('\n')"></pre></dd>
+                        <dt x-show="Boolean(entry.interaction.data.operation?.command)" x-text="at('command')"></dt>
+                        <dd x-show="Boolean(entry.interaction.data.operation?.command)"><pre x-text="entry.interaction.data.operation?.command"></pre></dd>
+                    </dl>
+
+                    <fieldset class="agent-options" x-show="entry.interaction.data.kind === 'approval'"
+                              :disabled="!interactionActionable(entry.run, entry.interaction)">
+                        <legend x-text="at('decision')"></legend>
+                        <template x-for="choice in entry.interaction.data.decisions || []" :key="choice.id">
+                            <label class="agent-option">
+                                <input type="radio" name="agent-decision" :value="choice.id" x-model="entry.interaction.decision">
+                                <span>
+                                    <span x-text="choice.label"></span>
+                                    <small x-show="Boolean(choice.scope)" x-text="choice.scope"></small>
+                                </span>
+                            </label>
+                        </template>
+                    </fieldset>
+
+                    <template x-for="question in entry.interaction.data.questions || []" :key="question.id">
+                        <fieldset class="agent-options" :disabled="!interactionActionable(entry.run, entry.interaction)">
+                            <legend x-text="question.text"></legend>
+                            <template x-for="choice in question.options || []" :key="choice.id">
+                                <label class="agent-option">
+                                    <input :type="question.type === 'single' ? 'radio' : 'checkbox'" :name="'question-' + question.id"
+                                           :checked="questionAnswer(entry.interaction, question.id).option_ids.includes(choice.id)"
+                                           @change="selectQuestionOption(entry.interaction, question, choice.id, $event.target.checked)">
+                                    <span>
+                                        <span x-text="choice.label"></span>
+                                        <small x-show="Boolean(choice.description)" x-text="choice.description"></small>
+                                        <small x-show="Boolean(choice.recommended)" x-text="at('recommended')"></small>
+                                    </span>
+                                </label>
+                            </template>
+                            <template x-if="question.type !== 'text' && question.allow_custom">
+                                <label class="agent-option">
+                                    <input :type="question.type === 'single' ? 'radio' : 'checkbox'" :name="'question-' + question.id"
+                                           :checked="questionAnswer(entry.interaction, question.id).custom"
+                                           @change="selectQuestionCustom(entry.interaction, question, $event.target.checked)">
+                                    <span x-text="at('custom')"></span>
+                                </label>
+                            </template>
+                            <textarea class="input-minimal agent-answer" rows="3"
+                                      x-show="question.type === 'text' || questionAnswer(entry.interaction, question.id).custom"
+                                      :aria-label="question.text" x-model="questionAnswer(entry.interaction, question.id).text"></textarea>
+                        </fieldset>
+                    </template>
+
+                    <p class="agent-interaction-status" role="status" x-show="Boolean(interactionStatus(entry.interaction, entry.run))" x-text="interactionStatus(entry.interaction, entry.run)"></p>
+                    <p x-show="Boolean(entry.interaction.answerSummary)" x-text="entry.interaction.answerSummary"></p>
+                </div>
+                <footer class="agent-dialog-actions">
+                    <button type="button" class="btn-secondary" x-show="Boolean(entry.interaction.data.allow_cancel)"
+                            @click="submitAgentInteraction(entry.run, entry.interaction, true)"
+                            :disabled="!interactionActionable(entry.run, entry.interaction)" x-text="at('cancelRequest')"></button>
+                    <button type="submit" class="btn-primary" :disabled="!interactionActionable(entry.run, entry.interaction) || !interactionReply(entry.interaction)"
+                            x-text="at('submit')"></button>
+                </footer>
+            </form>
+        </template>
+    </dialog>
 
     <!-- Plugin Fullscreen Modal -->
     <div class="modal-overlay plugin-fullscreen-modal" 
@@ -1072,6 +1293,18 @@
         <div class="plugin-fullscreen-content" x-html="pluginFullscreenModal.content"></div>
     </div>
 
-    <script src="app.min.js?v=7.7"></script>
+    <script>
+        if (document.documentMode) {
+            document.body.textContent = 'ChatRaw does not support Internet Explorer. Use Chrome 109 or later. / ChatRaw 不支持 Internet Explorer，请使用 Chrome 109 或更新版本。';
+        }
+    </script>
+    <script>
+        if (document.documentMode) {
+            document.body.textContent = 'ChatRaw does not support Internet Explorer. Use Chrome 109 or later. / ChatRaw 不支持 Internet Explorer，请使用 Chrome 109 或更新版本。';
+        }
+    </script>
+    <script src="stream-markdown.js?v=1"></script>
+    <script src="agents.js?v=1"></script>
+    <script src="app.min.js?v=8.0"></script>
 </body>
 </html>
