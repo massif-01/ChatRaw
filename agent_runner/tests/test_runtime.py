@@ -16,7 +16,7 @@ class ControlledAdapter(AgentAdapter):
     agent_id = "hermes"
     settings_schema = {
         "type": "object",
-        "properties": {},
+        "properties": {"model": {"type": "string"}},
         "additionalProperties": False,
     }
 
@@ -30,6 +30,8 @@ class ControlledAdapter(AgentAdapter):
         self.prompts = []
         self.stops = 0
         self.binding = None
+        self.config = {}
+        self.received_configs = []
 
     def validate_config(self, config):
         return config
@@ -48,6 +50,7 @@ class ControlledAdapter(AgentAdapter):
         return result
 
     async def create_session(self, session_id, workspace, config):
+        self.config = dict(config)
         self.binding = {
             "session_id": session_id,
             "agent_id": "hermes",
@@ -57,10 +60,12 @@ class ControlledAdapter(AgentAdapter):
         return self.binding
 
     async def resume_session(self, binding, config):
+        self.config = dict(config)
         self.binding = binding
         return binding
 
     async def run(self, binding, request, emit):
+        self.received_configs.append(dict(self.config))
         self.prompts.append(request)
         await emit(
             {
@@ -159,6 +164,33 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         await self.settle(run_id, adapter)
         self.assertEqual(self.runtime.store.lookup("chat1", "key1")["run_id"], run_id)
         self.assertIsNone(self.runtime.store.lookup("other-chat", "key1"))
+
+    async def test_changed_model_applies_on_next_run_without_changing_native_session(
+        self,
+    ):
+        run_id, original = await self.start()
+        self.runtime.set_settings("hermes", {"model": "new-model"})
+        self.assertEqual(original.config, {})
+        await self.settle(run_id, original)
+        next_run = await self.runtime.submit("session1", "chat1", "next", "continue")
+        updated = self.runtime.instances["session1"]
+        await updated.started.wait()
+        self.assertIsNot(original, updated)
+        self.assertEqual(updated.received_configs, [{"model": "new-model"}])
+        self.assertEqual(updated.binding["native"]["session"], "session1")
+        self.assertEqual(original.received_configs, [{}])
+        await self.settle(next_run["run_id"], updated)
+
+    async def test_public_settings_can_be_saved_before_host_is_configured(self):
+        class NeedsHost(ControlledAdapter):
+            def validate_config(self, config):
+                raise RunnerError("host_missing", "Configure the host first")
+
+        self.runtime.factories["pi"] = NeedsHost
+        self.runtime.set_settings("pi", {"model": "saved-before-host-setup"})
+        self.assertEqual(
+            self.runtime.agent_config("pi")["model"], "saved-before-host-setup"
+        )
 
     async def test_disconnect_does_not_cancel_and_replay_is_contiguous_with_single_done(
         self,

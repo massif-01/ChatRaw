@@ -144,8 +144,8 @@ class Runtime:
             raise RunnerError(
                 "invalid_settings", "Agent settings do not match its declared schema"
             ) from None
-        config = {**self.config.get("agents", {}).get(agent_id, {}), **settings}
-        adapter.validate_config(config)
+        # Public settings remain editable before the host executable/account is
+        # configured. Full private config is validated at session/run admission.
         with self.store.db:
             self.store.db.execute(
                 "INSERT INTO agents(id,enabled,settings) VALUES (?,0,?) ON CONFLICT(id) DO UPDATE SET settings=excluded.settings",
@@ -160,8 +160,7 @@ class Runtime:
             }
         adapter = self.factory(agent_id)()
         try:
-            config = adapter.validate_config(self.agent_config(agent_id))
-            result = await adapter.probe(config)
+            result = await adapter.probe(self.agent_config(agent_id))
             return {"agent_id": agent_id, **result}
         except AdapterError as error:
             return {"agent_id": agent_id, **unavailable(error.message)}
@@ -177,9 +176,17 @@ class Runtime:
                 (agent_id, int(enabled)),
             )
         if not enabled:
-            for run in self.store.active():
-                if self.store.session(run["session_id"])["agent_id"] == agent_id:
-                    await self.cancel(run["id"])
+            affected = [
+                run
+                for run in self.store.active()
+                if self.store.session(run["session_id"])["agent_id"] == agent_id
+            ]
+            if affected:
+                # A dropped configuration request must not abandon cancellation
+                # halfway through the sessions this Runner owns.
+                await asyncio.shield(
+                    asyncio.gather(*(self.cancel(run["id"]) for run in affected))
+                )
 
     def workspace(self, session_id, selection):
         if selection == {"kind": "managed"}:
@@ -250,7 +257,7 @@ class Runtime:
             workspace, public = self.workspace(session_id, selection)
             with self.store.db:
                 self.store.db.execute(
-                    "INSERT INTO sessions VALUES (?,?,?,?,?,?,?,?)",
+                    "INSERT INTO sessions VALUES (?,?,?,?,?,?,?,?,?)",
                     (
                         session_id,
                         chat_id,
@@ -260,6 +267,7 @@ class Runtime:
                         None,
                         encode(config),
                         now(),
+                        encode(self.config.get("agents", {}).get(agent_id, {})),
                     ),
                 )
             # Native creation can be ambiguous on transport failure: reservation
@@ -327,15 +335,27 @@ class Runtime:
 
     async def _instance(self, session):
         sid = session["id"]
+        session = self.store.session(sid)
+        active = bool(self.store.active(sid))
+        adapter = self.instances.get(sid) or self.factory(session["agent_id"])()
+        settings = self.store.db.execute(
+            "SELECT settings FROM agents WHERE id=?", (session["agent_id"],)
+        ).fetchone()
+        config = adapter.validate_config(
+            {**session["base_config"], **(json.loads(settings[0]) if settings else {})}
+        )
+        if not active and sid in self.instances and config != session["config"]:
+            await adapter.close(session["binding"])
+            del self.instances[sid]
+            self.capabilities.pop(sid, None)
         if sid not in self.instances:
-            if self.store.active(sid):
+            if active:
                 raise RunnerError(
                     "session_unknown",
                     "Active session requires run recovery, not resume",
                     409,
                 )
             adapter = self.factory(session["agent_id"])()
-            config = adapter.validate_config(session["config"])
             if session["binding"] is None:
                 raise RunnerError(
                     "session_unknown",
@@ -346,12 +366,13 @@ class Runtime:
             self.validate_binding(session, binding)
             with self.store.db:
                 self.store.db.execute(
-                    "UPDATE sessions SET binding=? WHERE id=?", (encode(binding), sid)
+                    "UPDATE sessions SET binding=?,config=? WHERE id=?",
+                    (encode(binding), encode(config), sid),
                 )
             self.instances[sid] = adapter
         if sid not in self.capabilities:
             self.capabilities[sid] = (
-                await self.instances[sid].probe(session["config"])
+                await self.instances[sid].probe(self.store.session(sid)["config"])
             )["capabilities"]
         return self.instances[sid]
 

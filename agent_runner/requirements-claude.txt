@@ -1,0 +1,3 @@
+# Explicit optional SDK installation in Runner's venv, never the ChatRaw image.
+-r requirements.txt
+claude-agent-sdk==0.2.180

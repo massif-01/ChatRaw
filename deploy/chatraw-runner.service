@@ -1,0 +1,20 @@
+[Unit]
+Description=ChatRaw host Agent execution service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@RUNNER_USER@
+WorkingDirectory=/opt/chatraw-runner
+EnvironmentFile=-/etc/chatraw-runner/environment
+Environment=CHATRAW_RUNNER_TOKEN_FILE=/etc/chatraw-runner/token
+ExecStart=/opt/chatraw-runner/venv/bin/python -m agent_runner --config /etc/chatraw-runner/config.json
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=60
+KillMode=mixed
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

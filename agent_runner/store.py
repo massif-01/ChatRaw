@@ -52,14 +52,27 @@ class Store:
         self.db.execute("PRAGMA synchronous=FULL")
         self.db.execute("PRAGMA foreign_keys=ON")
         version = self.db.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1):
+        if version not in (0, 1, 2):
             raise RuntimeError("Unsupported Runner database version")
+        if version == 1:
+            backup = self.directory / "runner.pre-v2.bak"
+            if not backup.exists():
+                with sqlite3.connect(backup) as destination:
+                    self.db.backup(destination)
+                backup.chmod(0o600)
+            with self.db:
+                self.db.execute(
+                    "ALTER TABLE sessions ADD COLUMN base_config TEXT NOT NULL DEFAULT '{}'"
+                )
+                self.db.execute("UPDATE sessions SET base_config=config")
+                self.db.execute("PRAGMA user_version=2")
         self.db.executescript(
             """
             CREATE TABLE IF NOT EXISTS sessions (
                 id TEXT PRIMARY KEY, chat_id TEXT NOT NULL, agent_id TEXT NOT NULL,
                 workspace TEXT NOT NULL, workspace_public TEXT NOT NULL,
-                binding TEXT, config TEXT NOT NULL, created_at TEXT NOT NULL
+                binding TEXT, config TEXT NOT NULL, created_at TEXT NOT NULL,
+                base_config TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS agents (
                 id TEXT PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 0,
@@ -89,7 +102,7 @@ class Store:
                 chat_id TEXT NOT NULL, run_id TEXT, kind TEXT NOT NULL,
                 name TEXT NOT NULL, mime_type TEXT NOT NULL, size INTEGER NOT NULL
             );
-            PRAGMA user_version=1;
+            PRAGMA user_version=2;
         """
         )
 
@@ -104,7 +117,7 @@ class Store:
         if row is None:
             raise RunnerError("session_not_found", "Session not found", 404)
         value = dict(row)
-        for key in ("binding", "config", "workspace_public"):
+        for key in ("binding", "config", "workspace_public", "base_config"):
             value[key] = json.loads(value[key]) if value[key] else None
         return value
 

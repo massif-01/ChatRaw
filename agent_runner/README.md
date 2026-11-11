@@ -1,4 +1,10 @@
-# A 首批：公共 adapter 候选骨架与合同审查
+# ChatRaw Host Agent Runner
+
+当前实现与交付见 [M2](M2.md)，部署见 [deploy/README.md](../deploy/README.md)。
+公共 adapter v1 已由总控冻结；Runner 负责运行权威状态与持久事件，ChatRaw 只负责同源网关和显示投影。
+以下保留首轮候选合同审查作为设计依据，不代表当前仍只有骨架。
+
+## 首轮合同审查记录
 
 2026-11-12；基线 `0c14990`。本批只交付可导入合同、模拟消费者测试和审查建议，
 未实现 Runner HTTP/数据库/调度、Hermes 迁移或部署。已核对总控合并 A/F 修订后的 v0.2；

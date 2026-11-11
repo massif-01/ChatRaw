@@ -26,6 +26,7 @@ def create_app(runtime, token):
                     "error": {
                         "code": "unauthorized",
                         "message": "Runner authentication required",
+                        "retryable": False,
                     }
                 },
                 status=401,
@@ -34,15 +35,49 @@ def create_app(runtime, token):
             return await handler(request)
         except RunnerError as error:
             return web.json_response(
-                {"error": {"code": error.code, "message": error.message}},
+                {
+                    "error": {
+                        "code": error.code,
+                        "message": error.message,
+                        "retryable": False,
+                    }
+                },
                 status=error.status,
             )
         except AdapterError as error:
             return web.json_response({"error": error.as_data()}, status=400)
         except (json.JSONDecodeError, UnicodeDecodeError):
             return web.json_response(
-                {"error": {"code": "invalid_json", "message": "Invalid JSON body"}},
+                {
+                    "error": {
+                        "code": "invalid_json",
+                        "message": "Invalid JSON body",
+                        "retryable": False,
+                    }
+                },
                 status=400,
+            )
+        except web.HTTPException as error:
+            return web.json_response(
+                {
+                    "error": {
+                        "code": "request_rejected",
+                        "message": error.reason,
+                        "retryable": False,
+                    }
+                },
+                status=error.status,
+            )
+        except Exception:
+            return web.json_response(
+                {
+                    "error": {
+                        "code": "runner_internal_error",
+                        "message": "Runner could not complete the request; verify existing execution state",
+                        "retryable": False,
+                    }
+                },
+                status=500,
             )
 
     app = web.Application(middlewares=[authenticated], client_max_size=26 * 1024 * 1024)
@@ -70,8 +105,10 @@ def create_app(runtime, token):
 
     async def agents(request):
         entries = []
-        for agent_id in AGENT_IDS:
-            probe = await runtime.probe(agent_id)
+        probes = await asyncio.gather(
+            *(runtime.probe(agent_id) for agent_id in AGENT_IDS)
+        )
+        for agent_id, probe in zip(AGENT_IDS, probes):
             entries.append(
                 {
                     **probe,
@@ -217,14 +254,16 @@ def create_app(runtime, token):
     async def cancel(request):
         run_id = request.match_info["run_id"]
         await owner(request, run_id=run_id)
-        return web.json_response(await runtime.cancel(run_id))
+        return web.json_response(await asyncio.shield(runtime.cancel(run_id)))
 
     async def respond(request):
         run_id = request.match_info["run_id"]
         await owner(request, run_id=run_id)
         body = await request.json()
         return web.json_response(
-            await runtime.respond(run_id, request.match_info["interaction_id"], body)
+            await asyncio.shield(
+                runtime.respond(run_id, request.match_info["interaction_id"], body)
+            )
         )
 
     async def attachment(request):
@@ -244,6 +283,16 @@ def create_app(runtime, token):
             raise RunnerError(
                 "unsupported_attachment", "Agent does not support this attachment type"
             )
+        if mime.startswith("image/"):
+            limits = capabilities.get("limits", {})
+            if "image_mime_types" in limits and mime not in limits["image_mime_types"]:
+                raise RunnerError(
+                    "unsupported_attachment", "Agent does not support this image format"
+                )
+            if "max_image_bytes" in limits and len(data) > limits["max_image_bytes"]:
+                raise RunnerError(
+                    "attachment_too_large", "Image exceeds this Agent's size limit", 413
+                )
         runtime.require_enabled(session["agent_id"])
         with runtime.store.db:
             result = runtime.file_store.save(session, io.BytesIO(data), name, mime)

@@ -86,6 +86,9 @@ class FileStore:
 
     def attachments(self, session, attachments, capabilities):
         result = []
+        image_bytes = 0
+        image_count = 0
+        limits = capabilities.get("limits", {})
         for reference in attachments:
             row = self.get(reference["attachment_id"], session["id"], "attachment")
             image = row["mime_type"].startswith("image/")
@@ -94,6 +97,39 @@ class FileStore:
                     "unsupported_attachment",
                     "Agent does not support this attachment type",
                 )
+            if image:
+                image_count += 1
+                if "max_images" in limits and image_count > limits["max_images"]:
+                    raise RunnerError(
+                        "too_many_images", "Too many images for this Agent"
+                    )
+                if (
+                    "max_image_bytes" in limits
+                    and row["size"] > limits["max_image_bytes"]
+                ):
+                    raise RunnerError(
+                        "attachment_too_large",
+                        "An image exceeds this Agent's size limit",
+                        413,
+                    )
+                if (
+                    "image_mime_types" in limits
+                    and row["mime_type"] not in limits["image_mime_types"]
+                ):
+                    raise RunnerError(
+                        "unsupported_attachment",
+                        "Agent does not support this image format",
+                    )
+                image_bytes += row["size"]
+                if (
+                    "image_total_bytes" in limits
+                    and image_bytes > limits["image_total_bytes"]
+                ):
+                    raise RunnerError(
+                        "attachment_too_large",
+                        "Images exceed this Agent's per-run limit",
+                        413,
+                    )
             result.append(
                 {
                     "attachment_id": row["id"],

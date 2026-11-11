@@ -1,0 +1,20 @@
+{
+  "host": "127.0.0.1",
+  "port": 51112,
+  "data_dir": "/var/lib/chatraw-runner",
+  "token_file": "/etc/chatraw-runner/token",
+  "max_concurrency": 3,
+  "workspaces": {},
+  "agents": {
+    "hermes": {
+      "executable": "hermes"
+    },
+    "pi": {
+      "executable": "/opt/chatraw-agents/pi/bin/pi",
+      "session_root": "/var/lib/chatraw-runner/pi-sessions"
+    },
+    "deepseek": {
+      "dsh_home": "/var/lib/chatraw-runner/deepseek"
+    }
+  }
+}
