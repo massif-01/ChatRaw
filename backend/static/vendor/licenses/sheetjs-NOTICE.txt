@@ -1,0 +1,4 @@
+This product includes SheetJS Community Edition 0.20.1.
+Copyright (C) 2012-present SheetJS LLC. All rights reserved.
+Licensed under the Apache License, Version 2.0.
+See sheetjs-Apache-2.0.txt for the license text.

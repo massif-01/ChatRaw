@@ -17,6 +17,7 @@ ChatRaw拥有聊天/显示记录/插件设置/绑定；Runner拥有运行权威�
 - GET /api/agents → {agents:[{id,name,installed,enabled,availability,reason,capabilities,settings_revision}]}。availability=ready/unconfigured/unavailable/unknown；列表不隐式启动模型请求。
 - GET /api/agents/{agent_id}/health → {agent_id,availability,reason,version,capabilities,models?}。明确区分程序存在/协议握手/认证/实际模型请求的验证层级。
 - GET /api/agents/workspaces → {workspaces:[{id,label}]}。只列管理员允许的项目，浏览器不提交任意宿主绝对路径。
+- POST /api/plugins/install-bundled，body={plugin_id:string} → {success,plugin_id,manifest}；只允许镜像bundled市场ID并完整复制插件及依赖资产。原URL/ZIP安装保留。本接口不安装或启动任何宿主Agent程序。
 - POST /api/chats 沿用当前创建入口。
 - PUT /api/chats/{chat_id}/agent，body={agent_id:null|string,workspace:{kind:"managed"}|{kind:"project",id:string}} → {chat_id,agent_id,session_id,workspace:{kind,id,label}}。有消息或活动执行的聊天不得改绑(409)，需要新聊天。managed目录持久化并按session隔离。
 - GET /api/chats/{chat_id}/agent → {chat_id,agent_id,session_id,workspace,active_run_id,last_run_id}；未绑定返回agent_id/session_id=null。刷新/第二设备从此发现活动run，再取run snapshot与events。读取既有记录不因插件禁用而拒绝。

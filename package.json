@@ -1,14 +1,27 @@
 {
+  "name": "chatraw-frontend",
+  "private": true,
   "scripts": {
-    "build:markmap": "node Plugins/Plugin_market/mindmap-renderer/build-markmap.js"
+    "build": "terser backend/static/app.js --compress --mangle --output backend/static/app.min.js && postcss backend/static/styles.css --use cssnano --no-map --output backend/static/styles.min.css",
+    "build:markmap": "node Plugins/Plugin_market/mindmap-renderer/build-markmap.js",
+    "vendor:sync": "node scripts/frontend-vendor.mjs --write",
+    "vendor:check": "node scripts/frontend-vendor.mjs",
+    "test:offline-ui": "node scripts/test-offline-ui.mjs",
+    "test:chrome109": "node scripts/test-offline-ui.mjs --require-109"
   },
   "devDependencies": {
-    "cssnano": "^7.1.2",
-    "esbuild": "^0.27.3",
-    "markmap-lib": "^0.18.12",
-    "markmap-view": "^0.18.12",
-    "postcss": "^8.5.6",
-    "postcss-cli": "^11.0.1",
-    "terser": "^5.46.0"
+    "@alpinejs/collapse": "3.13.3",
+    "@highlightjs/cdn-assets": "11.9.0",
+    "alpinejs": "3.13.3",
+    "cssnano": "7.1.2",
+    "esbuild": "0.27.3",
+    "marked": "9.1.6",
+    "markmap-lib": "0.18.12",
+    "markmap-view": "0.18.12",
+    "papaparse": "5.4.1",
+    "playwright-core": "1.29.2",
+    "postcss": "8.5.32",
+    "postcss-cli": "11.0.1",
+    "terser": "5.46.0"
   }
 }

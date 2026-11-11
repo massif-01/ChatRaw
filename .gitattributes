@@ -1,0 +1,8 @@
+# Preserve the bytes covered by backend/static/vendor/SHA256SUMS.
+/backend/static/vendor/** -text
+/backend/static/fonts/remixicon/** -text
+/Plugins/Plugin_market/*/lib/** -text
+
+# Retain the upstream notice and the original whitespace in patch context.
+/backend/static/vendor/licenses/html2pdf.bundle.min.js.LICENSE.txt whitespace=-blank-at-eol
+/docs/agent-platform/handoffs/E/entrypoints.patch text eol=lf whitespace=-blank-at-eol
