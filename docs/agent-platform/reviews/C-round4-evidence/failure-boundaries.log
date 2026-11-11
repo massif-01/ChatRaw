@@ -1,0 +1,11 @@
+test_claude_redaction_required_command_is_not_authorizable (test_c_fix_boundaries.CredentialCommandTests.test_claude_redaction_required_command_is_not_authorizable) ... Executing <Task pending name='Task-2' coro=<CredentialCommandTests.test_claude_redaction_required_command_is_not_authorizable() running at /Users/massif/.codex/worktrees/527c/ChatRaw/docs/agent-platform/reviews/test_c_fix_boundaries.py:74> cb=[_run_until_complete_cb() at /opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/base_events.py:181] created at /opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/runners.py:109> took 0.309 seconds
+ok
+test_codex_redaction_required_command_is_not_authorizable (test_c_fix_boundaries.CredentialCommandTests.test_codex_redaction_required_command_is_not_authorizable) ... ok
+test_list_failure_does_not_confirm_cancellation (test_c_fix_boundaries.StopFailureTests.test_list_failure_does_not_confirm_cancellation) ... ok
+test_terminate_ack_without_verified_disappearance_stays_unknown (test_c_fix_boundaries.StopFailureTests.test_terminate_ack_without_verified_disappearance_stays_unknown) ... ok
+test_terminate_failure_does_not_confirm_cancellation (test_c_fix_boundaries.StopFailureTests.test_terminate_failure_does_not_confirm_cancellation) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.816s
+
+OK

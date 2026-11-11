@@ -1,0 +1,40 @@
+test_default_recovery_does_not_resubmit_or_claim_terminal (agent_runner.tests.test_adapter_base.AdapterContractTests.test_default_recovery_does_not_resubmit_or_claim_terminal) ... ok
+test_import_has_no_optional_dependencies_or_backend_startup (agent_runner.tests.test_adapter_base.AdapterContractTests.test_import_has_no_optional_dependencies_or_backend_startup) ... ok
+test_leaf_can_checkpoint_and_receive_reply_stop_while_waiting (agent_runner.tests.test_adapter_base.AdapterContractTests.test_leaf_can_checkpoint_and_receive_reply_stop_while_waiting) ... ok
+test_optional_methods_fail_explicitly_without_success_fallback (agent_runner.tests.test_adapter_base.AdapterContractTests.test_optional_methods_fail_explicitly_without_success_fallback) ... ok
+test_safe_error_payload_is_serializable (agent_runner.tests.test_adapter_base.AdapterContractTests.test_safe_error_payload_is_serializable) ... ok
+test_settings_omit_blank_defaults_and_reject_host_overrides (agent_runner.tests.test_c_adapter_protocol.AttachmentAndSettingsTests.test_settings_omit_blank_defaults_and_reject_host_overrides) ... ok
+test_unsupported_files_are_rejected_before_native_start (agent_runner.tests.test_c_adapter_protocol.AttachmentAndSettingsTests.test_unsupported_files_are_rejected_before_native_start) ... ok
+test_background_result_does_not_settle_the_human_turn (agent_runner.tests.test_c_adapter_protocol.ClaudeProtocolTests.test_background_result_does_not_settle_the_human_turn) ... ok
+test_eof_after_interrupt_ack_is_unknown_and_transport_is_closed (agent_runner.tests.test_c_adapter_protocol.ClaudeProtocolTests.test_eof_after_interrupt_ack_is_unknown_and_transport_is_closed) ... ok
+test_unknown_recovery_never_launches_sdk (agent_runner.tests.test_c_adapter_protocol.ClaudeProtocolTests.test_unknown_recovery_never_launches_sdk) ... ok
+test_cross_thread_turn_and_secret_requests_cannot_be_authorized (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_cross_thread_turn_and_secret_requests_cannot_be_authorized) ... ok
+test_eof_leaves_turn_unknown_with_last_text (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_eof_leaves_turn_unknown_with_last_text) ... ok
+test_recovery_never_replays_or_substitutes_a_different_turn (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_recovery_never_replays_or_substitutes_a_different_turn) ... ok
+test_stop_finds_newly_registered_background_tool_without_stopping_other_turns (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_stop_finds_newly_registered_background_tool_without_stopping_other_turns) ... ok
+test_timed_question_resolves_empty_and_rejects_late_reply (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_timed_question_resolves_empty_and_rejects_late_reply) ... ok
+test_unverified_tool_stop_stays_unknown_across_recovery (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_unverified_tool_stop_stays_unknown_across_recovery) ... ok
+test_claude_native_approval (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_claude_native_approval) ... Executing <Task pending name='Task-85' coro=<_Sink.run() running at /Users/massif/.codex/worktrees/527c/ChatRaw/agent_runner/tests/test_c_native_adapters.py:305> cb=[_wait.<locals>._on_completion() at /opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/tasks.py:503] created at /opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/tasks.py:395> took 0.311 seconds
+ok
+test_claude_native_compaction (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_claude_native_compaction) ... ok
+test_claude_native_context_at_model_endpoint (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_claude_native_context_at_model_endpoint) ... ok
+test_claude_native_image (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_claude_native_image) ... ok
+test_claude_native_long_and_oversize_approval (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_claude_native_long_and_oversize_approval) ... ok
+test_claude_native_question_batch (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_claude_native_question_batch) ... ok
+test_claude_native_stop (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_claude_native_stop) ... ok
+test_claude_native_stop_during_approval (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_claude_native_stop_during_approval) ... ok
+test_claude_native_text_and_resume (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_claude_native_text_and_resume) ... ok
+test_codex_native_approval (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_approval) ... ok
+test_codex_native_compaction (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_compaction) ... ok
+test_codex_native_image (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_image) ... ok
+test_codex_native_long_and_oversize_approval (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_long_and_oversize_approval) ... ok
+test_codex_native_question (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_question) ... ok
+test_codex_native_stop (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_stop) ... ok
+test_codex_native_stop_during_approval (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_stop_during_approval) ... ok
+test_codex_native_stop_terminates_background_shell (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_stop_terminates_background_shell) ... ok
+test_codex_native_text_and_resume (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_text_and_resume) ... ok
+
+----------------------------------------------------------------------
+Ran 34 tests in 12.095s
+
+OK
