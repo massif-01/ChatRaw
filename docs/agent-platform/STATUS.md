@@ -2,16 +2,16 @@
 
 目标：五Agent统一界面＋手机＋本地UI资源＋Chrome109。
 用户已确认：宿主执行服务、独立持久任务目录/显式项目选择、总控/A/F Astra high。
-当前：M0基线6874553、E首批资源df5de2d、D适配器2512fe7已集成；A/B/C实施中，F正独立审查D；E等待正式集成版本复验。
+当前：M0基线6874553、E首批资源df5de2d、D适配器2512fe7已集成；A/B/C实施中，D补充Hermes原生协议核验；F第二轮无D集成阻塞，E/F等待正式集成版本复验。
 
 |Owner|模型/思考|阶段|thread/worktree|证据|
 |---|---|---|---|---|
 |A|astra/high|公共Runner/Hermes目标任务进行中|01a1cc3e-4ff3-7410-94b5-43ef8740fb19 / .codex/worktrees/04ec/ChatRaw|02b25bd，5模拟契约测试；集成6874553|
 |B|6.1-sol/xhigh|前端目标任务进行中|01a1cc44-651b-7110-8e53-8e7897dc228d / .codex/worktrees/a7f6/ChatRaw||
 |C|6.1-sol/xhigh|Codex/Claude目标任务已放行|01a1cc53-86d3-7ba0-bf50-314739d9fa55 / .codex/worktrees/1d34/ChatRaw||
-|D|6.1-sol/xhigh|首批交付已集成，独立审查中|01a1cc50-17c8-71a3-bb04-4ec011d226bc / .codex/worktrees/9133/ChatRaw|270cf79/224b012；集成2a95724/2512fe7；总控11协议检查通过；原生程序＋本地模型替身证据见D-adapters.md|
+|D|6.1-sol/xhigh|首批集成并通过叶模块审查；补测Hermes|01a1cc50-17c8-71a3-bb04-4ec011d226bc / .codex/worktrees/9133/ChatRaw|270cf79/224b012；集成2a95724/2512fe7；总控11协议检查通过；原生程序＋本地模型替身证据见D-adapters.md|
 |E|6.1-sol/high|首批交付，待集成版复验|01a1cc3e-72e2-7942-a25a-25f736a2d9b2 / .codex/worktrees/b360/ChatRaw|e8db0e0，本地vendor/构建/真实109旧基线断CDN验证|
-|F|astra/high|D适配器独立审查中|01a1cc3e-9cc1-71b3-a6c1-ea33f770bf8a / .codex/worktrees/527c/ChatRaw|146基线测试通过；F01–F04已合入v1|
+|F|astra/high|D适配器独立审查完成，待整体版本|01a1cc3e-9cc1-71b3-a6c1-ea33f770bf8a / .codex/worktrees/527c/ChatRaw|146旧基线测试；D原有16＋新增6通过，无跳过；F-D-round2-20261112.md|
 
 ## 决策
 - 2026-11-12：批准完整实施，模型按用户修正；所有已定范围不得缩减。
@@ -34,6 +34,7 @@
 - F：刷新发现active run、client_request_id结果查询、cancel与reply竞争顺序，已合入v1；实现仍需验证。
 
 ## 实现中发现
-- B/G09：真实Chrome中复现stream renderer与markdown-enhancer交互：live停顿后KaTeX先渲染，finalize同source时公式被TextNode扁平化。已交B修复并要求保留公式功能，复现脚本位于outputs/agent-platform/check-stream-plugin.mjs（临时诊断，非正式通过证据）。
+- B/G09已关闭：真实Chrome中复现stream renderer与markdown-enhancer交互：live停顿后KaTeX先渲染，finalize同source时公式被TextNode扁平化。B修复后总控重验：live停顿1600ms不提前增强，收敛后保留1个KaTeX公式。正式整体渲染另验；临时诊断位于outputs/agent-platform/check-stream-plugin.mjs。
 - A/G01：草稿session.config永久快照可能使保存后的可编辑设置对既有聊天下轮无效；已要求对齐进行中不变/下轮生效，复用空闲resume边界并做出站测试，不改变native会话身份。
 - 总控PostCSS8.5.32产出的旧基线CSS SHA256与E首批8.5.15证据相同：ca131c569c41fed286c3225404fc5447f7f510d2072f279bdc9d7caf7f68de31。
+- A/G13–G15：要求清除生产模块已退役的旧Hermes执行状态机，并把Runner凭据挂载放入Agent专用Compose overlay，保留未安装Agent时普通聊天的独立Docker启动。

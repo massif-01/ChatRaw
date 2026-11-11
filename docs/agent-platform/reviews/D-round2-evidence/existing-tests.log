@@ -1,0 +1,48 @@
+test_default_recovery_does_not_resubmit_or_claim_terminal (agent_runner.tests.test_adapter_base.AdapterContractTests.test_default_recovery_does_not_resubmit_or_claim_terminal) ... ok
+test_import_has_no_optional_dependencies_or_backend_startup (agent_runner.tests.test_adapter_base.AdapterContractTests.test_import_has_no_optional_dependencies_or_backend_startup) ... ok
+test_leaf_can_checkpoint_and_receive_reply_stop_while_waiting (agent_runner.tests.test_adapter_base.AdapterContractTests.test_leaf_can_checkpoint_and_receive_reply_stop_while_waiting) ... ok
+test_optional_methods_fail_explicitly_without_success_fallback (agent_runner.tests.test_adapter_base.AdapterContractTests.test_optional_methods_fail_explicitly_without_success_fallback) ... ok
+test_safe_error_payload_is_serializable (agent_runner.tests.test_adapter_base.AdapterContractTests.test_safe_error_payload_is_serializable) ... ok
+test_transport_loss_requires_owned_shutdown_evidence (agent_runner.tests.test_d_adapter_protocol.DeepSeekProtocolTests.test_transport_loss_requires_owned_shutdown_evidence) ... ok
+test_eof_is_unknown_and_fences_without_replay (agent_runner.tests.test_d_adapter_protocol.PiProtocolTests.test_eof_is_unknown_and_fences_without_replay) ... ok
+test_manual_compaction_requires_response_and_native_abort_evidence (agent_runner.tests.test_d_adapter_protocol.PiProtocolTests.test_manual_compaction_requires_response_and_native_abort_evidence) ... ok
+test_native_dialog_expiry_blocks_late_response (agent_runner.tests.test_d_adapter_protocol.PiProtocolTests.test_native_dialog_expiry_blocks_late_response) ... ok
+test_retry_requires_settled_and_final_text_replaces_deltas (agent_runner.tests.test_d_adapter_protocol.PiProtocolTests.test_retry_requires_settled_and_final_text_replaces_deltas) ... ok
+test_unsupported_attachment_fails_before_dispatch (agent_runner.tests.test_d_adapter_protocol.PiProtocolTests.test_unsupported_attachment_fails_before_dispatch) ... ok
+test_sdk_batch_stop_and_strict_resume (agent_runner.tests.test_d_native_adapters.DeepSeekNativeTests.test_sdk_batch_stop_and_strict_resume) ... /private/tmp/chatraw-d-dsh-py312/lib/python3.12/site-packages/deepseek_harness/api.py:172: ResourceWarning: unclosed file <_io.TextIOWrapper name=10 encoding='utf-8'>
+  self._client.close()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/private/tmp/chatraw-d-dsh-py312/lib/python3.12/site-packages/deepseek_harness/api.py:172: ResourceWarning: unclosed file <_io.TextIOWrapper name=12 encoding='utf-8'>
+  self._client.close()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/private/tmp/chatraw-d-dsh-py312/lib/python3.12/site-packages/deepseek_harness/api.py:172: ResourceWarning: unclosed file <_io.TextIOWrapper name=14 encoding='utf-8'>
+  self._client.close()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/private/tmp/chatraw-d-dsh-py312/lib/python3.12/site-packages/deepseek_harness/api.py:172: ResourceWarning: unclosed file <_io.TextIOWrapper name=17 encoding='utf-8'>
+  self._client.close()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/private/tmp/chatraw-d-dsh-py312/lib/python3.12/site-packages/deepseek_harness/api.py:172: ResourceWarning: unclosed file <_io.TextIOWrapper name=13 encoding='utf-8'>
+  self._client.close()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/private/tmp/chatraw-d-dsh-py312/lib/python3.12/site-packages/deepseek_harness/api.py:172: ResourceWarning: unclosed file <_io.TextIOWrapper name=15 encoding='utf-8'>
+  self._client.close()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_sdk_empty_native_compaction (agent_runner.tests.test_d_native_adapters.DeepSeekNativeTests.test_sdk_empty_native_compaction) ... /Users/massif/.codex/worktrees/527c/ChatRaw/agent_runner/tests/test_d_native_adapters.py:171: ResourceWarning: unclosed file <_io.TextIOWrapper name=10 encoding='utf-8'>
+  stream = "".join(
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/massif/.codex/worktrees/527c/ChatRaw/agent_runner/tests/test_d_native_adapters.py:171: ResourceWarning: unclosed file <_io.TextIOWrapper name=12 encoding='utf-8'>
+  stream = "".join(
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/private/tmp/chatraw-d-dsh-py312/lib/python3.12/site-packages/deepseek_harness/api.py:172: ResourceWarning: unclosed file <_io.TextIOWrapper name=11 encoding='utf-8'>
+  self._client.close()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_sdk_native_plan_and_permission (agent_runner.tests.test_d_native_adapters.DeepSeekNativeTests.test_sdk_native_plan_and_permission) ... ok
+test_sdk_stop_waits_for_active_shell (agent_runner.tests.test_d_native_adapters.DeepSeekNativeTests.test_sdk_stop_waits_for_active_shell) ... ok
+test_rpc_batch_approval_stop_and_strict_resume (agent_runner.tests.test_d_native_adapters.PiNativeTests.test_rpc_batch_approval_stop_and_strict_resume) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 19.087s
+
+OK
