@@ -13,6 +13,7 @@ ChatRaw拥有聊天/显示记录/插件设置/绑定；Runner拥有运行权威�
 ## 2. 浏览器统一 API（ChatRaw 同源）
 
 所有新端点遵守现有同源校验/限流，并由后端验证安装启用状态。无效请求在启动Agent/保存不可回滚副作用前拒绝。
+新Agent API错误统一为 {error:{code,message,retryable}}，结合HTTP状态；message为安全可显示文本，不泄漏stderr/凭据。既有插件API保留原success/error字符串合同，B公共错误读取兼容这两类，不把对象显示成[object Object]。Runner错误不能直接透传内部trace。
 
 - GET /api/agents → {agents:[{id,name,installed,enabled,availability,reason,capabilities,settings_revision}]}。availability=ready/unconfigured/unavailable/unknown；列表不隐式启动模型请求。
 - GET /api/agents/{agent_id}/health → {agent_id,availability,reason,version,capabilities,models?}。明确区分程序存在/协议握手/认证/实际模型请求的验证层级。
