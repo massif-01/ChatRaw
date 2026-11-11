@@ -2,16 +2,16 @@
 
 目标：五Agent统一界面＋手机＋本地UI资源＋Chrome109。
 用户已确认：宿主执行服务、独立持久任务目录/显式项目选择、总控/A/F Astra high。
-当前：公共骨架、四适配器、本地资源与B界面已集成至40bbb20；A后端收尾，C修复已集成62dc389且F复验关闭阻塞；E新版109界面测试已通过，待最终后端。逐项门槛见VALIDATION.md。
+当前：本地完整实现已集成165a509，E真实109/离线验收通过，F已关闭全部本地已知P0/P1；总控最终网关与断网Docker同卷重建通过。全项目目标仍未完成，等待现场安装授权、真实模型认证、手机实机与整机重启验收。逐项门槛见VALIDATION.md。
 
 |Owner|模型/思考|阶段|thread/worktree|证据|
 |---|---|---|---|---|
-|A|astra/high|公共Runner/Hermes目标任务进行中|01a1cc3e-4ff3-7410-94b5-43ef8740fb19 / .codex/worktrees/04ec/ChatRaw|02b25bd，5模拟契约测试；集成6874553|
+|A|astra/high|完整后端及标题增量已集成|01a1cc3e-4ff3-7410-94b5-43ef8740fb19 / .codex/worktrees/04ec/ChatRaw|a688cc8/7057c6e/cb4d9fc；集成5430b39/2d770f0/e822294；153执行通过23可选跳过，标题4项通过|
 |B|6.1-sol/xhigh|首批已集成，待最终后端复验|01a1cc44-651b-7110-8e53-8e7897dc228d / .codex/worktrees/a7f6/ChatRaw|70894b7；集成bd9ad55；总控Chrome157两组浏览器脚本通过|
-|C|6.1-sol/xhigh|修复已集成并通过独立复验|01a1cc53-86d3-7ba0-bf50-314739d9fa55 / .codex/worktrees/1d34/ChatRaw|e50c682；集成62dc389；F复验34＋4＋5检查通过，C-F01/C-F02关闭|
+|C|6.1-sol/xhigh|修复完成并通过最终定向复验|01a1cc53-86d3-7ba0-bf50-314739d9fa55 / .codex/worktrees/1d34/ChatRaw|69a7427/集成165a509；F-PLAT-01关闭，UI编码到真实原生9项通过|
 |D|6.1-sol/xhigh|首批与Hermes补测完成|01a1cc50-17c8-71a3-bb04-4ec011d226bc / .codex/worktrees/9133/ChatRaw|270cf79/224b012；集成2512fe7；Hermes真实Gateway补测2add9fd/集成40bbb20|
-|E|6.1-sol/high|新版109复验中，等待最终后端|01a1cc3e-72e2-7942-a25a-25f736a2d9b2 / .codex/worktrees/b360/ChatRaw|e8db0e0资源；新版B两组fixture在真实109/157通过|
-|F|astra/high|C/D均通过叶模块审查，待整体版本|01a1cc3e-9cc1-71b3-a6c1-ea33f770bf8a / .codex/worktrees/527c/ChatRaw|D原有16＋新增6通过；C修复后43项通过，见F-C-round4-20261112.md|
+|E|6.1-sol/high|最终G11/G12本机验收通过|01a1cc3e-72e2-7942-a25a-25f736a2d9b2 / .codex/worktrees/b360/ChatRaw|2d770f0真实109/157、真实后端/Runner、外部请求0；reviews/E-2d770f0/REPORT.md|
+|F|astra/high|本地完整平台有界验收通过|01a1cc3e-9cc1-71b3-a6c1-ea33f770bf8a / .codex/worktrees/527c/ChatRaw|F-platform-final-69a7427-20261112.md；153执行/23可选跳过、7权威层、5标题、9问答定向通过，现场边界保留|
 
 ## 决策
 - 2026-11-12：批准完整实施，模型按用户修正；所有已定范围不得缩减。

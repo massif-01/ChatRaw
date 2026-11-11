@@ -1,0 +1,11 @@
+INFO:     Started server process [36472]
+INFO:     Waiting for application startup.
+{"timestamp": "2026-11-11T21:41:19.527777Z", "level": "INFO", "logger": "chatraw", "message": "Starting ChatRaw service"}
+INFO:     Application startup complete.
+Real ChatRaw gateway and Runner, Chromium 109.0.5414.46 local install/settings/attachment, tab close, second-device approval, final projection and reload passed; ControlledAdapter receiver
+External gateway browser request attempts: 0 []
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+{"timestamp": "2026-11-11T21:41:24.715071Z", "level": "INFO", "logger": "chatraw", "message": "Shutting down ChatRaw service"}
+INFO:     Application shutdown complete.
+INFO:     Finished server process [36472]

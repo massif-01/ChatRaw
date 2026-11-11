@@ -1,0 +1,6 @@
+test_additive_migration_and_restorable_backup_preserve_existing_rows (backend.test_agent_migration.AgentMigrationTests.test_additive_migration_and_restorable_backup_preserve_existing_rows) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.004s
+
+OK

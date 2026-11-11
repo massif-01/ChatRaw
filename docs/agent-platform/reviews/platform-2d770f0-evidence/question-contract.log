@@ -1,0 +1,30 @@
+test_ui_multiselect_plus_custom_reaches_declared_native_answer (test_platform_question_contract.QuestionContractTests.test_ui_multiselect_plus_custom_reaches_declared_native_answer) ... {"ui_payload": {"answers": [{"question_id": "0", "option_ids": ["0"], "text": "Custom size"}]}, "receipt": "unknown", "native_answers": [], "corrected_retry": "409 reply_conflict"}
+FAIL
+
+======================================================================
+FAIL: test_ui_multiselect_plus_custom_reaches_declared_native_answer (test_platform_question_contract.QuestionContractTests.test_ui_multiselect_plus_custom_reaches_declared_native_answer)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/unittest/async_case.py", line 90, in _callTestMethod
+    if self._callMaybeAsync(method) is not None:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/unittest/async_case.py", line 112, in _callMaybeAsync
+    return self._asyncioRunner.run(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/Users/massif/.codex/worktrees/527c/ChatRaw/docs/agent-platform/reviews/test_platform_question_contract.py", line 81, in test_ui_multiselect_plus_custom_reaches_declared_native_answer
+    self.assertEqual(receipt["status"], "accepted", "Declared UI answer was rejected by the native mapper and permanently consumed by Runner")
+AssertionError: 'unknown' != 'accepted'
+- unknown
++ accepted
+ : Declared UI answer was rejected by the native mapper and permanently consumed by Runner
+
+----------------------------------------------------------------------
+Ran 1 test in 0.047s
+
+FAILED (failures=1)

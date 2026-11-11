@@ -1,0 +1,9 @@
+test_close_http_session_clears_already_closed_session_without_closing_again (backend.test_http_session_tls.HTTPSessionTLSTests.test_close_http_session_clears_already_closed_session_without_closing_again) ... ok
+test_close_http_session_closes_open_session_and_clears_global (backend.test_http_session_tls.HTTPSessionTLSTests.test_close_http_session_closes_open_session_and_clears_global) ... ok
+test_create_ssl_context_uses_certifi_cafile (backend.test_http_session_tls.HTTPSessionTLSTests.test_create_ssl_context_uses_certifi_cafile) ... ok
+test_get_http_session_creates_connector_with_certifi_ssl_context_and_reuses_session (backend.test_http_session_tls.HTTPSessionTLSTests.test_get_http_session_creates_connector_with_certifi_ssl_context_and_reuses_session) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.005s
+
+OK

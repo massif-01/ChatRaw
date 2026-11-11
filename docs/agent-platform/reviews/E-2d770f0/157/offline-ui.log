@@ -1,0 +1,9 @@
+
+> test:offline-ui
+> node scripts/test-offline-ui.mjs
+
+Browser reported: Chrome/157.0.8103.51 (@653674df293788cf4932c40d914e9e15b41a2d31, darwin/arm64)
+Bundled market: three fresh installs, partial Markdown Enhancer upgrade and retained settings passed.
+Core chat: streamed Markdown, table, syntax colors and escaped code passed.
+Plugins: legacy CSV upload, KaTeX fonts, Mermaid, Markmap, PDF download and market icons passed.
+Zero external requests, HTTP errors or browser errors.

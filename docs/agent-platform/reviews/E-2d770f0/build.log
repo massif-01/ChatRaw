@@ -1,0 +1,18 @@
+npm warn deprecated whatwg-encoding@3.1.1: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+npm warn deprecated markmap-common@0.18.9: Replaced by @markmap/* in 1.0.0. See https://markmap.js.org/docs/migration
+npm warn deprecated markmap-view@0.18.12: Replaced by @markmap/* in 1.0.0. See https://markmap.js.org/docs/migration
+npm warn deprecated markmap-html-parser@0.18.11: Replaced by @markmap/* in 1.0.0. See https://markmap.js.org/docs/migration
+npm warn deprecated markmap-lib@0.18.12: Replaced by @markmap/* in 1.0.0. See https://markmap.js.org/docs/migration
+
+added 234 packages in 2s
+
+> build
+> terser backend/static/app.js --compress --mangle --output backend/static/app.min.js && postcss backend/static/styles.css --use cssnano --no-map --output backend/static/styles.min.css
+
+
+> vendor:check
+> node scripts/frontend-vendor.mjs
+
+Frontend vendor assets verified.
+1a564fcc68818cab760266b01ee78c24f2a5cbe9f7fe7b7a04a9ebb4c430a463  backend/static/app.min.js
+1d40b0bc10a1700f38a829eac2fafa1fd9bba439d98533cedd10fa24166f0d82  backend/static/styles.min.css

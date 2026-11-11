@@ -1,0 +1,144 @@
+[
+  {
+    "name": "runner",
+    "command": [
+      "/Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python",
+      "-B",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "agent_runner/tests",
+      "-v"
+    ],
+    "exit_code": 0,
+    "tests": 72,
+    "skipped": 23
+  },
+  {
+    "name": "test_agent_gateway",
+    "command": [
+      "/Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python",
+      "-B",
+      "-m",
+      "unittest",
+      "backend.test_agent_gateway",
+      "-v"
+    ],
+    "exit_code": 0,
+    "tests": 10,
+    "skipped": 0
+  },
+  {
+    "name": "test_agent_migration",
+    "command": [
+      "/Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python",
+      "-B",
+      "-m",
+      "unittest",
+      "backend.test_agent_migration",
+      "-v"
+    ],
+    "exit_code": 0,
+    "tests": 1,
+    "skipped": 0
+  },
+  {
+    "name": "test_bundled_plugins",
+    "command": [
+      "/Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python",
+      "-B",
+      "-m",
+      "unittest",
+      "backend.test_bundled_plugins",
+      "-v"
+    ],
+    "exit_code": 0,
+    "tests": 4,
+    "skipped": 0
+  },
+  {
+    "name": "test_context_compaction",
+    "command": [
+      "/Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python",
+      "-B",
+      "-m",
+      "unittest",
+      "backend.test_context_compaction",
+      "-v"
+    ],
+    "exit_code": 0,
+    "tests": 20,
+    "skipped": 0
+  },
+  {
+    "name": "test_fonts_route",
+    "command": [
+      "/Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python",
+      "-B",
+      "-m",
+      "unittest",
+      "backend.test_fonts_route",
+      "-v"
+    ],
+    "exit_code": 0,
+    "tests": 2,
+    "skipped": 0
+  },
+  {
+    "name": "test_hermes_bridge",
+    "command": [
+      "/Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python",
+      "-B",
+      "-m",
+      "unittest",
+      "backend.test_hermes_bridge",
+      "-v"
+    ],
+    "exit_code": 0,
+    "tests": 4,
+    "skipped": 0
+  },
+  {
+    "name": "test_hermes_smoke",
+    "command": [
+      "/Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python",
+      "-B",
+      "-m",
+      "unittest",
+      "backend.test_hermes_smoke",
+      "-v"
+    ],
+    "exit_code": 0,
+    "tests": 2,
+    "skipped": 0
+  },
+  {
+    "name": "test_http_session_tls",
+    "command": [
+      "/Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python",
+      "-B",
+      "-m",
+      "unittest",
+      "backend.test_http_session_tls",
+      "-v"
+    ],
+    "exit_code": 0,
+    "tests": 4,
+    "skipped": 0
+  },
+  {
+    "name": "test_skills",
+    "command": [
+      "/Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python",
+      "-B",
+      "-m",
+      "unittest",
+      "backend.test_skills",
+      "-v"
+    ],
+    "exit_code": 0,
+    "tests": 57,
+    "skipped": 0
+  }
+]

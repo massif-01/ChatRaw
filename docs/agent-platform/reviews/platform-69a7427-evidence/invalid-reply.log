@@ -1,0 +1,6 @@
+test_invalid_option_keeps_pending_and_corrected_reply_dispatches_once (test_platform_reply_validation.ReplyValidationTests.test_invalid_option_keeps_pending_and_corrected_reply_dispatches_once) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.009s
+
+OK

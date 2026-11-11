@@ -1,0 +1,22 @@
+{
+  "source_commit": "2d770f0e079652d2dc99b49124d60f3305c8c393",
+  "image_id": "sha256:d7c7c969d43bdaf41c70a6e9d60001ad50139afa212029fa41e5feeb82d45bf7",
+  "network": "none",
+  "runner": "not configured",
+  "passed": [
+    "ordinary startup without Runner",
+    "built frontend bytes",
+    "six complete local bundles",
+    "nested font bytes",
+    "chat and plugins survive container replacement",
+    "native CLIs absent"
+  ],
+  "frontend_sha256": {
+    "app.min.js": "1a564fcc68818cab760266b01ee78c24f2a5cbe9f7fe7b7a04a9ebb4c430a463",
+    "styles.min.css": "1d40b0bc10a1700f38a829eac2fafa1fd9bba439d98533cedd10fa24166f0d82",
+    "agents.js": "71e39e0cbb1ee938fdd23cfcee23bf5226d10117863b03cdec3c6aee98d73569",
+    "stream-markdown.js": "36bd60cfa1f60a7f1e7f6e371ed2e07f569b43ad6f93e0e51251d0dbaf3100bb"
+  },
+  "boundary": "Local Docker image and named-volume replacement; not RM-01 or machine reboot.",
+  "image_platform": "linux/arm64"
+}
