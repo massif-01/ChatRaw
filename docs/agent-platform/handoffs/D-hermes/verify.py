@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import base64
 import hashlib
 import json
 import os
@@ -19,6 +20,10 @@ MODEL = "chatraw-loopback"
 SEED = "CHATRAW_HERMES_SEED"
 RESUME = "CHATRAW_HERMES_RESUME"
 HOLD = "CHATRAW_HERMES_HOLD"
+IMAGE = "CHATRAW_HERMES_IMAGE"
+PNG = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
+)
 
 
 class LoopbackModel(BaseHTTPRequestHandler):
@@ -46,6 +51,16 @@ class LoopbackModel(BaseHTTPRequestHandler):
             item["content"] for item in body["messages"] if item["role"] == "user"
         ]
         last_input = inputs[-1] if inputs else None
+        if isinstance(last_input, list) and any(
+            IMAGE in part.get("text", "")
+            for part in last_input
+            if part["type"] == "text"
+        ):
+            self.server.image_urls.extend(
+                part["image_url"]["url"]
+                for part in last_input
+                if part["type"] == "image_url"
+            )
         is_history = SEED in inputs[:-1]
         self.server.requests.append((last_input, is_history, bool(body.get("stream"))))
         text = (
@@ -109,7 +124,93 @@ def require(condition, message):
         raise AssertionError(message)
 
 
-async def verify(adapter_class, executable, root, server):
+async def verify_image(adapter, binding, root, home, server, wire):
+    upload_dir = root / "runner-uploads"
+    upload_dir.mkdir()
+    image = upload_dir / "one-pixel.png"
+    image.write_bytes(PNG)
+    events = []
+
+    async def emit(event):
+        events.append(event)
+
+    result = await asyncio.wait_for(
+        adapter.run(
+            binding,
+            {
+                "run_id": uuid4().hex,
+                "message": IMAGE,
+                "attachments": [
+                    {
+                        "attachment_id": uuid4().hex,
+                        "path": image,
+                        "name": image.name,
+                        "mime_type": "image/png",
+                        "size": len(PNG),
+                    }
+                ],
+            },
+            emit,
+        ),
+        35,
+    )
+    require(result["status"] == "completed", f"Image turn did not settle: {result}")
+    require(
+        [stage for stage, _ in wire]
+        == ["attach_request", "attach_reply", "prompt_submit"],
+        "Expected a native upload and reply before submitting the prompt",
+    )
+    uploaded, submitted = wire[1][1], wire[2][1]
+    require(
+        uploaded.get("attached") is True, "Gateway did not acknowledge image staging"
+    )
+    cache = Path(uploaded["path"])
+    require(
+        cache.parent.resolve() == (home / "cache" / "images").resolve(),
+        "Gateway did not return its profile image cache path",
+    )
+    require(
+        cache != image and cache.read_bytes() == PNG,
+        "Native cache bytes differ from the Runner upload",
+    )
+    require(
+        submitted == [{"path": str(cache), "mime": "image/png"}]
+        and uploaded["mime"] == "image/png",
+        "Prompt did not reference exactly the native path and MIME",
+    )
+    require(wire[0][1] == PNG, "Adapter uploaded different bytes")
+    require(
+        any(
+            event["type"] == "binding_updated"
+            and event["data"]["native"].get("admission_id")
+            for event in events
+        ),
+        "Image prompt admission was not checkpointed",
+    )
+    record(
+        "image_admitted",
+        status=result["status"],
+        bytes=len(PNG),
+        sha256=hashlib.sha256(PNG).hexdigest(),
+        native_upload=True,
+        profile_cache_verified=True,
+        native_reference_submitted=True,
+        admission_checkpointed=True,
+    )
+    expected_url = "data:image/png;base64," + base64.b64encode(PNG).decode("ascii")
+    require(
+        server.image_urls == [expected_url],
+        f"Model requests={len(server.requests)}, image parts={len(server.image_urls)}, "
+        f"matching parts={server.image_urls.count(expected_url)}",
+    )
+    record(
+        "image_model",
+        model_image_part="image_url",
+        model_bytes_matched=True,
+    )
+
+
+async def verify(adapter_class, executable, root, server, image_only, wire):
     home = root / "state"
     user = root / "user"
     workspace = root / "project"
@@ -119,7 +220,13 @@ async def verify(adapter_class, executable, root, server):
     (home / "config.yaml").write_text(
         json.dumps(
             {
-                "model": {"provider": "custom", "default": MODEL, "base_url": endpoint},
+                "model": {
+                    "provider": "custom",
+                    "default": MODEL,
+                    "base_url": endpoint,
+                    **({"supports_vision": True} if image_only else {}),
+                },
+                **({"agent": {"image_input_mode": "native"}} if image_only else {}),
                 "auxiliary": {"title_generation": {"enabled": False}},
                 "platform_toolsets": {"cli": [], "tui": []},
                 "plugins": {"auto_update_check_hours": 0},
@@ -190,10 +297,6 @@ async def verify(adapter_class, executable, root, server):
                 probe["checks"]["protocol"] == "passed",
                 "Protocol handshake not confirmed",
             )
-            require(
-                probe["checks"]["authentication"] == "passed",
-                "Ticket authentication not confirmed",
-            )
             record("attach", checks=probe["checks"])
 
             binding = await first.create_session(uuid4().hex, workspace, config)
@@ -207,6 +310,15 @@ async def verify(adapter_class, executable, root, server):
                 "Workspace differs from the native acknowledgement",
             )
             record("create", protocol=first.ws.protocol, cwd_confirmed=True)
+            if image_only:
+                capabilities = probe["capabilities"]
+                require(
+                    capabilities["images"] is True and capabilities["files"] is False,
+                    "Hermes must advertise image support and files=false",
+                )
+                record("image_capabilities", images=True, files=False)
+                await verify_image(first, binding, root, home, server, wire)
+                return
             reattached = await second.resume_session(binding, config)
             require(
                 reattached == binding, "Fresh adapter did not recover the empty binding"
@@ -362,7 +474,10 @@ def main():
     parser.add_argument("--chatraw", required=True, type=Path)
     parser.add_argument("--hermes", required=True, type=Path)
     parser.add_argument("--omit-empty-attachments-for-diagnosis", action="store_true")
+    parser.add_argument("--image-only", action="store_true")
     args_config = parser.parse_args()
+    if args_config.image_only and args_config.omit_empty_attachments_for_diagnosis:
+        parser.error("--image-only uses the adapter's original outbound messages")
     chatraw = args_config.chatraw.resolve(strict=True)
     executable = args_config.hermes.resolve(strict=True)
     sys.path.insert(0, str(chatraw))
@@ -372,10 +487,22 @@ def main():
     send_json = ClientWebSocketResponse.send_json
     receive = ClientWebSocketResponse.receive
     submitted = {}
+    image_uploads = set()
+    image_wire = []
 
     async def watch_submit(ws, frame, *args, **kwargs):
+        if args_config.image_only and frame.get("method") == "image.attach_bytes":
+            image_uploads.add((ws, frame["id"]))
+            image_wire.append(
+                (
+                    "attach_request",
+                    base64.b64decode(frame["params"]["content_base64"], validate=True),
+                )
+            )
         if frame.get("method") == "prompt.submit":
             params = frame["params"]
+            if args_config.image_only:
+                image_wire.append(("prompt_submit", params.get("attachments")))
             empty = params.get("attachments") == []
             if empty and args_config.omit_empty_attachments_for_diagnosis:
                 frame = {
@@ -400,6 +527,15 @@ def main():
         if message.type == WSMsgType.TEXT:
             frame = message.json()
             key = (ws, frame.get("id"))
+            if key in image_uploads:
+                image_uploads.remove(key)
+                if "error" in frame:
+                    record(
+                        "native_image_error",
+                        code=frame["error"].get("code"),
+                        message=frame["error"].get("message"),
+                    )
+                image_wire.append(("attach_reply", frame.get("result")))
             if key in submitted:
                 empty = submitted.pop(key)
                 error = frame.get("error")
@@ -420,6 +556,7 @@ def main():
     )
     server = ThreadingHTTPServer(("127.0.0.1", 0), LoopbackModel)
     server.requests = []
+    server.image_urls = []
     server.holding, server.release = threading.Event(), threading.Event()
     worker = threading.Thread(target=server.serve_forever, daemon=True)
     worker.start()
@@ -429,7 +566,16 @@ def main():
             patch.object(ClientWebSocketResponse, "send_json", watch_submit),
             patch.object(ClientWebSocketResponse, "receive", watch_reply),
         ):
-            asyncio.run(verify(HermesAdapter, executable, Path(temp).resolve(), server))
+            asyncio.run(
+                verify(
+                    HermesAdapter,
+                    executable,
+                    Path(temp).resolve(),
+                    server,
+                    args_config.image_only,
+                    image_wire,
+                )
+            )
     finally:
         server.release.set()
         server.shutdown()

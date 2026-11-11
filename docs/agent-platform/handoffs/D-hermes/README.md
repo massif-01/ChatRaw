@@ -23,7 +23,7 @@ A 在文本提交中省略空 `attachments` 后，对其工作树 `106e28f` 上�
 |普通文本|阻断。Gateway 的 `prompt.submit` 返回 `4001 invalid_params`，文本未进入原生执行|
 |带历史恢复和停止|依赖首轮原生提交通过，原始适配器的路径在该点中止|
 
-**根因。** A 的 `run` 总会带 `attachments: []`。Gateway 的 `admit_attachments` 把字段缺失视为纯文本输入，把空列表视为无效参数。最小修复是纯文本提交省略该字段，并以原始出站报文补回归。文件上传另有原生约束。源码规定 `prompt.submit` 的附件必须是允许的图片类型，并先放入当前 profile 的图片缓存目录；本批未运行上传。 [Gateway 附件准入源码](https://github.com/NousResearch/hermes-agent/blob/6a0d2d12815c0546b0bcaf05046e2fe3293f60aa/gateway/session_ingress_media.py)
+**根因。** A 的 `run` 总会带 `attachments: []`。Gateway 的 `admit_attachments` 把字段缺失视为纯文本输入，把空列表视为无效参数。最小修复是纯文本提交省略该字段，并以原始出站报文补回归。源码规定 `prompt.submit` 的附件必须是允许的图片类型，并先放入当前 profile 的图片缓存目录。单张 PNG 补测见下文。 [Gateway 附件准入源码](https://github.com/NousResearch/hermes-agent/blob/6a0d2d12815c0546b0bcaf05046e2fe3293f60aa/gateway/session_ingress_media.py)
 
 ## 最小报文差异复验
 
@@ -35,6 +35,20 @@ A 在文本提交中省略空 `attachments` 后，对其工作树 `106e28f` 上�
 - 若 ChatRaw 对显式停止统一显示 `cancelled`，A 应将本轮用户停止与原生终态按同一 admission 关联后映射，保留未请求停止的原生 `interrupted`。该决定归 A 和总控。 [原生取消实现](https://github.com/NousResearch/hermes-agent/blob/6a0d2d12815c0546b0bcaf05046e2fe3293f60aa/gateway/session_controls.py)
 
 原生停止阶段记录为 `{"stage":"cancel","status":"interrupted","native_outcome":"interrupted","owner_alive":true,"before_provider_release":true}`。
+
+## 单张 PNG 补测
+
+A 工作树 `5597c3c` 的冻结适配器副本 SHA-256 为 `83277e8f2304a29c57b54b62b63007c74f4ecf4185ec8d75525f95dfab640460`。同一官方 Gateway 以原样报文通过 `--image-only`，退出码为 0。测试配置为本地替身声明 `model.supports_vision: true`，并选择 `agent.image_input_mode: native`，以核对主模型请求中的原始图片。
+
+|核对点|结果|
+|---|---|
+|能力|探测返回 `images=true`、`files=false`|
+|上传|位于 Runner 上传目录的一张 68 字节 PNG 经 `image.attach_bytes` 原样送入 Gateway|
+|原生缓存和提交|Gateway 在隔离 profile 的 `cache/images` 写入相同字节。适配器在收到成功响应后，将该响应的 `path` 与 `image/png` 原样放入 `prompt.submit`|
+|原生准入|适配器保存 admission checkpoint，本轮收到 `completed`|
+|模型请求|本地 OpenAI 兼容端点在同一轮用户消息中收到一个 `image_url`。解码后的 PNG 与 Runner 原始字节完全一致|
+
+图片 SHA-256 为 `643ac89572093a4c907c1af802b3d354453c64d545dc3f1be1ce689046064511`。 [Gateway 图片暂存源码](https://github.com/NousResearch/hermes-agent/blob/6a0d2d12815c0546b0bcaf05046e2fe3293f60aa/gateway/session_images.py)
 
 ## 复现
 
@@ -49,6 +63,6 @@ uv sync --locked --no-dev --python 3.14
 uv pip install --python .venv/bin/python 'aiohttp==3.14.5'
 ```
 
-用该 venv 的 Python 运行 [verify.py](verify.py)，将 `--chatraw` 指向含 A 适配器的工作树或冻结副本，`--hermes` 指向上述 `.venv/bin/hermes` 的绝对路径。默认模式复验真实出站。诊断模式加 `--omit-empty-attachments-for-diagnosis`。逐阶段输出 JSON，记录适配器散列和原生错误码。
+用该 venv 的 Python 运行 [verify.py](verify.py)，将 `--chatraw` 指向含 A 适配器的工作树或冻结副本，`--hermes` 指向上述 `.venv/bin/hermes` 的绝对路径。默认模式验证文本、恢复和停止。单张图片验证加 `--image-only`。复现原先的最小报文差异加 `--omit-empty-attachments-for-diagnosis`。逐阶段输出 JSON，记录适配器散列和原生错误码。
 
-本机 Hermes 发现 Python 链接 SQLite 3.51.2，按上游实现使用 DELETE 日志模式。RM-01、真实模型凭据和模型服务、真实工具副作用与权限、图片和普通文件、Gateway 崩溃恢复均在本批验收之外。
+本机 Hermes 发现 Python 链接 SQLite 3.51.2，按上游实现使用 DELETE 日志模式。RM-01、真实模型凭据和模型服务、真实工具副作用与权限、其他图片格式、普通文件及 Gateway 崩溃恢复均在本批验收之外。
