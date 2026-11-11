@@ -15,7 +15,7 @@ ChatRaw拥有聊天/显示记录/插件设置/绑定；Runner拥有运行权威�
 所有新端点遵守现有同源校验/限流，并由后端验证安装启用状态。无效请求在启动Agent/保存不可回滚副作用前拒绝。
 新Agent API错误统一为 {error:{code,message,retryable}}，结合HTTP状态；message为安全可显示文本，不泄漏stderr/凭据。既有插件API保留原success/error字符串合同，B公共错误读取兼容这两类，不把对象显示成[object Object]。Runner错误不能直接透传内部trace。
 
-- GET /api/agents → {agents:[{id,name,installed,enabled,availability,reason,capabilities,settings_revision}]}。availability=ready/unconfigured/unavailable/unknown；列表不隐式启动模型请求。
+- GET /api/agents → {agents:[{id,name,installed,enabled,availability,reason,capabilities,settings_revision,settings_schema}]}。availability=ready/unconfigured/unavailable/unknown；列表不隐式启动模型请求。settings_schema由注册adapter提供，即使尚未配置/安装原生Agent也可返回可编辑字段定义；不包含可执行命令、凭据或任意宿主路径。
 - GET /api/agents/{agent_id}/health → {agent_id,availability,reason,version,capabilities,models?}。明确区分程序存在/协议握手/认证/实际模型请求的验证层级。
 - GET /api/agents/workspaces → {workspaces:[{id,label}]}。只列管理员允许的项目，浏览器不提交任意宿主绝对路径。
 - POST /api/plugins/install-bundled，body={plugin_id:string} → {success,plugin_id,manifest}；只允许镜像bundled市场ID并完整复制插件及依赖资产。原URL/ZIP安装保留。本接口不安装或启动任何宿主Agent程序。
@@ -111,6 +111,7 @@ recover_run只核对/重新订阅既有执行，禁止重发原prompt；恢复�
 
 五插件manifest保留现有安装/启用/custom_settings机制，新增agent声明由后端白名单adapter注册表验证；浏览器不能动态加载服务器Python。
 B新增统一ChatRawPlugin.agents入口或等价宿主API：插件注册身份/设置入口，不自行管理当前会话选择或HTTP流。选择状态以ChatRaw绑定为准。
+五个独立设置页必须提供适配器声明的可编辑参数及保存，不得全部降为只读健康页。普通参数通过既有 /api/plugins/{id}/settings 持久化，并由A按settings_schema校验和同步Runner；GET /api/plugins 的settings_values用于回显非秘密值。model/provider/reasoning等仅在对应schema支持时出现；留空/省略表示沿用Agent默认，不能继承普通聊天模型。可用models来自health原生探测，不能伪造模型列表。后端secret录入与掩码状态独立，不能存入settings_values。
 主界面共享run/interaction结构；普通聊天和Agent文本都使用同一增量渲染器。插件不依赖旧hermesRun对象。保留普通聊天原hooks；Agent绕过改变输入上下文的hooks。
 未稳定Markdown尾部可重解析，已稳定DOM不重复动画。收敛时完整一致，复制/导出取原文，动画只影响表现。
 
