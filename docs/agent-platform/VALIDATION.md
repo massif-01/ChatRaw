@@ -19,7 +19,7 @@
 |G12 本地UI资源|real_pass|E最终109/157外部请求尝试为0；本地市场安装、残缺旧插件字体升级、CSV兼容、公式/图表/PDF通过；总控无网络Docker复验|业务模型/搜索API不属于离线保证|
 |G13 迁移|simulated_pass|F核验旧记录、旧schema恢复、活动WAL备份、拒绝覆盖；旧Hermes执行已移除|现场数据/文件树一致回退窗口|
 |G14 普通聊天|simulated_pass|F固定集成版本153项执行通过、23可选原生跳过；普通压缩/Skill/TLS/字体83项通过；E实际后端普通聊天流通过|真实模型服务和现场环境；跳过不计通过|
-|G15 部署|simulated_pass|linux/arm64及linux/amd64镜像均通过无Runner启动、无网络安装、同卷替换容器的数据保留；amd64本机仿真，已导出受测镜像与固定源码包；主镜像无原生CLI|RM-01 x86_64宿主服务部署、原生持久目录与开机恢复；新环境安装待用户批准|
+|G15 部署|simulated_pass|arm64/amd64镜像已作本机验证；RM-01已实际安装Docker Engine 29.9.3和Compose 5.7.1，两个Compose命令实际运行容器，Docker/containerd已设置开机启动|RM-01的ChatRaw容器与宿主Runner部署、原生持久目录、五Agent认证和整机重启验收|
 
 ## 独立审查与可重跑入口
 
@@ -30,6 +30,7 @@
 - [F完整平台报告](reviews/F-platform-2d770f0-20261112.md)列明7项独立权威层检查与唯一问答P1；[标题增量](reviews/F-title-cb4d9fc-20261112.md)另经5项检查通过。
 - [F最终有界结论](reviews/F-platform-final-69a7427-20261112.md)关闭问答P1，本地已审查组合无已知未闭环P0/P1。总控在165a509重跑双浏览器网关与最终Docker持久卷检查通过。
 - [部署产物准备](reviews/deployment-e91d32f/README.md)：固定源码包与受测amd64镜像已生成并校验，现场安装未执行。
+- [RM-01 Docker安装记录](reviews/docker-install-rm01-20261112.md)：真实主机安装与Compose容器测试通过；ChatRaw和Agent尚未部署。
 - 总控在集成树运行 `npm run build`、`npm run vendor:check` 通过；指定本机Chrome路径后运行 `scripts/test-agent-ui.mjs` 和 `scripts/test-stream-markdown.mjs` 通过。默认Playwright缓存未安装浏览器，使用 `CHROME_PATH` 指定已安装程序，不以下载失败冒充产品失败。
 
 目前不具备整体发布通过条件。每个门槛以最终提交、实际接收端和明确环境为准；实现者完成、程序安装成功、模型目录可读均不等于真实模型认证通过。

@@ -2,11 +2,11 @@
 
 目标：五Agent统一界面＋手机＋本地UI资源＋Chrome109。
 用户已确认：宿主执行服务、独立持久任务目录/显式项目选择、总控/A/F Astra high。
-当前：本地完整实现已集成165a509，E真实109/离线验收通过，F已关闭全部本地已知P0/P1；总控最终网关与断网Docker同卷重建通过。全项目目标仍未完成，等待现场安装授权、真实模型认证、手机实机与整机重启验收。逐项门槛见VALIDATION.md。
+当前：本地完整实现已集成165a509，E真实109/离线验收通过，F已关闭全部本地已知P0/P1；总控最终网关与断网Docker同卷重建通过。用户要求先安装的RM-01 Docker与Compose已完成，五Agent宿主环境、ChatRaw现场部署、真实模型认证、手机实机与整机重启验收仍待完成。逐项门槛见VALIDATION.md。
 
 部署准备：e91d32f固定源码包及Linux amd64镜像已生成、导出并校验；本机仿真断网/同卷重建通过。产物在outputs/agent-platform/deployment-e91d32f，证据见reviews/deployment-e91d32f/README.md，尚未上传现场。
 
-等待项复核：六个执行对话均为completed/idle，本地没有仍在运行的验证任务。用户随后明确要求删除Podman及其内容，该清理已执行；安装Docker Engine与五个Agent运行环境仍待确认。源码、镜像和复现材料准备完毕，总目标不视为完成。
+等待项复核：六个执行对话均为completed/idle，本地没有仍在运行的验证任务。用户明确要求删除Podman及其内容并先安装Docker与Compose，均已执行；五Agent运行环境及ChatRaw现场部署仍待后续安排。源码、镜像和复现材料准备完毕，总目标不视为完成。
 
 |Owner|模型/思考|阶段|thread/worktree|证据|
 |---|---|---|---|---|
@@ -26,12 +26,13 @@
 - 2026-11-12：公共接口稳定、E/F首批已结束后，临时放行A/B/C/D四条互不写同一文件的实现线，减少C无依赖的串行等待；现场联调和配置仍由总控排队。
 
 ## 当前现场与阻塞
-- SSH认证已由用户提供的信息解决；密码不落盘。本轮清理所用临时连接已关闭，未清除密钥。
+- SSH认证已由用户提供的信息解决；密码不落盘。现场操作所用临时连接已关闭，未清除密钥。
 - 现场实测：Ubuntu24.04.4 x86_64，Python3.12.3，Node22.23.2，npm10.9.8，15GiB可见内存，约830G可用盘。
 - 主机lpmu305仍有TTO Web/采集端口以及NFS/SMB服务；不得为本项目擅自中断它们，整机重启安排独立窗口。
-- 2026-11-12：按用户明确要求，已删除rm01下唯一的已退出hello-world容器和镜像；root与rm01均无其他Podman容器、镜像或命名卷。已卸载podman、podman-docker和依赖它的cockpit-podman插件，并移除Podman状态数据库与失效套接字。保留Buildah及其他可能共用的依赖；复核podman与docker命令均不存在，Podman用户/系统服务均无活动单元。
+- 2026-11-12：按用户明确要求，已删除rm01下唯一的已退出hello-world容器和镜像；root与rm01均无其他Podman容器、镜像或命名卷。已卸载podman、podman-docker和依赖它的cockpit-podman插件，并移除Podman状态数据库与失效套接字。保留Buildah及其他可能共用的依赖；卸载时复核Podman用户/系统服务均无活动单元。
+- 2026-11-12：用户要求先安装Docker与Compose，已安装官方Docker Engine 29.9.3、Compose 5.7.1和Buildx 0.39.0，Docker/containerd active且enabled。rm01已加入docker组，全新SSH会话可直接使用；docker组授予root级别的Docker管理权限。`docker compose`与兼容命令`docker-compose`均已实际运行测试容器，测试资源已清理。详见reviews/docker-install-rm01-20261112.md。
 - 卸载后，59090、59009、2049、445、139端口仍在监听，59090、59009、445和139显示的进程ID与卸载前一致，smbd和nfs-server为active；此检查不代表对各服务做了完整功能测试。
-- 此前10.10.99.99:51111拒绝连接，rm01 PATH及/home/rm01、/opt、/usr/local/bin有限目录检查未找到五Agent/ChatRaw。用户对Podman的删除指令不构成Docker Engine或五Agent运行环境的安装授权；现场安装仍待确认。
+- 此前10.10.99.99:51111拒绝连接，rm01 PATH及/home/rm01、/opt、/usr/local/bin有限目录检查未找到五Agent/ChatRaw。Docker已按用户的最新明确指令安装；五Agent和ChatRaw现场部署未在本次执行。
 - E已使用官方Playwright存档Chromium109.0.5414.46通过正式集成本机验收；Win8实机证据单列。本机simctl当前无可用模拟设备；真实手机键盘证据仍待准备。
 
 ## 已关闭的合同审查项
