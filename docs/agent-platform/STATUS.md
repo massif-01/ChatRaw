@@ -6,7 +6,7 @@
 
 部署准备：e91d32f固定源码包及Linux amd64镜像已生成、导出并校验；本机仿真断网/同卷重建通过。产物在outputs/agent-platform/deployment-e91d32f，证据见reviews/deployment-e91d32f/README.md，尚未上传现场。
 
-等待项复核：六个执行对话均为completed/idle，本地没有仍在运行的验证任务。现场安装确认在连续三个总控目标回合中仍未收到；源码、镜像和复现材料准备完毕，后续须由用户确认新增宿主环境后继续。总目标不视为完成。
+等待项复核：六个执行对话均为completed/idle，本地没有仍在运行的验证任务。用户随后明确要求删除Podman及其内容，该清理已执行；安装Docker Engine与五个Agent运行环境仍待确认。源码、镜像和复现材料准备完毕，总目标不视为完成。
 
 |Owner|模型/思考|阶段|thread/worktree|证据|
 |---|---|---|---|---|
@@ -26,11 +26,12 @@
 - 2026-11-12：公共接口稳定、E/F首批已结束后，临时放行A/B/C/D四条互不写同一文件的实现线，减少C无依赖的串行等待；现场联调和配置仍由总控排队。
 
 ## 当前现场与阻塞
-- SSH认证已由用户提供的信息解决；密码不落盘。仅总控持有临时连接，未清除密钥。
+- SSH认证已由用户提供的信息解决；密码不落盘。本轮清理所用临时连接已关闭，未清除密钥。
 - 现场实测：Ubuntu24.04.4 x86_64，Python3.12.3，Node22.23.2，npm10.9.8，15GiB可见内存，约830G可用盘。
 - 主机lpmu305仍有TTO Web/采集端口以及NFS/SMB服务；不得为本项目擅自中断它们，整机重启安排独立窗口。
-- docker命令实际为Podman4.9.3/podman-docker；Docker服务inactive。rm01 PATH及/home/rm01、/opt、/usr/local/bin有限目录检查未找到五Agent/ChatRaw。
-- 10.10.99.99:51111拒绝连接。已询问是否授权准备独立Docker Engine与Agent环境，保留既有Podman及数据。待答期间不做现场安装。
+- 2026-11-12：按用户明确要求，已删除rm01下唯一的已退出hello-world容器和镜像；root与rm01均无其他Podman容器、镜像或命名卷。已卸载podman、podman-docker和依赖它的cockpit-podman插件，并移除Podman状态数据库与失效套接字。保留Buildah及其他可能共用的依赖；复核podman与docker命令均不存在，Podman用户/系统服务均无活动单元。
+- 卸载后，59090、59009、2049、445、139端口仍在监听，59090、59009、445和139显示的进程ID与卸载前一致，smbd和nfs-server为active；此检查不代表对各服务做了完整功能测试。
+- 此前10.10.99.99:51111拒绝连接，rm01 PATH及/home/rm01、/opt、/usr/local/bin有限目录检查未找到五Agent/ChatRaw。用户对Podman的删除指令不构成Docker Engine或五Agent运行环境的安装授权；现场安装仍待确认。
 - E已使用官方Playwright存档Chromium109.0.5414.46通过正式集成本机验收；Win8实机证据单列。本机simctl当前无可用模拟设备；真实手机键盘证据仍待准备。
 
 ## 已关闭的合同审查项
