@@ -1,0 +1,81 @@
+{
+  "agent": "pi",
+  "case": "image",
+  "steps": [
+    {
+      "label": "image",
+      "client_request_id": "77625979e81b45569342331f868c36e1",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "db9b2755-0e30-4fca-98d6-74a520236c32",
+        "session_id": "0f731aaea66b46f78d6442e3eada335c",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "cf0900ba1b574115848f08e572edbe47",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "db9b2755-0e30-4fca-98d6-74a520236c32",
+        "session_id": "0f731aaea66b46f78d6442e3eada335c",
+        "status": "completed",
+        "last_seq": 8,
+        "run_id": "cf0900ba1b574115848f08e572edbe47",
+        "interactions": [],
+        "final_text": "631579"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "1.5.2",
+    "reason": "Pi RPC and model configuration are ready; model request unverified",
+    "capabilities": {
+      "streaming_text": true,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "native",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "image_total_bytes": 8388608
+      }
+    }
+  },
+  "chat_id": "db9b2755-0e30-4fca-98d6-74a520236c32",
+  "binding": {
+    "chat_id": "db9b2755-0e30-4fca-98d6-74a520236c32",
+    "session_id": "0f731aaea66b46f78d6442e3eada335c",
+    "agent_id": "pi",
+    "workspace": {
+      "id": "0f731aaea66b46f78d6442e3eada335c",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "image": {
+    "expected_code": "631579",
+    "sha256": "5cf0846fdc76ae4d0ab69857134ce843a541a0600f488508c7c6efe39530375b",
+    "upload": {
+      "attachment_id": "8509e52d097f409fb6407df2de8ded4b",
+      "name": "D-vision.png",
+      "mime_type": "image/png",
+      "size": 341
+    },
+    "answer_matched": true
+  },
+  "outcome": "native_evidence_pending"
+}

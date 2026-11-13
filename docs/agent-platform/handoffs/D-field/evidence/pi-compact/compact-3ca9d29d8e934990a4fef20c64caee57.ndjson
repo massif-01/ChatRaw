@@ -1,0 +1,4 @@
+{"data": {"status": "queued"}, "run_id": "3ca9d29d8e934990a4fef20c64caee57", "schema_version": 1, "seq": 1, "session_id": "dad3cb83129e46b8a8d48498b5642c74", "timestamp": "2026-11-13T14:03:13.508276Z", "type": "status"}
+{"data": {"status": "running"}, "run_id": "3ca9d29d8e934990a4fef20c64caee57", "schema_version": 1, "seq": 2, "session_id": "dad3cb83129e46b8a8d48498b5642c74", "timestamp": "2026-11-13T14:03:13.510041Z", "type": "status"}
+{"data": {"status": "completed"}, "run_id": "3ca9d29d8e934990a4fef20c64caee57", "schema_version": 1, "seq": 3, "session_id": "dad3cb83129e46b8a8d48498b5642c74", "timestamp": "2026-11-13T14:03:25.483069Z", "type": "status"}
+{"data": {"final_text": "", "status": "completed"}, "run_id": "3ca9d29d8e934990a4fef20c64caee57", "schema_version": 1, "seq": 4, "session_id": "dad3cb83129e46b8a8d48498b5642c74", "timestamp": "2026-11-13T14:03:25.483182Z", "type": "done"}

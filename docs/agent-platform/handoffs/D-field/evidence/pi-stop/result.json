@@ -1,0 +1,98 @@
+{
+  "agent": "pi",
+  "case": "stop",
+  "steps": [
+    {
+      "label": "stop",
+      "client_request_id": "3f0378cad7754c479b05fc1e03bba6f8",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "4a3c946b-eeaa-4b35-837d-288001ad07c9",
+        "session_id": "fc101f8889b14a0e9f52b3512c945555",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "98274d505eda47bc85017d9e88a662db",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "4a3c946b-eeaa-4b35-837d-288001ad07c9",
+        "session_id": "fc101f8889b14a0e9f52b3512c945555",
+        "status": "cancelled",
+        "last_seq": 14,
+        "run_id": "98274d505eda47bc85017d9e88a662db",
+        "interactions": [],
+        "final_text": ""
+      },
+      "approval": {
+        "interaction_id": "b8bf2639911246e6b4e33bc1c3fb9fd0",
+        "status": "accepted"
+      },
+      "cancel_requested_at": "2026-11-13T13:52:42.643659+00:00",
+      "cancel_receipt": {
+        "run_id": "98274d505eda47bc85017d9e88a662db",
+        "status": "stopping"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "1.5.2",
+    "reason": "Pi RPC and model configuration are ready; model request unverified",
+    "capabilities": {
+      "streaming_text": true,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "native",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "image_total_bytes": 8388608
+      }
+    }
+  },
+  "chat_id": "4a3c946b-eeaa-4b35-837d-288001ad07c9",
+  "binding": {
+    "chat_id": "4a3c946b-eeaa-4b35-837d-288001ad07c9",
+    "session_id": "fc101f8889b14a0e9f52b3512c945555",
+    "agent_id": "pi",
+    "workspace": {
+      "id": "fc101f8889b14a0e9f52b3512c945555",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "markers": {
+    "token": "d64556d8b0cf4028bf732f6795b6af96",
+    "workspace": "/var/lib/chatraw-runner/workspaces/fc101f8889b14a0e9f52b3512c945555",
+    "command": "set -C; printf '%s\\n' 'd64556d8b0cf4028bf732f6795b6af96' > '/var/lib/chatraw-runner/workspaces/fc101f8889b14a0e9f52b3512c945555/d-d64556d8b0cf4028bf732f6795b6af96.started' && sleep 30 && printf '%s\\n' 'd64556d8b0cf4028bf732f6795b6af96' > '/var/lib/chatraw-runner/workspaces/fc101f8889b14a0e9f52b3512c945555/d-d64556d8b0cf4028bf732f6795b6af96.late'",
+    "before": {
+      "started": "missing",
+      "late": "missing"
+    },
+    "during": {
+      "started": "matched",
+      "late": "missing"
+    },
+    "observed_at": "2026-11-13T13:52:42.642525+00:00",
+    "after": {
+      "started": "matched",
+      "late": "missing"
+    },
+    "checked_at": "2026-11-13T13:53:14.712172+00:00"
+  },
+  "outcome": "passed"
+}

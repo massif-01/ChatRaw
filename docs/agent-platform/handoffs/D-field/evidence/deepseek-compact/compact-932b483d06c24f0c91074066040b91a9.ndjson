@@ -1,0 +1,4 @@
+{"data": {"status": "queued"}, "run_id": "932b483d06c24f0c91074066040b91a9", "schema_version": 1, "seq": 1, "session_id": "6b359b8f76d94d06bc46868570909d22", "timestamp": "2026-11-13T14:01:09.685607Z", "type": "status"}
+{"data": {"status": "running"}, "run_id": "932b483d06c24f0c91074066040b91a9", "schema_version": 1, "seq": 2, "session_id": "6b359b8f76d94d06bc46868570909d22", "timestamp": "2026-11-13T14:01:09.687491Z", "type": "status"}
+{"data": {"status": "completed"}, "run_id": "932b483d06c24f0c91074066040b91a9", "schema_version": 1, "seq": 3, "session_id": "6b359b8f76d94d06bc46868570909d22", "timestamp": "2026-11-13T14:01:21.336104Z", "type": "status"}
+{"data": {"final_text": "Compacted 8 history items (~686 tokens).", "status": "completed"}, "run_id": "932b483d06c24f0c91074066040b91a9", "schema_version": 1, "seq": 4, "session_id": "6b359b8f76d94d06bc46868570909d22", "timestamp": "2026-11-13T14:01:21.336226Z", "type": "done"}

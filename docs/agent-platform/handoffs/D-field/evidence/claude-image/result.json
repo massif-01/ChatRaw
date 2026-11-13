@@ -1,0 +1,84 @@
+{
+  "agent": "claude",
+  "case": "image",
+  "steps": [
+    {
+      "label": "image",
+      "client_request_id": "6c08080ab28e47cc9e6ee1c3ce3449b2",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "53f8c497-8e8d-4540-a78d-c5ef2667dd56",
+        "session_id": "8308839477934801b97f830d84a9b87b",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "81c03f9084da4384a9fecaae4703c34b",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "53f8c497-8e8d-4540-a78d-c5ef2667dd56",
+        "session_id": "8308839477934801b97f830d84a9b87b",
+        "status": "completed",
+        "last_seq": 8,
+        "run_id": "81c03f9084da4384a9fecaae4703c34b",
+        "interactions": [],
+        "final_text": "309918"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "0.2.180 / Claude Code 2.1.321",
+    "reason": "Claude API key is configured. Authentication and model request untested.",
+    "capabilities": {
+      "streaming_text": true,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "native",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "max_image_bytes": 5242880,
+        "max_images": 4,
+        "authentication": "Anthropic API key configured on the Runner host.",
+        "approvals": "Native permission callbacks offer allow once or deny."
+      }
+    }
+  },
+  "chat_id": "53f8c497-8e8d-4540-a78d-c5ef2667dd56",
+  "binding": {
+    "chat_id": "53f8c497-8e8d-4540-a78d-c5ef2667dd56",
+    "session_id": "8308839477934801b97f830d84a9b87b",
+    "agent_id": "claude",
+    "workspace": {
+      "id": "8308839477934801b97f830d84a9b87b",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "image": {
+    "expected_code": "309918",
+    "sha256": "0219ea235f69dda58a6fe76f015d4686e835ebda99d0016dd2f8ec7471218c1a",
+    "upload": {
+      "attachment_id": "6fd298f831ac4badbe08ee0ed5f51f6f",
+      "name": "D-vision.png",
+      "mime_type": "image/png",
+      "size": 406
+    },
+    "answer_matched": true
+  },
+  "outcome": "native_evidence_pending"
+}

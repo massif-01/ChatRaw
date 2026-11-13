@@ -1,0 +1,163 @@
+{
+  "agent": "pi",
+  "case": "compact",
+  "steps": [
+    {
+      "label": "seed",
+      "client_request_id": "2603d2c2cb5746fd9c48a7007f73f0da",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+        "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "92bc41d264e549b8b83e61370044e6e7",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+        "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "92bc41d264e549b8b83e61370044e6e7",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "history-1",
+      "client_request_id": "4b3891bf0fc349acba226365d5a4a77f",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+        "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "4533ffd77af04c5990532c332467720b",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+        "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "4533ffd77af04c5990532c332467720b",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "history-2",
+      "client_request_id": "748901df8805427a969225f30008ff29",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+        "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "d692c1c364f34edfb7ac688b1ed337ad",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+        "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "d692c1c364f34edfb7ac688b1ed337ad",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "compact",
+      "client_request_id": "ba82e503774f4398a755107ee05a1b2c",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+        "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "3ca9d29d8e934990a4fef20c64caee57",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+        "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+        "status": "completed",
+        "last_seq": 4,
+        "run_id": "3ca9d29d8e934990a4fef20c64caee57",
+        "interactions": [],
+        "final_text": ""
+      }
+    },
+    {
+      "label": "continuity",
+      "client_request_id": "833f4c0e70364ace980206bd16fab7c3",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+        "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "d0ce846cc3334a5fb3b16ea89f755cdf",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+        "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+        "status": "completed",
+        "last_seq": 9,
+        "run_id": "d0ce846cc3334a5fb3b16ea89f755cdf",
+        "interactions": [],
+        "final_text": "D-BE0B87B194"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "1.5.2",
+    "reason": "Pi RPC and model configuration are ready; model request unverified",
+    "capabilities": {
+      "streaming_text": true,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "native",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "image_total_bytes": 8388608
+      }
+    }
+  },
+  "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+  "binding": {
+    "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+    "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+    "agent_id": "pi",
+    "workspace": {
+      "id": "dad3cb83129e46b8a8d48498b5642c74",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "continuity": {
+    "expected_code": "D-BE0B87B194",
+    "same_chatraw_session": true,
+    "code_matched": true
+  },
+  "outcome": "native_evidence_pending"
+}

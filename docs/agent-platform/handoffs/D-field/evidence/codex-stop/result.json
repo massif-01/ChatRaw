@@ -1,0 +1,99 @@
+{
+  "agent": "codex",
+  "case": "stop",
+  "steps": [
+    {
+      "label": "stop",
+      "client_request_id": "065306d99ee04314b76de82e2a1a638c",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a",
+        "session_id": "c5f1cad44b9b463385077611859b4cc4",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "e05b8525931c4d1585cae79770c7be3d",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a",
+        "session_id": "c5f1cad44b9b463385077611859b4cc4",
+        "status": "unknown",
+        "last_seq": 9,
+        "run_id": "e05b8525931c4d1585cae79770c7be3d",
+        "interactions": [],
+        "error": {
+          "code": "codex_tool_stop_unverified",
+          "message": "Codex ended the turn, but an owned tool could not be confirmed stopped.",
+          "retryable": false
+        }
+      },
+      "approval": {
+        "interaction_id": "9509aa99c1b640a981229b53248e7519",
+        "status": "accepted"
+      },
+      "cancel_requested_at": "2026-11-13T13:55:54.675470+00:00",
+      "cancel_receipt": {
+        "run_id": "e05b8525931c4d1585cae79770c7be3d",
+        "status": "stopping"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "0.153.4",
+    "reason": "Codex provider is configured. Provider authentication and model request untested.",
+    "capabilities": {
+      "streaming_text": true,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "native",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "questions": "Native request_user_input, typically available in Plan mode. Secret inputs are unavailable.",
+        "approvals": "Command, file change and managed network prompts; no permission overlays or policy amendments."
+      }
+    }
+  },
+  "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a",
+  "binding": {
+    "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a",
+    "session_id": "c5f1cad44b9b463385077611859b4cc4",
+    "agent_id": "codex",
+    "workspace": {
+      "id": "c5f1cad44b9b463385077611859b4cc4",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "markers": {
+    "token": "731a435152b2457ca63217243ee9409f",
+    "workspace": "/var/lib/chatraw-runner/workspaces/c5f1cad44b9b463385077611859b4cc4",
+    "command": "set -C; printf '%s\\n' '731a435152b2457ca63217243ee9409f' > '/var/lib/chatraw-runner/workspaces/c5f1cad44b9b463385077611859b4cc4/d-731a435152b2457ca63217243ee9409f.started' && sleep 30 && printf '%s\\n' '731a435152b2457ca63217243ee9409f' > '/var/lib/chatraw-runner/workspaces/c5f1cad44b9b463385077611859b4cc4/d-731a435152b2457ca63217243ee9409f.late'",
+    "before": {
+      "started": "missing",
+      "late": "missing"
+    },
+    "during": {
+      "started": "matched",
+      "late": "missing"
+    },
+    "observed_at": "2026-11-13T13:55:54.673868+00:00"
+  },
+  "outcome": "unverified",
+  "reason": "Native execution state is unknown"
+}

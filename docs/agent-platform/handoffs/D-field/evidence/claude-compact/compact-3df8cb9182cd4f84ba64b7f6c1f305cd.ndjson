@@ -1,0 +1,5 @@
+{"data": {"status": "queued"}, "run_id": "3df8cb9182cd4f84ba64b7f6c1f305cd", "schema_version": 1, "seq": 1, "session_id": "1e0072458ccd4be69b28326e72f2871a", "timestamp": "2026-11-13T13:59:46.125370Z", "type": "status"}
+{"data": {"status": "running"}, "run_id": "3df8cb9182cd4f84ba64b7f6c1f305cd", "schema_version": 1, "seq": 2, "session_id": "1e0072458ccd4be69b28326e72f2871a", "timestamp": "2026-11-13T13:59:46.126605Z", "type": "status"}
+{"data": {"cost": 0.273535, "currency": "USD", "input_tokens": 0, "output_tokens": 0}, "run_id": "3df8cb9182cd4f84ba64b7f6c1f305cd", "schema_version": 1, "seq": 3, "session_id": "1e0072458ccd4be69b28326e72f2871a", "timestamp": "2026-11-13T14:00:47.639802Z", "type": "usage"}
+{"data": {"status": "completed"}, "run_id": "3df8cb9182cd4f84ba64b7f6c1f305cd", "schema_version": 1, "seq": 4, "session_id": "1e0072458ccd4be69b28326e72f2871a", "timestamp": "2026-11-13T14:00:47.662903Z", "type": "status"}
+{"data": {"final_text": "", "status": "completed"}, "run_id": "3df8cb9182cd4f84ba64b7f6c1f305cd", "schema_version": 1, "seq": 5, "session_id": "1e0072458ccd4be69b28326e72f2871a", "timestamp": "2026-11-13T14:00:47.663022Z", "type": "done"}

@@ -1,0 +1,98 @@
+{
+  "agent": "hermes",
+  "case": "stop",
+  "steps": [
+    {
+      "label": "stop",
+      "client_request_id": "e1bc9cc86cd747b8a4da4466a999acaf",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "3f74451b-a64a-4dbd-aa13-6e44afb84c79",
+        "session_id": "6f13a75149b248778a58e6f1557c0456",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "5d6b1010bf6047c7a108c34ef83ef53d",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "3f74451b-a64a-4dbd-aa13-6e44afb84c79",
+        "session_id": "6f13a75149b248778a58e6f1557c0456",
+        "status": "cancelled",
+        "last_seq": 11,
+        "run_id": "5d6b1010bf6047c7a108c34ef83ef53d",
+        "interactions": [],
+        "final_text": ""
+      },
+      "cancel_requested_at": "2026-11-13T13:57:44.792173+00:00",
+      "cancel_receipt": {
+        "run_id": "5d6b1010bf6047c7a108c34ef83ef53d",
+        "status": "stopping"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": null,
+    "reason": "Gateway authenticated; provider/model request has not been tested",
+    "capabilities": {
+      "streaming_text": true,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "native",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "questions": "Canonical clarification prompts; no secret/sudo input UI",
+        "workspace": "Gateway and Runner must run on the same host and account",
+        "image_mime_types": [
+          "image/png",
+          "image/jpeg",
+          "image/webp",
+          "image/gif"
+        ],
+        "images_require_model_support": true,
+        "max_image_bytes": 5242880,
+        "max_images": 4
+      }
+    }
+  },
+  "chat_id": "3f74451b-a64a-4dbd-aa13-6e44afb84c79",
+  "binding": {
+    "chat_id": "3f74451b-a64a-4dbd-aa13-6e44afb84c79",
+    "session_id": "6f13a75149b248778a58e6f1557c0456",
+    "agent_id": "hermes",
+    "workspace": {
+      "id": "6f13a75149b248778a58e6f1557c0456",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "markers": {
+    "token": "8b09f38ce5d2488cad211added1588d8",
+    "workspace": "/var/lib/chatraw-runner/workspaces/6f13a75149b248778a58e6f1557c0456",
+    "command": "set -C; printf '%s\\n' '8b09f38ce5d2488cad211added1588d8' > '/var/lib/chatraw-runner/workspaces/6f13a75149b248778a58e6f1557c0456/d-8b09f38ce5d2488cad211added1588d8.started' && sleep 30 && printf '%s\\n' '8b09f38ce5d2488cad211added1588d8' > '/var/lib/chatraw-runner/workspaces/6f13a75149b248778a58e6f1557c0456/d-8b09f38ce5d2488cad211added1588d8.late'",
+    "before": {
+      "started": "missing",
+      "late": "missing"
+    },
+    "during": {
+      "started": "matched",
+      "late": "missing"
+    },
+    "observed_at": "2026-11-13T13:57:44.790709+00:00",
+    "after": {
+      "started": "matched",
+      "late": "missing"
+    },
+    "checked_at": "2026-11-13T13:58:16.870534+00:00"
+  },
+  "outcome": "passed"
+}

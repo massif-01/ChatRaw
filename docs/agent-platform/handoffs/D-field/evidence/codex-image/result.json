@@ -1,0 +1,82 @@
+{
+  "agent": "codex",
+  "case": "image",
+  "steps": [
+    {
+      "label": "image",
+      "client_request_id": "f1cc8e2050ae4c9fb1d0d9169e0db4e4",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "ad6e5895-dc90-4821-9f9c-6ecc38751cfc",
+        "session_id": "2d3432cb86ff427582a2287f755c5c4f",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "d5c37b45945941ed908cba10bea53be0",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "ad6e5895-dc90-4821-9f9c-6ecc38751cfc",
+        "session_id": "2d3432cb86ff427582a2287f755c5c4f",
+        "status": "completed",
+        "last_seq": 7,
+        "run_id": "d5c37b45945941ed908cba10bea53be0",
+        "interactions": [],
+        "final_text": "917196"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "0.153.4",
+    "reason": "Codex provider is configured. Provider authentication and model request untested.",
+    "capabilities": {
+      "streaming_text": true,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "native",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "questions": "Native request_user_input, typically available in Plan mode. Secret inputs are unavailable.",
+        "approvals": "Command, file change and managed network prompts; no permission overlays or policy amendments."
+      }
+    }
+  },
+  "chat_id": "ad6e5895-dc90-4821-9f9c-6ecc38751cfc",
+  "binding": {
+    "chat_id": "ad6e5895-dc90-4821-9f9c-6ecc38751cfc",
+    "session_id": "2d3432cb86ff427582a2287f755c5c4f",
+    "agent_id": "codex",
+    "workspace": {
+      "id": "2d3432cb86ff427582a2287f755c5c4f",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "image": {
+    "expected_code": "917196",
+    "sha256": "d88f27304b3b6ccf6f0935e94c565b15927dc07d1f2b4d39d208b8c1652d76b2",
+    "upload": {
+      "attachment_id": "23257aa342b249dfaf83ac6c878738ec",
+      "name": "D-vision.png",
+      "mime_type": "image/png",
+      "size": 353
+    },
+    "answer_matched": true
+  },
+  "outcome": "native_evidence_pending"
+}
