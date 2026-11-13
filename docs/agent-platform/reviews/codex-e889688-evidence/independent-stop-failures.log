@@ -1,0 +1,8 @@
+test_list_failure_does_not_confirm_cancellation (test_c_fix_boundaries.StopFailureTests.test_list_failure_does_not_confirm_cancellation) ... ok
+test_terminate_ack_without_verified_disappearance_stays_unknown (test_c_fix_boundaries.StopFailureTests.test_terminate_ack_without_verified_disappearance_stays_unknown) ... ok
+test_terminate_failure_does_not_confirm_cancellation (test_c_fix_boundaries.StopFailureTests.test_terminate_failure_does_not_confirm_cancellation) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.014s
+
+OK

@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-13 Asia/Shanghai",
+  "source_commit": "e889688fd12f9342c0d31271d9baa72a53c8907f",
+  "snapshot": "/private/tmp/chatraw-f-codex-e889688.GF3KVF",
+  "source_matches": {
+    "agent_runner/adapters/codex.py": true,
+    "agent_runner/tests/test_c_adapter_protocol.py": true,
+    "agent_runner/tests/test_c_native_adapters.py": true,
+    "docs/agent-platform/handoffs/C-local-model-98/codex-field-followup.md": true
+  },
+  "results": {
+    "targeted-regression.log": {
+      "tests": 10,
+      "passed": true
+    },
+    "independent-stop-failures.log": {
+      "tests": 3,
+      "passed": true
+    },
+    "registration-bound.log": {
+      "tests": 1,
+      "passed": true
+    }
+  },
+  "boundary": "local controlled protocol + real isolated Codex 0.153.4 with loopback model; no .98 or field actions",
+  "archived_script_texts": {
+    "test_codex_registration_bound.py.txt": "f0abaf61dd76a6b314bc69b06916427c3cf4ad6094adb312698d0791bbf5ac56"
+  }
+}

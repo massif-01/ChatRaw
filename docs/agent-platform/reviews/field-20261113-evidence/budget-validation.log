@@ -1,0 +1,6 @@
+test_max_tokens_requires_a_positive_safe_integer (agent_runner.tests.test_d_adapter_protocol.DeepSeekProtocolTests.test_max_tokens_requires_a_positive_safe_integer) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.004s
+
+OK

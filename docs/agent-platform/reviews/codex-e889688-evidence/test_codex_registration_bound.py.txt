@@ -1,0 +1,40 @@
+"""F counterexample: a stuck registration lookup must not postpone interrupt."""
+import asyncio
+import time
+from unittest.mock import patch
+
+from agent_runner.tests import test_c_adapter_protocol as protocol
+
+
+class RegistrationBoundTests(protocol.CodexProtocolTests):
+    async def test_hung_pre_interrupt_lookup_is_bounded_and_still_unknown(self):
+        original = protocol._CodexWire.call
+        observed = {}
+
+        async def delayed(wire, method, params):
+            if method == "thread/backgroundTerminals/list" and not wire.interrupted:
+                wire.calls.append((method, params))
+                observed["list_started"] = time.monotonic()
+                try:
+                    await asyncio.Event().wait()
+                finally:
+                    observed["list_cancelled"] = True
+            if method == "turn/interrupt":
+                observed["interrupt_at"] = time.monotonic()
+            return await original(wire, method, params)
+
+        with patch.object(protocol._CodexWire, "call", delayed):
+            result, wire = await self._interrupt_running_tool([])
+        elapsed = observed["interrupt_at"] - observed["list_started"]
+        self.assertTrue(observed["list_cancelled"])
+        self.assertGreaterEqual(elapsed, 0.45)
+        self.assertLess(elapsed, 0.85, "Registration wait exceeded its 0.5s bound plus scheduling tolerance")
+        self.assertEqual(result["status"], "unknown")
+        self.assertEqual(result["error"]["code"], "codex_tool_stop_unverified")
+        self.assertFalse(any(method.endswith("/terminate") for method, _ in wire.calls))
+        print(f"registration_wait_seconds={elapsed:.3f}; interrupt_sent=True; final=unknown; foreign_termination=False", flush=True)
+
+
+for inherited_name in dir(protocol.CodexProtocolTests):
+    if inherited_name.startswith("test_") and inherited_name not in RegistrationBoundTests.__dict__:
+        setattr(RegistrationBoundTests, inherited_name, None)

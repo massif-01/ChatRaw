@@ -1,0 +1,130 @@
+"""Run over approved SSH as a read-only inventory; prints only allowlisted fields.
+
+No model calls, mutations, service actions, token reads, or full environment output.
+SQLite connections are mode=ro plus query_only. Output is a point-in-time snapshot.
+"""
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import sqlite3
+import subprocess
+
+
+def command(argv):
+    result = subprocess.run(argv, capture_output=True, text=True, timeout=20)
+    if result.returncode:
+        return {"returncode": result.returncode, "error": "read-only command failed"}
+    return result.stdout.strip()
+
+
+def stat(path):
+    target = Path(path)
+    try:
+        value = target.stat()
+        return {"path": str(target), "mode": oct(value.st_mode & 0o777),
+                "uid": value.st_uid, "gid": value.st_gid, "symlink": target.is_symlink()}
+    except OSError as error:
+        return {"path": str(target), "error": type(error).__name__}
+
+
+result = {"observed_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+          "os": command(["uname", "-srm"]), "services": {}}
+for name in ("chatraw-runner", "chatraw-hermes", "docker", "containerd"):
+    properties = command(["systemctl", "show", name,
+        "--property=Id,ActiveState,SubState,UnitFileState,User,Group,MainPID,WorkingDirectory,FragmentPath,Restart,KillMode"])
+    result["services"][name] = dict(line.split("=", 1) for line in properties.splitlines())
+    pid = result["services"][name]["MainPID"]
+    if pid != "0":
+        state = Path(f"/proc/{pid}/status").read_text()
+        result["services"][name]["process_identity"] = {
+            line.split(":", 1)[0]: line.split(":", 1)[1].strip()
+            for line in state.splitlines() if line.startswith(("Name:", "Uid:", "Gid:"))
+        }
+        result["services"][name]["executable"] = os.readlink(f"/proc/{pid}/exe")
+
+container = json.loads(command(["docker", "inspect", "chatraw"]))[0]
+result["container"] = {
+    "id": container["Id"], "image_ref": container["Config"]["Image"], "image_id": container["Image"],
+    "network_mode": container["HostConfig"]["NetworkMode"], "privileged": container["HostConfig"]["Privileged"],
+    "restart_policy": container["HostConfig"]["RestartPolicy"],
+    "state": {key: container["State"].get(key) for key in ("Status", "Running", "Restarting", "StartedAt", "Pid")},
+    "mounts": [{key: mount.get(key) for key in ("Type", "Name", "Source", "Destination", "RW")}
+               for mount in container["Mounts"]],
+    "processes": command(["docker", "top", "chatraw", "-eo", "pid,ppid,user,comm"]),
+}
+result["docker_version"] = command(["docker", "version", "--format", "{{.Server.Version}}"])
+listeners = command(["ss", "-H", "-lntp"])
+result["listeners"] = [line for line in listeners.splitlines()
+    if any(f":{port} " in line for port in (51111, 51112, 59090, 59009, 2049, 445, 139)) or '"hermes"' in line]
+
+config = json.loads(Path("/etc/chatraw-runner/config.json").read_text())
+result["runner_config"] = {key: config[key] for key in ("host", "port", "data_dir", "max_concurrency") if key in config}
+result["runner_config"]["agents"] = {
+    agent: {key: values[key] for key in ("executable", "home", "session_root", "dsh_home", "model", "reasoning_effort", "max_tokens") if key in values}
+    for agent, values in config.get("agents", {}).items()
+}
+pid = result["services"]["chatraw-runner"]["MainPID"]
+# Read only selected path values; credentials and the rest are never serialized.
+environment = dict(item.split(b"=", 1) for item in Path(f"/proc/{pid}/environ").read_bytes().split(b"\0") if b"=" in item)
+result["native_state_paths"] = {key: environment[key.encode()].decode()
+    for key in ("HOME", "CODEX_HOME", "CLAUDE_CONFIG_DIR", "PI_CODING_AGENT_DIR") if key.encode() in environment}
+result["node_packages"] = {}
+executables = {"codex": shutil.which("codex", path=environment.get(b"PATH", b"").decode()),
+               "pi": config.get("agents", {}).get("pi", {}).get("executable")}
+for agent, executable in executables.items():
+    if executable:
+        target = Path(executable).resolve()
+        for parent in target.parents:
+            metadata = parent / "package.json"
+            if metadata.is_file():
+                package = json.loads(metadata.read_text())
+                result["node_packages"][agent] = {"executable": executable, "resolved": str(target),
+                                                  "package": package.get("name"), "version": package.get("version")}
+                break
+result["python_packages"] = json.loads(command(["/opt/chatraw-runner/venv/bin/python", "-B", "-c",
+    "import json,sys,importlib.metadata as m; print(json.dumps({'python':sys.version,'packages':{n:m.version(n) for n in ['claude-agent-sdk','deepseek-harness-sdk','deepseek-harness-runtime-bin','aiohttp']}}))"]))
+result["hermes_source_commit"] = command(["sudo", "-n", "-u", "rm01", "git", "-C", "/opt/chatraw-agents/hermes/source", "rev-parse", "HEAD"])
+
+paths = ["/etc/chatraw-runner", "/etc/chatraw-runner/token", "/etc/chatraw-runner/environment", "/etc/chatraw-runner/config.json",
+         "/var/lib/chatraw-runner", "/var/lib/chatraw-runner/runner.db", "/var/lib/chatraw-runner/workspaces",
+         "/var/lib/chatraw-runner/pi-sessions", "/var/lib/chatraw-runner/deepseek", "/var/lib/chatraw-runner/hermes-home"]
+paths += list(result["native_state_paths"].values())
+result["paths"] = [stat(path) for path in dict.fromkeys(paths)]
+
+runner_db = sqlite3.connect("file:/var/lib/chatraw-runner/runner.db?mode=ro", uri=True)
+runner_db.row_factory = sqlite3.Row
+runner_db.execute("PRAGMA query_only=ON")
+runner_db.execute("BEGIN")
+result["runner_database"] = {
+    "integrity": runner_db.execute("PRAGMA integrity_check").fetchone()[0],
+    "schema_version": runner_db.execute("PRAGMA user_version").fetchone()[0],
+    "run_counts": [dict(row) for row in runner_db.execute("SELECT s.agent_id,r.status,count(*) count FROM runs r JOIN sessions s ON s.id=r.session_id GROUP BY s.agent_id,r.status ORDER BY s.agent_id,r.status")],
+    "runs": [dict(row) for row in runner_db.execute("SELECT r.id,r.session_id,s.agent_id,r.status,r.last_seq,r.created_at,r.updated_at FROM runs r JOIN sessions s ON s.id=r.session_id ORDER BY r.created_at")],
+    "sessions": [dict(row) for row in runner_db.execute("SELECT id,chat_id,agent_id,workspace,created_at,json_extract(binding,'$.native.session_id') native_session_id,json_extract(binding,'$.native.thread_id') native_thread_id FROM sessions ORDER BY created_at")],
+    "event_counts": [dict(row) for row in runner_db.execute("SELECT run_id,json_extract(envelope,'$.type') type,count(*) count FROM events WHERE json_extract(envelope,'$.type') IN ('tool_started','tool_completed','done','interaction_requested','interaction_resolved') GROUP BY run_id,type")],
+}
+runner_db.rollback()
+runner_db.close()
+result["workspaces"] = [stat(row["workspace"]) for row in result["runner_database"]["sessions"]]
+
+mount = next(mount for mount in container["Mounts"] if mount["Destination"] == "/app/data")
+database_path = Path(mount["Source"]) / "chatraw.db"
+display = sqlite3.connect(database_path.as_uri() + "?mode=ro", uri=True)
+display.row_factory = sqlite3.Row
+display.execute("PRAGMA query_only=ON")
+display.execute("BEGIN")
+result["chatraw_database"] = {
+    "path": str(database_path), "integrity": display.execute("PRAGMA integrity_check").fetchone()[0],
+    "run_message_counts": [dict(row) for row in display.execute("SELECT run_id,role,count(*) count FROM agent_messages GROUP BY run_id,role")],
+    "bindings": [dict(row) for row in display.execute("SELECT chat_id,agent_id,session_id,confirmed FROM agent_bindings")],
+    "submission_counts": [dict(row) for row in display.execute("SELECT admission,count(*) count FROM agent_submissions GROUP BY admission")],
+}
+display.rollback()
+display.close()
+result["source_hashes"] = {}
+for path in ["/opt/chatraw-runner/agent_runner/runtime.py", "/opt/chatraw-runner/agent_runner/store.py"] + [f"/opt/chatraw-runner/agent_runner/adapters/{agent}.py" for agent in ("hermes", "codex", "claude", "pi", "deepseek")]:
+    result["source_hashes"][path] = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+print(json.dumps(result, ensure_ascii=False, indent=2))

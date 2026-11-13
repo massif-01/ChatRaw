@@ -1,0 +1,89 @@
+{
+  "observed_at_utc": "2026-11-13T13:44:07.399425+00:00",
+  "runner_session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+  "native_session_id": "session-2c63be8b22744b3cb0c81413a51f6aad",
+  "workspace": "/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f",
+  "adapter_sha256": "96e02e6e9ed421297fd5e90d32868831a625892e8874f923ca93932217905108",
+  "runs": [
+    {
+      "id": "df3c329ec4db425c892bacd448570491",
+      "status": "failed",
+      "last_seq": 4,
+      "created_at": "2026-11-13T13:29:01.271974Z",
+      "updated_at": "2026-11-13T13:29:27.819419Z"
+    },
+    {
+      "id": "b5471970bbb24e639605d3c963d09907",
+      "status": "completed",
+      "last_seq": 16,
+      "created_at": "2026-11-13T13:41:31.606298Z",
+      "updated_at": "2026-11-13T13:42:29.339764Z"
+    },
+    {
+      "id": "e7904316aa7d49879368966daa641ca0",
+      "status": "completed",
+      "last_seq": 6,
+      "created_at": "2026-11-13T13:43:04.936163Z",
+      "updated_at": "2026-11-13T13:43:10.565158Z"
+    }
+  ],
+  "native_records": [
+    {
+      "type": "request/header",
+      "seq": 12,
+      "config": {}
+    },
+    {
+      "type": "request/header",
+      "seq": 22,
+      "config": {}
+    },
+    {
+      "type": "turn/end",
+      "seq": 25,
+      "reason": "error"
+    },
+    {
+      "type": "request/header",
+      "seq": 34,
+      "config": {}
+    },
+    {
+      "type": "tool/call",
+      "seq": 37,
+      "name": "bash",
+      "call_id": "call_16d28940f7ee4f0bb5feb7f2"
+    },
+    {
+      "type": "tool/result",
+      "seq": 40,
+      "is_error": true
+    },
+    {
+      "type": "tool/call",
+      "seq": 45,
+      "name": "bash",
+      "call_id": "call_39c2e67b249444f2823dd909"
+    },
+    {
+      "type": "tool/result",
+      "seq": 50,
+      "is_error": false
+    },
+    {
+      "type": "turn/end",
+      "seq": 56,
+      "reason": "completed"
+    },
+    {
+      "type": "request/header",
+      "seq": 63,
+      "config": {}
+    },
+    {
+      "type": "turn/end",
+      "seq": 67,
+      "reason": "completed"
+    }
+  ]
+}

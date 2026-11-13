@@ -1,0 +1,30 @@
+{
+  "agent_runner/runtime.py": {
+    "sha256": "fded694fd508ba5490eaa1671419fa949dfd941e4815bdf8ad603240bbea97da",
+    "matches_e91d32f": true
+  },
+  "agent_runner/store.py": {
+    "sha256": "bcd803674b0867d4d09b0355ca73b39c659ffdfa2f5be46aa0aee9ad8f52c10e",
+    "matches_e91d32f": true
+  },
+  "agent_runner/adapters/hermes.py": {
+    "sha256": "83277e8f2304a29c57b54b62b63007c74f4ecf4185ec8d75525f95dfab640460",
+    "matches_e91d32f": true
+  },
+  "agent_runner/adapters/codex.py": {
+    "sha256": "a7d89c869f46a83d2f30fa88a2fd80a7b346773f1ae0776139edd88c9f569b2b",
+    "matches_e91d32f": true
+  },
+  "agent_runner/adapters/claude.py": {
+    "sha256": "905b326ea3ae573ace75e922d9cc1ed8b0132896559d9fda925acef4e18a5362",
+    "matches_e91d32f": true
+  },
+  "agent_runner/adapters/pi.py": {
+    "sha256": "add83d8995784fa7eaaf6083b3a2059505ee2e6ad2191a33e1238fd737d7f7a9",
+    "matches_e91d32f": true
+  },
+  "agent_runner/adapters/deepseek.py": {
+    "sha256": "91cf50cca8cfa90dcac11e2c1ca6f0730f59133c472c806d396b1baad49817b2",
+    "matches_e91d32f": true
+  }
+}

@@ -1,0 +1,6 @@
+test_native_patches_are_host_only_absolute_paths (agent_runner.tests.test_d_adapter_protocol.DeepSeekProtocolTests.test_native_patches_are_host_only_absolute_paths) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.002s
+
+OK

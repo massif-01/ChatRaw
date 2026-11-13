@@ -1,0 +1,890 @@
+{
+  "observed_at_utc": "2026-11-13T13:39:56.023339+00:00",
+  "os": "Linux 6.8.0-147-generic x86_64",
+  "services": {
+    "chatraw-runner": {
+      "Restart": "on-failure",
+      "MainPID": "44394",
+      "WorkingDirectory": "/opt/chatraw-runner",
+      "User": "rm01",
+      "Group": "",
+      "KillMode": "mixed",
+      "Id": "chatraw-runner.service",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/etc/systemd/system/chatraw-runner.service",
+      "UnitFileState": "enabled",
+      "process_identity": {
+        "Name": "python",
+        "Uid": "1000\t1000\t1000\t1000",
+        "Gid": "1000\t1000\t1000\t1000"
+      },
+      "executable": "/usr/bin/python3.12"
+    },
+    "chatraw-hermes": {
+      "Restart": "on-failure",
+      "MainPID": "34685",
+      "WorkingDirectory": "/var/lib/chatraw-runner/hermes-home",
+      "User": "rm01",
+      "Group": "",
+      "KillMode": "control-group",
+      "Id": "chatraw-hermes.service",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/etc/systemd/system/chatraw-hermes.service",
+      "UnitFileState": "enabled",
+      "process_identity": {
+        "Name": "hermes",
+        "Uid": "1000\t1000\t1000\t1000",
+        "Gid": "1000\t1000\t1000\t1000"
+      },
+      "executable": "/opt/chatraw-agents/python/cpython-3.14.10-linux-x86_64-gnu/bin/python3.14"
+    },
+    "docker": {
+      "Restart": "always",
+      "MainPID": "20343",
+      "WorkingDirectory": "",
+      "User": "",
+      "Group": "",
+      "KillMode": "process",
+      "Id": "docker.service",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/usr/lib/systemd/system/docker.service",
+      "UnitFileState": "enabled",
+      "process_identity": {
+        "Name": "dockerd",
+        "Uid": "0\t0\t0\t0",
+        "Gid": "0\t0\t0\t0"
+      },
+      "executable": "/usr/bin/dockerd"
+    },
+    "containerd": {
+      "Restart": "always",
+      "MainPID": "31962",
+      "WorkingDirectory": "",
+      "User": "",
+      "Group": "",
+      "KillMode": "process",
+      "Id": "containerd.service",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/usr/lib/systemd/system/containerd.service",
+      "UnitFileState": "enabled",
+      "process_identity": {
+        "Name": "containerd",
+        "Uid": "0\t0\t0\t0",
+        "Gid": "0\t0\t0\t0"
+      },
+      "executable": "/usr/bin/containerd"
+    }
+  },
+  "container": {
+    "id": "ed039257da2e3f3d4fff43fe467223ac21ec74cc09d081fb0597b22ae54842ca",
+    "image_ref": "chatraw-agent-integration:e91d32f-amd64",
+    "image_id": "sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724",
+    "network_mode": "host",
+    "privileged": false,
+    "restart_policy": {
+      "Name": "unless-stopped",
+      "MaximumRetryCount": 0
+    },
+    "state": {
+      "Status": "running",
+      "Running": true,
+      "Restarting": false,
+      "StartedAt": "2026-11-13T13:28:26.173986254Z",
+      "Pid": 35642
+    },
+    "mounts": [
+      {
+        "Type": "volume",
+        "Name": "chatraw_chatraw_data",
+        "Source": "/var/lib/docker/volumes/chatraw_chatraw_data/_data",
+        "Destination": "/app/data",
+        "RW": true
+      },
+      {
+        "Type": "bind",
+        "Name": null,
+        "Source": "/etc/chatraw-runner/token",
+        "Destination": "/run/secrets/chatraw-runner-token",
+        "RW": false
+      }
+    ],
+    "processes": "PID                 PPID                USER                COMMAND\n35642               35617               root                python"
+  },
+  "docker_version": "29.9.3",
+  "listeners": [
+    "LISTEN 0      2048       127.0.0.1:46761 0.0.0.0:* users:((\"hermes\",pid=34685,fd=19))                         ",
+    "LISTEN 0      128      10.10.99.99:59090 0.0.0.0:* users:((\"python\",pid=31977,fd=3))                          ",
+    "LISTEN 0      128      10.10.99.99:59009 0.0.0.0:* users:((\"tto-web\",pid=1956,fd=3))                          ",
+    "LISTEN 0      128        127.0.0.1:51112 0.0.0.0:* users:((\"python\",pid=44394,fd=10))                         ",
+    "LISTEN 0      64           0.0.0.0:2049  0.0.0.0:*                                                            ",
+    "LISTEN 0      2048         0.0.0.0:51111 0.0.0.0:* users:((\"python\",pid=35642,fd=16))                         ",
+    "LISTEN 0      50           0.0.0.0:445   0.0.0.0:* users:((\"smbd\",pid=32113,fd=31))                           ",
+    "LISTEN 0      50           0.0.0.0:139   0.0.0.0:* users:((\"smbd\",pid=32113,fd=32))                           ",
+    "LISTEN 0      64              [::]:2049     [::]:*                                                            ",
+    "LISTEN 0      50              [::]:445      [::]:* users:((\"smbd\",pid=32113,fd=29))                           ",
+    "LISTEN 0      50              [::]:139      [::]:* users:((\"smbd\",pid=32113,fd=30))"
+  ],
+  "runner_config": {
+    "host": "127.0.0.1",
+    "port": 51112,
+    "data_dir": "/var/lib/chatraw-runner",
+    "max_concurrency": 3,
+    "agents": {
+      "hermes": {
+        "executable": "/opt/chatraw-agents/hermes/source/.venv/bin/hermes",
+        "home": "/var/lib/chatraw-runner/hermes-home"
+      },
+      "pi": {
+        "executable": "/opt/chatraw-agents/pi/node_modules/.bin/pi",
+        "session_root": "/var/lib/chatraw-runner/pi-sessions"
+      },
+      "deepseek": {
+        "dsh_home": "/var/lib/chatraw-runner/deepseek"
+      }
+    }
+  },
+  "native_state_paths": {
+    "HOME": "/home/rm01",
+    "CODEX_HOME": "/var/lib/chatraw-runner/codex-home",
+    "CLAUDE_CONFIG_DIR": "/var/lib/chatraw-runner/claude-home",
+    "PI_CODING_AGENT_DIR": "/var/lib/chatraw-runner/pi-home"
+  },
+  "node_packages": {
+    "codex": {
+      "executable": "/opt/chatraw-agents/codex/node_modules/.bin/codex",
+      "resolved": "/opt/chatraw-agents/codex/node_modules/@openai/codex/bin/codex.js",
+      "package": "@openai/codex",
+      "version": "0.153.4"
+    },
+    "pi": {
+      "executable": "/opt/chatraw-agents/pi/node_modules/.bin/pi",
+      "resolved": "/opt/chatraw-agents/pi/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js",
+      "package": "@earendil-works/pi-coding-agent",
+      "version": "1.5.2"
+    }
+  },
+  "python_packages": {
+    "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+    "packages": {
+      "claude-agent-sdk": "0.2.180",
+      "deepseek-harness-sdk": "0.2.2rc2",
+      "deepseek-harness-runtime-bin": "0.2.2rc2",
+      "aiohttp": "3.14.5"
+    }
+  },
+  "hermes_source_commit": "6a0d2d12815c0546b0bcaf05046e2fe3293f60aa",
+  "paths": [
+    {
+      "path": "/etc/chatraw-runner",
+      "mode": "0o750",
+      "uid": 0,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/etc/chatraw-runner/token",
+      "mode": "0o600",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/etc/chatraw-runner/environment",
+      "mode": "0o640",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/etc/chatraw-runner/config.json",
+      "mode": "0o640",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/runner.db",
+      "mode": "0o600",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/workspaces",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/pi-sessions",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/deepseek",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/hermes-home",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/home/rm01",
+      "mode": "0o750",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/codex-home",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/claude-home",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/pi-home",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    }
+  ],
+  "runner_database": {
+    "integrity": "ok",
+    "schema_version": 2,
+    "run_counts": [
+      {
+        "agent_id": "claude",
+        "status": "cancelled",
+        "count": 1
+      },
+      {
+        "agent_id": "claude",
+        "status": "completed",
+        "count": 2
+      },
+      {
+        "agent_id": "codex",
+        "status": "cancelled",
+        "count": 1
+      },
+      {
+        "agent_id": "codex",
+        "status": "completed",
+        "count": 3
+      },
+      {
+        "agent_id": "deepseek",
+        "status": "failed",
+        "count": 1
+      },
+      {
+        "agent_id": "hermes",
+        "status": "cancelled",
+        "count": 1
+      },
+      {
+        "agent_id": "hermes",
+        "status": "completed",
+        "count": 2
+      },
+      {
+        "agent_id": "pi",
+        "status": "cancelled",
+        "count": 1
+      },
+      {
+        "agent_id": "pi",
+        "status": "completed",
+        "count": 2
+      }
+    ],
+    "runs": [
+      {
+        "id": "8fd852ee00c24c0985bd000d02ffafeb",
+        "session_id": "b7fea9a288d84d1489ff634e753a6652",
+        "agent_id": "codex",
+        "status": "completed",
+        "last_seq": 33,
+        "created_at": "2026-11-13T13:26:46.434085Z",
+        "updated_at": "2026-11-13T13:27:27.051536Z"
+      },
+      {
+        "id": "ff47862ec823417190fe53b1a1edbe2f",
+        "session_id": "88e2895ec55b4ab6872e731d8d0b67b4",
+        "agent_id": "claude",
+        "status": "completed",
+        "last_seq": 20,
+        "created_at": "2026-11-13T13:27:43.583339Z",
+        "updated_at": "2026-11-13T13:27:56.704022Z"
+      },
+      {
+        "id": "e024335f7bde4ebd846260c15b3eab50",
+        "session_id": "7efd25b09ff14e52be71f94abc638a1c",
+        "agent_id": "pi",
+        "status": "completed",
+        "last_seq": 26,
+        "created_at": "2026-11-13T13:28:15.985744Z",
+        "updated_at": "2026-11-13T13:28:41.808789Z"
+      },
+      {
+        "id": "df3c329ec4db425c892bacd448570491",
+        "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+        "agent_id": "deepseek",
+        "status": "failed",
+        "last_seq": 4,
+        "created_at": "2026-11-13T13:29:01.271974Z",
+        "updated_at": "2026-11-13T13:29:27.819419Z"
+      },
+      {
+        "id": "882a5e73da164864a38f556f2e4357bc",
+        "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+        "agent_id": "hermes",
+        "status": "completed",
+        "last_seq": 27,
+        "created_at": "2026-11-13T13:29:44.827084Z",
+        "updated_at": "2026-11-13T13:30:05.996049Z"
+      },
+      {
+        "id": "e62e05ca92744e399ea75c3e445e2b33",
+        "session_id": "b7fea9a288d84d1489ff634e753a6652",
+        "agent_id": "codex",
+        "status": "completed",
+        "last_seq": 17,
+        "created_at": "2026-11-13T13:32:05.866814Z",
+        "updated_at": "2026-11-13T13:32:10.708713Z"
+      },
+      {
+        "id": "06c78d5fa7d44514901a7c8328d3655c",
+        "session_id": "88e2895ec55b4ab6872e731d8d0b67b4",
+        "agent_id": "claude",
+        "status": "completed",
+        "last_seq": 19,
+        "created_at": "2026-11-13T13:32:12.398512Z",
+        "updated_at": "2026-11-13T13:32:18.724707Z"
+      },
+      {
+        "id": "ea5d45ff82254d6d974ffac315ba94b8",
+        "session_id": "7efd25b09ff14e52be71f94abc638a1c",
+        "agent_id": "pi",
+        "status": "completed",
+        "last_seq": 17,
+        "created_at": "2026-11-13T13:32:22.392813Z",
+        "updated_at": "2026-11-13T13:32:25.727875Z"
+      },
+      {
+        "id": "41c4e0a88615475089ca4ac7fa1bb740",
+        "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+        "agent_id": "hermes",
+        "status": "completed",
+        "last_seq": 23,
+        "created_at": "2026-11-13T13:32:29.933985Z",
+        "updated_at": "2026-11-13T13:32:35.978466Z"
+      },
+      {
+        "id": "b13f4c69e3b14d56b121e963e54b136b",
+        "session_id": "b7fea9a288d84d1489ff634e753a6652",
+        "agent_id": "codex",
+        "status": "cancelled",
+        "last_seq": 6,
+        "created_at": "2026-11-13T13:32:44.388826Z",
+        "updated_at": "2026-11-13T13:32:47.569358Z"
+      },
+      {
+        "id": "2c1910838501477f9e59d81913b7eba9",
+        "session_id": "88e2895ec55b4ab6872e731d8d0b67b4",
+        "agent_id": "claude",
+        "status": "cancelled",
+        "last_seq": 7,
+        "created_at": "2026-11-13T13:32:47.606647Z",
+        "updated_at": "2026-11-13T13:32:52.074174Z"
+      },
+      {
+        "id": "c9a5ac11ceae49869f92c36fbe44b25c",
+        "session_id": "7efd25b09ff14e52be71f94abc638a1c",
+        "agent_id": "pi",
+        "status": "cancelled",
+        "last_seq": 7,
+        "created_at": "2026-11-13T13:32:53.069541Z",
+        "updated_at": "2026-11-13T13:32:54.463036Z"
+      },
+      {
+        "id": "f16625359e924af293bb4dad54b470fc",
+        "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+        "agent_id": "hermes",
+        "status": "cancelled",
+        "last_seq": 10,
+        "created_at": "2026-11-13T13:32:55.491640Z",
+        "updated_at": "2026-11-13T13:32:59.529081Z"
+      },
+      {
+        "id": "2b51cd7b85114cf7bdc0d7ada6d8412c",
+        "session_id": "9f5017b8efb7418eb1cdb780a3611b1b",
+        "agent_id": "codex",
+        "status": "completed",
+        "last_seq": 13,
+        "created_at": "2026-11-13T13:36:49.695056Z",
+        "updated_at": "2026-11-13T13:36:53.717306Z"
+      }
+    ],
+    "sessions": [
+      {
+        "id": "b7fea9a288d84d1489ff634e753a6652",
+        "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+        "agent_id": "codex",
+        "workspace": "/var/lib/chatraw-runner/workspaces/b7fea9a288d84d1489ff634e753a6652",
+        "created_at": "2026-11-13T13:26:46.415998Z",
+        "native_session_id": null,
+        "native_thread_id": "01a1d516-d830-7742-b766-ff1071485eaf"
+      },
+      {
+        "id": "88e2895ec55b4ab6872e731d8d0b67b4",
+        "chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c",
+        "agent_id": "claude",
+        "workspace": "/var/lib/chatraw-runner/workspaces/88e2895ec55b4ab6872e731d8d0b67b4",
+        "created_at": "2026-11-13T13:27:43.563248Z",
+        "native_session_id": "ffe300d5-6381-40f5-8672-19a50375e8d4",
+        "native_thread_id": null
+      },
+      {
+        "id": "7efd25b09ff14e52be71f94abc638a1c",
+        "chat_id": "ba5a7cb3-9e0f-45e6-b406-b7678a0507b9",
+        "agent_id": "pi",
+        "workspace": "/var/lib/chatraw-runner/workspaces/7efd25b09ff14e52be71f94abc638a1c",
+        "created_at": "2026-11-13T13:28:15.039339Z",
+        "native_session_id": "01a1d518-34ec-76f0-bcbe-2a6c95159e3e",
+        "native_thread_id": null
+      },
+      {
+        "id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+        "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+        "agent_id": "deepseek",
+        "workspace": "/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f",
+        "created_at": "2026-11-13T13:28:58.813953Z",
+        "native_session_id": "session-2c63be8b22744b3cb0c81413a51f6aad",
+        "native_thread_id": null
+      },
+      {
+        "id": "4e7b1a3095494a64a9d61f5f2732712a",
+        "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+        "agent_id": "hermes",
+        "workspace": "/var/lib/chatraw-runner/workspaces/4e7b1a3095494a64a9d61f5f2732712a",
+        "created_at": "2026-11-13T13:29:42.856065Z",
+        "native_session_id": "local-cb96117cc03ecd20fa7eee4a023733f810fb93c0289610eea6afbe2996f6fab7",
+        "native_thread_id": null
+      },
+      {
+        "id": "9f5017b8efb7418eb1cdb780a3611b1b",
+        "chat_id": "b1a8f3a5-2234-4945-bae0-1f4a4b4372d6",
+        "agent_id": "codex",
+        "workspace": "/var/lib/chatraw-runner/workspaces/9f5017b8efb7418eb1cdb780a3611b1b",
+        "created_at": "2026-11-13T13:36:49.601895Z",
+        "native_session_id": null,
+        "native_thread_id": "01a1d520-0caa-7643-bf4a-a43b9bab5cd1"
+      }
+    ],
+    "event_counts": [
+      {
+        "run_id": "06c78d5fa7d44514901a7c8328d3655c",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "2b51cd7b85114cf7bdc0d7ada6d8412c",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "2c1910838501477f9e59d81913b7eba9",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "41c4e0a88615475089ca4ac7fa1bb740",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "882a5e73da164864a38f556f2e4357bc",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "882a5e73da164864a38f556f2e4357bc",
+        "type": "tool_completed",
+        "count": 1
+      },
+      {
+        "run_id": "882a5e73da164864a38f556f2e4357bc",
+        "type": "tool_started",
+        "count": 1
+      },
+      {
+        "run_id": "8fd852ee00c24c0985bd000d02ffafeb",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "8fd852ee00c24c0985bd000d02ffafeb",
+        "type": "interaction_requested",
+        "count": 1
+      },
+      {
+        "run_id": "8fd852ee00c24c0985bd000d02ffafeb",
+        "type": "interaction_resolved",
+        "count": 1
+      },
+      {
+        "run_id": "8fd852ee00c24c0985bd000d02ffafeb",
+        "type": "tool_completed",
+        "count": 1
+      },
+      {
+        "run_id": "8fd852ee00c24c0985bd000d02ffafeb",
+        "type": "tool_started",
+        "count": 1
+      },
+      {
+        "run_id": "b13f4c69e3b14d56b121e963e54b136b",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "c9a5ac11ceae49869f92c36fbe44b25c",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "df3c329ec4db425c892bacd448570491",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "e024335f7bde4ebd846260c15b3eab50",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "e024335f7bde4ebd846260c15b3eab50",
+        "type": "interaction_requested",
+        "count": 1
+      },
+      {
+        "run_id": "e024335f7bde4ebd846260c15b3eab50",
+        "type": "interaction_resolved",
+        "count": 1
+      },
+      {
+        "run_id": "e024335f7bde4ebd846260c15b3eab50",
+        "type": "tool_completed",
+        "count": 1
+      },
+      {
+        "run_id": "e024335f7bde4ebd846260c15b3eab50",
+        "type": "tool_started",
+        "count": 1
+      },
+      {
+        "run_id": "e62e05ca92744e399ea75c3e445e2b33",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "ea5d45ff82254d6d974ffac315ba94b8",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "f16625359e924af293bb4dad54b470fc",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "ff47862ec823417190fe53b1a1edbe2f",
+        "type": "done",
+        "count": 1
+      },
+      {
+        "run_id": "ff47862ec823417190fe53b1a1edbe2f",
+        "type": "tool_completed",
+        "count": 1
+      },
+      {
+        "run_id": "ff47862ec823417190fe53b1a1edbe2f",
+        "type": "tool_started",
+        "count": 1
+      }
+    ]
+  },
+  "workspaces": [
+    {
+      "path": "/var/lib/chatraw-runner/workspaces/b7fea9a288d84d1489ff634e753a6652",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/workspaces/88e2895ec55b4ab6872e731d8d0b67b4",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/workspaces/7efd25b09ff14e52be71f94abc638a1c",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/workspaces/4e7b1a3095494a64a9d61f5f2732712a",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    },
+    {
+      "path": "/var/lib/chatraw-runner/workspaces/9f5017b8efb7418eb1cdb780a3611b1b",
+      "mode": "0o700",
+      "uid": 1000,
+      "gid": 1000,
+      "symlink": false
+    }
+  ],
+  "chatraw_database": {
+    "path": "/var/lib/docker/volumes/chatraw_chatraw_data/_data/chatraw.db",
+    "integrity": "ok",
+    "run_message_counts": [
+      {
+        "run_id": "06c78d5fa7d44514901a7c8328d3655c",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "06c78d5fa7d44514901a7c8328d3655c",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "2b51cd7b85114cf7bdc0d7ada6d8412c",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "2b51cd7b85114cf7bdc0d7ada6d8412c",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "2c1910838501477f9e59d81913b7eba9",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "2c1910838501477f9e59d81913b7eba9",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "41c4e0a88615475089ca4ac7fa1bb740",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "41c4e0a88615475089ca4ac7fa1bb740",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "882a5e73da164864a38f556f2e4357bc",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "882a5e73da164864a38f556f2e4357bc",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "8fd852ee00c24c0985bd000d02ffafeb",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "8fd852ee00c24c0985bd000d02ffafeb",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "b13f4c69e3b14d56b121e963e54b136b",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "b13f4c69e3b14d56b121e963e54b136b",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "c9a5ac11ceae49869f92c36fbe44b25c",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "c9a5ac11ceae49869f92c36fbe44b25c",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "df3c329ec4db425c892bacd448570491",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "df3c329ec4db425c892bacd448570491",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "e024335f7bde4ebd846260c15b3eab50",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "e024335f7bde4ebd846260c15b3eab50",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "e62e05ca92744e399ea75c3e445e2b33",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "e62e05ca92744e399ea75c3e445e2b33",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "ea5d45ff82254d6d974ffac315ba94b8",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "ea5d45ff82254d6d974ffac315ba94b8",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "f16625359e924af293bb4dad54b470fc",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "f16625359e924af293bb4dad54b470fc",
+        "role": "user",
+        "count": 1
+      },
+      {
+        "run_id": "ff47862ec823417190fe53b1a1edbe2f",
+        "role": "assistant",
+        "count": 1
+      },
+      {
+        "run_id": "ff47862ec823417190fe53b1a1edbe2f",
+        "role": "user",
+        "count": 1
+      }
+    ],
+    "bindings": [
+      {
+        "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+        "agent_id": "codex",
+        "session_id": "b7fea9a288d84d1489ff634e753a6652",
+        "confirmed": 1
+      },
+      {
+        "chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c",
+        "agent_id": "claude",
+        "session_id": "88e2895ec55b4ab6872e731d8d0b67b4",
+        "confirmed": 1
+      },
+      {
+        "chat_id": "ba5a7cb3-9e0f-45e6-b406-b7678a0507b9",
+        "agent_id": "pi",
+        "session_id": "7efd25b09ff14e52be71f94abc638a1c",
+        "confirmed": 1
+      },
+      {
+        "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+        "agent_id": "deepseek",
+        "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+        "confirmed": 1
+      },
+      {
+        "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+        "agent_id": "hermes",
+        "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+        "confirmed": 1
+      },
+      {
+        "chat_id": "b1a8f3a5-2234-4945-bae0-1f4a4b4372d6",
+        "agent_id": "codex",
+        "session_id": "9f5017b8efb7418eb1cdb780a3611b1b",
+        "confirmed": 1
+      }
+    ],
+    "submission_counts": [
+      {
+        "admission": "accepted",
+        "count": 14
+      }
+    ]
+  },
+  "source_hashes": {
+    "/opt/chatraw-runner/agent_runner/runtime.py": "fded694fd508ba5490eaa1671419fa949dfd941e4815bdf8ad603240bbea97da",
+    "/opt/chatraw-runner/agent_runner/store.py": "bcd803674b0867d4d09b0355ca73b39c659ffdfa2f5be46aa0aee9ad8f52c10e",
+    "/opt/chatraw-runner/agent_runner/adapters/hermes.py": "83277e8f2304a29c57b54b62b63007c74f4ecf4185ec8d75525f95dfab640460",
+    "/opt/chatraw-runner/agent_runner/adapters/codex.py": "a7d89c869f46a83d2f30fa88a2fd80a7b346773f1ae0776139edd88c9f569b2b",
+    "/opt/chatraw-runner/agent_runner/adapters/claude.py": "905b326ea3ae573ace75e922d9cc1ed8b0132896559d9fda925acef4e18a5362",
+    "/opt/chatraw-runner/agent_runner/adapters/pi.py": "add83d8995784fa7eaaf6083b3a2059505ee2e6ad2191a33e1238fd737d7f7a9",
+    "/opt/chatraw-runner/agent_runner/adapters/deepseek.py": "91cf50cca8cfa90dcac11e2c1ca6f0730f59133c472c806d396b1baad49817b2"
+  }
+}

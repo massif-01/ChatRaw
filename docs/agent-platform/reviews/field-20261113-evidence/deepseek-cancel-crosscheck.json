@@ -1,0 +1,15 @@
+{
+  "agent": "deepseek",
+  "run_id": "2ccbcb8956b841e2a6af805f0790e977",
+  "first_content_observed": false,
+  "cancel_mode": "process_stop",
+  "cancel_receipt": {
+    "run_id": "2ccbcb8956b841e2a6af805f0790e977",
+    "status": "stopping"
+  },
+  "before_status": "running",
+  "after_status": "cancelled",
+  "cancel_elapsed": 1.26,
+  "owned_runtime_exited": true,
+  "local_model_socket_recorded": true
+}

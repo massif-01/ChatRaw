@@ -1,0 +1,138 @@
+{
+  "agent_evidence_crosscheck": {
+    "codex": {
+      "tool_run_id": "8fd852ee00c24c0985bd000d02ffafeb",
+      "current_status": "completed",
+      "tool_started": 1,
+      "tool_completed": 1,
+      "done": 1,
+      "user_projection": 1,
+      "assistant_projection": 1,
+      "14": {
+        "run_id": "e62e05ca92744e399ea75c3e445e2b33",
+        "recorded_status": "completed",
+        "current_status": "completed"
+      },
+      "16": {
+        "run_id": "b13f4c69e3b14d56b121e963e54b136b",
+        "recorded_status": "cancelled",
+        "current_status": "cancelled"
+      }
+    },
+    "claude": {
+      "tool_run_id": "ff47862ec823417190fe53b1a1edbe2f",
+      "current_status": "completed",
+      "tool_started": 1,
+      "tool_completed": 1,
+      "done": 1,
+      "user_projection": 1,
+      "assistant_projection": 1,
+      "14": {
+        "run_id": "06c78d5fa7d44514901a7c8328d3655c",
+        "recorded_status": "completed",
+        "current_status": "completed"
+      },
+      "16": {
+        "run_id": "2c1910838501477f9e59d81913b7eba9",
+        "recorded_status": "cancelled",
+        "current_status": "cancelled"
+      }
+    },
+    "pi": {
+      "tool_run_id": "e024335f7bde4ebd846260c15b3eab50",
+      "current_status": "completed",
+      "tool_started": 1,
+      "tool_completed": 1,
+      "done": 1,
+      "user_projection": 1,
+      "assistant_projection": 1,
+      "14": {
+        "run_id": "ea5d45ff82254d6d974ffac315ba94b8",
+        "recorded_status": "completed",
+        "current_status": "completed"
+      },
+      "16": {
+        "run_id": "c9a5ac11ceae49869f92c36fbe44b25c",
+        "recorded_status": "cancelled",
+        "current_status": "cancelled"
+      }
+    },
+    "deepseek": {
+      "tool_run_id": "df3c329ec4db425c892bacd448570491",
+      "current_status": "failed",
+      "tool_started": 0,
+      "tool_completed": 0,
+      "done": 1,
+      "user_projection": 1,
+      "assistant_projection": 1
+    },
+    "hermes": {
+      "tool_run_id": "882a5e73da164864a38f556f2e4357bc",
+      "current_status": "completed",
+      "tool_started": 1,
+      "tool_completed": 1,
+      "done": 1,
+      "user_projection": 1,
+      "assistant_projection": 1,
+      "14": {
+        "run_id": "41c4e0a88615475089ca4ac7fa1bb740",
+        "recorded_status": "completed",
+        "current_status": "completed"
+      },
+      "16": {
+        "run_id": "f16625359e924af293bb4dad54b470fc",
+        "recorded_status": "cancelled",
+        "current_status": "cancelled"
+      }
+    }
+  },
+  "chatraw_restart_evidence": {
+    "fields_unchanged": {
+      "run_id": true,
+      "session_id": true,
+      "status": true,
+      "last_seq": true
+    },
+    "interaction_ids_unchanged": true
+  },
+  "runner_restart_binding_evidence": {
+    "b7fea9a288d84d1489ff634e753a6652": {
+      "agent": "codex",
+      "native_session_identity_unchanged": true,
+      "workspace_unchanged": true,
+      "changed_native_fields": [
+        "run_id",
+        "stop_requested",
+        "turn_id"
+      ]
+    },
+    "88e2895ec55b4ab6872e731d8d0b67b4": {
+      "agent": "claude",
+      "native_session_identity_unchanged": true,
+      "workspace_unchanged": true,
+      "changed_native_fields": []
+    },
+    "7efd25b09ff14e52be71f94abc638a1c": {
+      "agent": "pi",
+      "native_session_identity_unchanged": true,
+      "workspace_unchanged": true,
+      "changed_native_fields": []
+    },
+    "14d1c7a3dbda4f3fad1a20a4b35d523f": {
+      "agent": "deepseek",
+      "native_session_identity_unchanged": true,
+      "workspace_unchanged": true,
+      "changed_native_fields": []
+    },
+    "4e7b1a3095494a64a9d61f5f2732712a": {
+      "agent": "hermes",
+      "native_session_identity_unchanged": true,
+      "workspace_unchanged": true,
+      "changed_native_fields": [
+        "run_id",
+        "admission_id"
+      ]
+    }
+  },
+  "unmatched_terminal_display_roles": []
+}
