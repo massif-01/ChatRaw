@@ -1,0 +1,35 @@
+{
+  "commits": [
+    "1a03bdc4cd5da4074a4f0939d6e6e1a86ff7970c",
+    "a60f4e700f8c8e1373c10c6772e2d6ad27825238"
+  ],
+  "snapshot": "/var/folders/88/hzsgvlyj5xzghddxy9rk5_5m0000gn/T/chatraw-f-provider-8tfofm0v",
+  "runtime_snapshot": "/var/folders/88/hzsgvlyj5xzghddxy9rk5_5m0000gn/T/chatraw-f-provider-runtime-9q7j9s5q",
+  "runtime_base": "4eb59e33993803629ad1fef60a9575843286bfbd",
+  "runtime_overlay": [
+    "agent_runner/adapters/deepseek.py"
+  ],
+  "commands": [
+    "PYTHONDONTWRITEBYTECODE=1 CHATRAW_TEST_DEEPSEEK=1 /private/tmp/chatraw-d-dsh-py312/bin/python -B -m unittest -v agent_runner.tests.test_d_adapter_protocol agent_runner.tests.test_d_native_adapters.DeepSeekNativeTests.test_sdk_resumes_with_explicit_openai_provider_and_native_approval agent_runner.tests.test_d_native_adapters.DeepSeekNativeTests.test_sdk_output_budget_reaches_model_and_omission_keeps_default",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<runtime_snapshot> /Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python -B <evidence>/host_snapshot_check.py.txt"
+  ],
+  "native_test_cwd": "snapshot above",
+  "native_sdk_version": "0.2.2rc2",
+  "source_sha256": {
+    "agent_runner/adapters/deepseek.py": "03635326fac7ec64be64e6bafdbf4f0b52fb1a76e03dc5378806938d9284f934",
+    "agent_runner/tests/test_d_adapter_protocol.py": "11bcb9e727479c580475e25022f8fb95573f90ef7420d45300d4dbf3a76ef616",
+    "agent_runner/tests/test_d_native_adapters.py": "0a107919a380a09df084e22f5da49701aef5314786cd06dd0b9497ecbf36c091",
+    "docs/agent-platform/handoffs/D-field/deepseek-rm01-models-v2.patch.yml": "26b6a8db9895ed5444e60fb2f8d6ef8e7ed23306265c38704948e0d4e7c766b3"
+  },
+  "evidence_sha256": {
+    "D-linux-provider-resume.json": "23f19229b33b23e7e94f03a1c4c1f245a13a91ce5ec8d4e43c0d930d6dbca610",
+    "D-linux-provider-wire.json": "e5e5c9138ae1d039cdd7e914cc7173c010f85dd3d3140767b326ac902dad885c",
+    "host-snapshot.json": "b2575da0a1c007f161dd9f89a4eee79a6635db9fd260bee704ef0d7b95e1b4af",
+    "host_snapshot_check.py.txt": "33df4d323e25bd6b8ce8c34c17d76577beaa2dc4b677f4dbbb1e6a77970ce4dc",
+    "source-boundary.json": "db6568418b363a08188bcc2bfd9ac2c0d6d9c959eb042b1afa2c20c8489c9e1b",
+    "targeted-tests.log": "92c77c9cfd1f5a93d19229105f3d7afe457178a914dee0666a7517dde36c8327"
+  },
+  "D_linux_artifacts_origin": "/private/tmp/chatraw-d-sse-replay.cUJQ33; read-only evidence review, not rerun",
+  "field_model_requests": 0,
+  "field_mutations": 0
+}

@@ -1,0 +1,54 @@
+"""Real Runtime and schema with a controlled receiver; no SDK/model call."""
+import asyncio
+import json
+import tempfile
+from agent_runner.adapters.deepseek import DeepSeekAdapter
+from agent_runner.runtime import Runtime
+from agent_runner.store import RunnerError
+from agent_runner.tests.test_runtime import ControlledAdapter
+
+
+class Capture(ControlledAdapter):
+    agent_id = "deepseek"
+    settings_schema = DeepSeekAdapter.settings_schema
+    validate_config = DeepSeekAdapter.validate_config
+
+    async def create_session(self, session_id, workspace, config):
+        binding = await super().create_session(session_id, workspace, config)
+        binding["agent_id"] = "deepseek"
+        return binding
+
+
+async def main():
+    old_config = {"dsh_home": "/tmp", "patches": ["/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml"]}
+    new_config = {"dsh_home": "/tmp", "provider": "rm01-qwen", "model": "RM-01 VLM", "reasoning_effort": "high", "max_tokens": 8192, "patches": ["/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"]}
+    with tempfile.TemporaryDirectory() as directory:
+        runtime = Runtime(directory, {"deepseek": Capture}, {"agents": {"deepseek": old_config}})
+        try:
+            await runtime.set_enabled("deepseek", True)
+            await runtime.create_session("old", "chatold", "deepseek", {"kind": "managed"})
+            old = runtime.store.session("old")
+            rejected = []
+            for settings in ({"provider": "rm01-qwen"}, {"patches": new_config["patches"]}, {"baseURL": "http://127.0.0.1:9/v1"}, {"api_key": "fixture"}):
+                try:
+                    runtime.set_settings("deepseek", settings)
+                except RunnerError as error:
+                    assert error.status == 400
+                    rejected.extend(settings)
+                else:
+                    raise AssertionError("private setting accepted")
+            runtime.set_settings("deepseek", {"reasoning_effort": "off"})
+            await runtime.close()
+            runtime = Runtime(directory, {"deepseek": Capture}, {"agents": {"deepseek": new_config}})
+            resumed = await runtime.instance(runtime.store.session("old"))
+            assert resumed.config == {**old_config, "reasoning_effort": "off"}, resumed.config
+            assert runtime.store.session("old")["base_config"] == old["base_config"]
+            assert runtime.store.session("old")["binding"] == old["binding"]
+            await runtime.create_session("new", "chatnew", "deepseek", {"kind": "managed"})
+            assert runtime.instances["new"].config == {**new_config, "reasoning_effort": "off"}
+            print(json.dumps({"public_rejected_400": rejected, "old_base_config_and_binding_unchanged": True, "old_resume_config": resumed.config, "new_session_provider": runtime.instances["new"].config["provider"], "new_session_patch": runtime.instances["new"].config["patches"], "public_reasoning_overrides_host_default": True, "boundary": "controlled receiver; real Runtime/store/schema; no native or model"}, indent=2))
+        finally:
+            await runtime.close()
+
+
+asyncio.run(main())
