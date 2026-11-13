@@ -1,0 +1,49 @@
+{
+  "sources": [
+    {
+      "commit": "3061f8ef60b200a536115f4e6d065ce4f6262fbc",
+      "path": "handoff/rm01-deployment-20261113/109-deepseek-final-summary-control.json",
+      "sha256": "a987c412eddb253b0c06942bd5b51605fd9fb180046717478d35f1026016a944"
+    },
+    {
+      "commit": "3061f8ef60b200a536115f4e6d065ce4f6262fbc",
+      "path": "handoff/rm01-deployment-20261113/111-deepseek-final-summary-audit-control.json",
+      "sha256": "a30e5da5204a7df48f855c7076139c92a395bd7ea15bcb32a7cbf3c37280fedd"
+    },
+    {
+      "commit": "7c58d12c7557f7e400c7b156e9505e43367c423e",
+      "path": "handoff/rm01-deployment-20261113/112-deepseek-final-summary-three-arm-results.md",
+      "sha256": "36bb397cea8d2559daa33dd6c217d97d48eaf810d3477ec0ed8bb917f43a03ca"
+    },
+    {
+      "commit": "7c58d12c7557f7e400c7b156e9505e43367c423e",
+      "path": "handoff/rm01-deployment-20261113/115-deepseek-summary-generated-token-verification.json",
+      "sha256": "4064008c87c23b330e897917b805107c1b1f977c4398d41ab307fbe8adcf3df2"
+    },
+    {
+      "commit": "3061f8ef60b200a536115f4e6d065ce4f6262fbc",
+      "path": "handoff/rm01-deployment-20261113/113-summary-diagnostic-model-identity.json",
+      "sha256": "4928875bbdfbca4e3e5bc739a40b50aab6581dff6d1640179399de7c338c156b"
+    },
+    {
+      "commit": "85645a92ab43def4ac11a7f2318c565cb3c75119",
+      "path": "docs/agent-platform/handoffs/D-field/evidence/deepseek-summary-receiver.json",
+      "sha256": "af5ed866a936daf83e019b893c5c1b1c8bd3cb8a8ad8b3cc37396479e1ba5bea"
+    },
+    {
+      "commit": "85645a92ab43def4ac11a7f2318c565cb3c75119",
+      "path": "docs/agent-platform/handoffs/D-field/deepseek-summary-receiver.md",
+      "sha256": "f5babae4b0d9f51a02b4b698c6ba78aac971c8caada084e1d41d079ec17e7417"
+    },
+    {
+      "commit": "85645a92ab43def4ac11a7f2318c565cb3c75119",
+      "path": "docs/agent-platform/handoffs/C-local-model-98/deepseek-summary-render.md",
+      "sha256": "73812a75ab463afe719db999cdbb1b782ce3b5c9f05cc616091b88dfbb894f8b"
+    },
+    {
+      "commit": "4d22421032f0e3fcbcaece13a001aede1f5ac1be",
+      "path": "docs/agent-platform/handoffs/C-local-model-98/deepseek-summary-qwen-settings.md",
+      "sha256": "f3da20b7bd87a15124053e9d3340af1ba17a8f0cddeb70fa4dd09f2f6f3901e5"
+    }
+  ]
+}
