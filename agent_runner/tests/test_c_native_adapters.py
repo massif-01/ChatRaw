@@ -18,6 +18,7 @@ from unittest.mock import patch
 
 from agent_runner.adapters.claude import ClaudeAdapter
 from agent_runner.adapters.codex import CodexAdapter
+from agent_runner.adapters.codex_responses import TOKEN_ENV, UPSTREAM_SETTING
 from agent_runner.adapters.base import AdapterError
 
 
@@ -31,6 +32,8 @@ class _ModelServer(ThreadingHTTPServer):
         self.approval_command = None
         self.codex_yield_time_ms = 1000
         self.hold_after_codex_tool = False
+        self.reject_nonleading_instructions = False
+        self.reject_compat_authorization = False
 
 
 class _ModelHandler(BaseHTTPRequestHandler):
@@ -44,11 +47,22 @@ class _ModelHandler(BaseHTTPRequestHandler):
         if self.path.startswith("/v1/messages"):
             authenticated = self.headers.get("x-api-key") == "sk-ant-fixture"
         else:
-            authenticated = self.headers.get("Authorization") == "Bearer sk-fixture"
+            authorization = self.headers.get("Authorization")
+            authenticated = (
+                authorization is None
+                if self.server.reject_compat_authorization
+                else authorization == "Bearer sk-fixture"
+            )
         if not authenticated:
             self.send_error(401)
             return
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+        if self.server.reject_nonleading_instructions and self.path == "/v1/responses":
+            if any(
+                item.get("role") in {"developer", "system"} for item in body["input"]
+            ):
+                self.send_error(400, "System message must be at the beginning")
+                return
         self.server.requests.append((self.path, body))
         self.server.counts[self.path] += 1
         if self.path.startswith("/v1/messages"):
@@ -796,10 +810,79 @@ class NativeAdapterTests(unittest.IsolatedAsyncioTestCase):
     async def test_codex_native_compaction(self):
         await self._exercise_compact(CodexAdapter())
 
+    async def test_codex_compat_native_compaction_and_followup(self):
+        adapter = CodexAdapter()
+        self.model.reject_nonleading_instructions = True
+        self.model.reject_compat_authorization = True
+        config = {
+            UPSTREAM_SETTING: f"http://127.0.0.1:{self.model.server_port}/v1/responses"
+        }
+        await self._start(adapter, config)
+        self.assertEqual(
+            (await self.sink.run(adapter, "seed", "Remember RM98 compact marker."))[
+                "status"
+            ],
+            "completed",
+        )
+        self.assertIn(
+            "permissions instructions", self.model.requests[-1][1]["instructions"]
+        )
+        thread_id = self.sink.binding["native"]["thread_id"]
+        compacted = await adapter.compact(
+            self.sink.binding, {"run_id": "compact"}, self.sink.emit
+        )
+        self.assertEqual(compacted["status"], "completed", compacted)
+        self.assertIn(
+            "contextCompaction",
+            [event["data"].get("name") for event in self.sink.events],
+        )
+        self.assertEqual(self.model.counts["/v1/responses/compact"], 0)
+        result = await self.sink.run(adapter, "continue", "Recall the earlier marker.")
+        self.assertEqual(result, {"status": "completed", "final_text": "Codex fixture"})
+        body = self.model.requests[-1][1]
+        self.assertIn("permissions instructions", body["instructions"])
+        self.assertIn("RM98 compact marker", json.dumps(body["input"]))
+        self.assertEqual(self.sink.binding["native"]["thread_id"], thread_id)
+
+        marker = self.workspace / "codex-approval-fixture"
+        self.model.approval_command = f'test -z "${TOKEN_ENV}" && touch {marker.name}'
+        task = asyncio.create_task(self.sink.run(adapter, "tool", "approval-fixture"))
+        event = await self._interaction(task)
+        await adapter.respond(
+            self.sink.binding, event["native_key"], {"decision_id": "accept"}
+        )
+        self.assertEqual((await task)["status"], "completed")
+        self.assertTrue(
+            marker.is_file(), "Codex tool did not run or inherited the listener token"
+        )
+        tool_input = self.model.requests[-1][1]["input"]
+        ids = {
+            item["call_id"] for item in tool_input if item["type"] == "function_call"
+        }
+        self.assertTrue(ids)
+        self.assertTrue(
+            any(
+                item.get("call_id") in ids
+                for item in tool_input
+                if item["type"] == "function_call_output"
+            )
+        )
+        await self._exercise_image(
+            adapter, "data:image/png;base64,", binding_exists=True
+        )
+        self.assertEqual(self.sink.binding["native"]["thread_id"], thread_id)
+
+        await adapter.close(self.sink.binding)
+        await adapter.resume_session(self.sink.binding, config)
+        self.assertEqual(
+            (await self.sink.run(adapter, "resume", "hello"))["status"], "completed"
+        )
+        self.assertEqual(self.sink.binding["native"]["thread_id"], thread_id)
+
     async def test_claude_native_compaction(self):
         await self._exercise_compact(ClaudeAdapter())
 
-    async def _exercise_image(self, adapter, key):
+    async def _exercise_image(self, adapter, key, *, binding_exists=False):
         import base64
 
         data = base64.b64decode(
@@ -808,7 +891,8 @@ class NativeAdapterTests(unittest.IsolatedAsyncioTestCase):
         # Runner stores attachments under opaque IDs without file extensions.
         image = self.workspace / "opaque-attachment-id"
         image.write_bytes(data)
-        await self._start(adapter, {})
+        if not binding_exists:
+            await self._start(adapter, {})
         attachment = {
             "attachment_id": "a",
             "name": "pixel.png",

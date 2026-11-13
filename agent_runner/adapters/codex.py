@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import re
 import shutil
 from dataclasses import dataclass, field
@@ -25,6 +26,13 @@ from .base import (
     RunResult,
     SessionBinding,
     UnsupportedCapability,
+)
+from .codex_responses import (
+    PROVIDER,
+    TOKEN_ENV,
+    UPSTREAM_SETTING,
+    ResponsesEndpoint,
+    validate_upstream,
 )
 
 
@@ -66,8 +74,11 @@ class _Rejected(Exception):
 
 
 class _AppServer:
-    def __init__(self, process: asyncio.subprocess.Process):
+    def __init__(
+        self, process: asyncio.subprocess.Process, endpoint: ResponsesEndpoint | None
+    ):
         self.process = process
+        self.endpoint = endpoint
         self.events: asyncio.Queue = asyncio.Queue(maxsize=512)
         self.calls: dict[int, asyncio.Future] = {}
         self.next_id = 0
@@ -75,19 +86,47 @@ class _AppServer:
         self.reader = asyncio.create_task(self._read())
 
     @classmethod
-    async def open(cls, cwd: Path | None = None) -> _AppServer:
-        process = await asyncio.create_subprocess_exec(
-            "codex",
-            "app-server",
-            "--listen",
-            "stdio://",
-            cwd=cwd,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.DEVNULL,
-            limit=16 * 1024 * 1024,
-        )
-        server = cls(process)
+    async def open(
+        cls, cwd: Path | None = None, *, upstream: str | None = None
+    ) -> _AppServer:
+        endpoint = await ResponsesEndpoint.open(upstream) if upstream else None
+        argv = ["codex", "app-server", "--listen", "stdio://"]
+        env = None
+        if endpoint is not None:
+            provider_config = (
+                '{ name = "ChatRaw local Responses", wire_api = "responses", '
+                f'base_url = "{endpoint.base_url}", env_key = "{TOKEN_ENV}", '
+                "requires_openai_auth = false, supports_websockets = false }"
+            )
+            argv.extend(
+                [
+                    "-c",
+                    f'model_provider="{PROVIDER}"',
+                    "-c",
+                    f"model_providers.{PROVIDER}={provider_config}",
+                    # Keep the key out of the ordinary native shell environment.
+                    "-c",
+                    f'shell_environment_policy.set.{TOKEN_ENV}=""',
+                ]
+            )
+            env = {**os.environ, TOKEN_ENV: endpoint.token}
+            for key in ("NO_PROXY", "no_proxy"):
+                env[key] = ",".join(filter(None, (env.get(key), "127.0.0.1")))
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *argv,
+                env=env,
+                cwd=cwd,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.DEVNULL,
+                limit=16 * 1024 * 1024,
+            )
+        except BaseException:
+            if endpoint is not None:
+                await endpoint.close()
+            raise
+        server = cls(process, endpoint)
         try:
             await server.call(
                 "initialize",
@@ -139,6 +178,8 @@ class _AppServer:
                 while not self.events.empty():
                     self.events.get_nowait()
             self.events.put_nowait(None)
+            if self.endpoint is not None:
+                await self.endpoint.close()
         if self.broken:
             while await self.process.stdout.read(65536):
                 pass
@@ -276,6 +317,9 @@ class CodexAdapter(AgentAdapter):
     def validate_config(self, config: AdapterConfig) -> AdapterConfig:
         normalized = {}
         for key, value in config.items():
+            if key == UPSTREAM_SETTING:
+                normalized[key] = validate_upstream(value)
+                continue
             schema = self.settings_schema["properties"].get(key)
             if schema is None or not isinstance(value, str):
                 raise AdapterError("invalid_config", "Invalid Codex settings.")
@@ -288,7 +332,7 @@ class CodexAdapter(AgentAdapter):
         return normalized
 
     async def probe(self, config: AdapterConfig) -> ProbeResult:
-        self.validate_config(config)
+        config = self.validate_config(config)
         result: ProbeResult = {
             "availability": "unavailable",
             "reason": "Codex CLI was not found.",
@@ -319,7 +363,7 @@ class CodexAdapter(AgentAdapter):
                 raise
             if match := re.fullmatch(rb"codex-cli ([\w.\-+]+)\s*", output):
                 result["version"] = match[1].decode()
-            server = await _AppServer.open()
+            server = await _AppServer.open(upstream=config.get(UPSTREAM_SETTING))
             result["checks"]["protocol"] = "passed"
             result.update(
                 availability="unknown",
@@ -417,7 +461,8 @@ class CodexAdapter(AgentAdapter):
             raise _Disconnected()
         if self._server is not None:
             await self.close(binding)
-        server = await _AppServer.open(Path(binding["workspace"]))
+        upstream = config.get(UPSTREAM_SETTING)
+        server = await _AppServer.open(Path(binding["workspace"]), upstream=upstream)
         params = {
             "cwd": binding["workspace"],
             "approvalPolicy": "on-request",
@@ -425,6 +470,8 @@ class CodexAdapter(AgentAdapter):
         }
         if config.get("model"):
             params["model"] = config["model"]
+        if upstream:
+            params["modelProvider"] = PROVIDER
         method = "thread/start"
         if thread_id:
             method = "thread/resume"
@@ -437,6 +484,7 @@ class CodexAdapter(AgentAdapter):
                 not isinstance(loaded, str)
                 or not loaded
                 or (thread_id and loaded != thread_id)
+                or (upstream and response.get("modelProvider") != PROVIDER)
             ):
                 raise _Disconnected()
         except BaseException:
