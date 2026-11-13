@@ -1,0 +1,53 @@
+{
+  "scope": "Local native runtime, scripted loopback HTTP receiver and fixture credentials. No official API generation or Linux field validation.",
+  "versions": {
+    "deepseek_harness_sdk": "0.2.2rc2",
+    "deepseek_harness_runtime": "0.2.2rc2",
+    "pi": "1.5.2"
+  },
+  "model": "deepseek-flash",
+  "deepseek_messages": {
+    "provider": "deepseek-official",
+    "path": "/anthropic/v1/messages",
+    "max_tokens": 8192,
+    "high": {"thinking": {"type": "enabled"}, "output_config": {"effort": "high"}},
+    "off": {"thinking": {"type": "disabled"}, "output_config_present": false},
+    "image": {
+      "files_path": "/anthropic/v1/files",
+      "successful_upload_referenced_by_id": true,
+      "rejected_upload_replayed_as_inline_base64": true,
+      "normalized_mime_type": "image/jpeg",
+      "normalized_bytes": 4774,
+      "normalized_sha256_in_both_cases": "8d35d061e637b42fd113eaa7de302accf7a5b52e3760f0487375babf5518af7b"
+    },
+    "approval": [
+      {
+        "decision": "rejected",
+        "approval_command_matches_tool_use_input": true,
+        "tool_use_id_matches_result": true,
+        "tool_result_is_error": true,
+        "marker_exists": false
+      },
+      {
+        "decision": "allowed-once",
+        "approval_command_matches_tool_use_input": true,
+        "tool_use_id_matches_result": true,
+        "tool_result_is_error": false,
+        "tool_result_text": "(no output)",
+        "marker_exists": true
+      }
+    ]
+  },
+  "pi_chat_completions": {
+    "provider": "deepseek",
+    "path": "/chat/completions",
+    "high": {"thinking": {"type": "enabled"}, "reasoning_effort": "high"},
+    "off": {"thinking": {"type": "disabled"}, "reasoning_effort_present": false},
+    "image_sha256_matches_input_in_both_cases": true
+  },
+  "existing_native_tests": {
+    "module": "agent_runner.tests.test_d_native_adapters",
+    "classes": ["PiNativeTests", "DeepSeekNativeTests"],
+    "passed": 9
+  }
+}
