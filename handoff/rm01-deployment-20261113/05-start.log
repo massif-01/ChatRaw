@@ -1,0 +1,11 @@
+Created symlink /etc/systemd/system/multi-user.target.wants/chatraw-hermes.service → /etc/systemd/system/chatraw-hermes.service.
+Created symlink /etc/systemd/system/multi-user.target.wants/chatraw-runner.service → /etc/systemd/system/chatraw-runner.service.
+ Volume chatraw_chatraw_data Creating
+ Volume chatraw_chatraw_data Created
+ Container chatraw Creating
+ Container chatraw Created
+ Container chatraw Starting
+ Container chatraw Started
+active
+active
+chatraw Up Less than a second

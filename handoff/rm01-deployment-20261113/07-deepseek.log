@@ -1,0 +1,16 @@
+{"agent": "deepseek", "started_at": 1794576536.489748, "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29", "binding": {"chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29", "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f", "agent_id": "deepseek", "workspace": {"id": "14d1c7a3dbda4f3fad1a20a4b35d523f", "kind": "managed", "label": "Managed workspace"}, "active_run_id": null, "last_run_id": null}, "submitted": {"chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29", "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f", "status": "queued", "last_seq": 1, "run_id": "df3c329ec4db425c892bacd448570491", "interactions": []}}
+{"agent": "deepseek", "elapsed": 4.78, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 6.79, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 8.81, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 10.82, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 12.84, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 14.85, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 16.87, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 18.88, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 20.9, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 22.91, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 24.93, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 26.94, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 28.96, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 30.97, "status": "running", "snapshot": null}
+{"agent": "deepseek", "elapsed": 32.98, "status": "failed", "snapshot": {"chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29", "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f", "status": "failed", "last_seq": 4, "run_id": "df3c329ec4db425c892bacd448570491", "interactions": [], "error": {"code": "deepseek_run_failed", "message": "DeepSeek reported a failed or blocked operation", "retryable": false}, "final_text": ""}}

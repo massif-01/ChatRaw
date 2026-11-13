@@ -1,0 +1,6 @@
+{"data": {"status": "queued"}, "run_id": "b13f4c69e3b14d56b121e963e54b136b", "schema_version": 1, "seq": 1, "session_id": "b7fea9a288d84d1489ff634e753a6652", "timestamp": "2026-11-13T13:32:44.388992Z", "type": "status"}
+{"data": {"status": "running"}, "run_id": "b13f4c69e3b14d56b121e963e54b136b", "schema_version": 1, "seq": 2, "session_id": "b7fea9a288d84d1489ff634e753a6652", "timestamp": "2026-11-13T13:32:44.395392Z", "type": "status"}
+{"data": {"message_id": "b5d525478fa4ade1", "text": "1"}, "run_id": "b13f4c69e3b14d56b121e963e54b136b", "schema_version": 1, "seq": 3, "session_id": "b7fea9a288d84d1489ff634e753a6652", "timestamp": "2026-11-13T13:32:47.517146Z", "type": "text_delta"}
+{"data": {"status": "stopping"}, "run_id": "b13f4c69e3b14d56b121e963e54b136b", "schema_version": 1, "seq": 4, "session_id": "b7fea9a288d84d1489ff634e753a6652", "timestamp": "2026-11-13T13:32:47.547833Z", "type": "status"}
+{"data": {"status": "cancelled"}, "run_id": "b13f4c69e3b14d56b121e963e54b136b", "schema_version": 1, "seq": 5, "session_id": "b7fea9a288d84d1489ff634e753a6652", "timestamp": "2026-11-13T13:32:47.569185Z", "type": "status"}
+{"data": {"final_text": "1", "status": "cancelled"}, "run_id": "b13f4c69e3b14d56b121e963e54b136b", "schema_version": 1, "seq": 6, "session_id": "b7fea9a288d84d1489ff634e753a6652", "timestamp": "2026-11-13T13:32:47.569315Z", "type": "done"}

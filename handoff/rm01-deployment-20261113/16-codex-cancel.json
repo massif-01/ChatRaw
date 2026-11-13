@@ -1,0 +1,36 @@
+{
+  "agent": "codex",
+  "submitted": {
+    "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+    "session_id": "b7fea9a288d84d1489ff634e753a6652",
+    "status": "queued",
+    "last_seq": 1,
+    "run_id": "b13f4c69e3b14d56b121e963e54b136b",
+    "interactions": []
+  },
+  "first_content_observed": true,
+  "before_cancel": {
+    "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+    "session_id": "b7fea9a288d84d1489ff634e753a6652",
+    "status": "running",
+    "last_seq": 3,
+    "run_id": "b13f4c69e3b14d56b121e963e54b136b",
+    "interactions": []
+  },
+  "elapsed_before_cancel": 3.17,
+  "cancel_receipt": {
+    "run_id": "b13f4c69e3b14d56b121e963e54b136b",
+    "status": "stopping"
+  },
+  "after_cancel": {
+    "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+    "session_id": "b7fea9a288d84d1489ff634e753a6652",
+    "status": "cancelled",
+    "last_seq": 6,
+    "run_id": "b13f4c69e3b14d56b121e963e54b136b",
+    "interactions": [],
+    "final_text": "1"
+  },
+  "event_reader_errors": [],
+  "elapsed": 3.22
+}

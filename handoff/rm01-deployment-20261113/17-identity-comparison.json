@@ -1,0 +1,32 @@
+[
+  {
+    "agent": "codex",
+    "runner_session_unchanged": true,
+    "native_session_unchanged": true,
+    "native_id": "01a1d516-d830-7742-b766-ff1071485eaf"
+  },
+  {
+    "agent": "claude",
+    "runner_session_unchanged": true,
+    "native_session_unchanged": true,
+    "native_id": "ffe300d5-6381-40f5-8672-19a50375e8d4"
+  },
+  {
+    "agent": "pi",
+    "runner_session_unchanged": true,
+    "native_session_unchanged": true,
+    "native_id": "01a1d518-34ec-76f0-bcbe-2a6c95159e3e"
+  },
+  {
+    "agent": "deepseek",
+    "runner_session_unchanged": true,
+    "native_session_unchanged": true,
+    "native_id": "session-2c63be8b22744b3cb0c81413a51f6aad"
+  },
+  {
+    "agent": "hermes",
+    "runner_session_unchanged": true,
+    "native_session_unchanged": true,
+    "native_id": "local-cb96117cc03ecd20fa7eee4a023733f810fb93c0289610eea6afbe2996f6fab7"
+  }
+]

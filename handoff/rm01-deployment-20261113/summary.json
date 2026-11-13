@@ -1,0 +1,50 @@
+{
+  "entrypoint": "http://10.10.99.99:51111",
+  "model": "RM-01 VLM",
+  "model_base": "http://10.10.99.98:58000",
+  "source_commit": "e91d32f3674389be2c94c3a939c6a4179246e4c2",
+  "agents": {
+    "codex": {
+      "tool_run_id": "8fd852ee00c24c0985bd000d02ffafeb",
+      "tool_run_status": "completed",
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "tool_events": 1,
+      "resume": "completed",
+      "cancel": "cancelled"
+    },
+    "claude": {
+      "tool_run_id": "ff47862ec823417190fe53b1a1edbe2f",
+      "tool_run_status": "completed",
+      "chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c",
+      "tool_events": 1,
+      "resume": "completed",
+      "cancel": "cancelled"
+    },
+    "pi": {
+      "tool_run_id": "e024335f7bde4ebd846260c15b3eab50",
+      "tool_run_status": "completed",
+      "chat_id": "ba5a7cb3-9e0f-45e6-b406-b7678a0507b9",
+      "tool_events": 1,
+      "resume": "completed",
+      "cancel": "cancelled"
+    },
+    "deepseek": {
+      "tool_run_id": "df3c329ec4db425c892bacd448570491",
+      "tool_run_status": "failed",
+      "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+      "tool_events": 0,
+      "resume": "NOT_RUN",
+      "cancel": "NOT_RUN"
+    },
+    "hermes": {
+      "tool_run_id": "882a5e73da164864a38f556f2e4357bc",
+      "tool_run_status": "completed",
+      "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+      "tool_events": 1,
+      "resume": "completed",
+      "cancel": "cancelled"
+    }
+  },
+  "chatraw_active_restart": "PASS: Pi run and pending approval preserved",
+  "whole_machine_restart": "NOT_RUN: not authorized"
+}

@@ -1,0 +1,40 @@
+{
+  "agent": "deepseek",
+  "started_at": 1794576536.489748,
+  "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+  "binding": {
+    "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+    "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "submitted": {
+    "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+    "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+    "status": "queued",
+    "last_seq": 1,
+    "run_id": "df3c329ec4db425c892bacd448570491",
+    "interactions": []
+  },
+  "snapshot": {
+    "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+    "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+    "status": "failed",
+    "last_seq": 4,
+    "run_id": "df3c329ec4db425c892bacd448570491",
+    "interactions": [],
+    "error": {
+      "code": "deepseek_run_failed",
+      "message": "DeepSeek reported a failed or blocked operation",
+      "retryable": false
+    },
+    "final_text": ""
+  },
+  "elapsed": 32.98
+}

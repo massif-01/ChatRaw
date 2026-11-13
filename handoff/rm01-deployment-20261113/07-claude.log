@@ -1,0 +1,9 @@
+{"agent": "claude", "started_at": 1794576461.0999758, "chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c", "binding": {"chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c", "session_id": "88e2895ec55b4ab6872e731d8d0b67b4", "agent_id": "claude", "workspace": {"id": "88e2895ec55b4ab6872e731d8d0b67b4", "kind": "managed", "label": "Managed workspace"}, "active_run_id": null, "last_run_id": null}, "submitted": {"chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c", "session_id": "88e2895ec55b4ab6872e731d8d0b67b4", "status": "queued", "last_seq": 1, "run_id": "ff47862ec823417190fe53b1a1edbe2f", "interactions": []}}
+{"agent": "claude", "elapsed": 2.49, "status": "running", "snapshot": null}
+{"agent": "claude", "elapsed": 4.51, "status": "running", "snapshot": null}
+{"agent": "claude", "elapsed": 6.52, "status": "running", "snapshot": null}
+{"agent": "claude", "elapsed": 8.54, "status": "running", "snapshot": null}
+{"agent": "claude", "elapsed": 10.56, "status": "running", "snapshot": null}
+{"agent": "claude", "elapsed": 12.58, "status": "running", "snapshot": null}
+{"agent": "claude", "elapsed": 14.61, "status": "running", "snapshot": null}
+{"agent": "claude", "elapsed": 16.63, "status": "completed", "snapshot": {"chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c", "session_id": "88e2895ec55b4ab6872e731d8d0b67b4", "status": "completed", "last_seq": 20, "run_id": "ff47862ec823417190fe53b1a1edbe2f", "interactions": [], "final_text": "Working directory: `/var/lib/chatraw-runner/workspaces/88e2895ec55b4ab6872e731d8d0b67b4`\n\nRM99_NATIVE_OK"}}

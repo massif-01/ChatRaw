@@ -1,0 +1,7 @@
+kernel.apparmor_restrict_unprivileged_userns = 1
+Nov 13 13:26:50 lpmu305 kernel: audit: type=1400 audit(1794576410.104:189): apparmor="AUDIT" operation="userns_create" class="namespace" info="Userns create - transitioning profile" profile="unconfined" pid=35405 comm="3" requested="userns_create" target="unprivileged_userns"
+Nov 13 13:26:50 lpmu305 kernel: audit: type=1400 audit(1794576410.105:190): apparmor="DENIED" operation="capable" class="cap" profile="unprivileged_userns" pid=35406 comm="3" capability=8  capname="setpcap"
+Nov 13 13:26:50 lpmu305 kernel: audit: type=1400 audit(1794576410.105:191): apparmor="DENIED" operation="capable" class="cap" profile="unprivileged_userns" pid=35406 comm="3" capability=12  capname="net_admin"
+Nov 13 13:26:50 lpmu305 kernel: audit: type=1400 audit(1794576410.108:192): apparmor="AUDIT" operation="userns_create" class="namespace" info="Userns create - transitioning profile" profile="unconfined" pid=35404 comm="3" requested="userns_create" target="unprivileged_userns"
+Nov 13 13:26:50 lpmu305 kernel: audit: type=1400 audit(1794576410.109:193): apparmor="DENIED" operation="capable" class="cap" profile="unprivileged_userns" pid=35407 comm="3" capability=8  capname="setpcap"
+Nov 13 13:26:50 lpmu305 kernel: audit: type=1400 audit(1794576410.109:194): apparmor="DENIED" operation="capable" class="cap" profile="unprivileged_userns" pid=35407 comm="3" capability=12  capname="net_admin"
