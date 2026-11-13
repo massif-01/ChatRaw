@@ -191,6 +191,26 @@ class _LostDeepSeek(DeepSeekAdapter):
 
 
 class DeepSeekProtocolTests(unittest.IsolatedAsyncioTestCase):
+    def test_native_patches_are_host_only_absolute_paths(self):
+        adapter = DeepSeekAdapter()
+        config = {"dsh_home": "/tmp"}
+        self.assertNotIn("patches", adapter.settings_schema["properties"])
+        self.assertNotIn("patches", adapter.validate_config(config))
+        paths = ["/etc/chatraw-runner/model.yml", "/etc/chatraw-runner/extra.yml"]
+        result = adapter.validate_config({**config, "patches": paths})
+        self.assertEqual(result["patches"], paths)
+        self.assertIsNot(result["patches"], paths)
+        for value in (
+            None,
+            True,
+            "model.yml",
+            ["relative.yml"],
+            ["/bad\x00path"],
+            [42],
+        ):
+            with self.subTest(value=value), self.assertRaises(AdapterError):
+                adapter.validate_config({**config, "patches": value})
+
     def test_max_tokens_requires_a_positive_safe_integer(self):
         adapter = DeepSeekAdapter()
         config = {"dsh_home": "/tmp"}

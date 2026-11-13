@@ -26,6 +26,10 @@ class _Model(BaseHTTPRequestHandler):
         pass
 
     def do_POST(self):
+        if self.path.endswith("/files"):
+            # This fixture exposes Messages without the optional Files API.
+            self.send_error(404)
+            return
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         messages = body["messages"]
         latest = messages[-1]
@@ -40,6 +44,10 @@ class _Model(BaseHTTPRequestHandler):
         )
         if deepseek and "TEST_MAX_TOKENS" in text:
             self.server.max_tokens.append(body.get("max_tokens"))
+        if deepseek and "TEST_IMAGE" in text and isinstance(content, list):
+            self.server.image_sources.extend(
+                part["source"] for part in content if part.get("type") == "image"
+            )
         tool = None
         tool_result = (
             latest["role"] == "tool"
@@ -468,6 +476,7 @@ class DeepSeekNativeTests(_NativeCase):
         self.addCleanup(environment.stop)
         self.config = {"dsh_home": str(self.root)}
         self.server.max_tokens = []
+        self.server.image_sources = []
 
     async def test_sdk_output_budget_reaches_model_and_omission_keeps_default(self):
         from deepseek_harness import HarnessClient
@@ -522,6 +531,36 @@ class DeepSeekNativeTests(_NativeCase):
             result, {"status": "completed", "final_text": "history present"}
         )
         self.assertEqual(self.server.max_tokens, [256_000, 8192])
+
+    async def test_host_profile_patch_delivers_custom_model_image(self):
+        patch_file = self.root / "vision.patch.yml"
+        patch_file.write_text(
+            "- id: llm-deepseek\n"
+            "  config:\n"
+            "    models:\n"
+            "      - id: fixture-vision\n"
+            "        inputModalities: [text, image]\n"
+            "        contextWindow: 262144\n",
+            encoding="utf-8",
+        )
+        for name, settings, expected in (
+            ("uncatalogued", {}, "native image reference"),
+            ("catalogued", {"patches": [str(patch_file)]}, "image present"),
+        ):
+            adapter = DeepSeekAdapter()
+            config = {
+                **self.config,
+                "model": "fixture-vision",
+                "max_tokens": 8192,
+                **settings,
+            }
+            binding = await self.binding(adapter, config, name)
+            result = await asyncio.wait_for(self.run_image(adapter, binding), 20)
+            self.assertEqual(result, {"status": "completed", "final_text": expected})
+        (source,) = self.server.image_sources
+        self.assertEqual(source["type"], "base64")
+        self.assertIn(source["media_type"], ("image/png", "image/jpeg", "image/webp"))
+        self.assertTrue(base64.b64decode(source["data"], validate=True))
 
     async def test_sdk_batch_stop_and_strict_resume(self):
         adapter = DeepSeekAdapter()

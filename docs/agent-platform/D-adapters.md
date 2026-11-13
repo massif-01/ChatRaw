@@ -7,6 +7,7 @@
 - 注册 `pi → agent_runner.adapters.pi.PiAdapter` 和 `deepseek → agent_runner.adapters.deepseek.DeepSeekAdapter`。两个工厂均无参，实例归属一个 Runner session。公共 base 无需修改。
 - Pi 宿主配置需要 `executable` 和 `session_root`，均为绝对路径。使用 `@earendil-works/pi-coding-agent@1.5.2`，该发行包要求 Node ≥22.19。由管理员准备 Runner 账户可写的持久会话根目录。保留发行包目录结构及仓库中 `agent_runner/adapters/pi_extensions/chatraw.ts` 的相对位置。适配器用显式 `--extension` 装载配套扩展，启动时核对扩展实际注册。使用该运行账户的 Pi 认证和模型配置。
 - DeepSeek 宿主配置需要 `dsh_home`，指向已存在、由 Runner 账户管理的绝对根目录。每个 ChatRaw session 在根目录下使用独立的原生 `DSH_HOME` 和 Python SDK runtime。给 Runner 的受控服务环境注入 `DEEPSEEK_API_KEY`，由官方 SDK 读取。可在相同服务环境设置可信的 `DEEPSEEK_BASE_URL`。SDK 通过匹配的官方 runtime wheel 自带程序，宿主无需为 DeepSeek 安装 Node。
+- 可选宿主字段 `patches` 接受管理员配置的绝对文件路径 JSON 数组，按原有顺序传入 SDK 的 `patches: tuple[str, ...]`。该字段不开放给浏览器。管理员应将 patch 保存在工作区外、Runner 账户可读且普通 Agent 无法写入的位置。配置省略时沿用 SDK 原生 profile。既有会话使用创建时保存的宿主配置，新建会话加载新增的路径。
 - DeepSeek 依赖交 A 纳入 Runner 的 Python 环境。验证版本为 `deepseek-harness-sdk==0.2.2rc2`，其依赖固定 `deepseek-harness-runtime-bin==0.2.2rc2`，另要求 `pydantic>=2.12,<3`。SDK 要求 Python ≥3.10，Runner 合同要求 Python ≥3.11。RM-01 Python 3.12 落在声明范围内，实际 wheel、宿主沙箱与运行账户待现场验证。D 线未修改公共依赖与部署文件。
 - 浏览器可编辑 Pi 的 `model`、`provider`、`thinking`。单独指定 `provider` 时，Pi CLI 要求同时指定 `model`。DeepSeek 可编辑 `model`、`reasoning_effort` 和可选的 `max_tokens`，随官方 `sdk` profile 使用默认 DeepSeek provider。`max_tokens` 必须是 SDK 支持的正安全整数，限制单次模型调用的输出预算。省略字段由原生程序决定，设置按 create/resume 边界取快照。两者均不接收浏览器提供的可执行路径、凭据或任意目录。
 - `probe` 验证程序和协议。Pi 仅返回其 RPC 注册表提供的可用模型 ID 与 provider，DeepSeek 不合成模型列表。Pi 有可用当前模型、DeepSeek 有服务凭据配置时返回 `ready`，认证和模型请求仍为 `not_checked`。模型实际可用性需经独立测试。
@@ -22,7 +23,7 @@
 |工具审批|配套扩展在原生 `tool_call` 上审阅内置 `bash`、`write`、`edit`，仅允许一次或拒绝|启用原生审批请求，只映射该请求允许的一次授权、拒绝、取消。计划审阅使用原生问题通道|
 |停止|清除待处理队列，调用 `abort`，用 `agent_settled.aborted` 或手动压缩的结束与命令响应确认|独占 runtime。等待原生 `shutdown` 确认其管理范围收敛，再由 SDK 释放并回收 runtime|
 |压缩|原生 `compact` RPC|原生 `/compact`|
-|图片|PNG/JPEG/GIF/WebP，所选模型需声明图片输入|PNG/JPEG/GIF/WebP，由原生 SDK 处理。直接视觉输入取决于所选模型|
+|图片|PNG/JPEG/GIF/WebP，所选模型需声明图片输入|PNG/JPEG/GIF/WebP，由原生 SDK 处理。目录未登记的自定义模型按仅文本处理。管理员可用 `llm-deepseek.config.models` 声明真实视觉模型的 `inputModalities: [text, image]`|
 |附件限制|单轮图片合计 8 MiB。普通文件返回能力错误|单轮图片合计 8 MiB。普通文件返回能力错误|
 |队列、插话、产物|统一入口暂不开放原生队列、插话与产物登记|统一入口暂不开放原生队列、插话与产物登记|
 
@@ -51,4 +52,5 @@ CHATRAW_TEST_PI=/absolute/path/to/pi CHATRAW_TEST_DEEPSEEK=1 \
 - 本机原生集成环境为 macOS arm64、Python 3.12、Node 24.10.0。真实 Pi CLI 与 DeepSeek SDK/runtime 使用 loopback 模型替身，覆盖原生进程启动、批次问答、审批拒绝与一次授权、停止时拒收旧交互、跨会话隔离、恢复原生历史和缺失会话拒绝。两个程序都验证了正在运行的 shell 在停止后未写入延迟标记。图片验证到 Pi 的模型请求和 DeepSeek 的原生附件存储。压缩验证到 Pi transcript 的原生压缩记录和 DeepSeek 的空历史原生响应。另验证了 DeepSeek 原生计划审阅取消。
 - DeepSeek SDK 0.2.2rc2 的关闭路径在 Python 3.12 和 3.14 的 unittest 下报告上游 stdout/stderr 文件对象的 `ResourceWarning`。原生进程退出、工具停止及原会话恢复通过。
 - 输出预算验证使用同一原生 SDK/runtime 和本地模型替身。设置 `8192` 后，SDK 初始化和模型 HTTP 请求分别收到 `maxTokens: 8192` 和 `max_tokens: 8192`。省略时，初始化报文无此字段，模型请求使用原生默认 `256000`。已有会话以默认预算完成一轮后，关闭并以 `8192` 恢复。下一轮的模型请求保留原会话历史，输出预算改为 `8192`。
+- 使用同一原生 SDK/runtime 和自定义模型名测试 profile patch。省略时，模型 HTTP 请求只收到图片占位文本。通过宿主 patch 声明视觉模态后，模型 HTTP 请求收到带原生媒体类型和非空图像字节的 `image` 内容块。
 - RM-01 和真实模型服务的身份认证、模型请求、图片与压缩质量、Linux 实际工具作用域及主机重启仍待总控现场验收。以本机原生协议证据和现场证据分别登记 G02、G05–G08。

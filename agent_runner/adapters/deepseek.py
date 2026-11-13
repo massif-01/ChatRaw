@@ -77,7 +77,13 @@ class DeepSeekAdapter(AgentAdapter):
         self._loop = None
 
     def validate_config(self, config):
-        if set(config) - {"dsh_home", "model", "reasoning_effort", "max_tokens"}:
+        if set(config) - {
+            "dsh_home",
+            "model",
+            "reasoning_effort",
+            "max_tokens",
+            "patches",
+        }:
             raise AdapterError("invalid_config", "Unknown DeepSeek configuration field")
         home = config.get("dsh_home")
         if not _text(home) or "\0" in home or not Path(home).is_absolute():
@@ -97,7 +103,18 @@ class DeepSeekAdapter(AgentAdapter):
                     "invalid_config",
                     "DeepSeek max_tokens must be a positive safe integer",
                 )
-        return dict(config)
+        if "patches" not in config:
+            return dict(config)
+        patches = config["patches"]
+        if not isinstance(patches, list) or not all(
+            _text(path) and "\0" not in path and Path(path).is_absolute()
+            for path in patches
+        ):
+            raise AdapterError(
+                "invalid_config",
+                "DeepSeek patches must be a list of absolute host paths",
+            )
+        return {**config, "patches": list(patches)}
 
     @staticmethod
     def _capabilities() -> Capabilities:
@@ -198,6 +215,8 @@ class DeepSeekAdapter(AgentAdapter):
             for key in ("model", "reasoning_effort", "max_tokens")
             if key in config
         }
+        if "patches" in config:
+            settings["patches"] = tuple(config["patches"])
         return DeepSeekHarness(
             profile="sdk",
             cwd=str(workspace),
