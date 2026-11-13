@@ -75,3 +75,5 @@ Codex e889688前台工具停止修复已部署，新会话单轮现场验收通�
 最终组合已部署adeb279 Runner及六项菜单资产，Codex新会话压缩/续接/工具/图片通过；隔离恢复已核验，DeepSeek公开审批回合状态单列。见 [66号备份报告](66-isolated-restore-report.md) 与 [81号组合报告](81-final-combined-field-report.md)。
 
 最终归类见 [84号交接](84-final-closeout.md)：原三项通过；新增DeepSeek真实公开审批为NOT_VERIFIED/provider行为限制，三次不同失败全部保留。无新增现场操作。
+
+用户随后明确授权的2026-11-14整机重启已验收通过：服务自动恢复，五条原生会话短续接5/5通过，旧数据/unknown保留，无手动服务恢复。见 [91号报告](91-whole-host-reboot-acceptance.md)。G05仍未验证。

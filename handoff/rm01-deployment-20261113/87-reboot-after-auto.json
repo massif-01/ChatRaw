@@ -1,0 +1,1406 @@
+{
+  "observed_at_utc": "2026-11-13T16:07:24.935279+00:00",
+  "boot_id": "24e4247d-cfe9-4001-a26a-35268e37bf8c",
+  "uptime_seconds": 202.24,
+  "hostname": "lpmu305",
+  "user_linger": "State=active\nLinger=yes",
+  "services": {
+    "docker.service": {
+      "MainPID": "1666",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "docker.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/usr/lib/systemd/system/docker.service",
+      "UnitFileState": "enabled",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:15 UTC",
+      "ActiveEnterTimestampMonotonic": "13246683",
+      "query_exit": 0,
+      "unit_sha256": "a12d90fd03761bf79659a185c4a2c40e08934d7ada9e05130e64bd5eb4d634aa"
+    },
+    "containerd.service": {
+      "MainPID": "1470",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "containerd.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/usr/lib/systemd/system/containerd.service",
+      "UnitFileState": "enabled",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:14 UTC",
+      "ActiveEnterTimestampMonotonic": "11658603",
+      "query_exit": 0,
+      "unit_sha256": "bd1effcf6d9cd564c232b631b353b2758f174160e3d8c078a792363b59f113d0"
+    },
+    "chatraw-runner.service": {
+      "MainPID": "1385",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "chatraw-runner.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/etc/systemd/system/chatraw-runner.service",
+      "UnitFileState": "enabled",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:13 UTC",
+      "ActiveEnterTimestampMonotonic": "11089211",
+      "query_exit": 0,
+      "unit_sha256": "789061e8945b4506e789418942d348f60aafc7cf55b18c2ac35651cdefef0473"
+    },
+    "chatraw-hermes.service": {
+      "MainPID": "1378",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "chatraw-hermes.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/etc/systemd/system/chatraw-hermes.service",
+      "UnitFileState": "enabled",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:13 UTC",
+      "ActiveEnterTimestampMonotonic": "11067242",
+      "query_exit": 0,
+      "unit_sha256": "5b9957927515bb845aea1e34e3693fe819f7aed61687579bd681da7652feb8c4"
+    },
+    "lpmustatus-api.service": {
+      "MainPID": "1395",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "lpmustatus-api.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/etc/systemd/system/lpmustatus-api.service",
+      "UnitFileState": "enabled",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:13 UTC",
+      "ActiveEnterTimestampMonotonic": "11161943",
+      "query_exit": 0,
+      "unit_sha256": "2d9a2ce95bfc669609c8632eb095eccc825743a007ea680e1096ef64b699acef"
+    },
+    "nfs-server.service": {
+      "MainPID": "0",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "nfs-server.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "exited",
+      "FragmentPath": "/usr/lib/systemd/system/nfs-server.service",
+      "UnitFileState": "enabled",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:14 UTC",
+      "ActiveEnterTimestampMonotonic": "11945951",
+      "query_exit": 0,
+      "unit_sha256": "e2e28ba7993271afa6d40bb7b1d58e895ba7663c9517252a1dd6323d15c0fa67"
+    },
+    "nfs-mountd.service": {
+      "MainPID": "1400",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "nfs-mountd.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/usr/lib/systemd/system/nfs-mountd.service",
+      "UnitFileState": "static",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:14 UTC",
+      "ActiveEnterTimestampMonotonic": "11436741",
+      "query_exit": 0,
+      "unit_sha256": "48379636938f7c6105034316341f004dbe39c200b13fae6ffd7ec3d3028574f1"
+    },
+    "rpcbind.service": {
+      "MainPID": "927",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "rpcbind.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/usr/lib/systemd/system/rpcbind.service",
+      "UnitFileState": "enabled",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:10 UTC",
+      "ActiveEnterTimestampMonotonic": "7983612",
+      "query_exit": 0,
+      "unit_sha256": "342bd8ea5b9e3053fa924833a3d0b3514851998a93652c3da12ea824bbf6cd7d"
+    },
+    "smbd.service": {
+      "MainPID": "1633",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "smbd.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/usr/lib/systemd/system/smbd.service",
+      "UnitFileState": "enabled",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:14 UTC",
+      "ActiveEnterTimestampMonotonic": "11936460",
+      "query_exit": 0,
+      "unit_sha256": "70d40df1258e86a69c2657c95931506cf9f355beb9beabf2fd0bfd4712e2c0a4"
+    },
+    "nmbd.service": {
+      "MainPID": "1498",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "nmbd.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/usr/lib/systemd/system/nmbd.service",
+      "UnitFileState": "enabled",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:14 UTC",
+      "ActiveEnterTimestampMonotonic": "11505724",
+      "query_exit": 0,
+      "unit_sha256": "bffbdb68e22b0bf41807e0a4392d3579570120d995d7463a031737a32a1b2a89"
+    },
+    "user:tto-web.service": {
+      "MainPID": "1796",
+      "NRestarts": "0",
+      "ExecMainStatus": "0",
+      "Id": "tto-web.service",
+      "LoadState": "loaded",
+      "ActiveState": "active",
+      "SubState": "running",
+      "FragmentPath": "/home/rm01/.config/systemd/user/tto-web.service",
+      "UnitFileState": "enabled",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:15 UTC",
+      "ActiveEnterTimestampMonotonic": "12322250",
+      "query_exit": 0,
+      "unit_sha256": "11eba59dfb019a48eed3aaf601a7907934f4438cf062ae0442a25d581b86c76e"
+    }
+  },
+  "listeners": [
+    {
+      "address": "0.0.0.0:2049",
+      "port": 2049,
+      "processes": []
+    },
+    {
+      "address": "0.0.0.0:51111",
+      "port": 51111,
+      "processes": [
+        {
+          "pid": 2063,
+          "cgroup": "0::/system.slice/docker-480aac4d4306a35f1c445a8897effb8d33f077f8632c95dcae81c9f27c22e7ae.scope",
+          "exe": "/usr/local/bin/python3.11",
+          "cwd": "/app"
+        }
+      ]
+    },
+    {
+      "address": "0.0.0.0:139",
+      "port": 139,
+      "processes": [
+        {
+          "pid": 1633,
+          "cgroup": "0::/system.slice/smbd.service",
+          "exe": "/usr/sbin/smbd",
+          "cwd": "/"
+        }
+      ]
+    },
+    {
+      "address": "0.0.0.0:445",
+      "port": 445,
+      "processes": [
+        {
+          "pid": 1633,
+          "cgroup": "0::/system.slice/smbd.service",
+          "exe": "/usr/sbin/smbd",
+          "cwd": "/"
+        }
+      ]
+    },
+    {
+      "address": "10.10.99.99:59009",
+      "port": 59009,
+      "processes": [
+        {
+          "pid": 1796,
+          "cgroup": "0::/user.slice/user-1000.slice/user@1000.service/app.slice/tto-web.service",
+          "exe": "/home/rm01/TTO/conda-env/bin/python3.10",
+          "cwd": "/home/rm01"
+        }
+      ]
+    },
+    {
+      "address": "10.10.99.99:59090",
+      "port": 59090,
+      "processes": [
+        {
+          "pid": 1395,
+          "cgroup": "0::/system.slice/lpmustatus-api.service",
+          "exe": "/home/rm01/miniconda3/envs/lpmustatus-api/bin/python3.9",
+          "cwd": "/home/rm01/rm01lpmustatus"
+        }
+      ]
+    },
+    {
+      "address": "127.0.0.1:51112",
+      "port": 51112,
+      "processes": [
+        {
+          "pid": 1385,
+          "cgroup": "0::/system.slice/chatraw-runner.service",
+          "exe": "/usr/bin/python3.12",
+          "cwd": "/opt/chatraw-runner"
+        }
+      ]
+    },
+    {
+      "address": "[::]:2049",
+      "port": 2049,
+      "processes": []
+    },
+    {
+      "address": "[::]:139",
+      "port": 139,
+      "processes": [
+        {
+          "pid": 1633,
+          "cgroup": "0::/system.slice/smbd.service",
+          "exe": "/usr/sbin/smbd",
+          "cwd": "/"
+        }
+      ]
+    },
+    {
+      "address": "[::]:445",
+      "port": 445,
+      "processes": [
+        {
+          "pid": 1633,
+          "cgroup": "0::/system.slice/smbd.service",
+          "exe": "/usr/sbin/smbd",
+          "cwd": "/"
+        }
+      ]
+    }
+  ],
+  "container": {
+    "id": "480aac4d4306a35f1c445a8897effb8d33f077f8632c95dcae81c9f27c22e7ae",
+    "image_id": "sha256:09bda4d9e7a59bbfc760160be861780baa4f9bdaf268576fe6624ccba8bc580f",
+    "configured_image": "chatraw-agent-integration:adeb279-final-ui",
+    "mounts": [
+      {
+        "Type": "volume",
+        "Name": "chatraw_chatraw_data",
+        "Source": "/var/lib/docker/volumes/chatraw_chatraw_data/_data",
+        "Destination": "/app/data",
+        "Driver": "local",
+        "Mode": "rw",
+        "RW": true,
+        "Propagation": ""
+      },
+      {
+        "Type": "bind",
+        "Source": "/etc/chatraw-runner/token",
+        "Destination": "/run/secrets/chatraw-runner-token",
+        "Mode": "ro",
+        "RW": false,
+        "Propagation": "rprivate"
+      }
+    ],
+    "restart_policy": {
+      "Name": "unless-stopped",
+      "MaximumRetryCount": 0
+    },
+    "network_mode": "host",
+    "state": {
+      "Status": "running",
+      "Running": true,
+      "StartedAt": "2026-11-13T16:04:15.413667955Z",
+      "FinishedAt": "2026-11-13T16:03:21.402274161Z",
+      "ExitCode": 0
+    },
+    "restart_count": 0
+  },
+  "stable_config_hashes": {
+    "/etc/chatraw-runner/config.json": "e6b4378306a2ec1dd0232747cd392ca42f1f82115ab8d902ddfaf01940fbf17d",
+    "/etc/chatraw-runner/environment": "79982afc9e5a12bc3453f9002c1f72ae67decb2c98535b391529e789d2feacb2",
+    "/etc/chatraw-runner/token": "0437f02c5a4643b72ba794b69d861dc19a1322c49c3766fe98bdbb6b4c87ec86",
+    "/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml": "dbee21fc2b7f74fe07f01bf3641f4ce1146851a1e80f5db2b2df896d5013f703",
+    "/var/lib/chatraw-runner/codex-home/config.toml": "03e54c47c0beb03c1bc85a8f6650de786c153038b43f4eb3d95b9d2d35c91c29",
+    "/var/lib/chatraw-runner/pi-home/models.json": "6f6c21e3c2bc1afa2ee734390bd4ad526af226564e6b33ae3538acd4690983fc",
+    "/var/lib/chatraw-runner/pi-home/settings.json": "2da2c6bc0cb908686f7e99ed42c60398a0fd1bcd8dd630c3c508edd35be068ef",
+    "/var/lib/chatraw-runner/hermes-home/config.yaml": "3a510f3f7aadca3f0c841e6343ec25f88a0b7a179f99e1e8b278742d88d3b25e",
+    "/etc/exports": "3f95c811c082f8c8a0cfda159146c0ce388a37248fe173907a5cb57c98f2fee3",
+    "/etc/samba/smb.conf": "95e33ca94129f28c8ba8f0f6c4c31b2f03e754f6254c6fe1601aa1c9adbf6a17"
+  },
+  "plugin_config_sha256": "3709121e0df8ee416b2cc1c526e9d3e634a7c6eb300871641fcd1c9868e8f0ad",
+  "chatraw_data_tables": {
+    "settings": {
+      "rows": 1,
+      "sha256": "8e418473c683fdd38dcc97c387d4087815a26982b329c96864d08a377cdc7119"
+    },
+    "model_configs": {
+      "rows": 3,
+      "sha256": "64d421ff456e7e0d4399ee6434006a264ce505e9e6423fc52cdd21f803c6fcab"
+    },
+    "messages": {
+      "rows": 138,
+      "sha256": "da1a9e12c41af3ffd2f0926d3f519286e002cdf4d5a75e5c829377af549db481"
+    },
+    "agent_bindings": {
+      "rows": 29,
+      "sha256": "82a27f00ed15fa37a6c754908dfef61299f2dc5187f20580b6d9ab9295aad4ba"
+    },
+    "agent_messages": {
+      "rows": 135,
+      "sha256": "8f44de55d84b5d8a99415b0b3ced63d43623b6db81bc936d93fd84a994298641"
+    },
+    "agent_submissions": {
+      "rows": 71,
+      "sha256": "300dd82306dcbe9149eb00507b4b273cfe38d2840d46a8c5c2f2a3ffdc02a7f0"
+    }
+  },
+  "workspace_file_hashes": {
+    "/var/lib/chatraw-runner/workspaces/787447d7aab94b7d8ce4a6afcc4196b9/d-9d2c01715a9c4167bd1b4b6e13133e73.started": "55028b288d1860f9f3d51dfe4689d7eab74234c4f8e4d7fd057c0fed2cb220b1",
+    "/var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f/allow-bc4bd84369a142cea0a377335126421c.txt": "39534fe052f0634d870768187a8f522fe006c9e00c68b5c706af24fcc64250b6",
+    "/var/lib/chatraw-runner/workspaces/fc101f8889b14a0e9f52b3512c945555/d-d64556d8b0cf4028bf732f6795b6af96.started": "c2e8af52eb8ad254a0762a139b96750cbf37af4b6ff35f3c853078f279bfa0be",
+    "/var/lib/chatraw-runner/workspaces/6f13a75149b248778a58e6f1557c0456/d-8b09f38ce5d2488cad211added1588d8.started": "2ab7ebf056a5d3d0861ccc443d7f485092cd655f1d8c6d61e2dc971e7d06f136",
+    "/var/lib/chatraw-runner/workspaces/c5f1cad44b9b463385077611859b4cc4/d-731a435152b2457ca63217243ee9409f.started": "5de0430d70b3af90c8742556bf59a0a8587936c2f864ace76bd6823db046075f",
+    "/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779/d-4b4f39bd9467495ba643b814872d3257.started": "e4bafedffc7bdaba2a08df69336e9987ef1c1bc2a10e2e3bec24417c3a9fb95e",
+    "/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af/d-a088ad3f5ddf45edbb7830e09dabb7ba.started": "a9802a2aa15a757c6be485c60fbd6f2d454d40326bc6b1132ccc3a0e8e9dd3cb"
+  },
+  "sessions": [
+    {
+      "id": "0f731aaea66b46f78d6442e3eada335c",
+      "chat_id": "db9b2755-0e30-4fca-98d6-74a520236c32",
+      "agent_id": "pi",
+      "workspace": "/var/lib/chatraw-runner/workspaces/0f731aaea66b46f78d6442e3eada335c",
+      "binding": "{\"agent_id\":\"pi\",\"native\":{\"session_id\":\"01a1d52f-3d36-74aa-88f8-b8b5b0705673\",\"transcript\":\"/var/lib/chatraw-runner/pi-sessions/7c754cbf3b9f4f44ba53848a591e6dbe/session.jsonl\"},\"session_id\":\"0f731aaea66b46f78d6442e3eada335c\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/0f731aaea66b46f78d6442e3eada335c\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/pi/node_modules/.bin/pi\",\"session_root\":\"/var/lib/chatraw-runner/pi-sessions\"}"
+    },
+    {
+      "id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+      "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+      "agent_id": "deepseek",
+      "workspace": "/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-2c63be8b22744b3cb0c81413a51f6aad\",\"session_id\":\"session-2c63be8b22744b3cb0c81413a51f6aad\"},\"session_id\":\"14d1c7a3dbda4f3fad1a20a4b35d523f\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "1e0072458ccd4be69b28326e72f2871a",
+      "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+      "agent_id": "claude",
+      "workspace": "/var/lib/chatraw-runner/workspaces/1e0072458ccd4be69b28326e72f2871a",
+      "binding": "{\"agent_id\":\"claude\",\"native\":{\"session_id\":\"5b81ece9-6e27-44bf-8179-e5d4744deb53\"},\"session_id\":\"1e0072458ccd4be69b28326e72f2871a\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/1e0072458ccd4be69b28326e72f2871a\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "27110c5454ed4d4baf77b9680e133b4f",
+      "chat_id": "266d6247-62a8-4d57-be03-6fa614ef56dd",
+      "agent_id": "deepseek",
+      "workspace": "/var/lib/chatraw-runner/workspaces/27110c5454ed4d4baf77b9680e133b4f",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-c4c984f5bcfb43e5968f6b3a7b313cf8\",\"session_id\":\"session-c4c984f5bcfb43e5968f6b3a7b313cf8\"},\"session_id\":\"27110c5454ed4d4baf77b9680e133b4f\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/27110c5454ed4d4baf77b9680e133b4f\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "2d3432cb86ff427582a2287f755c5c4f",
+      "chat_id": "ad6e5895-dc90-4821-9f9c-6ecc38751cfc",
+      "agent_id": "codex",
+      "workspace": "/var/lib/chatraw-runner/workspaces/2d3432cb86ff427582a2287f755c5c4f",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"d5c37b45945941ed908cba10bea53be0\",\"thread_id\":\"01a1d52f-fa3a-7142-ac62-4157362dee2e\",\"turn_id\":\"01a1d52f-fa67-7f63-9276-2bb673af41a7\"},\"session_id\":\"2d3432cb86ff427582a2287f755c5c4f\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/2d3432cb86ff427582a2287f755c5c4f\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "2e9396c599fe41a296c74c890fa2f058",
+      "chat_id": "e7c455a2-aa7c-4c0d-9d86-671fb88edba6",
+      "agent_id": "deepseek",
+      "workspace": "/var/lib/chatraw-runner/workspaces/2e9396c599fe41a296c74c890fa2f058",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-9e6968fe8e2e418faceaf140327e706a\",\"session_id\":\"session-9e6968fe8e2e418faceaf140327e706a\"},\"session_id\":\"2e9396c599fe41a296c74c890fa2f058\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/2e9396c599fe41a296c74c890fa2f058\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "2fa5efdd1bfa4e41ad0673570446a1b2",
+      "chat_id": "11eb86a2-df33-4ef6-a433-c8c61f6b9c24",
+      "agent_id": "codex",
+      "workspace": "/var/lib/chatraw-runner/workspaces/2fa5efdd1bfa4e41ad0673570446a1b2",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"cb7fea5232db43f093a71b0be18bef57\",\"thread_id\":\"01a1d534-4b2b-7aa2-85a6-f7f761d62bd7\",\"turn_id\":\"01a1d534-b980-76c3-8bd1-bbf75ff85825\"},\"session_id\":\"2fa5efdd1bfa4e41ad0673570446a1b2\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/2fa5efdd1bfa4e41ad0673570446a1b2\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "404a7aeddfa94bc695947347b9f87625",
+      "chat_id": "bb09da12-2161-4b51-b98c-3fe343171ba9",
+      "agent_id": "deepseek",
+      "workspace": "/var/lib/chatraw-runner/workspaces/404a7aeddfa94bc695947347b9f87625",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-d88d5df3d30a4ec8a3efb48f7ef21edc\",\"session_id\":\"session-d88d5df3d30a4ec8a3efb48f7ef21edc\"},\"session_id\":\"404a7aeddfa94bc695947347b9f87625\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/404a7aeddfa94bc695947347b9f87625\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\",\"patches\":[\"/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml\"]}"
+    },
+    {
+      "id": "4e7b1a3095494a64a9d61f5f2732712a",
+      "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+      "agent_id": "hermes",
+      "workspace": "/var/lib/chatraw-runner/workspaces/4e7b1a3095494a64a9d61f5f2732712a",
+      "binding": "{\"agent_id\":\"hermes\",\"native\":{\"admission_id\":\"fe3a0def7e5744a7be6f9df20706b5cc\",\"operation\":\"run\",\"profile_id\":\"/var/lib/chatraw-runner/hermes-home\",\"run_id\":\"f16625359e924af293bb4dad54b470fc\",\"session_id\":\"local-cb96117cc03ecd20fa7eee4a023733f810fb93c0289610eea6afbe2996f6fab7\",\"settings\":{\"model\":\"RM-01 VLM\",\"provider\":\"custom\"}},\"session_id\":\"4e7b1a3095494a64a9d61f5f2732712a\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/4e7b1a3095494a64a9d61f5f2732712a\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/hermes/source/.venv/bin/hermes\",\"home\":\"/var/lib/chatraw-runner/hermes-home\"}"
+    },
+    {
+      "id": "55512bdd173b496f8cc9be631380acbc",
+      "chat_id": "9f29d3b8-1368-4adc-b6e1-4b6a7b26ae87",
+      "agent_id": "deepseek",
+      "workspace": "/var/lib/chatraw-runner/workspaces/55512bdd173b496f8cc9be631380acbc",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-1e829c1aa4af44338cfdf30b60ad618a\",\"session_id\":\"session-1e829c1aa4af44338cfdf30b60ad618a\"},\"session_id\":\"55512bdd173b496f8cc9be631380acbc\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/55512bdd173b496f8cc9be631380acbc\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\",\"patches\":[\"/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml\"]}"
+    },
+    {
+      "id": "5eac256cd0494613bda3e16664001cba",
+      "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+      "agent_id": "hermes",
+      "workspace": "/var/lib/chatraw-runner/workspaces/5eac256cd0494613bda3e16664001cba",
+      "binding": "{\"agent_id\":\"hermes\",\"native\":{\"admission_id\":\"c7a4281368a64656ae22f5ff092c64f7\",\"operation\":\"run\",\"profile_id\":\"/var/lib/chatraw-runner/hermes-home\",\"run_id\":\"614bca1480b34ce5b6bef99a76a0cc49\",\"session_id\":\"local-eb7920a203370c9e127f1dc4c30f8a8d004466af8691e1cfe5bc89b5ca7f122d\",\"settings\":{\"model\":\"RM-01 VLM\",\"provider\":\"custom\"}},\"session_id\":\"5eac256cd0494613bda3e16664001cba\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/5eac256cd0494613bda3e16664001cba\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/hermes/source/.venv/bin/hermes\",\"home\":\"/var/lib/chatraw-runner/hermes-home\"}"
+    },
+    {
+      "id": "5f775d782b4a4d40bb81a8d1a5bc8aad",
+      "chat_id": "a83f4451-13a0-468b-8091-8432b79fed3c",
+      "agent_id": "deepseek",
+      "workspace": "/var/lib/chatraw-runner/workspaces/5f775d782b4a4d40bb81a8d1a5bc8aad",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-f1d0f81336304d4c80219c772dda7837\",\"session_id\":\"session-f1d0f81336304d4c80219c772dda7837\"},\"session_id\":\"5f775d782b4a4d40bb81a8d1a5bc8aad\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/5f775d782b4a4d40bb81a8d1a5bc8aad\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\",\"patches\":[\"/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml\"]}"
+    },
+    {
+      "id": "6b359b8f76d94d06bc46868570909d22",
+      "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+      "agent_id": "deepseek",
+      "workspace": "/var/lib/chatraw-runner/workspaces/6b359b8f76d94d06bc46868570909d22",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-1625a242811e4e3abbc5166a0556e39b\",\"session_id\":\"session-1625a242811e4e3abbc5166a0556e39b\"},\"session_id\":\"6b359b8f76d94d06bc46868570909d22\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/6b359b8f76d94d06bc46868570909d22\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "6f13a75149b248778a58e6f1557c0456",
+      "chat_id": "3f74451b-a64a-4dbd-aa13-6e44afb84c79",
+      "agent_id": "hermes",
+      "workspace": "/var/lib/chatraw-runner/workspaces/6f13a75149b248778a58e6f1557c0456",
+      "binding": "{\"agent_id\":\"hermes\",\"native\":{\"admission_id\":\"2e5d13c44b554fb7952e613edd6a06f6\",\"operation\":\"run\",\"profile_id\":\"/var/lib/chatraw-runner/hermes-home\",\"run_id\":\"5d6b1010bf6047c7a108c34ef83ef53d\",\"session_id\":\"local-e9583fa6269bdd3b136f826881593bf3c78e7b205b4489cc0570820a168b7c51\",\"settings\":{\"model\":\"RM-01 VLM\",\"provider\":\"custom\"}},\"session_id\":\"6f13a75149b248778a58e6f1557c0456\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/6f13a75149b248778a58e6f1557c0456\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/hermes/source/.venv/bin/hermes\",\"home\":\"/var/lib/chatraw-runner/hermes-home\"}"
+    },
+    {
+      "id": "70cea319563c4f82a84cd1ff200fa779",
+      "chat_id": "779797c9-be32-4ac0-bdae-483106622be6",
+      "agent_id": "deepseek",
+      "workspace": "/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-5a62981954574d9796ebf1747a282541\",\"session_id\":\"session-5a62981954574d9796ebf1747a282541\"},\"session_id\":\"70cea319563c4f82a84cd1ff200fa779\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\",\"patches\":[\"/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml\"]}"
+    },
+    {
+      "id": "787447d7aab94b7d8ce4a6afcc4196b9",
+      "chat_id": "0b4bea09-41a9-4223-a309-98de69c5b027",
+      "agent_id": "claude",
+      "workspace": "/var/lib/chatraw-runner/workspaces/787447d7aab94b7d8ce4a6afcc4196b9",
+      "binding": "{\"agent_id\":\"claude\",\"native\":{\"session_id\":\"aeebcc46-36d5-44af-b240-2ad50ad03dd8\"},\"session_id\":\"787447d7aab94b7d8ce4a6afcc4196b9\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/787447d7aab94b7d8ce4a6afcc4196b9\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "7efd25b09ff14e52be71f94abc638a1c",
+      "chat_id": "ba5a7cb3-9e0f-45e6-b406-b7678a0507b9",
+      "agent_id": "pi",
+      "workspace": "/var/lib/chatraw-runner/workspaces/7efd25b09ff14e52be71f94abc638a1c",
+      "binding": "{\"agent_id\":\"pi\",\"native\":{\"session_id\":\"01a1d518-34ec-76f0-bcbe-2a6c95159e3e\",\"transcript\":\"/var/lib/chatraw-runner/pi-sessions/3e9d8bc52dc74ac68878f467ec150036/session.jsonl\"},\"session_id\":\"7efd25b09ff14e52be71f94abc638a1c\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/7efd25b09ff14e52be71f94abc638a1c\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/pi/node_modules/.bin/pi\",\"session_root\":\"/var/lib/chatraw-runner/pi-sessions\"}"
+    },
+    {
+      "id": "8308839477934801b97f830d84a9b87b",
+      "chat_id": "53f8c497-8e8d-4540-a78d-c5ef2667dd56",
+      "agent_id": "claude",
+      "workspace": "/var/lib/chatraw-runner/workspaces/8308839477934801b97f830d84a9b87b",
+      "binding": "{\"agent_id\":\"claude\",\"native\":{\"session_id\":\"a9562af0-8bf4-4d07-a7a3-4f8b1c1d160e\"},\"session_id\":\"8308839477934801b97f830d84a9b87b\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/8308839477934801b97f830d84a9b87b\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "88053d718e83416db643f710cb2c63af",
+      "chat_id": "8c7e483a-a531-4b59-959f-a74fdab2eafa",
+      "agent_id": "codex",
+      "workspace": "/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"26c25ba7d3604bd1baa6b6c2f0bda1d7\",\"stop_requested\":true,\"thread_id\":\"01a1d563-5904-7820-a73a-79d127bb0584\",\"turn_id\":\"01a1d563-592f-79b3-93e6-1bb3567c4ba6\"},\"session_id\":\"88053d718e83416db643f710cb2c63af\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "88e2895ec55b4ab6872e731d8d0b67b4",
+      "chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c",
+      "agent_id": "claude",
+      "workspace": "/var/lib/chatraw-runner/workspaces/88e2895ec55b4ab6872e731d8d0b67b4",
+      "binding": "{\"agent_id\":\"claude\",\"native\":{\"session_id\":\"ffe300d5-6381-40f5-8672-19a50375e8d4\"},\"session_id\":\"88e2895ec55b4ab6872e731d8d0b67b4\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/88e2895ec55b4ab6872e731d8d0b67b4\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "9f5017b8efb7418eb1cdb780a3611b1b",
+      "chat_id": "b1a8f3a5-2234-4945-bae0-1f4a4b4372d6",
+      "agent_id": "codex",
+      "workspace": "/var/lib/chatraw-runner/workspaces/9f5017b8efb7418eb1cdb780a3611b1b",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"2b51cd7b85114cf7bdc0d7ada6d8412c\",\"thread_id\":\"01a1d520-0caa-7643-bf4a-a43b9bab5cd1\",\"turn_id\":\"01a1d520-0cd8-7df0-a8f8-b517935bba25\"},\"session_id\":\"9f5017b8efb7418eb1cdb780a3611b1b\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/9f5017b8efb7418eb1cdb780a3611b1b\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "a205449b61b64574a0ea4e4732029dfb",
+      "chat_id": "29880846-c591-453c-863d-c04b8e462e05",
+      "agent_id": "hermes",
+      "workspace": "/var/lib/chatraw-runner/workspaces/a205449b61b64574a0ea4e4732029dfb",
+      "binding": "{\"agent_id\":\"hermes\",\"native\":{\"admission_id\":\"8573c4c95a3042e9b1fd15ef392eab28\",\"operation\":\"run\",\"profile_id\":\"/var/lib/chatraw-runner/hermes-home\",\"run_id\":\"71c648dac20d490e821491c4e839fbfc\",\"session_id\":\"local-ba3da1fbfe16e6d9e7f0c85ccea1ac39fec52c75591c8a76adbfce20b6926b54\",\"settings\":{\"model\":\"RM-01 VLM\",\"provider\":\"custom\"}},\"session_id\":\"a205449b61b64574a0ea4e4732029dfb\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/a205449b61b64574a0ea4e4732029dfb\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/hermes/source/.venv/bin/hermes\",\"home\":\"/var/lib/chatraw-runner/hermes-home\"}"
+    },
+    {
+      "id": "a2ec26bdb2174e4d900605587f58371c",
+      "chat_id": "3a663a35-b99c-4c4a-af9a-8f866e864c06",
+      "agent_id": "deepseek",
+      "workspace": "/var/lib/chatraw-runner/workspaces/a2ec26bdb2174e4d900605587f58371c",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-a04287c037c3459599805304ae0edc40\",\"session_id\":\"session-a04287c037c3459599805304ae0edc40\"},\"session_id\":\"a2ec26bdb2174e4d900605587f58371c\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/a2ec26bdb2174e4d900605587f58371c\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\",\"patches\":[\"/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml\"]}"
+    },
+    {
+      "id": "b7fea9a288d84d1489ff634e753a6652",
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "agent_id": "codex",
+      "workspace": "/var/lib/chatraw-runner/workspaces/b7fea9a288d84d1489ff634e753a6652",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"5bb85815054a4cf4ae110322532b59c7\",\"thread_id\":\"01a1d516-d830-7742-b766-ff1071485eaf\",\"turn_id\":\"01a1d52a-2f6b-7a92-90e5-6261a3cfc359\"},\"session_id\":\"b7fea9a288d84d1489ff634e753a6652\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/b7fea9a288d84d1489ff634e753a6652\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "c5f1cad44b9b463385077611859b4cc4",
+      "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a",
+      "agent_id": "codex",
+      "workspace": "/var/lib/chatraw-runner/workspaces/c5f1cad44b9b463385077611859b4cc4",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"e05b8525931c4d1585cae79770c7be3d\",\"stop_requested\":true,\"thread_id\":\"01a1d531-0acc-76a0-9f94-7933d117fd87\",\"turn_id\":\"01a1d531-0af9-7450-a4ad-da4b03f162a4\"},\"session_id\":\"c5f1cad44b9b463385077611859b4cc4\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/c5f1cad44b9b463385077611859b4cc4\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "dad3cb83129e46b8a8d48498b5642c74",
+      "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+      "agent_id": "pi",
+      "workspace": "/var/lib/chatraw-runner/workspaces/dad3cb83129e46b8a8d48498b5642c74",
+      "binding": "{\"agent_id\":\"pi\",\"native\":{\"session_id\":\"01a1d537-c79a-70c9-a477-50a93b2aaaaf\",\"transcript\":\"/var/lib/chatraw-runner/pi-sessions/abb2359f0f5e452c9dd2d9e825a66401/session.jsonl\"},\"session_id\":\"dad3cb83129e46b8a8d48498b5642c74\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/dad3cb83129e46b8a8d48498b5642c74\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/pi/node_modules/.bin/pi\",\"session_root\":\"/var/lib/chatraw-runner/pi-sessions\"}"
+    },
+    {
+      "id": "dc93d52367cb49f8a4909e297c214a3f",
+      "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+      "agent_id": "codex",
+      "workspace": "/var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"9697fc7d74b544bf957c4f444b96f6dd\",\"thread_id\":\"01a1d581-d366-7db1-a194-a75060d24e47\",\"turn_id\":\"01a1d585-bb1a-7643-a894-97e0a86bddf6\"},\"session_id\":\"dc93d52367cb49f8a4909e297c214a3f\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f\"}",
+      "base_config": "{\"responses_compat_upstream\":\"http://10.10.99.98:58000/v1/responses\"}"
+    },
+    {
+      "id": "f6523c63113f450db6cfb2a394166bf7",
+      "chat_id": "038ab243-84e0-46df-9297-1df6a428784d",
+      "agent_id": "deepseek",
+      "workspace": "/var/lib/chatraw-runner/workspaces/f6523c63113f450db6cfb2a394166bf7",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-79f17d14b00249c18b580614fad63c37\",\"session_id\":\"session-79f17d14b00249c18b580614fad63c37\"},\"session_id\":\"f6523c63113f450db6cfb2a394166bf7\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/f6523c63113f450db6cfb2a394166bf7\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "fc101f8889b14a0e9f52b3512c945555",
+      "chat_id": "4a3c946b-eeaa-4b35-837d-288001ad07c9",
+      "agent_id": "pi",
+      "workspace": "/var/lib/chatraw-runner/workspaces/fc101f8889b14a0e9f52b3512c945555",
+      "binding": "{\"agent_id\":\"pi\",\"native\":{\"session_id\":\"01a1d52e-6487-7325-a003-5e779eeeb9e6\",\"transcript\":\"/var/lib/chatraw-runner/pi-sessions/d6a2c3ae707f40af953cbd372b27def1/session.jsonl\"},\"session_id\":\"fc101f8889b14a0e9f52b3512c945555\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/fc101f8889b14a0e9f52b3512c945555\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/pi/node_modules/.bin/pi\",\"session_root\":\"/var/lib/chatraw-runner/pi-sessions\"}"
+    }
+  ],
+  "runs": [
+    {
+      "id": "01fccc4d40254a55821d841ec7c942f9",
+      "session_id": "2fa5efdd1bfa4e41ad0673570446a1b2",
+      "chat_id": "11eb86a2-df33-4ef6-a433-c8c61f6b9c24",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:58:56.429058Z",
+      "fingerprint": "ee9422426e451c267d75734713b0f445de8d8d2aca2a5d5f40104fb668a94a1c",
+      "last_seq": 5,
+      "error": null
+    },
+    {
+      "id": "059a2d604ee5445490d54a3c850de25d",
+      "session_id": "5eac256cd0494613bda3e16664001cba",
+      "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+      "kind": "compact",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:51.700590Z",
+      "fingerprint": "84c0c195c80d1d126d1bb4d41d6832c3f657e27d51a4c145f5f86c5f9fbe60aa",
+      "last_seq": 4,
+      "error": null
+    },
+    {
+      "id": "064c1226153842ad9998cb027a21d333",
+      "session_id": "2fa5efdd1bfa4e41ad0673570446a1b2",
+      "chat_id": "11eb86a2-df33-4ef6-a433-c8c61f6b9c24",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:59:04.556956Z",
+      "fingerprint": "43cd02676156d7cade40591ba1206cda114d3ed3501ed0ed383603a3d23aa78e",
+      "last_seq": 5,
+      "error": null
+    },
+    {
+      "id": "06c78d5fa7d44514901a7c8328d3655c",
+      "session_id": "88e2895ec55b4ab6872e731d8d0b67b4",
+      "chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:32:12.398512Z",
+      "fingerprint": "3435bdd296e34b4f5497c068336520afe15d0e1b260f328a6a85c9c7dcbb6f52",
+      "last_seq": 19,
+      "error": null
+    },
+    {
+      "id": "210a07608ed54e4382f5f96cbcde2657",
+      "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+      "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T15:23:37.562216Z",
+      "fingerprint": "0bbd1b4608cb94044154c7f0dcd754a9d69bf0682ec9d8eacb8ba60c44fc7528",
+      "last_seq": 5,
+      "error": null
+    },
+    {
+      "id": "26c25ba7d3604bd1baa6b6c2f0bda1d7",
+      "session_id": "88053d718e83416db643f710cb2c63af",
+      "chat_id": "8c7e483a-a531-4b59-959f-a74fdab2eafa",
+      "kind": "run",
+      "status": "cancelled",
+      "created_at": "2026-11-13T14:50:20.148350Z",
+      "fingerprint": "cd0660224854446817b675da8f8f19ecd79f16c34f1ab84fb6d1b4cfbdbaae18",
+      "last_seq": 10,
+      "error": null
+    },
+    {
+      "id": "292b915f502f4f0f8d81a069624049a8",
+      "session_id": "70cea319563c4f82a84cd1ff200fa779",
+      "chat_id": "779797c9-be32-4ac0-bdae-483106622be6",
+      "kind": "run",
+      "status": "cancelled",
+      "created_at": "2026-11-13T14:56:10.470486Z",
+      "fingerprint": "e5dbba11665a0817d58480e8f6ca91516c16f5d0cd23ecae96df94c2b2809f4f",
+      "last_seq": 19,
+      "error": null
+    },
+    {
+      "id": "2b51cd7b85114cf7bdc0d7ada6d8412c",
+      "session_id": "9f5017b8efb7418eb1cdb780a3611b1b",
+      "chat_id": "b1a8f3a5-2234-4945-bae0-1f4a4b4372d6",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:36:49.695056Z",
+      "fingerprint": "c7bdc3e3aa9f8eca5fb3236e52a3748696c6d63a4beb6492d31fafeb4bf3e088",
+      "last_seq": 13,
+      "error": null
+    },
+    {
+      "id": "2c1910838501477f9e59d81913b7eba9",
+      "session_id": "88e2895ec55b4ab6872e731d8d0b67b4",
+      "chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c",
+      "kind": "run",
+      "status": "cancelled",
+      "created_at": "2026-11-13T13:32:47.606647Z",
+      "fingerprint": "b1883a29697290b1578072b33935bbc4f07233b2b6df4becb498f34b434f68a3",
+      "last_seq": 7,
+      "error": null
+    },
+    {
+      "id": "2ccbcb8956b841e2a6af805f0790e977",
+      "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+      "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+      "kind": "run",
+      "status": "cancelled",
+      "created_at": "2026-11-13T13:44:14.308289Z",
+      "fingerprint": "f5940a9b55f975643ae02e4ba9e2658dc11d9b35e732b109db1d830313a9a170",
+      "last_seq": 5,
+      "error": null
+    },
+    {
+      "id": "36d74a1e0029451a82df580bc5dec15c",
+      "session_id": "6b359b8f76d94d06bc46868570909d22",
+      "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:01.529337Z",
+      "fingerprint": "bd11350dd762955f29f0eb14d038f388231fd2107a20a6d792f3a0c388ca1a34",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "394d1c0f053344b8b5a3b4f499027bb1",
+      "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+      "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T15:25:28.129943Z",
+      "fingerprint": "24866df95c297ea88fcc3c94a51f281d2be69f584b54443a1369e293ecc1f5f8",
+      "last_seq": 36,
+      "error": null
+    },
+    {
+      "id": "3baee951788f4ceab667c7e9f4c610d0",
+      "session_id": "6b359b8f76d94d06bc46868570909d22",
+      "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:05.582466Z",
+      "fingerprint": "b28a9376c839899788c825504a7261f9edc043439c2d3d2688ac65133b9fb3cf",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "3ca9d29d8e934990a4fef20c64caee57",
+      "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+      "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+      "kind": "compact",
+      "status": "completed",
+      "created_at": "2026-11-13T14:03:13.508163Z",
+      "fingerprint": "7956e02f3020bbffb68a1c74c36c19fec2af8956070b751d6f948655248e8cb0",
+      "last_seq": 4,
+      "error": null
+    },
+    {
+      "id": "3df8cb9182cd4f84ba64b7f6c1f305cd",
+      "session_id": "1e0072458ccd4be69b28326e72f2871a",
+      "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+      "kind": "compact",
+      "status": "completed",
+      "created_at": "2026-11-13T13:59:46.125265Z",
+      "fingerprint": "df78e0e9f51af1a71062d136bc57e1efb5efd9804e37da4b801ffab7731f2b0d",
+      "last_seq": 5,
+      "error": null
+    },
+    {
+      "id": "41c4e0a88615475089ca4ac7fa1bb740",
+      "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+      "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:32:29.933985Z",
+      "fingerprint": "bab54108ebec23ed1b2e416b74c5af925a98fe1d58453506aacd72e7b8088573",
+      "last_seq": 23,
+      "error": null
+    },
+    {
+      "id": "41dfa460416e41ed8f37c753f0045709",
+      "session_id": "b7fea9a288d84d1489ff634e753a6652",
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:45:40.707454Z",
+      "fingerprint": "545a23988ee7f0446cec5116bfb9198a1653db9c783126c93a0eec2a9bba8cb3",
+      "last_seq": 78,
+      "error": null
+    },
+    {
+      "id": "4533ffd77af04c5990532c332467720b",
+      "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+      "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:02:47.226280Z",
+      "fingerprint": "482139c0f0529750b0b773314891d29ac68cc11adc043f40816f7ce5c94ec19a",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "474834ac504a4cafa59e0b9c59f14006",
+      "session_id": "2e9396c599fe41a296c74c890fa2f058",
+      "chat_id": "e7c455a2-aa7c-4c0d-9d86-671fb88edba6",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:04:07.752075Z",
+      "fingerprint": "62d1fc1d4646dd78b982fe7db26825d6e3d2ab5a1a1d47b18c0014f50e285cce",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "476eb2c2ac29498bb28e37fe0b6acaff",
+      "session_id": "2fa5efdd1bfa4e41ad0673570446a1b2",
+      "chat_id": "11eb86a2-df33-4ef6-a433-c8c61f6b9c24",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:59:00.490121Z",
+      "fingerprint": "79314bbe8ed74f5fa9dff856c1bddc808c0a5835bc3d0fa950425efbfe2eec5f",
+      "last_seq": 5,
+      "error": null
+    },
+    {
+      "id": "477b502ba89d4d53bc1207f867d4586b",
+      "session_id": "6b359b8f76d94d06bc46868570909d22",
+      "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:07.629659Z",
+      "fingerprint": "3180801706a6c501ae3ef712ca2acfeae18d1adbbc83e8a678d4d98d4a401e44",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "491d9225c1b04a36b32f226f920a49af",
+      "session_id": "5eac256cd0494613bda3e16664001cba",
+      "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:35.420068Z",
+      "fingerprint": "9cd578b5d29d99e694008e60ca7c2e88979a70b3b319dbf71c0dde5ac87986ab",
+      "last_seq": 9,
+      "error": null
+    },
+    {
+      "id": "4e1d2b4fa30544cd8a62aa8f8f65044c",
+      "session_id": "1e0072458ccd4be69b28326e72f2871a",
+      "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:00:48.650451Z",
+      "fingerprint": "0ac8df9f7adb044a3a36f85bf964cfe94ef392ba96177cb52e05fd3a92dc0808",
+      "last_seq": 9,
+      "error": null
+    },
+    {
+      "id": "553d772e86334e37b31a1a705a0fc066",
+      "session_id": "5eac256cd0494613bda3e16664001cba",
+      "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:31.344312Z",
+      "fingerprint": "95f0fbd1f6e5699d241d5c69850958c9148c49a3a54077ebff6e0be382d57192",
+      "last_seq": 9,
+      "error": null
+    },
+    {
+      "id": "5bb85815054a4cf4ae110322532b59c7",
+      "session_id": "b7fea9a288d84d1489ff634e753a6652",
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:47:54.084568Z",
+      "fingerprint": "6d6484485f5fbb24683051dd64cd120bc58e60a8657c3b0d52c60c30aca1e7b0",
+      "last_seq": 97,
+      "error": null
+    },
+    {
+      "id": "5d6b1010bf6047c7a108c34ef83ef53d",
+      "session_id": "6f13a75149b248778a58e6f1557c0456",
+      "chat_id": "3f74451b-a64a-4dbd-aa13-6e44afb84c79",
+      "kind": "run",
+      "status": "cancelled",
+      "created_at": "2026-11-13T13:57:30.138099Z",
+      "fingerprint": "057666799ea0b0e649135a46419ae744789e6f62c9ae14d8af1e2d6cb08fcab2",
+      "last_seq": 11,
+      "error": null
+    },
+    {
+      "id": "614bca1480b34ce5b6bef99a76a0cc49",
+      "session_id": "5eac256cd0494613bda3e16664001cba",
+      "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:02:36.037794Z",
+      "fingerprint": "03b2ef5d76a1dd6188b169f161a67a59945b6301d739f3c85e3079cdbfd85de6",
+      "last_seq": 12,
+      "error": null
+    },
+    {
+      "id": "71c648dac20d490e821491c4e839fbfc",
+      "session_id": "a205449b61b64574a0ea4e4732029dfb",
+      "chat_id": "29880846-c591-453c-863d-c04b8e462e05",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:53:51.756059Z",
+      "fingerprint": "ac353f9a9a2cb9867b0505e06d1f8002b20cc2074936170be056d26e6245b4ba",
+      "last_seq": 11,
+      "error": null
+    },
+    {
+      "id": "788952b03cd943e48b599aec222eaedd",
+      "session_id": "f6523c63113f450db6cfb2a394166bf7",
+      "chat_id": "038ab243-84e0-46df-9297-1df6a428784d",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:53:36.278526Z",
+      "fingerprint": "58e50c837caf0095f451d6647ce5a6d755ad96ce18522ebe3576582733dc7b0d",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "81c03f9084da4384a9fecaae4703c34b",
+      "session_id": "8308839477934801b97f830d84a9b87b",
+      "chat_id": "53f8c497-8e8d-4540-a78d-c5ef2667dd56",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:53:58.850312Z",
+      "fingerprint": "e35afc7ef46d0a38dafa0102e564494f8650d26ddba162558d5fff998766586a",
+      "last_seq": 8,
+      "error": null
+    },
+    {
+      "id": "8526c1acf1d2486693d25135fff8c16e",
+      "session_id": "1e0072458ccd4be69b28326e72f2871a",
+      "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:59:40.049423Z",
+      "fingerprint": "be94d0abfdc3ccf1926c71414e55ad206cc6aded7999deb17cac82beda1471dd",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "882a5e73da164864a38f556f2e4357bc",
+      "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+      "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:29:44.827084Z",
+      "fingerprint": "d442aa03de1822141b22eb3aafc7a16c02ef3d515ea35c5e74bffae8efd97b38",
+      "last_seq": 27,
+      "error": null
+    },
+    {
+      "id": "8fd852ee00c24c0985bd000d02ffafeb",
+      "session_id": "b7fea9a288d84d1489ff634e753a6652",
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:26:46.434085Z",
+      "fingerprint": "798eadca2cdbbea96d57b9210aa0444c68d380a2f125808d54630d480a94291d",
+      "last_seq": 33,
+      "error": null
+    },
+    {
+      "id": "90b4c836cf634b23b3551f1ce42a4885",
+      "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+      "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T15:23:45.734493Z",
+      "fingerprint": "6056140a804104f968d5774447ba7dbe769cc97668257c3147ef422169999ea1",
+      "last_seq": 5,
+      "error": null
+    },
+    {
+      "id": "92bc41d264e549b8b83e61370044e6e7",
+      "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+      "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:02:45.176293Z",
+      "fingerprint": "3fa7e42c1beae7bc0cdf63e52aa3ae78cd89baec583daefb0c45ddd027856857",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "932b483d06c24f0c91074066040b91a9",
+      "session_id": "6b359b8f76d94d06bc46868570909d22",
+      "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+      "kind": "compact",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:09.685491Z",
+      "fingerprint": "6a00b47b04e111cde158110a8fc32e0635bde7892bdb11e00102f164a8aca681",
+      "last_seq": 4,
+      "error": null
+    },
+    {
+      "id": "9697fc7d74b544bf957c4f444b96f6dd",
+      "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+      "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T15:27:53.618726Z",
+      "fingerprint": "2f2a3f843325642a406c4448882bebc51668eb780dee525db6166bf2c8f4322d",
+      "last_seq": 7,
+      "error": null
+    },
+    {
+      "id": "98274d505eda47bc85017d9e88a662db",
+      "session_id": "fc101f8889b14a0e9f52b3512c945555",
+      "chat_id": "4a3c946b-eeaa-4b35-837d-288001ad07c9",
+      "kind": "run",
+      "status": "cancelled",
+      "created_at": "2026-11-13T13:52:30.053762Z",
+      "fingerprint": "5e729cc321dfd01268ae76eaea90977cdb625e69a0bf0d59e7f538ea055cc652",
+      "last_seq": 14,
+      "error": null
+    },
+    {
+      "id": "98b1585769f94386b8c2e9ae03479eab",
+      "session_id": "27110c5454ed4d4baf77b9680e133b4f",
+      "chat_id": "266d6247-62a8-4d57-be03-6fa614ef56dd",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:58:41.255640Z",
+      "fingerprint": "c5ab43dccf8f5c7d13d185d186bd3f7df2bbecef7d430f98a42826165320ad46",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "ae77c1a1c9d3491ea0961887644efbcc",
+      "session_id": "5eac256cd0494613bda3e16664001cba",
+      "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:39.487252Z",
+      "fingerprint": "dc92510e00d94dfa0067b83865852925a76fc05b788dac0c00c914bd652ab8df",
+      "last_seq": 9,
+      "error": null
+    },
+    {
+      "id": "b13f4c69e3b14d56b121e963e54b136b",
+      "session_id": "b7fea9a288d84d1489ff634e753a6652",
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "kind": "run",
+      "status": "cancelled",
+      "created_at": "2026-11-13T13:32:44.388826Z",
+      "fingerprint": "4b33fac8efde42b834649ef68d170a9a1d2e6feba9f2b7c37f73503bea9eac97",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "b5471970bbb24e639605d3c963d09907",
+      "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+      "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:41:31.606298Z",
+      "fingerprint": "bde10f1660b68ed1ee89b74a678b0a6fa99786a4910c61c02f1222de1582ea93",
+      "last_seq": 16,
+      "error": null
+    },
+    {
+      "id": "b892d61229604a969fadde19a3d9bef4",
+      "session_id": "2fa5efdd1bfa4e41ad0673570446a1b2",
+      "chat_id": "11eb86a2-df33-4ef6-a433-c8c61f6b9c24",
+      "kind": "compact",
+      "status": "completed",
+      "created_at": "2026-11-13T13:59:08.618696Z",
+      "fingerprint": "0665b27aa11afd10acfe979558c969c6facf12991d05821c25fe5a5b838d22b0",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "c39c35335109418199d2a1a395255914",
+      "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+      "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T15:24:18.152367Z",
+      "fingerprint": "c28ae1dc34b71c6b466742cd82877f590be33cffceaf46837e7d5ca6a873d779",
+      "last_seq": 8,
+      "error": null
+    },
+    {
+      "id": "c5ded3f6b61743709fb1f04f59bcdfb7",
+      "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+      "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T15:23:41.646031Z",
+      "fingerprint": "9deeceae3b273ffbf7d033dd9f4894a8a45003bca56f8128d9f8d002f614cb6b",
+      "last_seq": 5,
+      "error": null
+    },
+    {
+      "id": "c87836f4a345490aa8e5f4eb5d9a290f",
+      "session_id": "55512bdd173b496f8cc9be631380acbc",
+      "chat_id": "9f29d3b8-1368-4adc-b6e1-4b6a7b26ae87",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:28:31.570532Z",
+      "fingerprint": "face7e4f91df2b7893d545bffa52485c521a94584c0ba760db2fa47a869098ed",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "c9a5ac11ceae49869f92c36fbe44b25c",
+      "session_id": "7efd25b09ff14e52be71f94abc638a1c",
+      "chat_id": "ba5a7cb3-9e0f-45e6-b406-b7678a0507b9",
+      "kind": "run",
+      "status": "cancelled",
+      "created_at": "2026-11-13T13:32:53.069541Z",
+      "fingerprint": "76748b86441469d598080b434a496ea9bb90d3cb5a73bafbd93e1e96ced62532",
+      "last_seq": 7,
+      "error": null
+    },
+    {
+      "id": "cb7fea5232db43f093a71b0be18bef57",
+      "session_id": "2fa5efdd1bfa4e41ad0673570446a1b2",
+      "chat_id": "11eb86a2-df33-4ef6-a433-c8c61f6b9c24",
+      "kind": "run",
+      "status": "failed",
+      "created_at": "2026-11-13T13:59:24.796302Z",
+      "fingerprint": "024e0672a4b2ded94e5f0ae435f5bbea85ba2be1a046ed4304dada53a1a278b4",
+      "last_seq": 4,
+      "error": "{\"code\":\"codex_native_failed\",\"message\":\"Codex reported that the turn failed.\",\"retryable\":false}"
+    },
+    {
+      "id": "cf0900ba1b574115848f08e572edbe47",
+      "session_id": "0f731aaea66b46f78d6442e3eada335c",
+      "chat_id": "db9b2755-0e30-4fca-98d6-74a520236c32",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:53:25.469433Z",
+      "fingerprint": "649d90fe468c020069690d1ab735011f00ccaa7dd93b5909e7e7152722d88d01",
+      "last_seq": 8,
+      "error": null
+    },
+    {
+      "id": "d0ce846cc3334a5fb3b16ea89f755cdf",
+      "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+      "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:03:25.631950Z",
+      "fingerprint": "1175c9357f4f64d1741bc1547db741f1ee93cfe39e4548ef1a9c39e2b96738c8",
+      "last_seq": 9,
+      "error": null
+    },
+    {
+      "id": "d56be4f7d526485fb93a5ca286812fd4",
+      "session_id": "1e0072458ccd4be69b28326e72f2871a",
+      "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:59:27.884376Z",
+      "fingerprint": "3d3a04717af2ca2aaabdc1cf4f390320a832740ce226b879f515886e63010c26",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "d5c37b45945941ed908cba10bea53be0",
+      "session_id": "2d3432cb86ff427582a2287f755c5c4f",
+      "chat_id": "ad6e5895-dc90-4821-9f9c-6ecc38751cfc",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:54:13.546679Z",
+      "fingerprint": "00862b0f4d4d115b9177e9061bc7abb6210c04d1d6ed423e239e7ab242f7b7d0",
+      "last_seq": 7,
+      "error": null
+    },
+    {
+      "id": "d692c1c364f34edfb7ac688b1ed337ad",
+      "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+      "chat_id": "0e9edddb-4bb1-46b6-8556-d3bed132870b",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:02:57.340811Z",
+      "fingerprint": "4d4ddc93f79c2920b5bf42671557d4860b53a56912a2e797aafecea3a78bd8f9",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "d784beb1261b490a83ea823fee0809a9",
+      "session_id": "404a7aeddfa94bc695947347b9f87625",
+      "chat_id": "bb09da12-2161-4b51-b98c-3fe343171ba9",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T15:39:56.658731Z",
+      "fingerprint": "b531af509191ed8a51bdea7f78dd9cd175b72d3c38fca7e1aa8115794fa06ac8",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "da2a7f970751409bbec0dcb31b7c532d",
+      "session_id": "5eac256cd0494613bda3e16664001cba",
+      "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:47.629089Z",
+      "fingerprint": "eb17c0788670e679d2a43bb904d62de03d977d1c9b874ee0be66d46659b1b566",
+      "last_seq": 9,
+      "error": null
+    },
+    {
+      "id": "df3c329ec4db425c892bacd448570491",
+      "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+      "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+      "kind": "run",
+      "status": "failed",
+      "created_at": "2026-11-13T13:29:01.271974Z",
+      "fingerprint": "8d691a3a7d2cb80419f60e7f648f3397c9bcc4f426816dd3a5783fb863509eef",
+      "last_seq": 4,
+      "error": "{\"code\":\"deepseek_run_failed\",\"message\":\"DeepSeek reported a failed or blocked operation\",\"retryable\":false}"
+    },
+    {
+      "id": "df6ad600c2834b1896599d3d2c4f2745",
+      "session_id": "6b359b8f76d94d06bc46868570909d22",
+      "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:21.801352Z",
+      "fingerprint": "52976ce0107d31d3d51a653dcaf58810788956880780581e760c5622b526047a",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "e024335f7bde4ebd846260c15b3eab50",
+      "session_id": "7efd25b09ff14e52be71f94abc638a1c",
+      "chat_id": "ba5a7cb3-9e0f-45e6-b406-b7678a0507b9",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:28:15.985744Z",
+      "fingerprint": "a3e6db56c356b5a11b97483057eae4ae2075b2523ef9f0b70dc875a11e241b92",
+      "last_seq": 26,
+      "error": null
+    },
+    {
+      "id": "e05b8525931c4d1585cae79770c7be3d",
+      "session_id": "c5f1cad44b9b463385077611859b4cc4",
+      "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a",
+      "kind": "run",
+      "status": "unknown",
+      "created_at": "2026-11-13T13:55:23.331746Z",
+      "fingerprint": "dcbd54b90861c47f156a88b26cacd4a5f6053e19615fec017712acfa3aa914d2",
+      "last_seq": 25,
+      "error": "{\"code\":\"recovery_unavailable\",\"message\":\"Native run state could not be verified\",\"retryable\":false}"
+    },
+    {
+      "id": "e36a20cbd531425db3ba895dc20ff678",
+      "session_id": "5f775d782b4a4d40bb81a8d1a5bc8aad",
+      "chat_id": "a83f4451-13a0-468b-8091-8432b79fed3c",
+      "kind": "run",
+      "status": "failed",
+      "created_at": "2026-11-13T15:31:28.850453Z",
+      "fingerprint": "42e9f65da0d34c54bc313d89a9a9c39c34ee259f764a9fafc4c607385ed4c410",
+      "last_seq": 11,
+      "error": "{\"code\":\"deepseek_run_failed\",\"message\":\"DeepSeek reported a failed or blocked operation\",\"retryable\":false}"
+    },
+    {
+      "id": "e62e05ca92744e399ea75c3e445e2b33",
+      "session_id": "b7fea9a288d84d1489ff634e753a6652",
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:32:05.866814Z",
+      "fingerprint": "d5e95bd1fccd5e3aaf914f750f34988c24c3dde33c8fa5a84d244bda21a5fac9",
+      "last_seq": 17,
+      "error": null
+    },
+    {
+      "id": "e7904316aa7d49879368966daa641ca0",
+      "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+      "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:43:04.936163Z",
+      "fingerprint": "0e57db3d8aa7afb8ab01cbe3f4157a00a085d4ac21f845aa467619b22d5dc9c9",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "e99bb689018a41e7a6c57680de5204bb",
+      "session_id": "5eac256cd0494613bda3e16664001cba",
+      "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:43.557703Z",
+      "fingerprint": "38426b71e6b1f5f6051e5617bbf4387c4e7250e786f7fe4398f05781992b0a01",
+      "last_seq": 9,
+      "error": null
+    },
+    {
+      "id": "ea5d45ff82254d6d974ffac315ba94b8",
+      "session_id": "7efd25b09ff14e52be71f94abc638a1c",
+      "chat_id": "ba5a7cb3-9e0f-45e6-b406-b7678a0507b9",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:32:22.392813Z",
+      "fingerprint": "b4ed8d4a7acca7bc48090f872a43737db47098d771156b02035716c4d5ae2e51",
+      "last_seq": 17,
+      "error": null
+    },
+    {
+      "id": "ee8310a52ad440bbb75a88706d9c812b",
+      "session_id": "b7fea9a288d84d1489ff634e753a6652",
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:45:30.565384Z",
+      "fingerprint": "f2f9dd8517fd16632f043b23a00ef28c626aaab5364923f370fbeac82447f244",
+      "last_seq": 7,
+      "error": null
+    },
+    {
+      "id": "f0e65e5c00de470babd5e45acc63b03d",
+      "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+      "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+      "kind": "compact",
+      "status": "completed",
+      "created_at": "2026-11-13T15:23:49.800723Z",
+      "fingerprint": "e9d463020ab2c261891695685c3a2e1dc8b073fc3fd02975bdc8c067e5e5bdac",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "f16625359e924af293bb4dad54b470fc",
+      "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+      "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+      "kind": "run",
+      "status": "cancelled",
+      "created_at": "2026-11-13T13:32:55.491640Z",
+      "fingerprint": "aefeb426e3db005dd99a39d4012e4f513980eebd230184fd2079f28d919077b1",
+      "last_seq": 10,
+      "error": null
+    },
+    {
+      "id": "f6c0be8411e74a34aad311dc6c7e23ba",
+      "session_id": "787447d7aab94b7d8ce4a6afcc4196b9",
+      "chat_id": "0b4bea09-41a9-4223-a309-98de69c5b027",
+      "kind": "run",
+      "status": "cancelled",
+      "created_at": "2026-11-13T13:54:31.815937Z",
+      "fingerprint": "46410dab1b7cbd0e20be484adf38917e4b656378ec272b76890e03cc4703a05a",
+      "last_seq": 11,
+      "error": null
+    },
+    {
+      "id": "fafcabb8c61c4e8780b592a7200f6d96",
+      "session_id": "a2ec26bdb2174e4d900605587f58371c",
+      "chat_id": "3a663a35-b99c-4c4a-af9a-8f866e864c06",
+      "kind": "run",
+      "status": "failed",
+      "created_at": "2026-11-13T15:28:31.359422Z",
+      "fingerprint": "a2038d4578fe4050c8c0096e0c0b9fbc4f3e061910f5b28c78d357763fa35e2b",
+      "last_seq": 11,
+      "error": "{\"code\":\"deepseek_run_failed\",\"message\":\"DeepSeek reported a failed or blocked operation\",\"retryable\":false}"
+    },
+    {
+      "id": "fd9fdc088c0841c4afbebbeef1fe9e34",
+      "session_id": "1e0072458ccd4be69b28326e72f2871a",
+      "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:59:33.978600Z",
+      "fingerprint": "695c61981c3f9357795522e97675203456247413f619906c8ddd2c92b9f7dcf8",
+      "last_seq": 6,
+      "error": null
+    },
+    {
+      "id": "ff47862ec823417190fe53b1a1edbe2f",
+      "session_id": "88e2895ec55b4ab6872e731d8d0b67b4",
+      "chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T13:27:43.583339Z",
+      "fingerprint": "e530c244d152d998ab03278118c6b1de73824761691b7f0652cbb14ab972a6a5",
+      "last_seq": 20,
+      "error": null
+    }
+  ],
+  "nonterminal": [
+    {
+      "id": "e05b8525931c4d1585cae79770c7be3d",
+      "session_id": "c5f1cad44b9b463385077611859b4cc4",
+      "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a",
+      "kind": "run",
+      "status": "unknown",
+      "created_at": "2026-11-13T13:55:23.331746Z",
+      "fingerprint": "dcbd54b90861c47f156a88b26cacd4a5f6053e19615fec017712acfa3aa914d2",
+      "last_seq": 25,
+      "error": "{\"code\":\"recovery_unavailable\",\"message\":\"Native run state could not be verified\",\"retryable\":false}"
+    }
+  ],
+  "nfs_exports": {
+    "exit_code": 0,
+    "sorted_content_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "smb_effective_config": {
+    "exit_code": 0,
+    "sha256": "fb0482a87dd587c7a1e73bcb071239ec58c4e1ad646b73602d1d1dad7c04235b"
+  }
+}

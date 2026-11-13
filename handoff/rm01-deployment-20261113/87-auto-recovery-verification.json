@@ -1,0 +1,116 @@
+{
+  "before_boot_id": "7b402537-ac56-4957-b4ad-fc8632d148db",
+  "after_boot_id": "24e4247d-cfe9-4001-a26a-35268e37bf8c",
+  "after_uptime_seconds": 202.24,
+  "checks": {
+    "boot_id_changed": true,
+    "uptime_reset": true,
+    "same_container": true,
+    "same_image": true,
+    "same_volume_mounts": true,
+    "same_restart_policy": true,
+    "config_hashes_unchanged": true,
+    "plugin_config_unchanged": true,
+    "workspace_files_unchanged": true,
+    "all_session_bindings_unchanged": true,
+    "no_new_runs_before_probes": true,
+    "services_automatically_active": true,
+    "service_unit_files_unchanged": true,
+    "ports_restored": true,
+    "nfs_exports_unchanged": true,
+    "smb_effective_config_unchanged": true,
+    "only_old_unknown": true,
+    "persistent_app_tables_unchanged": true
+  },
+  "automatic_service_states": {
+    "docker.service": {
+      "ActiveState": "active",
+      "SubState": "running",
+      "UnitFileState": "enabled",
+      "MainPID": "1666",
+      "NRestarts": "0",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:15 UTC"
+    },
+    "containerd.service": {
+      "ActiveState": "active",
+      "SubState": "running",
+      "UnitFileState": "enabled",
+      "MainPID": "1470",
+      "NRestarts": "0",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:14 UTC"
+    },
+    "chatraw-runner.service": {
+      "ActiveState": "active",
+      "SubState": "running",
+      "UnitFileState": "enabled",
+      "MainPID": "1385",
+      "NRestarts": "0",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:13 UTC"
+    },
+    "chatraw-hermes.service": {
+      "ActiveState": "active",
+      "SubState": "running",
+      "UnitFileState": "enabled",
+      "MainPID": "1378",
+      "NRestarts": "0",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:13 UTC"
+    },
+    "lpmustatus-api.service": {
+      "ActiveState": "active",
+      "SubState": "running",
+      "UnitFileState": "enabled",
+      "MainPID": "1395",
+      "NRestarts": "0",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:13 UTC"
+    },
+    "nfs-server.service": {
+      "ActiveState": "active",
+      "SubState": "exited",
+      "UnitFileState": "enabled",
+      "MainPID": "0",
+      "NRestarts": "0",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:14 UTC"
+    },
+    "nfs-mountd.service": {
+      "ActiveState": "active",
+      "SubState": "running",
+      "UnitFileState": "static",
+      "MainPID": "1400",
+      "NRestarts": "0",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:14 UTC"
+    },
+    "rpcbind.service": {
+      "ActiveState": "active",
+      "SubState": "running",
+      "UnitFileState": "enabled",
+      "MainPID": "927",
+      "NRestarts": "0",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:10 UTC"
+    },
+    "smbd.service": {
+      "ActiveState": "active",
+      "SubState": "running",
+      "UnitFileState": "enabled",
+      "MainPID": "1633",
+      "NRestarts": "0",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:14 UTC"
+    },
+    "nmbd.service": {
+      "ActiveState": "active",
+      "SubState": "running",
+      "UnitFileState": "enabled",
+      "MainPID": "1498",
+      "NRestarts": "0",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:14 UTC"
+    },
+    "user:tto-web.service": {
+      "ActiveState": "active",
+      "SubState": "running",
+      "UnitFileState": "enabled",
+      "MainPID": "1796",
+      "NRestarts": "0",
+      "ActiveEnterTimestamp": "Fri 2026-11-13 16:04:15 UTC"
+    }
+  },
+  "manual_service_starts": 0
+}

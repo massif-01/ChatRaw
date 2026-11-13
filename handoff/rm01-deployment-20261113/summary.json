@@ -60,7 +60,7 @@
     }
   },
   "chatraw_active_restart": "PASS: Pi run and pending approval preserved",
-  "whole_machine_restart": "NOT_RUN: not authorized",
+  "whole_machine_restart": "PASS: one explicitly authorized normal reboot on 2026-11-14; see 91-whole-host-reboot-acceptance.md",
   "runner_overlay": {
     "file": "agent_runner/adapters/deepseek.py",
     "commit": "99616b9a289f30876aa949a174adccc25aefef72",
@@ -212,5 +212,23 @@
       "72-final-ui-http.json"
     ],
     "static_primary_backup_evidence": "70-maintenance-backup-result.json"
+  },
+  "reboot_acceptance": {
+    "date_local": "2026-11-14",
+    "verdict": "PASS",
+    "host": "10.10.99.99",
+    "reboot_count": 1,
+    "before_boot_id": "7b402537-ac56-4957-b4ad-fc8632d148db",
+    "after_boot_id": "24e4247d-cfe9-4001-a26a-35268e37bf8c",
+    "automatic_service_recovery": true,
+    "manual_service_starts": 0,
+    "same_container_image_volumes": true,
+    "all_old_data_and_native_identities_preserved": true,
+    "five_text_continuations": "5/5 PASS",
+    "tools_called": 0,
+    "only_authorized_five_runs_added": true,
+    "old_unknown_preserved_not_replayed": true,
+    "g05_retested": false,
+    "report": "91-whole-host-reboot-acceptance.md"
   }
 }

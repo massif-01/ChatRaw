@@ -1,0 +1,45 @@
+{
+  "agent": "deepseek",
+  "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+  "expected_marker": "D-F171D93450",
+  "runner_session": "6b359b8f76d94d06bc46868570909d22",
+  "before_native_identity": "session-1625a242811e4e3abbc5166a0556e39b",
+  "started_at_utc": "2026-11-13T16:09:48.267407+00:00",
+  "run_id": "8076dc429478476db361063436dfe4ab",
+  "binding_before": {
+    "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+    "session_id": "6b359b8f76d94d06bc46868570909d22",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "6b359b8f76d94d06bc46868570909d22",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "df6ad600c2834b1896599d3d2c4f2745"
+  },
+  "snapshot": {
+    "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+    "session_id": "6b359b8f76d94d06bc46868570909d22",
+    "status": "completed",
+    "last_seq": 6,
+    "run_id": "8076dc429478476db361063436dfe4ab",
+    "interactions": [],
+    "final_text": "D-F171D93450"
+  },
+  "elapsed_seconds": 10.571,
+  "tool_events": 0,
+  "binding_after": {
+    "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+    "session_id": "6b359b8f76d94d06bc46868570909d22",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "6b359b8f76d94d06bc46868570909d22",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "8076dc429478476db361063436dfe4ab"
+  },
+  "verdict": "PASS"
+}
