@@ -1,0 +1,12 @@
+{"kind":"metadata","date":"2026-11-13","base_url":"http://10.10.99.98:58000","server":"vLLM 0.21.1rc1.dev104+g301d98647","model":"RM-01 VLM","max_model_len":262144,"model_catalog_authentication":"none in probe","host":"macOS arm64","python":"3.14.2","codex_cli":"0.153.4","claude_agent_sdk":"0.2.180","bundled_claude_code":"2.1.321","provenance":"sanitized tool output and selected temporary native transcript events"}
+{"kind":"http","path":"/v1/chat/completions","case":"text","status":200,"sse_terminal":"[DONE]","finish_reason":"stop","text":"READY","seconds":0.57}
+{"kind":"http","path":"/v1/responses","case":"text","status":200,"sse_terminal":"response.completed","text":"READY","seconds":0.57}
+{"kind":"http","path":"/v1/messages","case":"text","status":200,"sse_terminal":"message_stop","stop_reason":"end_turn","text":"READY","seconds":0.47}
+{"kind":"http","path":"/v1/chat/completions","case":"named tool","status":200,"tool":"probe_echo","arguments":{"value":"ready"},"finish_reason":"stop","tool_result_source":"manually supplied","followup_text":"PROBE_OK","followup_exact":true}
+{"kind":"http","path":"/v1/responses","case":"named tool","status":200,"tool":"probe_echo","arguments":{"value":"ready"},"sse_terminal":"response.completed","tool_result_source":"manually supplied","followup_text":"PROBE_OK","followup_exact":true}
+{"kind":"http","path":"/v1/messages?beta=true","case":"named tool","status":200,"tool":"probe_echo","arguments":{"value":"ready"},"stop_reason":"end_turn","tool_result_source":"manually supplied","followup_text":"PROBE_OK","followup_exact":true}
+{"kind":"http","path":"/v1/messages/count_tokens","status":200,"input_tokens":13}
+{"kind":"native","agent":"codex","proxy":"system default","case":"text and tool attempts","status":"failed","http":503,"path":"/v1/responses"}
+{"kind":"native","agent":"claude","case":"read temp marker","status":"completed","tool":"Read","tool_started_at":"2026-11-13T13:18:35.451Z","tool_result_at":"2026-11-13T13:18:35.482Z","tool_error":false,"text":"RM98_NATIVE_OK","text_at":"2026-11-13T13:18:39.032Z"}
+{"kind":"native","agent":"codex","proxy":"NO_PROXY=10.10.99.98","case":"text","status":"completed","text":"READY","completed_at":"2026-11-13T13:19:54.435Z"}
+{"kind":"native","agent":"codex","proxy":"NO_PROXY=10.10.99.98","case":"read temp marker","status":"completed","tool":"exec_command","tool_call_at":"2026-11-13T13:19:58.305Z","tool_result_at":"2026-11-13T13:19:58.393Z","marker_in_tool_result":true,"text":"RM98_NATIVE_OK","completed_at":"2026-11-13T13:20:00.909Z"}
