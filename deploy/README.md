@@ -117,7 +117,7 @@ sudo install -m 0640 -o root -g rm01 deploy/runner-environment.example /etc/chat
 
 配置中的 `workspaces` 可登记已有项目，例如 `{"project-a":{"path":"/srv/projects/a","label":"Project A"}}`。未选择项目时，每个聊天获得独立工作目录。工作目录并不等于权限沙箱；原生 Agent 的权限与审批仍然生效。
 
-宿主配置包括程序路径、home、会话根目录和 DeepSeek `patches`。这些配置只用于新会话；旧聊天继续使用建立时保存的宿主配置。网页中的模型、provider、推理强度、DeepSeek `max_tokens` 等在下一轮空闲会话恢复时生效，不替换原生会话 ID。
+宿主配置包括程序路径、home、会话根目录和 DeepSeek `provider`、`patches`。这些配置只用于新会话；旧聊天继续使用建立时保存的宿主配置。网页允许编辑的模型、推理强度、DeepSeek `max_tokens` 及其他 Agent 的 provider 等在下一轮空闲会话恢复时生效，不替换原生会话 ID。DeepSeek 的 provider 仅由宿主管理员配置。
 
 ## 4. 接入模型：以 RM-01 本地服务为例
 
@@ -209,15 +209,25 @@ plugins:
 
 ### DeepSeek Harness
 
-环境中 `DEEPSEEK_BASE_URL=http://10.10.99.98:58000/v1`；当前 SDK 使用 Messages 协议。网页中 model 填 `RM-01 VLM`，`max_tokens` 填 **8192**。省略预算会沿用原生默认值；现场默认256000曾使输入加输出预算超过模型上限。
+RM-01 的本地服务使用 Harness 内置 `llm-pi-ai` 的 OpenAI-compatible 路由。此前默认 Messages 路由发送的 `thinking`、`output_config` 未被该服务转换，实际未打开模型的思考模板；固定请求因此出现错误工具格式和空参数。新路由用原生配置正确传递 `chat_template_kwargs.enable_thinking`，不修改模型服务或审批机制。详见[协议定位](../docs/agent-platform/handoffs/C-local-model-98/deepseek-messages-thinking.md)。
 
-未知自定义模型在原生目录中默认仅支持文本。需要该 VLM 的图片能力时：
+1. 将 [v2 宿主 patch](../docs/agent-platform/handoffs/D-field/deepseek-rm01-models-v2.patch.yml)安装为 `/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml`，核对端点、模型名、上下文上限和图片模态。文件由 root 管理、服务账户主组可读，0440。
+2. 在现有宿主 `agents.deepseek` 中合并以下配置，保留原 `dsh_home`。环境中保留 `DEEPSEEK_API_KEY`；本地无鉴权服务可用占位值，其他服务使用其真实凭据。v2 的端点由 patch 的 `baseURL` 决定。
 
-1. 将 [deepseek-rm01-models-v1.patch.example.yml](deepseek-rm01-models-v1.patch.example.yml)复制到 `/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml`，核对模型名和上下文上限。文件由 root 管理、服务账户主组可读，0440。
-2. 在宿主 `agents.deepseek` 中增加 `"patches": ["/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml"]`。这不是网页设置，也不能接受浏览器传入的任意路径。
-3. 在维护窗口加载新配置，然后**新建 Agent 聊天**。旧聊天不回填该结构性配置。
+```json
+{
+  "provider": "rm01-qwen",
+  "model": "RM-01 VLM",
+  "reasoning_effort": "high",
+  "max_tokens": 8192,
+  "patches": ["/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"]
+}
+```
 
-已被会话引用的版本化 patch 文件保持内容稳定；修改模型目录时另建版本文件并改用新路径。保留旧文件，供原会话恢复。
+3. 网页中 model 填 `RM-01 VLM`，`max_tokens` 填 **8192**，推理强度用 `high` 或留空继承宿主设置。公开设置会覆盖宿主默认，须核对有效值。该模型的 `off` 会如实关闭思考模板，不能把它当作已验证相同工具表现的设置。省略预算会沿用原生默认值；现场默认256000曾使输入加输出预算超过模型上限。
+4. 在无执行任务的维护窗口重启 Runner，然后**新建 Agent 聊天**。不需要修改或重启共享模型服务。通过实际待审卡片确认完整命令与目录，再由用户选择拒绝或仅允许一次。
+
+`provider` 和 `patches` 都不接受浏览器编辑。旧聊天不回填这些结构性配置；保留原 [v1 patch](deepseek-rm01-models-v1.patch.example.yml) 文件及其内容供旧会话恢复。省略 provider 的配置仍使用原生默认 `deepseek-official`，其 `DEEPSEEK_BASE_URL` 和认证方式不变。不要用覆盖旧 patch 文件的方式迁移会话。
 
 ### 普通聊天
 

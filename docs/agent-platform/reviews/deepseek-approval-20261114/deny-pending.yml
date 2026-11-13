@@ -1,0 +1,37 @@
+  - dialog "Allow DeepSeek tool call?" [ref=f1e287]:
+    - generic [ref=f1e288]:
+      - banner [ref=f1e289]:
+        - generic [ref=f1e290]:
+          - text: Approval
+          - heading "Allow DeepSeek tool call?" [level=2] [ref=f1e291]
+        - button "Close" [active] [ref=f1e292] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f1e293]: 
+      - generic [ref=f1e294]:
+        - generic [ref=f1e295]:
+          - paragraph [ref=f1e296]:
+            - text: "Requested sandbox mode:"
+            - code [ref=f1e297]: danger-full-access
+            - text: .
+          - paragraph [ref=f1e298]: The workspace-write sandbox backend is unavailable on this host, so the exact same printf command needs a one-time approval to run unconfined and create the marker file in the session working directory.
+        - generic [ref=f1e299]:
+          - term [ref=f1e300]: Tool
+          - definition [ref=f1e301]: bash
+          - term [ref=f1e302]: Workspace
+          - definition [ref=f1e303]: /var/lib/chatraw-runner/workspaces/f2cc630c894b48298de054264ed19e9b
+          - term [ref=f1e304]: Command
+          - definition [ref=f1e305]:
+            - generic [ref=f1e306]: printf %s A_NATIVE_71ec2936781f > deny-046fe2774d92425ba06d0b72790fda82.txt
+        - group "Select a decision" [ref=f1e307]:
+          - generic [ref=f1e309] [cursor=pointer]:
+            - radio "Allow once once" [ref=f1e310]
+            - generic [ref=f1e311]:
+              - text: Allow once
+              - generic [ref=f1e312]: once
+          - generic [ref=f1e313] [cursor=pointer]:
+            - radio "Deny once" [ref=f1e314]
+            - generic [ref=f1e315]:
+              - text: Deny
+              - generic [ref=f1e316]: once
+      - contentinfo [ref=f1e317]:
+        - button "Cancel request" [ref=f1e318] [cursor=pointer]
+        - button "Send response" [disabled] [ref=f1e319]

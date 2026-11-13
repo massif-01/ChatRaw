@@ -1,0 +1,42 @@
+{
+  "checked_at": "2026-11-13T17:12:31.464697+00:00",
+  "runs": [
+    {
+      "id": "4972775a3e0c453582494e9c7e5544e5",
+      "session_id": "f2cc630c894b48298de054264ed19e9b",
+      "status": "completed",
+      "interactions": [
+        {
+          "id": "e4edc52ce3ee4062acea599096ae14d1",
+          "state": "answered",
+          "reply": "{\"decision_id\":\"rejected\"}",
+          "receipt": "accepted"
+        }
+      ],
+      "workspace_files": {}
+    },
+    {
+      "id": "7af45839755449bc8433749171e391f3",
+      "session_id": "c05eaf1a083b4df5976b0acb573b21d9",
+      "status": "completed",
+      "interactions": [
+        {
+          "id": "5f12c76ce95743f2b83af4ddfd5c8d18",
+          "state": "answered",
+          "reply": "{\"decision_id\":\"allowed-once\"}",
+          "receipt": "accepted"
+        }
+      ],
+      "workspace_files": {
+        "allow-5b717a98b0df426f85368bb6cb3d40fc.txt": "A_NATIVE_e253fd617ca8"
+      }
+    }
+  ],
+  "adapter_sha256": "03635326fac7ec64be64e6bafdbf4f0b52fb1a76e03dc5378806938d9284f934",
+  "v2_sha256": "26b6a8db9895ed5444e60fb2f8d6ef8e7ed23306265c38704948e0d4e7c766b3",
+  "runner": "active",
+  "old_unknown": {
+    "id": "e05b8525931c4d1585cae79770c7be3d",
+    "status": "unknown"
+  }
+}
