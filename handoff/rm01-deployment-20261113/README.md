@@ -69,3 +69,5 @@ Codex 的首次 sandbox pwd 被宿主 AppArmor unprivileged_userns 的 net_admin
 后续已部署99616b9的DeepSeek宿主patch支持，新会话真实PNG挑战通过；四种Agent原生压缩已只读核实。最新版本、原unknown恢复状态及残余限制见 [49号报告](49-deepseek-patches-and-compact-verification.md)。此前各阶段记录和失败证据保留。
 
 Hermes图标已按B单文件资产同时更新镜像市场源和持久安装副本，当前主镜像为b5cafcd-icon；原生服务与会话不变，详见 [56号上线记录](56-hermes-icon-rollout.md)。
+
+Codex e889688前台工具停止修复已部署，新会话单轮现场验收通过，完整延时后无late；旧unknown保持隔离。见 [63号报告](63-codex-foreground-stop.md)。

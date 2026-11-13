@@ -105,7 +105,7 @@
     "run_id": "e05b8525931c4d1585cae79770c7be3d",
     "status": "unknown",
     "error_after_runner_recovery": "recovery_unavailable",
-    "pending_codex_fix_deployed": false
+    "pending_codex_fix_deployed": true
   },
   "hermes_icon_overlay": {
     "source_commit": "b5cafcde302c33535f4359faf005fc8150b94734",
@@ -116,5 +116,13 @@
     "market_http_verified": true,
     "plugin_settings_and_sessions_preserved": true,
     "native_services_restarted": false
+  },
+  "codex_stop_fix": {
+    "commit": "e889688fd12f9342c0d31271d9baa72a53c8907f",
+    "sha256": "8778f84e49892f8a64dc78ffe95700b84132074b94fa2eae8d18c737beb0a972",
+    "run_id": "26c25ba7d3604bd1baa6b6c2f0bda1d7",
+    "verdict": "PASS",
+    "observed_full_delay_seconds": 32.08458,
+    "old_unknown_retained": true
   }
 }

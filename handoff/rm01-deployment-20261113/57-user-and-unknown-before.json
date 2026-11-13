@@ -1,0 +1,30 @@
+{
+  "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+  "messages_hash": "e4aefaad7e89b7e3590c9203162016bbff75c32a5a5ae1807d5fbb7724862841",
+  "message_count": 12,
+  "binding": {
+    "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+    "session_id": "b7fea9a288d84d1489ff634e753a6652",
+    "agent_id": "codex",
+    "workspace": {
+      "id": "b7fea9a288d84d1489ff634e753a6652",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "5bb85815054a4cf4ae110322532b59c7"
+  },
+  "old_unknown": {
+    "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a",
+    "session_id": "c5f1cad44b9b463385077611859b4cc4",
+    "status": "unknown",
+    "last_seq": 13,
+    "run_id": "e05b8525931c4d1585cae79770c7be3d",
+    "interactions": [],
+    "error": {
+      "code": "recovery_unavailable",
+      "message": "Native run state could not be verified",
+      "retryable": false
+    }
+  }
+}

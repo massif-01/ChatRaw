@@ -1,0 +1,15 @@
+# Codex 前台工具停止：修复部署及单轮现场验收
+
+2026-11-13，e889688fd12f9342c0d31271d9baa72a53c8907f已部署到.99。仅更新宿主codex.py，SHA2568778f84e49892f8a64dc78ffe95700b84132074b94fa2eae8d18c737beb0a972。部署前没有真实running/waiting用户任务，唯一非终态是原D测试unknown。必要的Runner重启后原unknown仍保留，未清账；用户原聊天消息哈希与绑定一致，其余适配器/宿主配置及所有原会话binding/base_config均一致。
+
+新验收聊天8c7e483a-a531-4b59-959f-a74fdab2eafa，Runner session88053d718e83416db643f710cb2c63af，native thread01a1d563-5904-7820-a73a-79d127bb0584，run26c25ba7d3604bd1baa6b6c2f0bda1d7。
+
+只执行一次验收，不做第二轮重试。使用D现有verify.py的codex stop场景，timeout150秒，结果和精确命令在59-codex-stop-e889688/result.json。命令先核对pwd等于该managed目录，再以set -C写唯一started标记，sleep30秒后才写late；没有其他文件目标。
+
+原生首次exec_command因宿主bwrap限制在启动沙箱时失败，未执行目标命令；随后同一精确命令请求单次批准。验证审批命令经bash -lc封装解析后与预期字符串完全一致，批准次数为1。真实目标命令启动后观察到started且late不存在；14:51:02.059814Z发出cancel，14:51:02.222772Z产生唯一done=cancelled。native rollout记录相同command、yield_time_ms30000、aborted by user和同turn的turn_aborted。不能把这两次原生尝试写成只有一次工具调用；实际写入标记的目标命令仅在获批后执行。
+
+从首次观察started到最终只读复查经过32.08458秒，覆盖完整30秒延时；started内容匹配，late仍不存在。之后/proc只看到该workspace的Codex Node启动器和app-server，没有bash/sleep进程。公开日志有一个工具开始、一个批准及唯一cancelled终态；没有tool_completed事件，不将缺失事件补写成进程退出证据。结论由经审查的原生停止确认路径、cancelled、原生中断记录和完整延时后的文件/进程检查共同支持。
+
+结果PASS，现场模型窗口已释放。原unknown e05b8525931c4d1585cae79770c7be3d未作追溯终态；Codex压缩后续接兼容问题不属于本修复，仍单列。未改.98、添加代理或整机重启。
+
+证据：57部署前版本/用户与宿主快照；58部署脚本/日志；59单次完整验收；60原会话和非目标文件对比；61原生rollout节选；62最终状态、精确命令/延时判断及进程/用户数据核对。

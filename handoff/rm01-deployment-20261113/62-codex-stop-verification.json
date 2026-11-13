@@ -1,0 +1,45 @@
+{
+  "outcome": "PASS",
+  "test_rounds": 1,
+  "runner_session": "88053d718e83416db643f710cb2c63af",
+  "run_id": "26c25ba7d3604bd1baa6b6c2f0bda1d7",
+  "native": {
+    "run_id": "26c25ba7d3604bd1baa6b6c2f0bda1d7",
+    "stop_requested": true,
+    "thread_id": "01a1d563-5904-7820-a73a-79d127bb0584",
+    "turn_id": "01a1d563-592f-79b3-93e6-1bb3567c4ba6"
+  },
+  "approval_exact_command": true,
+  "approval_count": 1,
+  "single_cancelled_done": true,
+  "native_attempts": 2,
+  "first_attempt": "sandbox startup denied before command execution",
+  "executing_attempt": "same command approved once",
+  "observed_full_delay_seconds": 32.08458,
+  "late_missing": true,
+  "native_turn_aborted": true,
+  "remaining_workspace_processes": [
+    {
+      "pid": 63788,
+      "cwd": "/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af",
+      "argv": [
+        "node",
+        "/opt/chatraw-agents/codex/node_modules/.bin/codex",
+        "app-server",
+        "--listen",
+        "stdio://"
+      ]
+    },
+    {
+      "pid": 63796,
+      "cwd": "/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af",
+      "argv": [
+        "/opt/chatraw-agents/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex",
+        "app-server",
+        "--listen",
+        "stdio://"
+      ]
+    }
+  ],
+  "test_script_sha256": "016a12bbb8615d2525a06ff5ed50161fb626bd61443f6381c7726b261d3832bb"
+}
