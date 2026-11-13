@@ -1,11 +1,17 @@
 // Exercise renderer and bundled plugins in a real browser after a streaming pause.
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright-core';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
 
 const root = new URL('../', import.meta.url);
-const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || undefined });
+const engine = process.env.CHATRAW_TEST_ENGINE || 'chromium';
+const playwright = process.env.CHATRAW_PLAYWRIGHT_MODULE
+    ? pathToFileURL(resolve(process.env.CHATRAW_PLAYWRIGHT_MODULE)).href
+    : 'playwright-core';
+const browsers = await import(playwright);
+const executablePath = engine === 'firefox' ? process.env.FIREFOX_PATH : process.env.CHROME_PATH;
+const browser = await browsers[engine].launch({ executablePath, headless: true });
 const page = await browser.newPage();
 const origin = 'http://chatraw-render.test';
 const response = '<div class="messages"><div class="message"><div class="message-content">' +
@@ -97,7 +103,7 @@ try {
     assert.equal(await page.locator('#reply .markdown-reveal').count(), 0);
     await render('', false);
     assert.equal(await page.locator('#reply').innerText(), '');
-    console.log('Streaming Markdown plugin regression passed on Chromium ' + browser.version());
+    console.log('Streaming Markdown plugin regression passed on ' + engine + ' ' + browser.version());
 } finally {
     await browser.close();
 }

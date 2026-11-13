@@ -1,0 +1,220 @@
+{
+  "read_only": {
+    "109": {
+      "browser": {
+        "product": "HeadlessChrome/109.0.5414.46",
+        "revision": "@6e36b77363ef3febbe792af680fa1367993ddcf0",
+        "os": "darwin",
+        "arch": "arm64"
+      },
+      "cases": [
+        {
+          "viewport": [
+            1280,
+            850
+          ],
+          "settings": {
+            "hermes": 3,
+            "codex": 3,
+            "claude": 2,
+            "pi": 3,
+            "deepseek": 2
+          },
+          "horizontal_overflow": false,
+          "settings_scrolled": []
+        },
+        {
+          "viewport": [
+            320,
+            740
+          ],
+          "settings": {
+            "hermes": 3,
+            "codex": 3,
+            "claude": 2,
+            "pi": 3,
+            "deepseek": 2
+          },
+          "horizontal_overflow": false,
+          "settings_scrolled": []
+        },
+        {
+          "viewport": [
+            390,
+            844
+          ],
+          "settings": {
+            "hermes": 3,
+            "codex": 3,
+            "claude": 2,
+            "pi": 3,
+            "deepseek": 2
+          },
+          "horizontal_overflow": false,
+          "settings_scrolled": []
+        },
+        {
+          "viewport": [
+            740,
+            320
+          ],
+          "settings": {
+            "hermes": 3,
+            "codex": 3,
+            "claude": 2,
+            "pi": 3,
+            "deepseek": 2
+          },
+          "horizontal_overflow": false,
+          "settings_scrolled": [
+            "hermes",
+            "codex",
+            "claude",
+            "pi",
+            "deepseek"
+          ]
+        }
+      ],
+      "external_requests": 0,
+      "write_attempts": 0,
+      "errors": [],
+      "same_origin_resources": 35
+    },
+    "157": {
+      "browser": {
+        "product": "Chrome/157.0.8103.51",
+        "revision": "@653674df293788cf4932c40d914e9e15b41a2d31",
+        "os": "darwin",
+        "arch": "arm64"
+      },
+      "cases": [
+        {
+          "viewport": [
+            1280,
+            850
+          ],
+          "settings": {
+            "hermes": 3,
+            "codex": 3,
+            "claude": 2,
+            "pi": 3,
+            "deepseek": 2
+          },
+          "horizontal_overflow": false,
+          "settings_scrolled": []
+        },
+        {
+          "viewport": [
+            320,
+            740
+          ],
+          "settings": {
+            "hermes": 3,
+            "codex": 3,
+            "claude": 2,
+            "pi": 3,
+            "deepseek": 2
+          },
+          "horizontal_overflow": false,
+          "settings_scrolled": []
+        },
+        {
+          "viewport": [
+            390,
+            844
+          ],
+          "settings": {
+            "hermes": 3,
+            "codex": 3,
+            "claude": 2,
+            "pi": 3,
+            "deepseek": 2
+          },
+          "horizontal_overflow": false,
+          "settings_scrolled": []
+        },
+        {
+          "viewport": [
+            740,
+            320
+          ],
+          "settings": {
+            "hermes": 3,
+            "codex": 3,
+            "claude": 2,
+            "pi": 3,
+            "deepseek": 2
+          },
+          "horizontal_overflow": false,
+          "settings_scrolled": [
+            "hermes",
+            "codex",
+            "claude",
+            "pi",
+            "deepseek"
+          ]
+        }
+      ],
+      "external_requests": 0,
+      "write_attempts": 0,
+      "errors": [],
+      "same_origin_resources": 35
+    }
+  },
+  "live_codex": {
+    "browser": {
+      "product": "HeadlessChrome/109.0.5414.46",
+      "revision": "@6e36b77363ef3febbe792af680fa1367993ddcf0",
+      "os": "darwin",
+      "arch": "arm64"
+    },
+    "chat_id": "b1a8f3a5-2234-4945-bae0-1f4a4b4372d6",
+    "run_id": "2b51cd7b85114cf7bdc0d7ada6d8412c",
+    "terminal": "completed",
+    "visible_updates": 9,
+    "copy_matches": true,
+    "external_requests": 0,
+    "rejected_writes": [],
+    "errors": []
+  },
+  "run_details": {
+    "browser": {
+      "product": "HeadlessChrome/109.0.5414.46",
+      "revision": "@6e36b77363ef3febbe792af680fa1367993ddcf0",
+      "os": "darwin",
+      "arch": "arm64"
+    },
+    "assets": {
+      "index": "86bd901644a82b24b4f145d369332da40ddab4e6a16ccd623b148cdbe3068626",
+      "agents": "5be914c38b03b24a11e349d7fc6150cf702deb6975f602a8258262106196ed85"
+    },
+    "cases": [
+      {
+        "id": "41dfa460416e41ed8f37c753f0045709",
+        "kind": "text-1",
+        "loadingAfterSnapshot": true,
+        "status": "No additional details for this run.",
+        "contentHash": "ca858ee111809ac0a8ce263afb8aaa7f7c69515ec5c236930b2a9d4528b287fc"
+      },
+      {
+        "id": "5bb85815054a4cf4ae110322532b59c7",
+        "kind": "text-2",
+        "loadingAfterSnapshot": true,
+        "status": "No additional details for this run.",
+        "contentHash": "1efd7d28f8f6c947c62c643fb429f9948fb9d9fd628ffb083d8be7206c8b78c1"
+      },
+      {
+        "id": "8fd852ee00c24c0985bd000d02ffafeb",
+        "kind": "tools",
+        "loadingAfterSnapshot": true,
+        "tools": 1,
+        "approvals": 1,
+        "contentHash": "00d4b3593d212ac4e656a5c1146ff394425d51ae150c073cda5145dc6c187744"
+      }
+    ],
+    "message_collection_sha256": "6d6ca795543397d9eedc5b19ba16e4474066794f4f36be00779312ad5553338b",
+    "writes": [],
+    "errors": [],
+    "external_requests": 0
+  }
+}

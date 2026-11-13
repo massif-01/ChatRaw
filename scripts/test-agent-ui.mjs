@@ -1,12 +1,18 @@
 import assert from 'node:assert/strict';
-import { chromium } from 'playwright-core';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
 import { startFixture } from './fixtures/browser-server.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const evidence = process.env.CHATRAW_EVIDENCE_DIR || root + 'outputs/agent-ui';
 await mkdir(evidence, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || undefined, headless: true });
+const engine = process.env.CHATRAW_TEST_ENGINE || 'chromium';
+const playwright = process.env.CHATRAW_PLAYWRIGHT_MODULE
+    ? pathToFileURL(resolve(process.env.CHATRAW_PLAYWRIGHT_MODULE)).href
+    : 'playwright-core';
+const browsers = await import(playwright);
+const executablePath = engine === 'firefox' ? process.env.FIREFOX_PATH : process.env.CHROME_PATH;
+const browser = await browsers[engine].launch({ executablePath, headless: true });
 let fixture;
 try {
     fixture = await startFixture(fileURLToPath(new URL('./fixtures/agent-browser.py', import.meta.url)), { cwd: root });
@@ -15,7 +21,7 @@ try {
     throw error;
 }
 const { origin } = fixture;
-const context = await browser.newContext({ hasTouch: true, viewport: { width: 1280, height: 860 }, acceptDownloads: true });
+const context = await browser.newContext({ hasTouch: engine === 'chromium', viewport: { width: 1280, height: 860 }, acceptDownloads: true });
 await context.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
 const page = await context.newPage();
 page.setDefaultTimeout(7000);
@@ -142,7 +148,11 @@ try {
     await question.getByRole('button', { name: 'Close', exact: true }).last().click();
     assert.equal((await logs()).filter(row => String(row[1]).includes('/reply')).length, 0);
     await page.locator('.agent-request:visible').filter({ hasText: 'Choose how to run the checks' }).click();
-    await question.getByRole('button', { name: 'Send response' }).click();
+    const [questionReply] = await Promise.all([
+        page.waitForResponse(response => response.url().endsWith('/questions-1/reply')),
+        question.getByRole('button', { name: 'Send response' }).click(),
+    ]);
+    assert.ok(questionReply.ok());
     const answer = (await logs()).find(row => String(row[1]).endsWith('/questions-1/reply'))?.[2];
     assert.deepEqual(answer, { answers: [
         { question_id: 'single', option_ids: ['fast'] },
@@ -245,7 +255,7 @@ try {
 
     const externalErrors = errors.filter(message => !message.includes('net::ERR_ABORTED'));
     assert.deepEqual(externalErrors, []);
-    console.log('Browser', browser.version(), 'five plugins, mode binding, both sends, admission/replay, attachments, questions/approval, expiry, compact, Markdown and responsive screenshots passed');
+    console.log(engine, browser.version(), 'five plugins, mode binding, both sends, admission/replay, attachments, questions/approval, expiry, compact, Markdown and responsive screenshots passed');
 } catch (error) {
     await page.screenshot({ path: evidence + '/test-failure.png', fullPage: true });
     await writeFile(evidence + '/test-failure.html', await page.content());

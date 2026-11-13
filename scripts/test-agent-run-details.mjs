@@ -5,7 +5,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { startFixture } from './fixtures/browser-server.mjs';
 
 const engine = process.env.CHATRAW_TEST_ENGINE || 'chromium';
-const executablePath = engine === 'webkit' ? process.env.WEBKIT_PATH : process.env.CHROME_PATH;
+const executablePath = {
+    chromium: process.env.CHROME_PATH,
+    webkit: process.env.WEBKIT_PATH,
+    firefox: process.env.FIREFOX_PATH,
+}[engine];
 const playwright = process.env.CHATRAW_PLAYWRIGHT_MODULE
     ? pathToFileURL(resolve(process.env.CHATRAW_PLAYWRIGHT_MODULE)).href
     : 'playwright-core';
