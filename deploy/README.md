@@ -121,6 +121,8 @@ sudo install -m 0640 -o root -g rm01 deploy/runner-environment.example /etc/chat
 
 ## 4. 接入模型：以 RM-01 本地服务为例
 
+官方 DeepSeek Flash 的独立配置与本轮实测范围见[官方复验记录](../docs/agent-platform/reviews/official-flash-20261114/README.md)、[Harness/Pi 配置](../docs/agent-platform/handoffs/D-field/deepseek-official-flash.md)和[Codex/Claude 配置](../docs/agent-platform/handoffs/C-local-model-98/deepseek-official-codex-claude.md)。这些是可选的独立 provider 配置，不代表现有生产会话已切换；按真实模型能力和价格选用，凭据留在受限宿主环境中。
+
 下面例子对应已验证服务 `http://10.10.99.98:58000`、精确模型名 `RM-01 VLM`，上下文上限262144。该局域网端点无需认证；示例中的占位 key 只用于满足 SDK 格式检查。其他服务必须使用它实际要求的认证，不能照搬无鉴权配置。
 
 环境文件中的 `NO_PROXY` 和 `no_proxy` 应覆盖回环地址及模型、ChatRaw 的实际内网地址，避免局域网请求被账户代理转发。此处只设置项目服务环境，不修改系统全局代理。
