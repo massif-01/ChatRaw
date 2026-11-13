@@ -257,5 +257,23 @@
     "runner_restart_only": true,
     "no_98_or_sdk_modifications": true,
     "final_state": "105-deepseek-v2-final-state.json"
+  },
+  "deepseek_final_summary_diagnostic": {
+    "date_local": "2026-11-14",
+    "verdict": "NOT_FIXED",
+    "valid_generations": 3,
+    "validation_only_http400": 1,
+    "baseline": "Incorrect denial of approved escalation reproduced",
+    "exit0_only": "8192-token length termination; no final text to assess",
+    "exit0_and_approval": "Incorrect escalation denial reproduced despite factual audit line",
+    "tool_execution": 0,
+    "status_extension_deployed": false,
+    "production_configuration_changed": false,
+    "original_chat_replayed_or_modified": false,
+    "further_generation_stopped": true,
+    "report": "112-deepseek-final-summary-three-arm-results.md",
+    "public_model_identity": "113-summary-diagnostic-model-identity.json",
+    "raw_evidence_location": "Private temporary directory; hashes and minimal excerpts only in repository",
+    "g05_execution_acceptance_unchanged": true
   }
 }

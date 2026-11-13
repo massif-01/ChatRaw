@@ -1,0 +1,47 @@
+{
+  "source_before": {
+    "source_native_home": "/var/lib/chatraw-runner/deepseek/session-43af9254637f4e6c83a2fabe88a511b8",
+    "source_session_relative_directory": "sessions/--var-lib-chatraw-runner-workspaces-c05eaf1a083b4df5976b0acb573b21d9--/session-43af9254637f4e6c83a2fabe88a511b8",
+    "files": {
+      "sessions/--var-lib-chatraw-runner-workspaces-c05eaf1a083b4df5976b0acb573b21d9--/session-43af9254637f4e6c83a2fabe88a511b8/session.lock": {
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "sessions/--var-lib-chatraw-runner-workspaces-c05eaf1a083b4df5976b0acb573b21d9--/session-43af9254637f4e6c83a2fabe88a511b8/session.v4.jsonl.zstd": {
+        "size": 44708,
+        "sha256": "269bdccc581a88d50fcedd4d495172c6133e4ed8cac9df6963569ff18dcafb21"
+      }
+    },
+    "sdk": "0.2.2rc2",
+    "runtime": "0.2.2rc2",
+    "v2_patch_sha256": "26b6a8db9895ed5444e60fb2f8d6ef8e7ed23306265c38704948e0d4e7c766b3"
+  },
+  "source_after": {
+    "source_native_home": "/var/lib/chatraw-runner/deepseek/session-43af9254637f4e6c83a2fabe88a511b8",
+    "source_session_relative_directory": "sessions/--var-lib-chatraw-runner-workspaces-c05eaf1a083b4df5976b0acb573b21d9--/session-43af9254637f4e6c83a2fabe88a511b8",
+    "files": {
+      "sessions/--var-lib-chatraw-runner-workspaces-c05eaf1a083b4df5976b0acb573b21d9--/session-43af9254637f4e6c83a2fabe88a511b8/session.lock": {
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "sessions/--var-lib-chatraw-runner-workspaces-c05eaf1a083b4df5976b0acb573b21d9--/session-43af9254637f4e6c83a2fabe88a511b8/session.v4.jsonl.zstd": {
+        "size": 44708,
+        "sha256": "269bdccc581a88d50fcedd4d495172c6133e4ed8cac9df6963569ff18dcafb21"
+      }
+    },
+    "sdk": "0.2.2rc2",
+    "runtime": "0.2.2rc2",
+    "v2_patch_sha256": "26b6a8db9895ed5444e60fb2f8d6ef8e7ed23306265c38704948e0d4e7c766b3"
+  },
+  "source_unchanged": true,
+  "local_copies_hash_match": true,
+  "local_native_home": "/tmp/chatraw-deepseek-summary-bqs7enr3/native-home",
+  "excluded": [
+    "credentials",
+    "Runner DB",
+    "workspace",
+    "other sessions",
+    "native profiles/config"
+  ],
+  "model_requests": 0
+}
