@@ -37,6 +37,10 @@ window.ChatRawAgents = (() => {
             program: 'Program', protocol: 'Protocol', authentication: 'Authentication', model_request: 'Model request',
             passed: 'Passed', not_checked: 'Not checked', hostSettings: 'Executable, authentication, and project access are managed on the execution host.',
             details: 'Run details', tools: 'Tools', artifacts: 'Files from this run', usage: 'Usage',
+            detailsLoading: 'Loading run details…', detailsEmpty: 'No additional details for this run.',
+            detailsPending: 'No additional details yet.',
+            detailsReconnecting: 'Could not load all run details. Reconnecting…',
+            detailsUnavailable: 'Could not load run details. Reload the chat to try again.',
             inputTokens: 'Input tokens', outputTokens: 'Output tokens', cost: 'Cost',
             question: 'Question', approval: 'Approval', plan: 'Plan review', answer: 'Answer',
             custom: 'Write an answer', recommended: 'Recommended', decision: 'Select a decision',
@@ -68,6 +72,10 @@ window.ChatRawAgents = (() => {
             program: '程序', protocol: '协议', authentication: '认证', model_request: '模型请求',
             passed: '通过', not_checked: '未检查', hostSettings: '可执行程序、认证和项目访问权限由执行主机管理。',
             details: '任务详情', tools: '工具', artifacts: '本次任务生成的文件', usage: '用量',
+            detailsLoading: '正在加载任务详情…', detailsEmpty: '本轮没有额外详情。',
+            detailsPending: '暂无额外详情。',
+            detailsReconnecting: '未能加载全部任务详情，正在重新连接…',
+            detailsUnavailable: '无法加载任务详情，请重新载入聊天后重试。',
             inputTokens: '输入 token', outputTokens: '输出 token', cost: '费用',
             question: '问题', approval: '审批', plan: '计划确认', answer: '回答',
             custom: '填写自定义答案', recommended: '建议选项', decision: '选择处理方式',
@@ -590,6 +598,24 @@ window.ChatRawAgents = (() => {
 
             openRunDetails(event, runId) {
                 if (event.currentTarget.open && this.agentId) this.showAgentRun(runId);
+            },
+
+            runDetailsStatus(message) {
+                const run = this.getMessageRun(message);
+                if (!run) return this.at(this.agentId ? 'detailsLoading' : 'detailsUnavailable');
+                if (run.disconnected) return this.at('detailsReconnecting');
+                // A terminal snapshot can arrive before tools and resolved interactions are replayed.
+                if (!run.done && (!run.authorized || run.seq < run.authoritySeq || terminal.has(run.status))) {
+                    return this.at('detailsLoading');
+                }
+                const hasDetails = run.reasoning.trim() || run.tools.length ||
+                    run.interactions.some(item => !item.open) || this.hasRunUsage(run);
+                return hasDetails ? '' : this.at(run.done ? 'detailsEmpty' : 'detailsPending');
+            },
+
+            hasRunUsage(run) {
+                const usage = run.usage;
+                return usage?.input_tokens != null || usage?.output_tokens != null || usage?.cost != null;
             },
 
             get agentAttachmentAccept() {

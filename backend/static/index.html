@@ -315,11 +315,13 @@
                                             </ul>
                                         </div>
                                     </template>
-                                    <details class="agent-run-details" @toggle="openRunDetails($event, msg.run_id)">
+                                    <details class="agent-run-details" x-show="!agentViewLoading" @toggle="openRunDetails($event, msg.run_id)">
                                         <summary x-text="at('details')"></summary>
+                                        <p class="agent-details-status" role="status" x-show="Boolean(runDetailsStatus(msg))"
+                                           x-text="runDetailsStatus(msg)"></p>
                                         <template x-for="run in [getMessageRun(msg)].filter(Boolean)" :key="run.id">
                                             <div class="agent-details-body">
-                                                <div class="agent-reasoning" x-show="Boolean(run.reasoning)">
+                                                <div class="agent-reasoning" x-show="Boolean(run.reasoning.trim())">
                                                     <strong x-text="t('thinkingProcess')"></strong>
                                                     <pre x-text="run.reasoning"></pre>
                                                 </div>
@@ -340,7 +342,7 @@
                                                         <i class="ri-arrow-right-s-line" aria-hidden="true"></i>
                                                     </button>
                                                 </template>
-                                                <dl class="agent-facts" x-show="Boolean(run.usage)">
+                                                <dl class="agent-facts" x-show="hasRunUsage(run)">
                                                     <dt x-show="run.usage?.input_tokens != null" x-text="at('inputTokens')"></dt>
                                                     <dd x-show="run.usage?.input_tokens != null" x-text="run.usage?.input_tokens"></dd>
                                                     <dt x-show="run.usage?.output_tokens != null" x-text="at('outputTokens')"></dt>
@@ -1304,7 +1306,7 @@
         }
     </script>
     <script src="stream-markdown.js?v=1"></script>
-    <script src="agents.js?v=1"></script>
+    <script src="agents.js?v=2"></script>
     <script src="app.min.js?v=8.0"></script>
 </body>
 </html>
