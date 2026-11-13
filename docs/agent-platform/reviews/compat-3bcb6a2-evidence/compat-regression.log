@@ -1,0 +1,17 @@
+test_host_setting_is_private_and_requires_a_fixed_responses_path (agent_runner.tests.test_c_responses_compat.InstructionNormalizationTests.test_host_setting_is_private_and_requires_a_fixed_responses_path) ... ok
+test_passthrough_for_requests_without_message_instructions (agent_runner.tests.test_c_responses_compat.InstructionNormalizationTests.test_passthrough_for_requests_without_message_instructions) ... ok
+test_preserves_order_and_non_instruction_items (agent_runner.tests.test_c_responses_compat.InstructionNormalizationTests.test_preserves_order_and_non_instruction_items) ... ok
+test_app_server_eof_releases_its_listener (agent_runner.tests.test_c_responses_compat.ResponsesEndpointTests.test_app_server_eof_releases_its_listener) ... Executing <Task pending name='Task-1' coro=<ResponsesEndpointTests.asyncSetUp() running at /private/tmp/chatraw-f-compat-3bcb6a2.ObcaY4/agent_runner/tests/test_c_responses_compat.py:104> wait_for=<_GatheringFuture pending cb=[Task.task_wakeup()] created at /opt/anaconda3/lib/python3.12/asyncio/tasks.py:712> cb=[_run_until_complete_cb() at /opt/anaconda3/lib/python3.12/asyncio/base_events.py:182] created at /opt/anaconda3/lib/python3.12/asyncio/runners.py:100> took 0.193 seconds
+ok
+test_client_disconnect_cancels_stalled_upstream_stream (agent_runner.tests.test_c_responses_compat.ResponsesEndpointTests.test_client_disconnect_cancels_stalled_upstream_stream) ... ok
+test_failed_app_server_spawn_releases_its_listener (agent_runner.tests.test_c_responses_compat.ResponsesEndpointTests.test_failed_app_server_spawn_releases_its_listener) ... ok
+test_forwards_sse_unchanged_without_forwarding_listener_token (agent_runner.tests.test_c_responses_compat.ResponsesEndpointTests.test_forwards_sse_unchanged_without_forwarding_listener_token) ... ok
+test_only_authorized_exact_post_can_reach_upstream (agent_runner.tests.test_c_responses_compat.ResponsesEndpointTests.test_only_authorized_exact_post_can_reach_upstream) ... ok
+test_rejects_nontext_instruction_before_forwarding (agent_runner.tests.test_c_responses_compat.ResponsesEndpointTests.test_rejects_nontext_instruction_before_forwarding) ... ok
+test_shutdown_cancels_stalled_stream_and_closes_listener (agent_runner.tests.test_c_responses_compat.ResponsesEndpointTests.test_shutdown_cancels_stalled_stream_and_closes_listener) ... ok
+test_upstream_errors_are_preserved_and_redirects_are_not_followed (agent_runner.tests.test_c_responses_compat.ResponsesEndpointTests.test_upstream_errors_are_preserved_and_redirects_are_not_followed) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.476s
+
+OK

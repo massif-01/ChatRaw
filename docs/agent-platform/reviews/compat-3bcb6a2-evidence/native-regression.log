@@ -1,0 +1,7 @@
+test_codex_compat_native_compaction_and_followup (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_compat_native_compaction_and_followup) ... ok
+test_codex_native_text_and_resume (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_text_and_resume) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.846s
+
+OK

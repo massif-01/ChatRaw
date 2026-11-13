@@ -1,0 +1,54 @@
+"""Controlled receiver: real Runtime/store and real Codex config/schema; no model."""
+import asyncio
+import json
+import tempfile
+
+from agent_runner.adapters.codex import CodexAdapter
+from agent_runner.adapters.codex_responses import UPSTREAM_SETTING
+from agent_runner.runtime import Runtime
+from agent_runner.store import RunnerError
+from agent_runner.tests.test_runtime import ControlledAdapter
+
+
+class Capture(ControlledAdapter):
+    agent_id = "codex"
+    settings_schema = CodexAdapter.settings_schema
+    validate_config = CodexAdapter.validate_config
+
+    async def create_session(self, session_id, workspace, config):
+        binding = await super().create_session(session_id, workspace, config)
+        binding["agent_id"] = "codex"
+        return binding
+
+
+async def main():
+    with tempfile.TemporaryDirectory() as directory:
+        runtime = Runtime(directory, {"codex": Capture})
+        try:
+            await runtime.set_enabled("codex", True)
+            await runtime.create_session("old", "chatold", "codex", {"kind": "managed"})
+            old = runtime.store.session("old")
+            assert UPSTREAM_SETTING not in old["base_config"]
+            endpoint = "http://127.0.0.1:9/v1/responses"
+            runtime.config["agents"] = {"codex": {UPSTREAM_SETTING: endpoint}}
+            try:
+                runtime.set_settings("codex", {UPSTREAM_SETTING: endpoint})
+            except RunnerError as error:
+                assert error.status == 400
+            else:
+                raise AssertionError("public host override accepted")
+            runtime.set_settings("codex", {"model": "changed-public-model"})
+            await runtime.close()
+            runtime = Runtime(directory, {"codex": Capture}, {"agents": {"codex": {UPSTREAM_SETTING: endpoint}}})
+            resumed = await runtime.instance(runtime.store.session("old"))
+            assert resumed.config == {"model": "changed-public-model"}, resumed.config
+            assert runtime.store.session("old")["binding"] == old["binding"]
+            assert runtime.store.session("old")["base_config"] == old["base_config"]
+            await runtime.create_session("new", "chatnew", "codex", {"kind": "managed"})
+            assert runtime.instances["new"].config[UPSTREAM_SETTING] == endpoint
+            print(json.dumps({"public_host_override_rejected_400": True, "old_binding_unchanged_after_restart": True, "old_base_config_unchanged": True, "old_resume_config": resumed.config, "new_session_opted_in": True, "boundary": "controlled adapter; real Runtime SQLite/config/schema; no native CLI or model"}, indent=2))
+        finally:
+            await runtime.close()
+
+
+asyncio.run(main())

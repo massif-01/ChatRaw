@@ -1,0 +1,87 @@
+"""F bounded receiver/transport checks for the opt-in Codex endpoint."""
+import asyncio
+import json
+from unittest.mock import patch
+
+from agent_runner.adapters.codex import CodexAdapter
+from agent_runner.adapters.codex_responses import ResponsesEndpoint, UPSTREAM_SETTING
+from agent_runner.tests import test_c_responses_compat as protocol
+from agent_runner.tests import test_c_native_adapters as native
+
+
+class ReceiverBoundaryTests(protocol.ResponsesEndpointTests):
+    async def upstream(self, request):
+        if self.behavior == "abort":
+            from aiohttp import web
+            self.received.append((request.path, request.headers.get("Authorization"), await request.read()))
+            response = web.StreamResponse(headers={"Content-Type": "text/event-stream", "Content-Length": "1000"})
+            await response.prepare(request)
+            await response.write(b"data: first\n\n")
+            request.transport.abort()
+            return response
+        return await super().upstream(request)
+
+    async def test_separate_endpoint_tokens_cannot_cross_authorize(self):
+        from urllib.parse import urlsplit
+        second = await ResponsesEndpoint.open(self.endpoint.upstream)
+        try:
+            self.assertEqual(urlsplit(second.base_url).hostname, "127.0.0.1")
+            self.assertNotEqual(second.base_url, self.endpoint.base_url)
+            self.assertNotEqual(second.token, self.endpoint.token)
+            async with self.client.post(second.base_url + "/responses", headers=self.auth, json={}) as response:
+                self.assertEqual(response.status, 401)
+            self.assertEqual(self.received, [])
+        finally:
+            await second.close()
+
+    async def test_receiver_preserves_instruction_sequence_tool_pair_and_image(self):
+        image = {"type": "input_image", "image_url": "data:image/png;base64,QUJD", "detail": "high"}
+        user = {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "user prompt"}, image]}
+        call = {"type": "function_call", "call_id": "tool-pair", "name": "exec_command", "arguments": '{"cmd":"echo ok"}'}
+        output = {"type": "function_call_output", "call_id": "tool-pair", "output": "ok"}
+        payload = {"instructions": "native base", "input": [user,
+            {"role": "developer", "content": [{"type": "input_text", "text": "permission rules"}]}, call,
+            {"role": "system", "content": "native followup"}, output],
+            "metadata": {"destination": "http://127.0.0.1:1/not-used"}, "tools": [{"type": "function", "name": "exec_command", "parameters": {}}], "stream": True, "model": "RM-01 VLM"}
+        async with self.client.post(self.url, headers={**self.auth, "X-Upstream": "http://127.0.0.1:1/not-used"}, json=payload) as response:
+            self.assertEqual(response.status, 200)
+            self.assertEqual(await response.read(), b"data: first\n\ndata: last\n\n")
+        path, auth, raw = self.received[0]
+        delivered = json.loads(raw)
+        self.assertEqual(path, "/v1/responses")
+        self.assertIsNone(auth)
+        self.assertEqual(delivered, {**payload, "instructions": "native base\n\npermission rules\n\nnative followup", "input": [user, call, output]})
+
+    async def test_broken_upstream_is_not_successful_sse_eof(self):
+        from aiohttp import ClientError
+        self.behavior = "abort"
+        with self.assertRaises(ClientError):
+            async with asyncio.timeout(3):
+                async with self.client.post(self.url, headers=self.auth, json={}) as response:
+                    await response.read()
+
+
+class NativeCompatCancellation(native.NativeAdapterTests):
+    async def _start(self, adapter, config):
+        self.model.reject_nonleading_instructions = True
+        self.model.reject_compat_authorization = True
+        await super()._start(adapter, {UPSTREAM_SETTING: f"http://127.0.0.1:{self.model.server_port}/v1/responses", **config})
+
+    async def test_cancel_and_followup_release_owned_listener_on_close(self):
+        from aiohttp import ClientSession, ClientConnectorError
+        adapter = CodexAdapter()
+        await self._exercise_stop(adapter)
+        endpoint = adapter._server.endpoint
+        self.assertIsNotNone(endpoint)
+        url = endpoint.base_url + "/responses"
+        await adapter.close(self.sink.binding)
+        async with ClientSession() as client:
+            with self.assertRaises(ClientConnectorError):
+                await client.post(url, json={})
+
+
+for target, base in ((ReceiverBoundaryTests, protocol.ResponsesEndpointTests), (NativeCompatCancellation, native.NativeAdapterTests)):
+    for name in dir(base):
+        if name.startswith("test_") and name not in target.__dict__:
+            setattr(target, name, None)
+del target, base, name

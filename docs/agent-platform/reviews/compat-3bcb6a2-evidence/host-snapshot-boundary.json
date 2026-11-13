@@ -1,0 +1,10 @@
+{
+  "public_host_override_rejected_400": true,
+  "old_binding_unchanged_after_restart": true,
+  "old_base_config_unchanged": true,
+  "old_resume_config": {
+    "model": "changed-public-model"
+  },
+  "new_session_opted_in": true,
+  "boundary": "controlled adapter; real Runtime SQLite/config/schema; no native CLI or model"
+}
