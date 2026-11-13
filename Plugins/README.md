@@ -104,7 +104,7 @@ your-plugin/
 | `rag_enhancer` | Enhance RAG pipeline | `pre_embedding`, `post_retrieval`, `before_send`, `custom_settings` |
 | `ui_extension` | Add UI elements | `toolbar_button`, `custom_action`, `send_intercept` |
 | `message_processor` | Process messages | `before_send`, `after_receive`, `transform_input`, `transform_output` |
-| `message_router` | Select a host-approved chat backend route | `route_message` |
+| `agent` | Register an Agent supported by the host Runner | `ChatRawPlugin.agents.register(id)` |
 | `model_manager` | Manage multiple model configs | `custom_settings` |
 
 ### Available Hooks
@@ -118,7 +118,6 @@ your-plugin/
 | `post_retrieval` | After RAG retrieval | `(results, settings)` | `{ success, results }` |
 | `send_intercept` | Pre-send interceptor that can fully handle a message before normal chat sending | `(context)` | `{ success, handled?, userMessage?, assistantMessage?, clearInput?, clearAttachments?, refreshSkillCatalog? }` |
 | `before_send` | Before sending message | `(body)` | `{ success, body }` |
-| `route_message` | Select a host-approved chat route | `(body)` | `{ success, route }` |
 | `after_receive` | After receiving response | `(message)` | `{ success, content }` |
 | `transform_input` | Transform user input | `(message)` | `{ success, content }` |
 | `transform_output` | Transform AI output | `(content)` | `{ success, content }` |
@@ -140,49 +139,19 @@ distinct active skills per request. The host writes `body.active_skills` after `
 regular hooks cannot accidentally override the user's explicit skill selection. Plugins that need to
 handle the pre-send skill list should use `send_intercept` and read `context.activeSkillNames`.
 
-`route_message` is a restricted, mutually exclusive routing hook. Normal chat sending runs
-`transform_input`, builds the `/api/chat`-compatible body, runs `before_send`, writes host-owned fields
-such as `active_skills`, and only then calls `route_message`. The hook may only return a host-approved
-route id such as `{ success: true, route: 'hermes' }`; it must not return URLs, paths, endpoints,
-headers, API keys, or response-handling instructions. The host maps route ids to same-origin allowlist
-endpoints such as `hermes -> /api/hermes/chat`, and the selected endpoint must keep the same JSON/NDJSON
-contract as `/api/chat`. Multiple route hooks are checked by priority, but invalid or unknown route
-results are skipped instead of winning. Do not use `before_send` for routing; it is only for body
-enhancement.
+### Agent plugins
 
-Dedicated host routes may add backend-owned transport metadata. For the Hermes bridge, ChatRaw derives
-`X-Hermes-Session-Id` from the final persisted `chat_id` as `chatraw-{chat_id}` after missing or stale
-chats are resolved. Plugins and request bodies must not provide session ids, session keys, headers, or
-other transport fields. The optional `X-Hermes-Session-Key` is stored as a backend API-key secret with
-service id `hermes-session-key`; browser UI should only display masked state. ChatRaw owns the local chat
-list and message history, while Hermes owns its agent/session state. The Hermes API Server Key is also
-backend-stored but optional in ChatRaw: when unset, the bridge sends no `Authorization` header. Official
-Hermes requires `API_SERVER_KEY`, so Check or chat may return 401 until a matching key is saved.
-Loopback Hermes Base URLs are allowed by default. Non-loopback Base URLs are allowed only when they are
-saved in the Hermes plugin's allowed remote Base URL list and the saved risk-confirmation snapshot still
-matches the current canonical list. This confirmation is a user-facing flow, not a sandbox boundary
-against already trusted same-origin UI code or installed plugins. Route hooks still must not return remote
-URLs directly.
+Agent plugins use a dedicated host API, separate from the ordinary chat hooks. The five bundled plugins are Hermes, Codex CLI, Claude Code, Pi, and DeepSeek Harness. Their manifests use `type: "agent"` and `agent: {"id": "hermes"}` (with the corresponding supported ID); the entry point registers the same ID:
 
-Hermes can optionally use a backend-saved execution mode. `apiMode: runs` tells the Hermes bridge to
-create `/v1/runs` and subscribe to run events behind the same `/api/hermes/chat` ChatRaw contract. This
-setting is not a `route_message` return value and must not be provided in request bodies. Run tool
-progress and approval requests are rendered as structured assistant-bubble activity and are intentionally
-not mixed into final assistant `content`. Runs approval is only interactive when ChatRaw Stream Output is
-enabled. The browser may receive an opaque `run_id` for the same-origin approval bridge, but it must never
-receive the Hermes Base URL, API key, Session Key, transport headers, events URL, stop URL, or approval
-URL. ChatRaw continues to render the existing chat UI while the host bridge streams final text/reasoning,
-tool lifecycle events, approval events, and terminal run state.
+```javascript
+window.ChatRawPlugin.agents.register('hermes');
+```
 
-Hermes integration QA should cover the plugin lifecycle and the host bridge together: install and
-enable/disable the plugin, toggle Hermes on/off, send default and Hermes-routed messages, verify
-`before_send` search/RAG enhancers still modify the same body, switch/new/delete chats, test stream and
-non-stream modes, verify Runs approval choices `once`/`session`/`deny`, stop generation in Runs mode,
-save Hermes settings, and confirm **Check** calls `/api/hermes/health` instead of `/api/proxy/request`.
-QA for loopback deployments should cover a browser reaching ChatRaw on a LAN address while the backend
-uses same-machine `127.0.0.1` for Hermes. QA for remote Hermes should also cover a confirmed allowed
-remote URL, a stale confirmation after editing the allowed list, and invalid allowed-list entries. User setup and troubleshooting are documented in
-[`docs/hermes.md`](../docs/hermes.md).
+Multiple plugins may be installed and enabled, while each chat binds one Agent and one workspace. Settings and capability checks are provided by the host. Executables, credentials, and allowed project paths are configured on the execution host, not supplied by plugin JavaScript. Adding another native Agent also requires a backend Runner adapter; registering an arbitrary ID does not grant process execution.
+
+Agent input bypasses ordinary `send_intercept`, `transform_input`, and `before_send` enrichment. ChatRaw sends the current message and supported attachments; history, prompts, Skills, and compression belong to the native Agent. Task events, questions, approvals, stop, and replay use the unified `/api/agents/*` gateway. An approval choice is submitted explicitly; closing a panel or page does not approve or stop a task.
+
+The former `route_message` hook and Hermes-specific execution bridge are retired. Old `/api/hermes/*` execution endpoints return 410. Preserve old chat text and configuration during migration, but create an Agent-bound chat rather than replaying historical input. See [deployment](../deploy/README.md), [Hermes migration](../docs/hermes.md), and the [Agent contract](../docs/agent-platform/CONTRACT.md).
 
 ### Settings Types
 
@@ -1164,7 +1133,7 @@ button.onclick = async () => {
     - All plugin-related requests are excluded from API rate limiting:
       - Static files: `/lib/`, `/icon`, `/main.js`
       - Plugin metadata: `/api/plugins`, `/api/plugins/*`
-    - Dedicated host chat routes such as `/api/hermes/*` are not plugin metadata or static file
+    - Dedicated host Agent routes such as `/api/agents/*` are not plugin metadata or static file
       requests; they should not be added to the plugin rate-limit exemption when implemented.
 
 14. **Use Shadow DOM for style isolation**:
@@ -1412,7 +1381,7 @@ your-plugin/
 | `rag_enhancer` | 增强 RAG 流程 | `pre_embedding`, `post_retrieval`, `before_send`, `custom_settings` |
 | `ui_extension` | 添加 UI 元素 | `toolbar_button`, `custom_action`, `send_intercept` |
 | `message_processor` | 消息处理 | `before_send`, `after_receive`, `transform_input`, `transform_output` |
-| `message_router` | 选择宿主认可的聊天后端路由 | `route_message` |
+| `agent` | 注册宿主 Runner 支持的 Agent | `ChatRawPlugin.agents.register(id)` |
 | `model_manager` | 管理多个模型配置 | `custom_settings` |
 
 ### 可用钩子列表
@@ -1426,7 +1395,6 @@ your-plugin/
 | `post_retrieval` | RAG 检索后 | `(results, settings)` | `{ success, results }` |
 | `send_intercept` | 发送前拦截器，可在正常聊天发送前完整处理一条消息 | `(context)` | `{ success, handled?, userMessage?, assistantMessage?, clearInput?, clearAttachments?, refreshSkillCatalog? }` |
 | `before_send` | 发送消息前 | `(body)` | `{ success, body }` |
-| `route_message` | 选择宿主认可的聊天路由 | `(body)` | `{ success, route }` |
 | `after_receive` | 收到回复后 | `(message)` | `{ success, content }` |
 | `transform_input` | 转换用户输入 | `(message)` | `{ success, content }` |
 | `transform_output` | 转换 AI 输出 | `(content)` | `{ success, content }` |
@@ -1446,43 +1414,19 @@ Backspace/Delete 会一次删除整个 token，后端每次请求最多接受 5 
 `before_send` 完成后写入 `body.active_skills`，避免普通 hook 意外覆盖用户显式选择的 skills。
 需要处理发送前 skill 列表的插件应使用 `send_intercept` 并读取 `context.activeSkillNames`。
 
-`route_message` 是受限且互斥的路由钩子。正常聊天发送会先执行 `transform_input`，构建兼容
-`/api/chat` 的 body，执行 `before_send`，写入 `active_skills` 等宿主字段，最后才调用
-`route_message`。该钩子只能返回宿主认可的 route id，例如 `{ success: true, route: 'hermes' }`；
-不能返回 URL、path、endpoint、headers、API key 或响应处理指令。宿主会把 route id 映射到同源
-allowlist endpoint，例如 `hermes -> /api/hermes/chat`，且该 endpoint 必须保持与 `/api/chat`
-一致的 JSON/NDJSON contract。多个 route hook 按 priority 检查，但非法或未知 route 结果会被跳过，
-不会抢占路由。不要用 `before_send` 做路由接管；它只用于增强 body。
+### Agent 插件
 
-专用宿主路由可以增加后端拥有的传输元数据。Hermes bridge 会在缺失或 stale chat 解析完成后，
-把最终持久化的 `chat_id` 派生为 `X-Hermes-Session-Id: chatraw-{chat_id}`。插件和请求 body
-不得提供 session id、session key、headers 或其他传输字段。可选的 `X-Hermes-Session-Key`
-以后端 API-key secret 保存，service id 为 `hermes-session-key`；浏览器 UI 只应显示 masked
-状态。Hermes API Server Key 也由后端保存，但在 ChatRaw 中是可选项：未保存时 bridge 不发送
-`Authorization` header。官方 Hermes 要求 `API_SERVER_KEY`，因此在保存匹配 key 前，检查或聊天
-可能返回 401。
-Loopback Hermes Base URL 默认允许。非 loopback Base URL 只有在保存到 Hermes 插件的远程允许列表，
-且保存的风险确认快照仍与当前 canonical 列表一致时才会放行。这个确认流程面向用户，不是用来
-隔离已信任的同源 UI 代码或已安装插件的沙箱边界。route hook 仍然不得直接返回远程 URL。
+Agent 插件使用独立的宿主 API，与普通聊天钩子分离。当前内置 Hermes、Codex CLI、Claude Code、Pi、DeepSeek Harness 五个插件。manifest 使用 `type: "agent"` 和 `agent: {"id": "hermes"}`（替换为对应的受支持 ID），入口注册同一 ID：
 
-Hermes 可以选择后端保存的执行模式。`apiMode: runs` 表示 Hermes bridge 在同一个
-`/api/hermes/chat` ChatRaw contract 后面创建 `/v1/runs` 并订阅 run events。这个设置不是
-`route_message` 返回值，也不得由请求 body 提供。run tool progress 和 approval requests 会以
-结构化 assistant 气泡活动展示，不会混入最终 assistant `content`。Runs approval 只有在 ChatRaw
-开启流式输出时才承诺可交互。浏览器可以拿到用于同源 approval bridge 的 opaque `run_id`，但不得拿到
-Hermes Base URL、API key、Session Key、传输 headers、events URL、stop URL 或 approval URL。
-ChatRaw 继续使用现有聊天 UI，bridge 会流式输出最终文本/reasoning、tool lifecycle events、
-approval events 和 terminal run state。
+```javascript
+window.ChatRawPlugin.agents.register('hermes');
+```
 
-Hermes 集成验收应同时覆盖插件生命周期和宿主桥接：安装并启用/禁用插件、打开/关闭 Hermes
-toggle、发送默认模式和 Hermes 路由消息、确认 `before_send` 搜索/RAG 增强仍修改同一个 body、
-新建/切换/删除对话、测试 stream 与 non-stream、验证 Runs approval 的 `once`/`session`/`deny`、
-在 Runs 模式停止生成、保存 Hermes 设置，并确认 **检查** 调用 `/api/hermes/health` 而不是
-`/api/proxy/request`。Loopback 部署 QA 应覆盖浏览器通过局域网地址访问 ChatRaw，而后端使用同机
-`127.0.0.1` 访问 Hermes。远程 Hermes QA 还应覆盖已确认的允许远程 URL、修改允许列表后的 stale
-confirmation，以及非法允许列表条目。`script/hermes_fake_server.py` 只用于本地 smoke 和手动验收；
-ChatRaw 不会自动启动它，不会把它挂到生产 API，它也不是官方 Hermes 替代实现。用户配置和排错说明见
-[`docs/hermes.md`](../docs/hermes.md)。
+多个插件可以同时安装启用，每个聊天绑定一个 Agent 和工作目录。设置界面和能力检查由宿主提供。可执行程序、凭据及允许访问的项目路径在执行主机配置，不由插件 JavaScript 指定。新增原生 Agent 还需要后端 Runner 适配器，注册任意 ID 不会获得执行权限。
+
+Agent 输入跳过普通聊天的 `send_intercept`、`transform_input`、`before_send` 增强流程。ChatRaw 交付本轮输入和受支持的附件，历史、提示、Skills 和压缩由原生 Agent 管理。任务事件、提问、审批、停止及回放共用 `/api/agents/*` 网关。选择审批选项后仍需明确提交；关闭面板或页面不等于批准或停止任务。
+
+旧 `route_message` 钩子及 Hermes 专属执行桥接已退役，旧 `/api/hermes/*` 执行入口返回 410。迁移保留旧聊天正文和配置，但不会重发历史来伪装原生会话恢复；请新建绑定 Agent 的聊天。参见[部署指南](../deploy/README.md)、[Hermes 迁移](../docs/hermes.md)及[Agent 公共接口](../docs/agent-platform/CONTRACT.md)。
 
 ### 设置类型
 
@@ -2457,7 +2401,7 @@ button.onclick = async () => {
     - 所有插件相关请求不受 API 请求限流影响：
       - 静态文件：`/lib/`、`/icon`、`/main.js`
       - 插件元数据：`/api/plugins`、`/api/plugins/*`
-    - 专用宿主聊天路由（如 `/api/hermes/*`）不是插件元数据或静态文件请求；实现后端路由时不应加入插件限流豁免。
+    - 专用宿主 Agent 路由（如 `/api/agents/*`）不是插件元数据或静态文件请求；实现后端路由时不应加入插件限流豁免。
 
 14. **使用 Shadow DOM 隔离样式**：
     - 第三方库（如 Mermaid）可能注入全局 CSS 污染其他元素

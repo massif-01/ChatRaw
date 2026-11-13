@@ -110,7 +110,7 @@ ChatRaw features a complete **plugin system** to extend functionality:
 - **Markdown Renderer Plus** — Math (KaTeX), Mermaid, code copy, offline
 - **Context Compressor** — Compact older chat history automatically or from the input toolbar
 - **Skill Manager** — Install Agent Skills from GitHub or local files and activate them inline with `/skill-name`
-- **Hermes Router** — Route selected messages to a local or confirmed remote Hermes API Server through the secure backend bridge
+- **Hermes, Codex CLI, Claude Code, Pi, DeepSeek Harness** — Five independent Agent plugins with native sessions, shared task controls, approvals, and persistent workspaces
 - **Toolbar Extension Demo** — Demo plugin showcasing UI Extension API
 
 ### Toolbar Extension
@@ -124,7 +124,11 @@ ChatRaw features a complete **plugin system** to extend functionality:
 
 **Plugin Development Guide**: [Plugins/README.md](Plugins/README.md)
 
-**Hermes Router Guide**: [docs/hermes.md](docs/hermes.md)
+### Use native Agents
+
+Install and enable the Agent plugins you need, configure each one in its settings, then select one from the chat mode menu beside the message box. Each chat uses one Agent and retains its native session. The Agent manages its own context, instructions, Skills, and compaction; ChatRaw sends the current input and supported attachments. Closing the page does not stop a task—use **Stop** when you want to cancel it.
+
+ChatRaw runs in Docker and connects to a host Runner. The native Agent programs and their credentials stay with the host service account. See the [deployment guide](deploy/README.md) and [Hermes migration guide](docs/hermes.md).
 
 ---
 
@@ -488,7 +492,7 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 - **Markdown 渲染增强** — 数学公式、Mermaid、代码复制，离线可用
 - **上下文压缩** — 自动或通过输入框工具栏压缩较早聊天历史
 - **Skill 管理器** — 从 GitHub 或本地文件安装 Agent Skills，并用 `/skill-name` 在输入框内联激活
-- **Hermes Router** — 通过安全后端桥接，将选定消息路由到本机或已确认放行的远程 Hermes API Server
+- **Hermes、Codex CLI、Claude Code、Pi、DeepSeek Harness** — 五个独立 Agent 插件，保留原生会话，共用任务控制、审批和持久工作目录
 - **工具栏扩展演示** — 展示 UI 扩展 API 的演示插件
 
 ### 工具栏扩展
@@ -502,7 +506,11 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 
 **插件开发指南**: [Plugins/README.md](Plugins/README.md)
 
-**Hermes Router 指南**: [docs/hermes.md](docs/hermes.md)
+### 使用原生 Agent
+
+安装并启用需要的 Agent 插件，分别打开设置完成配置，然后从输入框旁的聊天模式菜单中选择一个 Agent。每个聊天绑定一个 Agent，并保留原生会话。上下文、提示词、Skills 和压缩由 Agent 自己管理；ChatRaw 交付本轮输入和受支持的附件。关闭页面不会停止任务，需要取消时请点击**停止**。
+
+ChatRaw 主程序运行在 Docker 中，通过宿主 Runner 调用原生程序。Agent 程序及凭据由宿主服务账户管理。配置步骤见[部署指南](deploy/README.md)，旧 Hermes 使用者另见[迁移说明](docs/hermes.md)。
 
 ---
 
