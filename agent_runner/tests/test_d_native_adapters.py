@@ -495,6 +495,34 @@ class DeepSeekNativeTests(_NativeCase):
         self.assertNotIn("maxTokens", default)
         self.assertEqual(self.server.max_tokens, [8192, 256_000])
 
+    async def test_sdk_resume_applies_new_output_budget_to_same_session(self):
+        adapter = DeepSeekAdapter()
+        binding = await self.binding(adapter, self.config, "budget-change")
+        first = await asyncio.wait_for(
+            self.run_input(adapter, binding, "TEST_MAX_TOKENS TEST_HISTORY", "before"),
+            15,
+        )
+        self.assertEqual(first["status"], "completed", first)
+        self.assertEqual(self.server.max_tokens, [256_000])
+        await adapter.close(binding)
+
+        resumed_adapter = DeepSeekAdapter()
+        resumed = await resumed_adapter.resume_session(
+            binding, {**self.config, "max_tokens": 8192}
+        )
+        self.addAsyncCleanup(resumed_adapter.close, resumed)
+        self.assertEqual(resumed, binding)
+        result = await asyncio.wait_for(
+            self.run_input(
+                resumed_adapter, resumed, "TEST_MAX_TOKENS TEST_RESUME", "after"
+            ),
+            15,
+        )
+        self.assertEqual(
+            result, {"status": "completed", "final_text": "history present"}
+        )
+        self.assertEqual(self.server.max_tokens, [256_000, 8192])
+
     async def test_sdk_batch_stop_and_strict_resume(self):
         adapter = DeepSeekAdapter()
         self.assertEqual((await adapter.probe(self.config))["availability"], "ready")

@@ -50,5 +50,5 @@ CHATRAW_TEST_PI=/absolute/path/to/pi CHATRAW_TEST_DEEPSEEK=1 \
 - 协议模拟验证 EOF、重试与最终文本替换，交互过期和迟到回复，手动压缩取消证据，未支持附件拒绝及 DeepSeek 失联后有无原生 shutdown 证据的分流。
 - 本机原生集成环境为 macOS arm64、Python 3.12、Node 24.10.0。真实 Pi CLI 与 DeepSeek SDK/runtime 使用 loopback 模型替身，覆盖原生进程启动、批次问答、审批拒绝与一次授权、停止时拒收旧交互、跨会话隔离、恢复原生历史和缺失会话拒绝。两个程序都验证了正在运行的 shell 在停止后未写入延迟标记。图片验证到 Pi 的模型请求和 DeepSeek 的原生附件存储。压缩验证到 Pi transcript 的原生压缩记录和 DeepSeek 的空历史原生响应。另验证了 DeepSeek 原生计划审阅取消。
 - DeepSeek SDK 0.2.2rc2 的关闭路径在 Python 3.12 和 3.14 的 unittest 下报告上游 stdout/stderr 文件对象的 `ResourceWarning`。原生进程退出、工具停止及原会话恢复通过。
-- 输出预算验证使用同一原生 SDK/runtime 和本地模型替身。设置 `8192` 后，SDK 初始化和模型 HTTP 请求分别收到 `maxTokens: 8192` 和 `max_tokens: 8192`。省略时，初始化报文无此字段，模型请求使用原生默认 `256000`。
+- 输出预算验证使用同一原生 SDK/runtime 和本地模型替身。设置 `8192` 后，SDK 初始化和模型 HTTP 请求分别收到 `maxTokens: 8192` 和 `max_tokens: 8192`。省略时，初始化报文无此字段，模型请求使用原生默认 `256000`。已有会话以默认预算完成一轮后，关闭并以 `8192` 恢复。下一轮的模型请求保留原会话历史，输出预算改为 `8192`。
 - RM-01 和真实模型服务的身份认证、模型请求、图片与压缩质量、Linux 实际工具作用域及主机重启仍待总控现场验收。以本机原生协议证据和现场证据分别登记 G02、G05–G08。
