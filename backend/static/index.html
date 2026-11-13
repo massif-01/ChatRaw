@@ -12,8 +12,8 @@
     
     <!-- Performance: Preload Critical Resources -->
     <link rel="preload" href="fonts/remixicon/remixicon.woff2?t=1769685282643" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="styles.min.css?v=8.0" as="style">
-    <link rel="preload" href="app.min.js?v=8.0" as="script">
+    <link rel="preload" href="styles.min.css?v=8.1" as="style">
+    <link rel="preload" href="app.min.js?v=8.1" as="script">
     <link rel="preload" href="vendor/alpinejs/3.13.3/alpine.min.js" as="script">
     <link rel="preload" href="vendor/marked/9.1.6/marked.min.js" as="script">
     
@@ -143,7 +143,7 @@
     <script defer src="vendor/alpinejs/3.13.3/alpine.min.js"></script>
     <!-- highlight.js is lazy-loaded in app.min.js when needed -->
     <link rel="stylesheet" href="fonts/remixicon/remixicon.css">
-    <link rel="stylesheet" href="styles.min.css?v=8.0">
+    <link rel="stylesheet" href="styles.min.css?v=8.1">
 </head>
 <body x-data="app()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
@@ -522,7 +522,8 @@
                                 <span x-text="agentButtonName(agentId)"></span>
                                 <i class="ri-arrow-up-s-line" aria-hidden="true"></i>
                             </button>
-                            <div class="agent-mode-panel" id="agent-mode-panel" x-ref="agentModePanel" x-show="agentMenu" x-cloak>
+                            <div class="agent-mode-panel" id="agent-mode-panel" x-ref="agentModePanel"
+                                 x-show.immediate="agentMenu" @focusin="keepAgentMenuFocusVisible()" x-cloak>
                                 <fieldset class="agent-options">
                                     <legend x-text="at('mode')"></legend>
                                     <label class="agent-option">
@@ -1306,7 +1307,7 @@
         }
     </script>
     <script src="stream-markdown.js?v=1"></script>
-    <script src="agents.js?v=2"></script>
-    <script src="app.min.js?v=8.0"></script>
+    <script src="agents.js?v=3"></script>
+    <script src="app.min.js?v=8.1"></script>
 </body>
 </html>

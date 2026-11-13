@@ -261,6 +261,7 @@ window.ChatRawAgents = (() => {
         let catalogRequest = 0;
         let healthRequest = 0;
         let navigation = 0;
+        let agentMenuResize;
 
         return {
             agentCatalog: [],
@@ -383,7 +384,17 @@ window.ChatRawAgents = (() => {
                 const workspace = this.agentBinding?.workspace;
                 this.agentProjectChoice = workspace?.kind === 'project' ? workspace.id : '';
                 this.agentMenu = true;
-                this.$nextTick(() => this.$refs.agentModePanel?.querySelector('input:checked')?.focus());
+                this.$nextTick(() => {
+                    if (!this.agentMenu) return;
+                    const panel = this.$refs.agentModePanel;
+                    this.fitAgentMenu();
+                    // The bound plugin may still be registering at startup.
+                    const selected = panel.querySelector('input:checked') || panel.querySelector('input');
+                    selected?.focus();
+                    agentMenuResize = new ResizeObserver(() => this.fitAgentMenu());
+                    agentMenuResize.observe(panel.closest('.input-area'));
+                    agentMenuResize.observe(panel.closest('.chat-container'));
+                });
                 this.loadAgentCatalog();
                 try {
                     const { workspaces } = await request('/api/agents/workspaces');
@@ -396,7 +407,30 @@ window.ChatRawAgents = (() => {
 
             closeAgentMenu(restoreFocus = false) {
                 this.agentMenu = false;
+                agentMenuResize?.disconnect();
+                agentMenuResize = null;
                 if (restoreFocus) this.$refs.agentModeButton?.focus();
+            },
+
+            fitAgentMenu() {
+                if (!this.agentMenu) return;
+                const panel = this.$refs.agentModePanel;
+                const top = Math.max(window.visualViewport?.offsetTop || 0,
+                    panel.closest('.chat-container').getBoundingClientRect().top);
+                // The anchored bottom stays fixed as the panel height changes.
+                const available = panel.getBoundingClientRect().bottom - top - 8;
+                panel.style.setProperty('--agent-menu-space', Math.max(0, available) + 'px');
+                this.keepAgentMenuFocusVisible();
+            },
+
+            keepAgentMenuFocusVisible() {
+                const panel = this.$refs.agentModePanel;
+                const focused = document.activeElement;
+                if (!panel.contains(focused)) return;
+                const bounds = panel.getBoundingClientRect();
+                const control = focused.getBoundingClientRect();
+                if (control.bottom > bounds.bottom - 5) panel.scrollTop += control.bottom - bounds.bottom + 5;
+                else if (control.top < bounds.top + 5) panel.scrollTop -= bounds.top - control.top + 5;
             },
 
             async applyAgentMode() {

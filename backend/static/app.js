@@ -566,7 +566,10 @@ function app() {
             };
             const onViewportChange = () => {
                 if (this._resizeRaf) cancelAnimationFrame(this._resizeRaf);
-                this._resizeRaf = requestAnimationFrame(() => update(false));
+                this._resizeRaf = requestAnimationFrame(() => {
+                    update(false);
+                    this.fitAgentMenu();
+                });
             };
             update(true);
             window.addEventListener('resize', onViewportChange, { passive: true });

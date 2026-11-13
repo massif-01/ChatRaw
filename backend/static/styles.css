@@ -3520,7 +3520,10 @@ input[type=range]::-webkit-slider-thumb:hover {
     box-shadow: var(--shadow-lg);
 }
 
-.agent-mode-panel { padding: 14px; }
+.agent-mode-panel {
+    padding: 14px;
+    max-height: min(440px, var(--agent-menu-space, 440px));
+}
 .composer-plugin-menu { z-index: 10; }
 
 .composer-plugin-menu .plugin-more-item {
@@ -3843,8 +3846,11 @@ input[type=range]::-webkit-slider-thumb:hover {
 
     .agent-mode-panel,
     .composer-plugin-menu {
-        max-height: min(440px, max(96px, calc(var(--visual-height, 100dvh) - 86px)));
         width: min(350px, calc(100vw - 50px));
+    }
+
+    .composer-plugin-menu {
+        max-height: min(440px, max(96px, calc(var(--visual-height, 100dvh) - 86px)));
     }
 
     .agent-dialog-actions { padding: 8px 12px; }
