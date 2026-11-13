@@ -75,5 +75,15 @@
     "context_length": 262144,
     "max_output": 8192,
     "embedding_rerank_configured": false
+  },
+  "container_ui_overlay": {
+    "revision": "2ba163e",
+    "image_tag": "chatraw-agent-integration:2ba163e-ui",
+    "image_id": "sha256:97f9ac18f92decbba43e9f742689c9ef7a1f52ad67d18d3cf31d12c922d1434c",
+    "ready": true,
+    "delivered_hashes_verified": true,
+    "user_chat_messages_preserved": 12,
+    "runner_hermes_pids_unchanged": true,
+    "preserved_unknown_run": "e05b8525931c4d1585cae79770c7be3d"
   }
 }

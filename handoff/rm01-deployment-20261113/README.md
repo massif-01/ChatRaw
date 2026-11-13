@@ -2,7 +2,7 @@
 
 2026-11-13，A 线独占现场变更。入口：<http://10.10.99.99:51111>。本轮没有推送 Git、整机重启或修改 .98。
 
-当前安装与配置、真实工具执行、Runner 重启后原会话恢复、生成中停止均为 5/5。DeepSeek 的输出预算阻塞已由 D 线修复，原失败聊天与原 native session 均保留，8192 预算已在真实原生记录中确认。首次失败证据保留于 [根因记录](DEEPSEEK-BLOCKER.md)。普通聊天 default-chat 也已接通真实本地模型。
+A 的基础现场验收中，安装与配置、真实工具执行、Runner 重启后原会话恢复、生成中停止均为 5/5。DeepSeek 的输出预算阻塞已由 D 线修复，原失败聊天与原 native session 均保留，8192 预算已在真实原生记录中确认。首次失败证据保留于 [根因记录](DEEPSEEK-BLOCKER.md)。普通聊天 default-chat 也已接通真实本地模型。
 
 | Agent | 安装版本 | 真实工具回合 | Runner 重启后原会话 | 输出中停止 |
 |---|---|---|---|---|
@@ -35,7 +35,7 @@ Codex 的首次 sandbox pwd 被宿主 AppArmor unprivileged_userns 的 net_admin
 
 ## 版本与证据
 
-ChatRaw 容器仍为 `e91d32f3674389be2c94c3a939c6a4179246e4c2` 交付镜像。Runner 以该版本为基线，仅 `agent_runner/adapters/deepseek.py` 更新为 D 提交 `bec078ba0d8db6b330c5721ff22a71142e4ea9fb` 的文件；其 SHA256 为 `96e02e6e9ed421297fd5e90d32868831a625892e8874f923ca93932217905108`。更新前确认无活动任务，保留配置和数据库，未重建或更换主容器镜像。源码包和镜像包位于宿主 `/home/rm01/chatraw/deployment-e91d32f`，四项交付文件 SHA256 校验通过。
+基础验收时 ChatRaw 使用 `e91d32f3674389be2c94c3a939c6a4179246e4c2` 交付镜像；随后已部署仅覆盖两个前端文件的 `2ba163e-ui` 派生镜像，详见 [UI 更新记录](38-ui-deployment.md)。Runner 以该版本为基线，仅 `agent_runner/adapters/deepseek.py` 更新为 D 提交 `bec078ba0d8db6b330c5721ff22a71142e4ea9fb` 的文件；其 SHA256 为 `96e02e6e9ed421297fd5e90d32868831a625892e8874f923ca93932217905108`。更新前确认无活动任务，保留配置和数据库，未重建或更换主容器镜像。源码包和镜像包位于宿主 `/home/rm01/chatraw/deployment-e91d32f`，四项交付文件 SHA256 校验通过。
 
 - 源码包 SHA256：9f86e7d2c8920d36577778171d723d38fe8e9bf46a9480f27b9ff0d36a412d2c。
 - 镜像包 SHA256：7a15b08f4baa40339e6dbdd98215bdb1e5f6f791980a8e748c7add1427bc6450。
@@ -63,3 +63,5 @@ ChatRaw 容器仍为 `e91d32f3674389be2c94c3a939c6a4179246e4c2` 交付镜像。R
 `default-chat` ID 保持不变，名称/model_id 为 RM-01 VLM；api_url 为 `http://10.10.99.98:58000/v1`，后端实际请求 `/v1/chat/completions`，API key 为空。context_length=262144、max_output=8192。未改已有 capability 开关；embedding/rerank 两项原样保持未配置。
 
 `29-ordinary-chat.json` 与事件记录确认独立普通聊天返回 RM99_NORMAL_OK，首内容约0.413秒，总耗时约0.780秒，数据库中用户与助手消息各一条，agent_id/session_id 均为空。`30-final-state.json` 确认最终非终态 run 为零、Runner 数据库 integrity_check=ok、四项项目相关服务 active、镜像ID未变，TTO与共享端口仍监听。
+
+后续 DeepSeek PNG 模态调查见 [31号报告](31-deepseek-image-investigation.md) 与 [32号宿主 patch 交接](32-deepseek-native-patch-handoff.md)。D 的 Codex 工具执行中停止验收另留下 unknown，UI部署保留该状态；基础生成停止通过不代表工具执行中停止已通过。

@@ -1,0 +1,17 @@
+{
+  "revision": "2ba163e",
+  "files": [
+    {
+      "file": "agents.js",
+      "sha256": "5be914c38b03b24a11e349d7fc6150cf702deb6975f602a8258262106196ed85"
+    },
+    {
+      "file": "index.html",
+      "sha256": "86bd901644a82b24b4f145d369332da40ddab4e6a16ccd623b148cdbe3068626"
+    },
+    {
+      "file": "Dockerfile",
+      "sha256": "718cfeeca286dc2b75010979c69e2be1c3cc997b8a9707e0e0292bf846f7655f"
+    }
+  ]
+}

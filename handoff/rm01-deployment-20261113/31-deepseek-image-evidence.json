@@ -1,0 +1,103 @@
+{
+  "runner_session": "f6523c63113f450db6cfb2a394166bf7",
+  "native_binding": {
+    "agent_id": "deepseek",
+    "native": {
+      "dsh_home": "/var/lib/chatraw-runner/deepseek/session-79f17d14b00249c18b580614fad63c37",
+      "session_id": "session-79f17d14b00249c18b580614fad63c37"
+    },
+    "session_id": "f6523c63113f450db6cfb2a394166bf7",
+    "workspace": "/var/lib/chatraw-runner/workspaces/f6523c63113f450db6cfb2a394166bf7"
+  },
+  "profile_patch": "# Your patch layer for this dsh profile, applied after every bundle layer:\n# a top-level YAML array of loader patch entries (id-targeted config\n# overrides, disables, and insert lists; `!!js` expressions allowed).\n[]\n",
+  "profile_manifest": {
+    "name": "dsh-profile-sdk",
+    "private": true,
+    "dependencies": {},
+    "dsh": {
+      "profile": {
+        "bundles": [
+          "@deepseek-ai/dsh-base",
+          "@deepseek-ai/dsh-sdk-app"
+        ]
+      }
+    }
+  },
+  "events": [
+    {
+      "type": "user/message",
+      "seq": 8,
+      "time": 1794578017849,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "D\u9a8c\u6536 deepseek PNG. Read the six black digits in the attached image, left to right. Use only the attached image, do not call tools, and return only the six digits."
+          },
+          {
+            "type": "image",
+            "attachment": {
+              "attachmentId": "sha256:8d35d061e637b42fd113eaa7de302accf7a5b52e3760f0487375babf5518af7b",
+              "mediaType": "image/jpeg",
+              "width": 284,
+              "height": 80,
+              "bytes": 4774
+            }
+          }
+        ],
+        "source": {
+          "kind": "user"
+        },
+        "role": "user",
+        "id": "9c3e4988-4b0e-46d2-9abf-ff31c678e802"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "seq": 12,
+      "type": "request/header",
+      "config": {
+        "maxTokens": 8192,
+        "provider": "deepseek-official",
+        "model": "RM-01 VLM",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "seq": 16,
+      "type": "assistant/message",
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "I can't read the image \u2014 it was omitted because this model accepts text only. I have no way to see the six digits, and I'm asked not to call tools, so I must decline rather than guess:\n\nI'm unable to answer. The attached image was not passed to this model (text-only), so the digits are not visible to me."
+          }
+        ],
+        "source": {
+          "kind": "model",
+          "provider": "deepseek-official",
+          "model": "RM-01 VLM",
+          "replayState": {
+            "response": {
+              "kind": "deepseek-messages",
+              "version": 1,
+              "model": "RM-01 VLM"
+            },
+            "blocks": [
+              {
+                "type": "text"
+              }
+            ]
+          }
+        },
+        "id": "eeca6cf6-6929-424c-b0ba-a90cb092f2aa"
+      },
+      "usage": {
+        "inputTokens": 9261,
+        "outputTokens": 74,
+        "totalTokens": 9335
+      }
+    }
+  ]
+}

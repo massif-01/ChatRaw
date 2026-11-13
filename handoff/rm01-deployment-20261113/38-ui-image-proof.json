@@ -1,0 +1,11 @@
+{
+  "image_tag": "chatraw-agent-integration:2ba163e-ui",
+  "image_id": "sha256:97f9ac18f92decbba43e9f742689c9ef7a1f52ad67d18d3cf31d12c922d1434c",
+  "architecture": "amd64",
+  "os": "linux",
+  "base_layers_preserved": true,
+  "base_layer_count": 12,
+  "new_layer_count": 13,
+  "env_and_cmd_unchanged": true,
+  "revision_label": "2ba163e"
+}

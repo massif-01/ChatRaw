@@ -1,0 +1,72 @@
+agents.js: OK
+index.html: OK
+Dockerfile: OK
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 181B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/chatraw-agent-integration:e91d32f-amd64
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/2] FROM docker.io/library/chatraw-agent-integration:e91d32f-amd64@sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724
+#4 resolve docker.io/library/chatraw-agent-integration:e91d32f-amd64@sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724 0.0s done
+#4 ...
+
+#5 [internal] load build context
+#5 transferring context: 145.17kB done
+#5 DONE 0.0s
+
+#4 [1/2] FROM docker.io/library/chatraw-agent-integration:e91d32f-amd64@sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724
+#4 DONE 0.3s
+
+#4 [1/2] FROM docker.io/library/chatraw-agent-integration:e91d32f-amd64@sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724
+#4 extracting sha256:dd57f90311a2567b55ff22eeacff1602fd04ad7566e315957731359eab173b90
+#4 extracting sha256:dd57f90311a2567b55ff22eeacff1602fd04ad7566e315957731359eab173b90 0.5s done
+#4 DONE 0.7s
+
+#4 [1/2] FROM docker.io/library/chatraw-agent-integration:e91d32f-amd64@sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724
+#4 extracting sha256:cd9a29aa43e014bda7a7815521ab51a3ababf2bceb4de66302701ac217ff26fb 0.1s done
+#4 extracting sha256:961adfab8c074ba37b3fa0c54bb96911f8648a1788176a864bfb0750cfdef155
+#4 extracting sha256:961adfab8c074ba37b3fa0c54bb96911f8648a1788176a864bfb0750cfdef155 0.4s done
+#4 DONE 1.2s
+
+#4 [1/2] FROM docker.io/library/chatraw-agent-integration:e91d32f-amd64@sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724
+#4 extracting sha256:688ef2053b5da5e0048efd435dace328a25d5d4c8cb5e2cd1a7a92c697c586d5 0.0s done
+#4 extracting sha256:127b128ec092844dfb9d00fb8ff6f286eba37278c4828d84c09eba7b415dfcf6 0.0s done
+#4 extracting sha256:c1114e0c1082b0093aa4f3c57b39b73127b54346a199d462aeef1eec39a25c46
+#4 extracting sha256:c1114e0c1082b0093aa4f3c57b39b73127b54346a199d462aeef1eec39a25c46 0.9s done
+#4 DONE 2.1s
+
+#4 [1/2] FROM docker.io/library/chatraw-agent-integration:e91d32f-amd64@sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724
+#4 extracting sha256:ae19de374701cbdfdf3053463ff6d0c0ffd5f6b5d88031377a64982c720edc99 0.0s done
+#4 extracting sha256:a47a45cc8fcf981e84139f7e88f3fa89d0469e3bb9a11a4edb7cdd1eaf64c6c9
+#4 extracting sha256:a47a45cc8fcf981e84139f7e88f3fa89d0469e3bb9a11a4edb7cdd1eaf64c6c9 1.1s done
+#4 DONE 3.3s
+
+#4 [1/2] FROM docker.io/library/chatraw-agent-integration:e91d32f-amd64@sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724
+#4 extracting sha256:c86a49071de568d446ff479db810fb947f9acc8508ae3141ac397e0f81dd8535 0.0s done
+#4 extracting sha256:a0d08a6710a71069f0fb81ed6b0ecaaf6f59ce1b477dff18e28576e5aa62d066 0.0s done
+#4 extracting sha256:e1e32db1cbbbcf0f204077f5a8288e4841bb4cc7bc0540864c56541017138029 0.1s done
+#4 extracting sha256:a96ec76aea6b4b7907a280b08e28737b35c7a0ed500f927475c795230f5a2495
+#4 extracting sha256:a96ec76aea6b4b7907a280b08e28737b35c7a0ed500f927475c795230f5a2495 0.0s done
+#4 DONE 3.4s
+
+#6 [2/2] COPY agents.js index.html /app/backend/static/
+#6 DONE 0.8s
+
+#7 exporting to image
+#7 exporting layers 0.1s done
+#7 exporting manifest sha256:552c3a1e9fba99c6fc7f50048b59642006e2ea6cdda27f0a03a407518759315e 0.0s done
+#7 exporting config sha256:c5941a881d495963e8dd538a6565fbcca3a7ae72fd959f5db9bb235d62399b47
+#7 exporting config sha256:c5941a881d495963e8dd538a6565fbcca3a7ae72fd959f5db9bb235d62399b47 0.0s done
+#7 exporting attestation manifest sha256:231b66160c69c713da00a3d02c6ffc753b02708806709f4e35e91eb59609b4c1 0.0s done
+#7 exporting manifest list sha256:97f9ac18f92decbba43e9f742689c9ef7a1f52ad67d18d3cf31d12c922d1434c 0.0s done
+#7 naming to docker.io/library/chatraw-agent-integration:2ba163e-ui done
+#7 unpacking to docker.io/library/chatraw-agent-integration:2ba163e-ui 0.0s done
+#7 DONE 0.2s

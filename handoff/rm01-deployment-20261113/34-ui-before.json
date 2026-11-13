@@ -1,0 +1,75 @@
+{
+  "user_chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+  "chat_metadata_hash": "7ff2b9bc06b9babdc1448cd49d6a8b56d5141736a940917a8c69e400fa5dd940",
+  "messages_hash": "73dd38131a8d09e9d844f86d868f3d07ac4ec18c1d759ceaf35c29b34c084a19",
+  "message_count": 12,
+  "message_ids": [
+    "agent-8fd852ee00c24c0985bd000d02ffafeb-user",
+    "agent-8fd852ee00c24c0985bd000d02ffafeb-assistant",
+    "agent-e62e05ca92744e399ea75c3e445e2b33-user",
+    "agent-e62e05ca92744e399ea75c3e445e2b33-assistant",
+    "agent-b13f4c69e3b14d56b121e963e54b136b-user",
+    "agent-b13f4c69e3b14d56b121e963e54b136b-assistant",
+    "agent-ee8310a52ad440bbb75a88706d9c812b-user",
+    "agent-ee8310a52ad440bbb75a88706d9c812b-assistant",
+    "agent-41dfa460416e41ed8f37c753f0045709-user",
+    "agent-41dfa460416e41ed8f37c753f0045709-assistant",
+    "agent-5bb85815054a4cf4ae110322532b59c7-user",
+    "agent-5bb85815054a4cf4ae110322532b59c7-assistant"
+  ],
+  "binding": {
+    "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+    "session_id": "b7fea9a288d84d1489ff634e753a6652",
+    "agent_id": "codex",
+    "workspace": {
+      "id": "b7fea9a288d84d1489ff634e753a6652",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "5bb85815054a4cf4ae110322532b59c7"
+  },
+  "unknown_run": {
+    "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a",
+    "session_id": "c5f1cad44b9b463385077611859b4cc4",
+    "status": "unknown",
+    "last_seq": 9,
+    "run_id": "e05b8525931c4d1585cae79770c7be3d",
+    "interactions": [],
+    "error": {
+      "code": "codex_tool_stop_unverified",
+      "message": "Codex ended the turn, but an owned tool could not be confirmed stopped.",
+      "retryable": false
+    }
+  },
+  "models_hash": "8d73664e7ad9279f5d428f8817c2ab4df03d04193b4846c2b71a1d7d2425867b",
+  "settings_hash": "1c537f3a1ca79749219f058ccd44ae0f98b815d11ccb9fb94d136215a26842a2",
+  "container": {
+    "id": "ed039257da2e3f3d4fff43fe467223ac21ec74cc09d081fb0597b22ae54842ca",
+    "image": "sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724",
+    "mounts": [
+      {
+        "Type": "volume",
+        "Name": "chatraw_chatraw_data",
+        "Source": "/var/lib/docker/volumes/chatraw_chatraw_data/_data",
+        "Destination": "/app/data",
+        "Driver": "local",
+        "Mode": "rw",
+        "RW": true,
+        "Propagation": ""
+      },
+      {
+        "Type": "bind",
+        "Source": "/etc/chatraw-runner/token",
+        "Destination": "/run/secrets/chatraw-runner-token",
+        "Mode": "ro",
+        "RW": false,
+        "Propagation": "rprivate"
+      }
+    ]
+  },
+  "runner_hermes_pids": [
+    "58386",
+    "34685"
+  ]
+}
