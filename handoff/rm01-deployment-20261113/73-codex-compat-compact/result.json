@@ -1,0 +1,164 @@
+{
+  "agent": "codex",
+  "case": "compact",
+  "steps": [
+    {
+      "label": "seed",
+      "client_request_id": "c116403a97694b51bbcbb533ab84fbe6",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+        "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "210a07608ed54e4382f5f96cbcde2657",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+        "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+        "status": "completed",
+        "last_seq": 5,
+        "run_id": "210a07608ed54e4382f5f96cbcde2657",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "history-1",
+      "client_request_id": "011590fa08cd4d3ea9b66d8db0865d9a",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+        "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "c5ded3f6b61743709fb1f04f59bcdfb7",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+        "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+        "status": "completed",
+        "last_seq": 5,
+        "run_id": "c5ded3f6b61743709fb1f04f59bcdfb7",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "history-2",
+      "client_request_id": "68d8a03be8374714adddc86d7e075350",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+        "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "90b4c836cf634b23b3551f1ce42a4885",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+        "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+        "status": "completed",
+        "last_seq": 5,
+        "run_id": "90b4c836cf634b23b3551f1ce42a4885",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "compact",
+      "client_request_id": "2277169f923749b3a80c39c131139aef",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+        "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "f0e65e5c00de470babd5e45acc63b03d",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+        "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "f0e65e5c00de470babd5e45acc63b03d",
+        "interactions": [],
+        "final_text": ""
+      }
+    },
+    {
+      "label": "continuity",
+      "client_request_id": "5658e2b578eb420ea97b10c3f8ea663a",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+        "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "c39c35335109418199d2a1a395255914",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+        "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+        "status": "completed",
+        "last_seq": 8,
+        "run_id": "c39c35335109418199d2a1a395255914",
+        "interactions": [],
+        "final_text": "D-54B28E292E"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "0.153.4",
+    "reason": "Codex provider is configured. Provider authentication and model request untested.",
+    "capabilities": {
+      "streaming_text": true,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "native",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "questions": "Native request_user_input, typically available in Plan mode. Secret inputs are unavailable.",
+        "approvals": "Command, file change and managed network prompts; no permission overlays or policy amendments."
+      }
+    }
+  },
+  "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+  "binding": {
+    "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+    "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+    "agent_id": "codex",
+    "workspace": {
+      "id": "dc93d52367cb49f8a4909e297c214a3f",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "continuity": {
+    "expected_code": "D-54B28E292E",
+    "same_chatraw_session": true,
+    "code_matched": true
+  },
+  "outcome": "native_evidence_pending"
+}

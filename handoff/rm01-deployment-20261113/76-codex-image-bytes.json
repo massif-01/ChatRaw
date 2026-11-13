@@ -1,0 +1,11 @@
+{
+  "native_thread": "01a1d581-d366-7db1-a194-a75060d24e47",
+  "images": [
+    {
+      "timestamp": "2026-11-13T15:27:53.661Z",
+      "media_prefix": "data:image/png;base64",
+      "bytes": 398,
+      "sha256": "f977427ec126e81deffeabd7c13cfc9fec320ebe44bbff2a10a23a21cbdc4d4d"
+    }
+  ]
+}

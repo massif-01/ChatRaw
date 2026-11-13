@@ -1,0 +1,26 @@
+{
+  "private_directory": "/var/backups/chatraw/20261113T151205Z-isolated-265c378f/maintenance-primary-152247",
+  "both_applications_stopped": true,
+  "before_backup_after_logical_states_equal": true,
+  "checks": [
+    {
+      "database": "chatraw",
+      "started_at": "2026-11-13T15:22:47.460528+00:00",
+      "finished_at": "2026-11-13T15:22:47.477007+00:00",
+      "integrity_check": "ok",
+      "logical_sha256": "0a9ac271783b82f2eca671037a7abc12d7a931901398931fe88b5ad56585ab64"
+    },
+    {
+      "database": "runner",
+      "started_at": "2026-11-13T15:22:47.482697+00:00",
+      "finished_at": "2026-11-13T15:22:47.500881+00:00",
+      "integrity_check": "ok",
+      "logical_sha256": "df53fdc1e8a57514431c19041f039f52009577c26b2fbd50bec681ca7b2553cb"
+    }
+  ],
+  "old_unknown_preserved": true,
+  "restored_copies_read_only_verified": true,
+  "cross_database_transaction_claimed": false,
+  "native_snapshot_reference": "/var/backups/chatraw/20261113T151205Z-isolated-265c378f/backup/runner",
+  "production_restore_performed": false
+}

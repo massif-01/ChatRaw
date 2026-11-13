@@ -1,0 +1,134 @@
+{
+  "session": {
+    "id": "5f775d782b4a4d40bb81a8d1a5bc8aad",
+    "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-f1d0f81336304d4c80219c772dda7837\",\"session_id\":\"session-f1d0f81336304d4c80219c772dda7837\"},\"session_id\":\"5f775d782b4a4d40bb81a8d1a5bc8aad\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/5f775d782b4a4d40bb81a8d1a5bc8aad\"}",
+    "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\",\"patches\":[\"/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml\"]}"
+  },
+  "events": [
+    {
+      "type": "tool/call",
+      "seq": 17,
+      "time": 1794583900539,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "callId": "call_83158f16dd5146ea833f2f1f",
+        "name": "bash",
+        "arguments": "{\"description\": \"Write and read the acceptance marker in this session workspace\", \"command\": \"printf %s A_DEEPSEEK_4002d4316ba4 > deny-1298e4a16d7d4a8c98fb6c890fd73805.txt && cat deny-1298e4a16d7d4a8c98fb6c890fd73805.txt\", \"workdir\": \"/var/lib/chatraw-runner/workspaces/5f775d782b4a4d40bb81a8d1a5bc8aad\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 20,
+      "time": 1794583900586,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_83158f16dd5146ea833f2f1f"
+          },
+          "toolCallId": "call_83158f16dd5146ea833f2f1f",
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) \u2014 otherwise switch the consumer to danger-full-access."
+            }
+          ],
+          "isError": true,
+          "id": "055caaea-665e-4326-9ed7-b0d6ec5575cf"
+        },
+        "error": {
+          "name": "SandboxUnavailableError",
+          "code": "SANDBOX_UNAVAILABLE"
+        }
+      },
+      "sourceEventSeqs": [
+        17
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 25,
+      "time": 1794583902405,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "callId": "call_24e1f3e9c77c49288e59c463",
+        "name": "bash",
+        "arguments": "{}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 26,
+      "time": 1794583902413,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_24e1f3e9c77c49288e59c463"
+          },
+          "toolCallId": "call_24e1f3e9c77c49288e59c463",
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: invalid arguments: missing required property \"description\"; missing required property \"command\""
+            }
+          ],
+          "isError": true,
+          "id": "58435609-0367-44ff-9493-e82e9a40a92c"
+        },
+        "error": {
+          "name": "ToolArgsError",
+          "code": "INVALID_ARGS"
+        }
+      },
+      "sourceEventSeqs": [
+        25
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "assistant/attempt",
+      "seq": 30,
+      "finish": [
+        {
+          "type": "chunk",
+          "time": 1794583903635,
+          "chunk": {
+            "type": "finish",
+            "reason": {
+              "kind": "error",
+              "failure": {
+                "message": "DeepSeek Messages stream: tool input is invalid JSON",
+                "code": "MALFORMED_RESPONSE"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "turn/end",
+      "seq": 32,
+      "time": 1794583903638,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "error",
+          "error": {
+            "message": "DeepSeek Messages stream: tool input is invalid JSON",
+            "code": "MALFORMED_RESPONSE"
+          }
+        }
+      }
+    }
+  ]
+}

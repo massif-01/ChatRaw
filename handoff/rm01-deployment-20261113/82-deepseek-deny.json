@@ -1,0 +1,41 @@
+{
+  "action": "deny",
+  "chat_id": "bb09da12-2161-4b51-b98c-3fe343171ba9",
+  "binding": {
+    "chat_id": "bb09da12-2161-4b51-b98c-3fe343171ba9",
+    "session_id": "404a7aeddfa94bc695947347b9f87625",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "404a7aeddfa94bc695947347b9f87625",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "run_id": "d784beb1261b490a83ea823fee0809a9",
+  "first_call_required": {
+    "description": "Write this one acceptance marker",
+    "command": "printf %s A_SAFE_d357ca5f252e > deny-e069377f13614bb8b2aa3a67d3b2f4f5.txt",
+    "sandbox_permissions": "danger-full-access",
+    "justification": "This fixed harmless one-file acceptance command needs one-time permission because the host sandbox backend is unavailable."
+  },
+  "workspace": "/var/lib/chatraw-runner/workspaces/404a7aeddfa94bc695947347b9f87625",
+  "target": "/var/lib/chatraw-runner/workspaces/404a7aeddfa94bc695947347b9f87625/deny-e069377f13614bb8b2aa3a67d3b2f4f5.txt",
+  "token": "A_SAFE_d357ca5f252e",
+  "approvals": [],
+  "snapshot": {
+    "chat_id": "bb09da12-2161-4b51-b98c-3fe343171ba9",
+    "session_id": "404a7aeddfa94bc695947347b9f87625",
+    "status": "completed",
+    "last_seq": 6,
+    "run_id": "d784beb1261b490a83ea823fee0809a9",
+    "interactions": [],
+    "final_text": "{\"tool_name\":\"bash\",\"params\":{\"command\":\"printf %s A_SAFE_d357ca5f252e > deny-e069377f13614bb8b2aa3a67d3b2f4f5.txt\",\"description\":\"Write this one acceptance marker\",\"justification\":\"This fixed harmless one-file acceptance command needs one-time permission because the host sandbox backend is unavailable.\",\"sandbox_permissions\":\"danger-full-access\"}}"
+  },
+  "file_state_after": {
+    "exists": false,
+    "content": null
+  },
+  "verdict": "FAIL"
+}

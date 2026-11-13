@@ -1,0 +1,37 @@
+{
+  "source_commit": "adeb279b5aeda7f26002a2b68f09e07969ea720f",
+  "runtime_files": {
+    "agent_runner/M1.md": "c8a44a2a54b2db6307c96bb7c83aa8d46b700c6269010df567bb2650e9a0b609",
+    "agent_runner/M2.md": "e3f438d8521bd018b187f774ad5abb6b20460171213b020920b3392ed3078b04",
+    "agent_runner/README.md": "9d644eddfd7fdce71a40dde2ee89a06594bfed7362fb5a8087ad9ddcc28f0ca1",
+    "agent_runner/__init__.py": "61afe23bad88334e862bd873ad6c4e28e73d1ec4f10716539f156460e66fb181",
+    "agent_runner/__main__.py": "a7b96e6264905a95ffe767c10e6026fedc2b0c935e001c7f407a2aef7f18b3da",
+    "agent_runner/adapters/__init__.py": "8b0d29606bf671145dbaad800aa0117fb92862a96b871dcbe73d3da039a8d732",
+    "agent_runner/adapters/base.py": "2ad8b55da9e4acdea8a0240359cd35ae840bf4d96406dee1f9162197c177d907",
+    "agent_runner/adapters/claude.py": "905b326ea3ae573ace75e922d9cc1ed8b0132896559d9fda925acef4e18a5362",
+    "agent_runner/adapters/codex.py": "04d302dd63fe2b2092e742a0031d7992dd991c1cff91903cad6aa245ee630b5a",
+    "agent_runner/adapters/codex_responses.py": "0229ba36d65ed2d913312750b32e028bff21a747748e900d7f076a8bf6f185a6",
+    "agent_runner/adapters/deepseek.py": "42efff6611a411aa7876a15dc9065a060e729e0713cea78929ce661f5074b07f",
+    "agent_runner/adapters/hermes.md": "049625d54624bfba0079e5d43d7a347b82dbb91f5e41c379ecb1b641878a180c",
+    "agent_runner/adapters/hermes.py": "83277e8f2304a29c57b54b62b63007c74f4ecf4185ec8d75525f95dfab640460",
+    "agent_runner/adapters/pi.py": "add83d8995784fa7eaaf6083b3a2059505ee2e6ad2191a33e1238fd737d7f7a9",
+    "agent_runner/adapters/pi_extensions/chatraw.ts": "26aee2e259789911f702cd457b755454457a43ba03b418b1cdf3ea1d80d307b4",
+    "agent_runner/files.py": "d07b1cc228ca4be9f48b0ee5014032ad57ca6650e386b4e70a8a149a0287bcaa",
+    "agent_runner/registry.py": "44f1bf7aa91dc00f03f90f844423feae83aff06637239a7d8ecc863a727db269",
+    "agent_runner/requirements-claude.txt": "27e3ec26bbcd0274b05c8620ed7a2a149ec1bc1495f4f076b2eca441fc26e446",
+    "agent_runner/requirements-deepseek.txt": "08e849a85ee4ade49dd8cd3f9005ce4eb9f7f06e5ebfa99d24b3667c4199cf01",
+    "agent_runner/requirements.txt": "7116a9659e91d4191c8864605402d0480f6262be11f4d751cdeff28cd953a169",
+    "agent_runner/runtime.py": "fded694fd508ba5490eaa1671419fa949dfd941e4815bdf8ad603240bbea97da",
+    "agent_runner/server.py": "080fe14ba98309e792172f823dfeb6d87329364278d522b1e6cae912fc0210a9",
+    "agent_runner/store.py": "bcd803674b0867d4d09b0355ca73b39c659ffdfa2f5be46aa0aee9ad8f52c10e",
+    "agent_runner/validation.py": "64abd70c55159511e032ee4108a6af11edf738363317929cabebfad29f327555"
+  },
+  "ui_assets": {
+    "agents.js": "9744c4bf0fc4c499437784ecb8d864ccf97e4c05049916b37c0d97f079228205",
+    "app.js": "6172c7ce18fc588252f28b69ece8f6a8140e7556e7608c421001b573493fc872",
+    "app.min.js": "cdfe94f136a01b8af324ff7ca4406ab00371882b85a8f894a7c01daf6e1f223c",
+    "styles.css": "23dda05d8d666d9f41bb53c4e41de73e91a58534a821bec07e450d0294e6d753",
+    "styles.min.css": "8124b8ebd53864226336974feb99d2806f602dc9eeec7b12a5a691bbcf8206f3",
+    "index.html": "97d8952abacc68fe233bc458d3dd276cf22edb82d1a585cb3ccc4e29e7fe264b"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "ready": {
+    "status": "ready",
+    "database": "connected"
+  },
+  "hashes": {
+    "agents.js": "9744c4bf0fc4c499437784ecb8d864ccf97e4c05049916b37c0d97f079228205",
+    "app.js": "6172c7ce18fc588252f28b69ece8f6a8140e7556e7608c421001b573493fc872",
+    "app.min.js": "cdfe94f136a01b8af324ff7ca4406ab00371882b85a8f894a7c01daf6e1f223c",
+    "styles.css": "23dda05d8d666d9f41bb53c4e41de73e91a58534a821bec07e450d0294e6d753",
+    "styles.min.css": "8124b8ebd53864226336974feb99d2806f602dc9eeec7b12a5a691bbcf8206f3",
+    "index.html": "97d8952abacc68fe233bc458d3dd276cf22edb82d1a585cb3ccc4e29e7fe264b",
+    "/api/plugins/hermes/icon": "84dc1a015ab2055e774f1b0425e16d7f6a7611face26dfb186378f78f28b8d65",
+    "/api/plugins/market/hermes/icon": "84dc1a015ab2055e774f1b0425e16d7f6a7611face26dfb186378f78f28b8d65"
+  }
+}
