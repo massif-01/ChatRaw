@@ -106,5 +106,15 @@
     "status": "unknown",
     "error_after_runner_recovery": "recovery_unavailable",
     "pending_codex_fix_deployed": false
+  },
+  "hermes_icon_overlay": {
+    "source_commit": "b5cafcde302c33535f4359faf005fc8150b94734",
+    "tag": "chatraw-agent-integration:b5cafcd-icon",
+    "image_id": "sha256:5e1ae59dfa5c07ffbfcdf1ed38441ad57bfe5f867405a2e747d6ffe68214d026",
+    "sha256": "84dc1a015ab2055e774f1b0425e16d7f6a7611face26dfb186378f78f28b8d65",
+    "installed_http_verified": true,
+    "market_http_verified": true,
+    "plugin_settings_and_sessions_preserved": true,
+    "native_services_restarted": false
   }
 }

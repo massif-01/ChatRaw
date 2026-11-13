@@ -1,0 +1,11 @@
+{
+  "models_hash": true,
+  "settings_hash": true,
+  "user_chat": true,
+  "unknown": true,
+  "native_pids": true,
+  "plugin_config_unchanged": true,
+  "hermes_nonicon_unchanged": true,
+  "mounts_unchanged": true,
+  "container_recreated": true
+}
