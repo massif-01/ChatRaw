@@ -1,0 +1,6 @@
+{"data": {"status": "queued"}, "run_id": "c87836f4a345490aa8e5f4eb5d9a290f", "schema_version": 1, "seq": 1, "session_id": "55512bdd173b496f8cc9be631380acbc", "timestamp": "2026-11-13T14:28:31.570701Z", "type": "status"}
+{"data": {"status": "running"}, "run_id": "c87836f4a345490aa8e5f4eb5d9a290f", "schema_version": 1, "seq": 2, "session_id": "55512bdd173b496f8cc9be631380acbc", "timestamp": "2026-11-13T14:28:31.572824Z", "type": "status"}
+{"data": {"text": "719734"}, "run_id": "c87836f4a345490aa8e5f4eb5d9a290f", "schema_version": 1, "seq": 3, "session_id": "55512bdd173b496f8cc9be631380acbc", "timestamp": "2026-11-13T14:28:36.033560Z", "type": "text_delta"}
+{"data": {"input_tokens": 9552, "output_tokens": 7}, "run_id": "c87836f4a345490aa8e5f4eb5d9a290f", "schema_version": 1, "seq": 4, "session_id": "55512bdd173b496f8cc9be631380acbc", "timestamp": "2026-11-13T14:28:36.036143Z", "type": "usage"}
+{"data": {"status": "completed"}, "run_id": "c87836f4a345490aa8e5f4eb5d9a290f", "schema_version": 1, "seq": 5, "session_id": "55512bdd173b496f8cc9be631380acbc", "timestamp": "2026-11-13T14:28:36.041783Z", "type": "status"}
+{"data": {"final_text": "719734", "status": "completed"}, "run_id": "c87836f4a345490aa8e5f4eb5d9a290f", "schema_version": 1, "seq": 6, "session_id": "55512bdd173b496f8cc9be631380acbc", "timestamp": "2026-11-13T14:28:36.041978Z", "type": "done"}

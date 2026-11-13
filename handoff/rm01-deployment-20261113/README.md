@@ -65,3 +65,5 @@ Codex 的首次 sandbox pwd 被宿主 AppArmor unprivileged_userns 的 net_admin
 `29-ordinary-chat.json` 与事件记录确认独立普通聊天返回 RM99_NORMAL_OK，首内容约0.413秒，总耗时约0.780秒，数据库中用户与助手消息各一条，agent_id/session_id 均为空。`30-final-state.json` 确认最终非终态 run 为零、Runner 数据库 integrity_check=ok、四项项目相关服务 active、镜像ID未变，TTO与共享端口仍监听。
 
 后续 DeepSeek PNG 模态调查见 [31号报告](31-deepseek-image-investigation.md) 与 [32号宿主 patch 交接](32-deepseek-native-patch-handoff.md)。D 的 Codex 工具执行中停止验收另留下 unknown，UI部署保留该状态；基础生成停止通过不代表工具执行中停止已通过。
+
+后续已部署99616b9的DeepSeek宿主patch支持，新会话真实PNG挑战通过；四种Agent原生压缩已只读核实。最新版本、原unknown恢复状态及残余限制见 [49号报告](49-deepseek-patches-and-compact-verification.md)。此前各阶段记录和失败证据保留。

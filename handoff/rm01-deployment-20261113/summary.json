@@ -63,8 +63,9 @@
   "whole_machine_restart": "NOT_RUN: not authorized",
   "runner_overlay": {
     "file": "agent_runner/adapters/deepseek.py",
-    "commit": "bec078ba0d8db6b330c5721ff22a71142e4ea9fb",
-    "sha256": "96e02e6e9ed421297fd5e90d32868831a625892e8874f923ca93932217905108"
+    "commit": "99616b9a289f30876aa949a174adccc25aefef72",
+    "sha256": "60daa18d32f38d9999970f2a2a1b71e4b227193308ed14c49afb2c4873840391",
+    "includes": "max_tokens and host-only patches"
   },
   "ordinary_chat": {
     "model_config_id": "default-chat",
@@ -85,5 +86,25 @@
     "user_chat_messages_preserved": 12,
     "runner_hermes_pids_unchanged": true,
     "preserved_unknown_run": "e05b8525931c4d1585cae79770c7be3d"
+  },
+  "deepseek_native_patches": {
+    "path": "/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml",
+    "scope": "new sessions only; old base_config and bindings unchanged",
+    "image_verdict": "PASS",
+    "image_run": "c87836f4a345490aa8e5f4eb5d9a290f",
+    "pixels_and_answer": "719734",
+    "max_tokens": 8192
+  },
+  "native_compaction_readonly": {
+    "claude": "confirmed_native_operation_and_same_session_continuity",
+    "pi": "confirmed_native_operation_and_same_session_continuity",
+    "deepseek": "confirmed_native_operation_and_same_session_continuity",
+    "hermes": "confirmed_native_operation_and_same_session_continuity"
+  },
+  "known_codex_unknown": {
+    "run_id": "e05b8525931c4d1585cae79770c7be3d",
+    "status": "unknown",
+    "error_after_runner_recovery": "recovery_unavailable",
+    "pending_codex_fix_deployed": false
   }
 }
