@@ -1,0 +1,23 @@
+{
+  "at_utc": "2026-11-13T16:05:29.841107+00:00",
+  "ready": {
+    "status": 200,
+    "body": "{\"status\":\"ready\",\"database\":\"connected\"}"
+  },
+  "user_chat_messages": 12,
+  "user_messages_sha256": "1cd9f66839cae5f43ce149e2f7a755e7ee16f252c0b138eab4cbfd4bde6b518d",
+  "user_messages_unchanged": true,
+  "ui_files_matching": 6,
+  "ui_hashes": {
+    "agents.js": "9744c4bf0fc4c499437784ecb8d864ccf97e4c05049916b37c0d97f079228205",
+    "app.js": "6172c7ce18fc588252f28b69ece8f6a8140e7556e7608c421001b573493fc872",
+    "app.min.js": "cdfe94f136a01b8af324ff7ca4406ab00371882b85a8f894a7c01daf6e1f223c",
+    "styles.css": "23dda05d8d666d9f41bb53c4e41de73e91a58534a821bec07e450d0294e6d753",
+    "styles.min.css": "8124b8ebd53864226336974feb99d2806f602dc9eeec7b12a5a691bbcf8206f3",
+    "index.html": "97d8952abacc68fe233bc458d3dd276cf22edb82d1a585cb3ccc4e29e7fe264b"
+  },
+  "boot_id_before": "7b402537-ac56-4957-b4ad-fc8632d148db",
+  "boot_id_after": "24e4247d-cfe9-4001-a26a-35268e37bf8c",
+  "root_reboot_command_executed": false,
+  "note": "A issued the reboot. Root takeover SSH attempt failed before remote command execution because host was already down. Root then re-established SSH and performed read-only checks."
+}
