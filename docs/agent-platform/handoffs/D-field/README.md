@@ -42,3 +42,9 @@ python3 verify.py pi compact --execute --output /absolute/evidence/pi-compact
 - Codex compact `b892d61229604a969fadde19a3d9bef4` 后，continuity run `cb7fea5232db43f093a71b0be18bef57` 失败。其余四个 Agent 有公开 API 连续性证据，原生压缩边界和原生身份仍需对应的原生记录。
 - DeepSeek 失败的同一张 PNG 经一次 .98 Anthropic Messages 直连对照返回 `525877`，与像素随机码一致。A 已在原 native session 找到图片引用，同时确认 profile 无模型模态声明。宿主原生 patch 接线由 `1cdc681` 提供；本轮现场使用的是变更前配置。四个答对的 Agent 已证明端到端像素挑战通过，逐条原生请求核对仍待 A。
 - DeepSeek 第二次停止加上 cwd 自校验，模型只输出将调用 bash 的文字。两次均无公开工具开始事件，无审批被允许。Codex、Claude、Pi、Hermes 的停止使用脚本较早的同一前台命令版本，两个绝对标记路径均经过 session 归属校验，后来增加了命令内的 cwd 断言。
+
+## DeepSeek 工具执行中停止复验
+
+在 .98 推理窗口移交后只提交一次。新建 ChatRaw managed 聊天 `779797c9-be32-4ac0-bdae-483106622be6`，run `292b915f502f4f0f8d81a069624049a8`。提示要求在当前目录通过原生 bash 执行精确命令，使用相对文件名并在写入前检查实际工作目录。模型补齐必填的工具描述后，默认沙箱返回 `SANDBOX_UNAVAILABLE`，模型在同一 run 内请求单次授权。公开审批只显示工具名，复验时只读核对了唯一未完成的原生调用、完整命令、前台模式和工作目录，再通过该 run 的公开审批 API 允许一次。这个现场结果只证明停止行为，公开审批完整性需部署修复后另验。
+
+停止前确认 `started` 内容匹配，`late` 缺失，并观察到归属该运行的原生 runtime、bash 和 sleep 进程。公开 run 到达 `cancelled`，原生同一 callId 的工具结果为 `ABORTED`，同一 turn 以 `aborted/disposed` 结束。首次观察到启动后 32.14 秒再次核对，`late` 仍缺失，三个所属进程均已退出。[原生和公开证据](evidence/deepseek-stop-verified/result.json)
