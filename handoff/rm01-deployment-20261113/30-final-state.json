@@ -1,0 +1,55 @@
+{
+  "nonterminal_runs": [],
+  "runner_integrity": "ok",
+  "deepseek_binding": {
+    "agent_id": "deepseek",
+    "native": {
+      "dsh_home": "/var/lib/chatraw-runner/deepseek/session-2c63be8b22744b3cb0c81413a51f6aad",
+      "session_id": "session-2c63be8b22744b3cb0c81413a51f6aad"
+    },
+    "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+    "workspace": "/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f"
+  },
+  "adapter_sha256": "96e02e6e9ed421297fd5e90d32868831a625892e8874f923ca93932217905108",
+  "services_active": [
+    "active",
+    "active",
+    "active",
+    "active"
+  ],
+  "container_image": "sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724",
+  "listeners": [
+    "State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess                            ",
+    "LISTEN 0      32     192.168.122.1:53         0.0.0.0:*                                      ",
+    "LISTEN 0      2048       127.0.0.1:46761      0.0.0.0:*    users:((\"hermes\",pid=34685,fd=19))",
+    "LISTEN 0      128      10.10.99.99:59090      0.0.0.0:*    users:((\"python\",pid=31977,fd=3)) ",
+    "LISTEN 0      4096   127.0.0.53%lo:53         0.0.0.0:*                                      ",
+    "LISTEN 0      128      10.10.99.99:59009      0.0.0.0:*    users:((\"tto-web\",pid=1956,fd=3)) ",
+    "LISTEN 0      4096         0.0.0.0:45799      0.0.0.0:*                                      ",
+    "LISTEN 0      4096         0.0.0.0:60835      0.0.0.0:*                                      ",
+    "LISTEN 0      128        127.0.0.1:51112      0.0.0.0:*    users:((\"python\",pid=58386,fd=10))",
+    "LISTEN 0      64           0.0.0.0:2049       0.0.0.0:*                                      ",
+    "LISTEN 0      4096         0.0.0.0:42823      0.0.0.0:*                                      ",
+    "LISTEN 0      2048         0.0.0.0:51111      0.0.0.0:*                                      ",
+    "LISTEN 0      4096         0.0.0.0:50735      0.0.0.0:*                                      ",
+    "LISTEN 0      4096      127.0.0.54:53         0.0.0.0:*                                      ",
+    "LISTEN 0      4096         0.0.0.0:631        0.0.0.0:*                                      ",
+    "LISTEN 0      64           0.0.0.0:33239      0.0.0.0:*                                      ",
+    "LISTEN 0      50           0.0.0.0:445        0.0.0.0:*                                      ",
+    "LISTEN 0      4096         0.0.0.0:111        0.0.0.0:*                                      ",
+    "LISTEN 0      4096         0.0.0.0:22         0.0.0.0:*                                      ",
+    "LISTEN 0      50           0.0.0.0:139        0.0.0.0:*                                      ",
+    "LISTEN 0      4096            [::]:48873         [::]:*                                      ",
+    "LISTEN 0      4096            [::]:38611         [::]:*                                      ",
+    "LISTEN 0      4096            [::]:36537         [::]:*                                      ",
+    "LISTEN 0      64              [::]:35465         [::]:*                                      ",
+    "LISTEN 0      64              [::]:2049          [::]:*                                      ",
+    "LISTEN 0      4096               *:9090             *:*                                      ",
+    "LISTEN 0      4096            [::]:33677         [::]:*                                      ",
+    "LISTEN 0      4096            [::]:631           [::]:*                                      ",
+    "LISTEN 0      50              [::]:445           [::]:*                                      ",
+    "LISTEN 0      4096            [::]:111           [::]:*                                      ",
+    "LISTEN 0      4096            [::]:22            [::]:*                                      ",
+    "LISTEN 0      50              [::]:139           [::]:*                                      "
+  ]
+}

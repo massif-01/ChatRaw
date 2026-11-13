@@ -2,7 +2,7 @@
 
 2026-11-13，A 线独占现场变更。入口：<http://10.10.99.99:51111>。本轮没有推送 Git、整机重启或修改 .98。
 
-当前安装与配置 5/5；真实工具、Runner 重启后原会话恢复、首段输出后停止各 4/5。DeepSeek 被原生默认输出预算阻塞，见 [根因与 D 线修复要求](DEEPSEEK-BLOCKER.md)。不能据五项 health ready 宣称五项模型执行都通过。
+当前安装与配置、真实工具执行、Runner 重启后原会话恢复、生成中停止均为 5/5。DeepSeek 的输出预算阻塞已由 D 线修复，原失败聊天与原 native session 均保留，8192 预算已在真实原生记录中确认。首次失败证据保留于 [根因记录](DEEPSEEK-BLOCKER.md)。普通聊天 default-chat 也已接通真实本地模型。
 
 | Agent | 安装版本 | 真实工具回合 | Runner 重启后原会话 | 输出中停止 |
 |---|---|---|---|---|
@@ -10,11 +10,11 @@
 | Claude | SDK 0.2.180 / CLI 2.1.321 | completed，Bash pwd | completed，原 session ID | cancelled |
 | Pi | 1.5.2 | completed，审批后 bash pwd | completed，原 session ID | cancelled |
 | Hermes | 6a0d2d12815c0546b0bcaf05046e2fe3293f60aa | completed，terminal pwd | completed，原 session ID | cancelled |
-| DeepSeek | SDK/runtime 0.2.2rc2 | failed，上下文预算超限 | 未执行 | 未执行 |
+| DeepSeek | SDK/runtime 0.2.2rc2 | 修复后 completed，审批后 bash pwd | completed，原 session ID | cancelled，原生进程退出 |
 
-所有成功工具回合都有 tool_started/tool_completed 事件，返回对应托管工作目录和 RM99_NATIVE_OK。停止测试在真实 text_delta 到达后发取消，四项均收敛到 cancelled，未以断开网页冒充停止。这里未验工具子进程在中途停止、原生压缩、图片或整机断电恢复。
+所有成功工具回合都有 tool_started/tool_completed 事件，返回对应托管工作目录和 RM99_NATIVE_OK。Codex/Claude/Pi/Hermes 停止测试在真实 text_delta 到达后发取消；DeepSeek 是整条消息交付，在运行态及对应原生进程到 .98 的连接持续接收数据时发取消，验证该进程退出。五项均收敛到 cancelled，未以断开网页冒充停止。这里未验工具子进程在中途停止、原生压缩、图片或整机断电恢复。
 
-ChatRaw 在 Pi 等待审批期间重启，run ID、session ID、待批 interaction ID 和 last_seq 均保持不变；重启后经原审批接口允许 pwd，随后完成。Runner 在全部任务终态后重启；四种成功 Agent 在原聊天准确回忆上轮标记和工作目录，原生身份保持不变。最终 Runner SQLite integrity_check=ok，非终态 run 数为零。Hermes Gateway 未随 Runner 重启。
+ChatRaw 在 Pi 等待审批期间重启，run ID、session ID、待批 interaction ID 和 last_seq 均保持不变；重启后经原审批接口允许 pwd，随后完成。Runner 在全部任务终态后重启；五种 Agent 均在各自 Runner 重启验收后，于原聊天准确回忆上轮标记和工作目录，原生身份保持不变。最终 Runner SQLite integrity_check=ok，非终态 run 数为零。Hermes Gateway 未随 Runner 重启。
 
 ## 现场拓扑与持久目录
 
@@ -31,11 +31,11 @@ ChatRaw 在 Pi 等待审批期间重启，run ID、session ID、待批 interacti
 
 唯一实际模型 `RM-01 VLM`，服务根 `http://10.10.99.98:58000`，无鉴权。占位 key 仅满足 SDK 格式检查。Codex Responses、Pi/Hermes Chat Completions、Claude/DeepSeek Messages 均直接接本地服务，没有新增协议代理。Claude base 不带 /v1，其他带 /v1。服务级 NO_PROXY/no_proxy 覆盖本地及 .98/.99。精确配置见 `04-configure.sh`；另补充了 Claude 默认三档模型均为 RM-01 VLM。
 
-Codex 的首次 sandbox pwd 被宿主 AppArmor unprivileged_userns 的 net_admin/setpcap 限制拒绝，原生记录为 `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted`。允许单次原生审批后 pwd 成功。没有关闭 AppArmor、修改全局 sysctl 或将默认执行改成无沙箱；这仍是现有宿主上的使用边界。
+Codex 的首次 sandbox pwd 被宿主 AppArmor unprivileged_userns 的 net_admin/setpcap 限制拒绝，原生记录为 `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted`。允许单次原生审批后 pwd 成功。DeepSeek 默认 workspace-write 也返回 SANDBOX_UNAVAILABLE，本次仅对已核实的 pwd 批准单次原生升级。没有关闭 AppArmor、修改全局 sysctl 或将默认执行改成无沙箱；这些仍是现有宿主上的使用边界。
 
 ## 版本与证据
 
-部署源码是 `e91d32f3674389be2c94c3a939c6a4179246e4c2`，与总控交付时主目录309efa3运行模块相同。源码包和镜像包位于宿主 `/home/rm01/chatraw/deployment-e91d32f`，四项交付文件 SHA256 校验通过。
+ChatRaw 容器仍为 `e91d32f3674389be2c94c3a939c6a4179246e4c2` 交付镜像。Runner 以该版本为基线，仅 `agent_runner/adapters/deepseek.py` 更新为 D 提交 `bec078ba0d8db6b330c5721ff22a71142e4ea9fb` 的文件；其 SHA256 为 `96e02e6e9ed421297fd5e90d32868831a625892e8874f923ca93932217905108`。更新前确认无活动任务，保留配置和数据库，未重建或更换主容器镜像。源码包和镜像包位于宿主 `/home/rm01/chatraw/deployment-e91d32f`，四项交付文件 SHA256 校验通过。
 
 - 源码包 SHA256：9f86e7d2c8920d36577778171d723d38fe8e9bf46a9480f27b9ff0d36a412d2c。
 - 镜像包 SHA256：7a15b08f4baa40339e6dbdd98215bdb1e5f6f791980a8e748c7add1427bc6450。
@@ -49,3 +49,17 @@ Codex 的首次 sandbox pwd 被宿主 AppArmor unprivileged_userns 的 net_admin
 安装脚本/日志按实际执行历史保留，包含初次镜像ID比较退出、ensurepip缺失、Hermes Python版本约束等诊断。这些文件不是幂等的一键安装器，不应盲目重放。
 
 归档日志仅规范化行尾空白与末尾空行；事件、错误和状态内容保持原样。
+
+## DeepSeek 修复后的现场闭环
+
+`20/21` 记录单文件版本、校验和部署。通过原有插件 settings API 设置 model=RM-01 VLM、max_tokens=8192。`22/23` 为原失败聊天的新工具回合及事件；`24` 保留同一原生记录内 256000 → 8192 的 request/header，以及真实 bash pwd 的调用和 exit code 0 结果。原失败 run 保留为 failed，没有重写历史。
+
+原聊天 `7660ee73-a125-49ed-9680-c9ab1b153b29`、Runner session `14d1c7a3dbda4f3fad1a20a4b35d523f`、native session `session-2c63be8b22744b3cb0c81413a51f6aad` 均未更换。`25` 与 `14-deepseek-resume.json` 记录再次重启 Runner 后恢复；`16-deepseek-cancel.json` 与事件记录验证 generation 中 cancel、原生 PID 58389 退出和最终 cancelled。
+
+停止测量最初尝试等待新 request/header，但运行中记录未及时提供该事件，脚本超时退出。随后针对同一个仍在运行的 run 观察原生进程连接和接收字节，再发取消；没有新建或重发该生成任务。该测量过程完整保留于 `27/28`，不能把它描述成收到了逐 token 文本。DeepSeek 未提交部分生成文本，cancel 后 final_text 为空，符合其整条消息交付模式。
+
+## 普通聊天配置与验证
+
+`default-chat` ID 保持不变，名称/model_id 为 RM-01 VLM；api_url 为 `http://10.10.99.98:58000/v1`，后端实际请求 `/v1/chat/completions`，API key 为空。context_length=262144、max_output=8192。未改已有 capability 开关；embedding/rerank 两项原样保持未配置。
+
+`29-ordinary-chat.json` 与事件记录确认独立普通聊天返回 RM99_NORMAL_OK，首内容约0.413秒，总耗时约0.780秒，数据库中用户与助手消息各一条，agent_id/session_id 均为空。`30-final-state.json` 确认最终非终态 run 为零、Runner 数据库 integrity_check=ok、四项项目相关服务 active、镜像ID未变，TTO与共享端口仍监听。

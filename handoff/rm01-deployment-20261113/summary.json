@@ -29,12 +29,26 @@
       "cancel": "cancelled"
     },
     "deepseek": {
-      "tool_run_id": "df3c329ec4db425c892bacd448570491",
-      "tool_run_status": "failed",
+      "initial_failure": {
+        "tool_run_id": "df3c329ec4db425c892bacd448570491",
+        "tool_run_status": "failed",
+        "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+        "tool_events": 0,
+        "resume": "NOT_RUN",
+        "cancel": "NOT_RUN"
+      },
+      "tool_run_id": "b5471970bbb24e639605d3c963d09907",
+      "tool_run_status": "completed",
       "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
-      "tool_events": 0,
-      "resume": "NOT_RUN",
-      "cancel": "NOT_RUN"
+      "tool_events": 2,
+      "successful_tool_events": 1,
+      "resume": "completed",
+      "cancel": "cancelled",
+      "native_session_id": "session-2c63be8b22744b3cb0c81413a51f6aad",
+      "original_native_session_retained": true,
+      "max_tokens": 8192,
+      "cancel_mode": "process_stop",
+      "owned_runtime_exited": true
     },
     "hermes": {
       "tool_run_id": "882a5e73da164864a38f556f2e4357bc",
@@ -46,5 +60,20 @@
     }
   },
   "chatraw_active_restart": "PASS: Pi run and pending approval preserved",
-  "whole_machine_restart": "NOT_RUN: not authorized"
+  "whole_machine_restart": "NOT_RUN: not authorized",
+  "runner_overlay": {
+    "file": "agent_runner/adapters/deepseek.py",
+    "commit": "bec078ba0d8db6b330c5721ff22a71142e4ea9fb",
+    "sha256": "96e02e6e9ed421297fd5e90d32868831a625892e8874f923ca93932217905108"
+  },
+  "ordinary_chat": {
+    "model_config_id": "default-chat",
+    "model": "RM-01 VLM",
+    "final_text": "RM99_NORMAL_OK",
+    "chat_id": "a926ede4-ad9c-431b-a6bb-375d889b9671",
+    "agent_id": null,
+    "context_length": 262144,
+    "max_output": 8192,
+    "embedding_rerank_configured": false
+  }
 }

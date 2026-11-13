@@ -1,0 +1,135 @@
+{
+  "nonterminal_runs": [],
+  "session": {
+    "id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+    "agent_id": "deepseek",
+    "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-2c63be8b22744b3cb0c81413a51f6aad\",\"session_id\":\"session-2c63be8b22744b3cb0c81413a51f6aad\"},\"session_id\":\"14d1c7a3dbda4f3fad1a20a4b35d523f\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f\"}"
+  },
+  "native_events": [
+    {
+      "type": "request/header",
+      "seq": 12,
+      "time": 1794576542687,
+      "config": {
+        "provider": "deepseek-official",
+        "model": "RM-01 VLM",
+        "maxTokens": 256000,
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "type": "request/header",
+      "seq": 22,
+      "time": 1794576567718,
+      "config": {
+        "provider": "deepseek-official",
+        "model": "RM-01 VLM",
+        "maxTokens": 256000,
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "type": "request/header",
+      "seq": 34,
+      "time": 1794577291703,
+      "config": {
+        "maxTokens": 8192,
+        "provider": "deepseek-official",
+        "model": "RM-01 VLM",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "type": "tool/call",
+      "seq": 37,
+      "time": 1794577297394,
+      "data": {
+        "turn": 2,
+        "step": 1,
+        "callId": "call_16d28940f7ee4f0bb5feb7f2",
+        "name": "bash",
+        "arguments": "{\"description\": \"Print current working directory\", \"command\": \"pwd\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 40,
+      "time": 1794577297440,
+      "data": {
+        "turn": 2,
+        "step": 1,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_16d28940f7ee4f0bb5feb7f2"
+          },
+          "toolCallId": "call_16d28940f7ee4f0bb5feb7f2",
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) \u2014 otherwise switch the consumer to danger-full-access."
+            }
+          ],
+          "isError": true,
+          "id": "6ba1f3bb-beb2-49d9-965e-e73bd82be29c"
+        },
+        "error": {
+          "name": "SandboxUnavailableError",
+          "code": "SANDBOX_UNAVAILABLE"
+        }
+      }
+    },
+    {
+      "type": "tool/call",
+      "seq": 45,
+      "time": 1794577304368,
+      "data": {
+        "turn": 2,
+        "step": 2,
+        "callId": "call_39c2e67b249444f2823dd909",
+        "name": "bash",
+        "arguments": "{\"description\": \"Print current working directory\", \"command\": \"pwd\", \"sandbox_permissions\": \"danger-full-access\", \"justification\": \"The session's workspace-write sandbox backend is unavailable on this host, so this harmless `pwd` needs the wider access to run as requested.\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 50,
+      "time": 1794577340367,
+      "data": {
+        "turn": 2,
+        "step": 2,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_39c2e67b249444f2823dd909"
+          },
+          "toolCallId": "call_39c2e67b249444f2823dd909",
+          "content": [
+            {
+              "type": "text",
+              "text": "/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f\n"
+            }
+          ],
+          "isError": false,
+          "id": "5683a510-28bd-4517-9a75-09d56dcc3c86"
+        },
+        "meta": {
+          "cwd": "/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f"
+        }
+      }
+    },
+    {
+      "type": "turn/end",
+      "seq": 56,
+      "time": 1794577349330,
+      "data": {
+        "turn": 2,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    }
+  ]
+}

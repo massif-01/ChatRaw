@@ -1,0 +1,129 @@
+{
+  "chat_id": "a926ede4-ad9c-431b-a6bb-375d889b9671",
+  "before_models": [
+    {
+      "id": "default-chat",
+      "name": "Chat Model",
+      "api_url": "",
+      "model_id": "",
+      "context_length": 8192,
+      "max_output": 4096,
+      "type": "chat",
+      "capability": {
+        "vision": false,
+        "reasoning": false,
+        "tools": false
+      }
+    },
+    {
+      "id": "default-embedding",
+      "name": "Embedding Model",
+      "api_url": "",
+      "model_id": "",
+      "context_length": 8192,
+      "max_output": 4096,
+      "type": "embedding",
+      "capability": {
+        "vision": false,
+        "reasoning": false,
+        "tools": false
+      }
+    },
+    {
+      "id": "default-rerank",
+      "name": "Rerank Model",
+      "api_url": "",
+      "model_id": "",
+      "context_length": 8192,
+      "max_output": 4096,
+      "type": "rerank",
+      "capability": {
+        "vision": false,
+        "reasoning": false,
+        "tools": false
+      }
+    }
+  ],
+  "after_models": [
+    {
+      "id": "default-embedding",
+      "name": "Embedding Model",
+      "api_url": "",
+      "model_id": "",
+      "context_length": 8192,
+      "max_output": 4096,
+      "type": "embedding",
+      "capability": {
+        "vision": false,
+        "reasoning": false,
+        "tools": false
+      }
+    },
+    {
+      "id": "default-rerank",
+      "name": "Rerank Model",
+      "api_url": "",
+      "model_id": "",
+      "context_length": 8192,
+      "max_output": 4096,
+      "type": "rerank",
+      "capability": {
+        "vision": false,
+        "reasoning": false,
+        "tools": false
+      }
+    },
+    {
+      "id": "default-chat",
+      "name": "RM-01 VLM",
+      "api_url": "http://10.10.99.98:58000/v1",
+      "model_id": "RM-01 VLM",
+      "context_length": 262144,
+      "max_output": 8192,
+      "type": "chat",
+      "capability": {
+        "vision": false,
+        "reasoning": false,
+        "tools": false
+      }
+    }
+  ],
+  "agent_binding": {
+    "chat_id": "a926ede4-ad9c-431b-a6bb-375d889b9671",
+    "agent_id": null,
+    "session_id": null,
+    "workspace": null,
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "embedding_rerank_unchanged": true,
+  "first_content_seconds": 0.413300208048895,
+  "elapsed_seconds": 0.7804688750184141,
+  "final_text": "RM99_NORMAL_OK",
+  "done": true,
+  "errors": [],
+  "messages": [
+    {
+      "id": "da923510-7ebf-4488-beb4-362923a73e24",
+      "chat_id": "a926ede4-ad9c-431b-a6bb-375d889b9671",
+      "role": "user",
+      "content": "Reply with exactly RM99_NORMAL_OK. No additional text.",
+      "created_at": "2026-11-13T13:46:36.679503"
+    },
+    {
+      "id": "417f2fa1-0b74-4a63-a239-9d542b97260b",
+      "chat_id": "a926ede4-ad9c-431b-a6bb-375d889b9671",
+      "role": "assistant",
+      "content": "RM99_NORMAL_OK",
+      "created_at": "2026-11-13T13:46:37.448564"
+    }
+  ],
+  "binding_after": {
+    "chat_id": "a926ede4-ad9c-431b-a6bb-375d889b9671",
+    "agent_id": null,
+    "session_id": null,
+    "workspace": null,
+    "active_run_id": null,
+    "last_run_id": null
+  }
+}

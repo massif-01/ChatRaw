@@ -1,4 +1,6 @@
-# DeepSeek .99 现场接线阻塞（2026-11-13）
+# DeepSeek .99 现场接线阻塞记录（2026-11-13）
+
+已解决：D 提交 bec078b 补齐可编辑 max_tokens，A 仅更新该 Runner adapter 并通过 settings API 设8192。原聊天/native session 上工具、Runner重启恢复和生成停止均通过。下文保留最初阻塞事实；后续证据见22至30号文件和最新README。
 
 ChatRaw e91d32f → Runner → SDK/runtime 0.2.2rc2 → .98 `RM-01 VLM` 首轮失败，run `df3c329ec4db425c892bacd448570491`。Codex、Claude、Pi、Hermes 的同类工具回合均完成。
 
