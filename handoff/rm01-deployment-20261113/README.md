@@ -73,3 +73,5 @@ Hermes图标已按B单文件资产同时更新镜像市场源和持久安装副�
 Codex e889688前台工具停止修复已部署，新会话单轮现场验收通过，完整延时后无late；旧unknown保持隔离。见 [63号报告](63-codex-foreground-stop.md)。
 
 最终组合已部署adeb279 Runner及六项菜单资产，Codex新会话压缩/续接/工具/图片通过；隔离恢复已核验，DeepSeek公开审批回合状态单列。见 [66号备份报告](66-isolated-restore-report.md) 与 [81号组合报告](81-final-combined-field-report.md)。
+
+最终归类见 [84号交接](84-final-closeout.md)：原三项通过；新增DeepSeek真实公开审批为NOT_VERIFIED/provider行为限制，三次不同失败全部保留。无新增现场操作。

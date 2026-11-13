@@ -172,6 +172,45 @@
         "result": "explicit native escalation JSON echoed as plain assistant text; zero tool calls"
       }
     ],
-    "window_released": true
+    "window_released": true,
+    "classification": "NOT_VERIFIED / provider tool-call behavior limitation",
+    "code_and_native_sdk_validation": "passed local independent review, as confirmed by root"
+  },
+  "original_three_closure": {
+    "codex_native_compact_continuity": {
+      "status": "PASS",
+      "evidence": "76-codex-final-verification.json",
+      "scope": "new compatibility-enabled binding; same native thread"
+    },
+    "codex_foreground_tool_stop": {
+      "status": "PASS",
+      "run_id": "26c25ba7d3604bd1baa6b6c2f0bda1d7",
+      "evidence": "62-codex-stop-verification.json"
+    },
+    "deepseek_foreground_tool_stop": {
+      "status": "PASS",
+      "run_id": "292b915f502f4f0f8d81a069624049a8",
+      "evidence_commit": "975ed11fc6f2c065047d7295a64c5060615affb0",
+      "evidence_path": "docs/agent-platform/handoffs/D-field/evidence/deepseek-stop-verified/result.json",
+      "evidence_sha256": "a4010695dd2e243c07ea9fe34ee14778761c12db35bf4046f5d2f2c90244851c",
+      "scope": "tool stop only; not full public approval display acceptance"
+    }
+  },
+  "final_closeout": {
+    "new_product_software_defect_observed": false,
+    "real_user_queued_running_waiting_before_restart": 0,
+    "old_unknown_preserved": true,
+    "whole_machine_restarted": false,
+    "additional_inference_after_window_release": false,
+    "original_user_data_preserved": true,
+    "final_state_evidence": [
+      "83-final-nonterminal.json",
+      "83-user-and-service-final.json"
+    ],
+    "runtime_and_image_evidence": [
+      "80-final-host-state.json",
+      "72-final-ui-http.json"
+    ],
+    "static_primary_backup_evidence": "70-maintenance-backup-result.json"
   }
 }
