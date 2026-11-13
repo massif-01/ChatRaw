@@ -1,13 +1,15 @@
 """Deterministic adapter lifecycle tests without native binaries or SDK installs."""
 
 import asyncio
+import json
 from pathlib import Path
 from threading import Event
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from agent_runner.adapters.base import AdapterError
-from agent_runner.adapters.deepseek import DeepSeekAdapter
+from agent_runner.adapters.deepseek import DeepSeekAdapter, _Run
 from agent_runner.adapters.pi import PiAdapter
 
 
@@ -246,3 +248,188 @@ class DeepSeekProtocolTests(unittest.IsolatedAsyncioTestCase):
                         binding, {"run_id": "r"}, {}, emit
                     )
                     self.assertEqual(recovered["status"], "unknown")
+
+
+class DeepSeekApprovalTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.events = asyncio.Queue()
+        self.responses = asyncio.Queue()
+        self.loop = asyncio.get_running_loop()
+        self.adapter = DeepSeekAdapter()
+        self.binding = {
+            "agent_id": "deepseek",
+            "session_id": "runner",
+            "workspace": "/tmp",
+            "native": {"session_id": "native"},
+        }
+        self.harness = SimpleNamespace(
+            client=SimpleNamespace(respond=self.record_response)
+        )
+        self.adapter._loop = self.loop
+        self.adapter._binding = self.binding
+        self.adapter._harness = self.harness
+        self.active = self.adapter._active = _Run("run", self.emit)
+
+    async def emit(self, event):
+        self.events.put_nowait(event)
+
+    def record_response(self, request_id, value):
+        self.loop.call_soon_threadsafe(self.responses.put_nowait, (request_id, value))
+
+    async def call(self, session_id, call_id, arguments, name="bash"):
+        notification = SimpleNamespace(
+            method="session.event",
+            payload={
+                "sessionId": session_id,
+                "event": {
+                    "type": "tool/call",
+                    "data": {
+                        "callId": call_id,
+                        "name": name,
+                        "arguments": json.dumps(arguments),
+                    },
+                },
+            },
+        )
+        await self.adapter._project(self.active, "native", notification)
+        self.assertEqual((await self.events.get())["type"], "tool_started")
+
+    def request(self, session_id, call_id, name="bash"):
+        request = SimpleNamespace(
+            method="approval/request",
+            id=call_id or "missing",
+            payload={
+                "sessionId": session_id,
+                "callId": call_id,
+                "toolName": name,
+            },
+        )
+        return asyncio.create_task(
+            self.adapter._approval_request(self.active, self.harness, request)
+        )
+
+    async def test_exact_call_identity_in_either_event_order(self):
+        for approval_first in (False, True):
+            with self.subTest(approval_first=approval_first):
+                call_id = f"target-{approval_first}"
+                await self.call("native", f"other-{call_id}", {"command": "false"})
+                await self.call("other", call_id, {"command": "false"})
+                if approval_first:
+                    task = self.request("native", call_id)
+                    await asyncio.sleep(0)
+                    self.assertIn(("native", call_id), self.active.awaiting_tool_calls)
+                    self.assertTrue(self.events.empty())
+                await self.call(
+                    "native",
+                    call_id,
+                    {
+                        "command": "printf one\nprintf two",
+                        "workdir": "/tmp",
+                        "sandbox_permissions": "danger-full-access",
+                        "justification": "token=fixture-secret",
+                    },
+                )
+                if not approval_first:
+                    task = self.request("native", call_id)
+                event = await asyncio.wait_for(self.events.get(), 1)
+                self.assertEqual(event["type"], "interaction_requested")
+                self.assertEqual(
+                    event["data"]["operation"],
+                    {
+                        "tool": "bash",
+                        "command": "printf one\nprintf two",
+                        "cwd_label": "/tmp",
+                    },
+                )
+                self.assertNotIn("fixture-secret", event["data"]["detail"])
+                self.assertIn("danger-full-access", event["data"]["detail"])
+                await self.adapter.respond(
+                    self.binding, event["native_key"], {"decision_id": "allowed-once"}
+                )
+                self.assertEqual(
+                    await asyncio.wait_for(self.responses.get(), 1),
+                    (call_id, {"outcome": "allowed-once"}),
+                )
+                self.assertEqual(
+                    (await self.events.get())["type"], "interaction_resolved"
+                )
+                await asyncio.wait_for(task, 1)
+
+    async def test_missing_mismatched_or_unreviewable_calls_never_offer_allow(self):
+        for index, (arguments, name, call_name) in enumerate(
+            (
+                ({}, "bash", "bash"),
+                ({"command": "x" * 100_001}, "bash", "bash"),
+                ({"command": "API_KEY=fixture-secret env"}, "bash", "bash"),
+                ({"command": "pwd"}, "bash", "write"),
+                ({"input": "fixture-secret"}, "apply_patch", "apply_patch"),
+            )
+        ):
+            call_id = str(index)
+            await self.call("native", call_id, arguments, call_name)
+            await asyncio.wait_for(self.request("native", call_id, name), 1)
+            self.assertEqual(
+                await self.responses.get(), (call_id, {"outcome": "cancelled"})
+            )
+            if call_name == name:
+                event = self.events.get_nowait()
+                self.assertEqual(event["type"], "error")
+                self.assertNotIn("fixture-secret", str(event))
+            self.assertTrue(self.events.empty())
+        await self.call("other", "crossed", {"command": "pwd", "workdir": "/tmp"})
+        with patch("agent_runner.adapters.deepseek._APPROVAL_LOOKUP_TIMEOUT", 0.01):
+            await asyncio.wait_for(self.request("native", "crossed"), 1)
+        self.assertEqual(
+            await self.responses.get(), ("crossed", {"outcome": "cancelled"})
+        )
+        await asyncio.wait_for(self.request("native", None), 1)
+        self.assertEqual(
+            await self.responses.get(), ("missing", {"outcome": "cancelled"})
+        )
+        self.assertTrue(self.events.empty())
+
+    async def test_file_approval_projects_scope_without_file_contents(self):
+        with patch.object(
+            self.adapter, "_approval_working_directory", return_value="/tmp/workspace"
+        ):
+            await self.call(
+                "native",
+                "write",
+                {"file_path": "file.txt", "content": "fixture-secret"},
+                "write",
+            )
+            task = self.request("native", "write", "write")
+            event = await asyncio.wait_for(self.events.get(), 1)
+            self.assertEqual(
+                event["data"]["operation"],
+                {"tool": "write", "paths": ["file.txt"], "cwd_label": "/tmp/workspace"},
+            )
+            self.assertNotIn("fixture-secret", str(event))
+            await self.adapter.respond(
+                self.binding, event["native_key"], {"decision_id": "rejected"}
+            )
+            await asyncio.wait_for(task, 1)
+            self.assertEqual(
+                await self.responses.get(), ("write", {"outcome": "rejected"})
+            )
+
+    async def test_stop_rejects_new_or_pending_approval(self):
+        await self.call("native", "pending", {"command": "pwd", "workdir": "/tmp"})
+        pending = self.request("native", "pending")
+        event = await asyncio.wait_for(self.events.get(), 1)
+        waiting = self.request("native", "racing")
+        await asyncio.sleep(0)
+        await self.adapter.cancel(self.binding, self.active.id)
+        await self.call("native", "racing", {"command": "pwd", "workdir": "/tmp"})
+        with self.assertRaises(AdapterError):
+            await self.adapter.respond(
+                self.binding, event["native_key"], {"decision_id": "allowed-once"}
+            )
+        await asyncio.wait_for(waiting, 1)
+        self.assertEqual(
+            await self.responses.get(), ("racing", {"outcome": "cancelled"})
+        )
+        self.assertTrue(self.events.empty())
+        pending.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await pending

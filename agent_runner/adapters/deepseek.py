@@ -2,11 +2,13 @@
 
 import asyncio
 import base64
+import json
+import re
 from concurrent.futures import CancelledError as ThreadCancelled
 from dataclasses import dataclass, field
-from functools import partial
 from importlib.metadata import PackageNotFoundError, version
 from os import getenv
+from os.path import isabs, join
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Thread
@@ -27,6 +29,12 @@ _MAX_SAFE_INTEGER = 2**53 - 1
 _IMAGES = {"image/png", "image/jpeg", "image/gif", "image/webp"}
 _IMAGE_LIMIT = 8 * 1024 * 1024
 _APPROVAL_CHOICES = {"allowed-once": "Allow once", "rejected": "Deny"}
+_APPROVAL_TEXT_LIMIT = 100_000  # Runner operation field limit.
+_APPROVAL_LOOKUP_TIMEOUT = 5
+_INLINE_CREDENTIAL = re.compile(
+    r"(?i)(\b(?:[\w-]*(?:token|secret|password|api[_-]?key)[\w-]*)"
+    r'(?:\s*[:=]\s*|\s+)|\bBearer\s+)(?:"[^"]*"|\x27[^\x27]*\x27|[^\s]+)'
+)
 
 
 @dataclass
@@ -39,6 +47,13 @@ class _Interaction:
 
 
 @dataclass
+class _ToolCall:
+    info: dict
+    arguments: str | None
+    approval_claimed: bool = False
+
+
+@dataclass
 class _Run:
     id: str
     emit: Emit
@@ -48,7 +63,10 @@ class _Run:
     stop: asyncio.Task | None = None
     text: str = ""
     last_turn: str | None = None
-    tools: dict = field(default_factory=dict)
+    tools: dict[tuple[str, str], _ToolCall] = field(default_factory=dict)
+    awaiting_tool_calls: dict[tuple[str, str], asyncio.Future] = field(
+        default_factory=dict
+    )
 
 
 class DeepSeekAdapter(AgentAdapter):
@@ -399,6 +417,9 @@ class DeepSeekAdapter(AgentAdapter):
             if active.stop:
                 await active.stop
             self._active = None
+            for waiter in active.awaiting_tool_calls.values():
+                if not waiter.done():
+                    waiter.cancel()
             pending_interactions, active.pending = active.pending, {}
             for key, pending in pending_interactions.items():
                 if not pending.reply.done():
@@ -487,17 +508,21 @@ class DeepSeekAdapter(AgentAdapter):
         elif kind == "tool/call":
             key = (native_session, data["callId"])
             info = {"tool_call_id": uuid4().hex, "name": data["name"][:128]}
-            active.tools[key] = info
+            call = _ToolCall(info, data.get("arguments"))
+            active.tools[key] = call
+            waiter = active.awaiting_tool_calls.get(key)
+            if waiter is not None and not waiter.done():
+                waiter.set_result(call)
             await active.emit({"type": "tool_started", "data": info})
         elif kind == "tool/result":
             message = data["message"]
-            info = active.tools.pop((native_session, message["toolCallId"]), None)
-            if info:
+            call = active.tools.pop((native_session, message["toolCallId"]), None)
+            if call:
                 await active.emit(
                     {
                         "type": "tool_completed",
                         "data": {
-                            **info,
+                            **call.info,
                             "status": "failed"
                             if message.get("isError")
                             else "completed",
@@ -550,23 +575,13 @@ class DeepSeekAdapter(AgentAdapter):
         try:
             if request.method == "approval/request":
                 if active is not None and active is self._active and not active.stop:
-                    name = request.payload.get("toolName")
-                    reason = request.payload.get("reason", "")
-                    if _text(name) and isinstance(reason, str) and len(reason) <= 8000:
-                        data = _approval(
-                            "Allow DeepSeek tool call?", reason, _APPROVAL_CHOICES
-                        )
-                        data["operation"] = {"tool": name[:128]}
-                        try:
-                            await self._ask(
-                                active,
-                                data,
-                                _approval_reply,
-                                dispatch=partial(harness.client.respond, request.id),
-                            )
+                    try:
+                        if await self._review_approval(active, harness, request):
                             return
-                        except Exception:
-                            pass
+                    except Exception:
+                        # A failed native lookup or Runner publication cannot
+                        # leave an outstanding approval waiting for an answer.
+                        pass
                 await asyncio.to_thread(
                     harness.client.respond, request.id, {"outcome": "cancelled"}
                 )
@@ -580,6 +595,128 @@ class DeepSeekAdapter(AgentAdapter):
         except Exception:
             # The SDK discards late replies after a cancelled or closed transport.
             return
+
+    async def _review_approval(self, active, harness, request):
+        session_id = request.payload.get("sessionId")
+        call_id = request.payload.get("callId")
+        name = request.payload.get("toolName")
+        if not all(_text(value) for value in (session_id, call_id, name)):
+            return False
+        key = (session_id, call_id)
+        call = active.tools.get(key)
+        if call is None:
+            # The SDK drains notifications and requests on different threads.
+            if key in active.awaiting_tool_calls:
+                return False
+            waiter = active.awaiting_tool_calls[key] = self._loop.create_future()
+            try:
+                call = await asyncio.wait_for(waiter, _APPROVAL_LOOKUP_TIMEOUT)
+            except TimeoutError:
+                return False
+            finally:
+                active.awaiting_tool_calls.pop(key)
+        if call.approval_claimed or call.info["name"] != name:
+            return False
+
+        def inactive():
+            return (
+                active is not self._active
+                or active.stop is not None
+                or harness is not self._harness
+                or active.tools.get(key) is not call
+            )
+
+        if inactive():
+            return False
+        call.approval_claimed = True
+        review = await self._approval_operation(harness, session_id, name, call)
+        if inactive():
+            return False
+        if review is None:
+            error = AdapterError(
+                "approval_unreviewable",
+                "DeepSeek approval denied because the operation cannot be shown in full.",
+            )
+            await active.emit({"type": "error", "data": error.as_data()})
+            return False
+        operation, detail = review
+        data = _approval("Allow DeepSeek tool call?", detail, _APPROVAL_CHOICES)
+        data["operation"] = operation
+        for choice in data["decisions"]:
+            choice["scope"] = "once"
+
+        def dispatch(answer):
+            if inactive():
+                raise AdapterError(
+                    "interaction_inactive", "DeepSeek approval is no longer active"
+                )
+            harness.client.respond(request.id, answer)
+
+        await self._ask(active, data, _approval_reply, inactive, dispatch)
+        return True
+
+    async def _approval_operation(self, harness, session_id, name, call):
+        try:
+            arguments = json.loads(call.arguments)
+        except (TypeError, ValueError):
+            return None
+        if not isinstance(arguments, dict):
+            return None
+        operation = {"tool": name}
+        mode = arguments.get("sandbox_permissions")
+        if mode not in (None, "read-only", "workspace-write", "danger-full-access"):
+            return None
+        details = [f"Requested sandbox mode: `{mode}`."] if mode else []
+        workdir = None
+        if name in {"bash", "pwsh"}:
+            command = arguments.get("command")
+            if not _reviewable_text(command, _APPROVAL_TEXT_LIMIT):
+                return None
+            operation["command"] = command
+            workdir = arguments.get("workdir")
+            if arguments.get("run_in_background") is True:
+                details.append("Runs in the background.")
+            reason = arguments.get("justification")
+            if isinstance(reason, str):
+                details.append(_INLINE_CREDENTIAL.sub(r"\1[redacted]", reason)[:2048])
+        elif name in {"write", "edit"}:
+            path = arguments.get("file_path")
+            if not _reviewable_text(path, 4000):
+                return None
+            operation["paths"] = [path]
+        else:
+            return None
+        if workdir is not None and not _reviewable_text(workdir, _APPROVAL_TEXT_LIMIT):
+            return None
+        if workdir is not None and isabs(workdir):
+            cwd = workdir
+        else:
+            # The SDK directory RPC opens unknown IDs as root sessions. It is
+            # safe to use only for the already-bound root, not descendants.
+            if session_id != self._binding["native"]["session_id"]:
+                return None
+            cwd = await self._approval_working_directory(harness, session_id)
+            if not _reviewable_text(cwd, _APPROVAL_TEXT_LIMIT) or not isabs(cwd):
+                return None
+            if workdir is not None:
+                cwd = join(cwd, workdir)
+        if len(cwd) > _APPROVAL_TEXT_LIMIT:
+            return None
+        operation["cwd_label"] = cwd
+        return operation, "\n\n".join(details)
+
+    @staticmethod
+    async def _approval_working_directory(harness, session_id):
+        from pydantic import RootModel
+
+        response = await asyncio.to_thread(
+            harness.client.request,
+            "session/working-directory/get",
+            {"sessionId": session_id},
+            response_model=RootModel[dict],
+            timeout_seconds=_APPROVAL_LOOKUP_TIMEOUT,
+        )
+        return response.root.get("cwd")
 
     async def _ask(self, active, data, encode, cancelled=None, dispatch=None):
         key = uuid4().hex
@@ -692,6 +829,15 @@ class DeepSeekAdapter(AgentAdapter):
 
 def _text(value):
     return isinstance(value, str) and bool(value.strip())
+
+
+def _reviewable_text(value, maximum):
+    return (
+        _text(value)
+        and len(value) <= maximum
+        and "\0" not in value
+        and not _INLINE_CREDENTIAL.search(value)
+    )
 
 
 def _input(message, attachments):

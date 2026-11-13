@@ -20,7 +20,7 @@
 |文本、推理|RPC 实时文本及原生提供的推理增量|按已提交的 assistant 消息推送文本及推理。SDK 不发实时 token，`streaming_text=false`|
 |工具|原生开始、更新、结束。省略原始参数和工具输出预览|原生工具调用和结果。省略原始参数和工具输出预览|
 |问答|RPC 原生选择、确认、输入和编辑器。配套 `ask_user` 通过同一 RPC 传单选、多选、自定义文本和批次|原生 `ask_user_question` 支持批次和自由文本。计划审阅保留计划正文、选项和取消语义|
-|工具审批|配套扩展在原生 `tool_call` 上审阅内置 `bash`、`write`、`edit`，仅允许一次或拒绝|启用原生审批请求，只映射该请求允许的一次授权、拒绝、取消。计划审阅使用原生问题通道|
+|工具审批|配套扩展在原生 `tool_call` 上审阅内置 `bash`、`write`、`edit`，仅允许一次或拒绝|按当前运行的原生 sessionId 与 callId 核对请求。Shell 显示完整命令和工作目录，write/edit 显示目标路径和工作目录。无法完整展示授权范围时取消该请求。计划审阅使用原生问题通道|
 |停止|清除待处理队列，调用 `abort`，用 `agent_settled.aborted` 或手动压缩的结束与命令响应确认|独占 runtime。等待原生 `shutdown` 确认其管理范围收敛，再由 SDK 释放并回收 runtime|
 |压缩|原生 `compact` RPC|原生 `/compact`|
 |图片|PNG/JPEG/GIF/WebP，所选模型需声明图片输入|PNG/JPEG/GIF/WebP，由原生 SDK 处理。目录未登记的自定义模型按仅文本处理。管理员可用 `llm-deepseek.config.models` 声明真实视觉模型的 `inputModalities: [text, image]`|

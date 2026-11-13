@@ -91,14 +91,15 @@ class _Model(BaseHTTPRequestHandler):
                         ],
                     },
                 )
-        elif text.startswith("TEST_BASH ") and not tool_result:
-            target = shlex.quote(text.removeprefix("TEST_BASH ").split()[0])
+        elif "TEST_BASH " in text and not tool_result:
+            target = shlex.quote(text.split("TEST_BASH ", 1)[1].split()[0])
             args = {
                 "command": f"printf ran > {target}",
                 "description": "Write fixture marker",
             }
             if deepseek:
                 args.update(
+                    command="# " + "x" * 2200 + "\n" + args["command"],
                     sandbox_permissions="danger-full-access",
                     justification="Write the fixture marker",
                 )
@@ -598,6 +599,16 @@ class DeepSeekNativeTests(_NativeCase):
     async def test_sdk_native_plan_and_permission(self):
         adapter = DeepSeekAdapter()
         binding = await self.binding(adapter, self.config, "permission")
+        changed_cwd = Path(binding["workspace"]) / "other"
+        changed_cwd.mkdir()
+        self.assertEqual(
+            await asyncio.to_thread(
+                adapter._harness.client.set_working_directory,
+                binding["native"]["session_id"],
+                str(changed_cwd),
+            ),
+            str(changed_cwd),
+        )
         for decision, should_exist in (("rejected", False), ("allowed-once", True)):
             marker = self.root / "permission" / decision
             task = asyncio.create_task(
@@ -605,7 +616,16 @@ class DeepSeekNativeTests(_NativeCase):
             )
             approval = await self.interaction(task)
             self.assertEqual(approval["data"]["kind"], "approval")
-            self.assertEqual(approval["data"]["operation"]["tool"], "bash")
+            self.assertEqual(
+                approval["data"]["operation"],
+                {
+                    "tool": "bash",
+                    "command": "# "
+                    + "x" * 2200
+                    + f"\nprintf ran > {shlex.quote(str(marker))}",
+                    "cwd_label": str(changed_cwd),
+                },
+            )
             with self.assertRaises(AdapterError):
                 await adapter.respond(
                     binding, approval["native_key"], {"decision_id": "always"}
