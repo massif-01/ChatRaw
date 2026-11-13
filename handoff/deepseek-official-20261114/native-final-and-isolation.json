@@ -1,0 +1,1272 @@
+{
+  "sessions": [
+    {
+      "id": "59f1926c4c694f41bca85f6342294691",
+      "agent_id": "deepseek",
+      "chat_id": "d70efb14-c8cf-4704-b0b8-1d7906913e4b",
+      "binding": {
+        "agent_id": "deepseek",
+        "native": {
+          "dsh_home": "/var/lib/chatraw-official-test/deepseek/session-c83fb1126c05426894806f017763474b",
+          "session_id": "session-c83fb1126c05426894806f017763474b"
+        },
+        "session_id": "59f1926c4c694f41bca85f6342294691",
+        "workspace": "/var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691"
+      },
+      "base_config": {
+        "dsh_home": "/var/lib/chatraw-official-test/deepseek",
+        "max_tokens": 8192,
+        "model": "deepseek-flash",
+        "provider": "deepseek-official",
+        "reasoning_effort": "high"
+      },
+      "config": {
+        "dsh_home": "/var/lib/chatraw-official-test/deepseek",
+        "max_tokens": 8192,
+        "model": "deepseek-flash",
+        "provider": "deepseek-official",
+        "reasoning_effort": "high"
+      }
+    },
+    {
+      "id": "8d48a05d42ed44f2b11d29ca0957c575",
+      "agent_id": "codex",
+      "chat_id": "bbbbbbdf-d5fc-47e1-8ec2-07c4f70a495d",
+      "binding": {
+        "agent_id": "codex",
+        "native": {
+          "run_id": "e8e2fa3267f844f7aab09a84a3a29a2c",
+          "thread_id": "01a1d66f-0879-7692-b88d-a0aa1e072886",
+          "turn_id": "01a1d66f-088e-7733-af1b-b2c7feaa0563"
+        },
+        "session_id": "8d48a05d42ed44f2b11d29ca0957c575",
+        "workspace": "/var/lib/chatraw-official-test/runner/workspaces/8d48a05d42ed44f2b11d29ca0957c575"
+      },
+      "base_config": {},
+      "config": {
+        "model": "deepseek-flash",
+        "reasoning": "low"
+      }
+    },
+    {
+      "id": "a16311bfa8874adf9e60ee3ca400bfed",
+      "agent_id": "deepseek",
+      "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+      "binding": {
+        "agent_id": "deepseek",
+        "native": {
+          "dsh_home": "/var/lib/chatraw-official-test/deepseek/session-eb6033e1b1374f98b704ef06b2e92b2d",
+          "session_id": "session-eb6033e1b1374f98b704ef06b2e92b2d"
+        },
+        "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+        "workspace": "/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed"
+      },
+      "base_config": {
+        "dsh_home": "/var/lib/chatraw-official-test/deepseek",
+        "max_tokens": 8192,
+        "model": "deepseek-flash",
+        "provider": "deepseek-official",
+        "reasoning_effort": "high"
+      },
+      "config": {
+        "dsh_home": "/var/lib/chatraw-official-test/deepseek",
+        "max_tokens": 8192,
+        "model": "deepseek-flash",
+        "provider": "deepseek-official",
+        "reasoning_effort": "high"
+      }
+    }
+  ],
+  "runs": [
+    {
+      "id": "7952e4ac2a664f498df6a2b00f264d81",
+      "session_id": "59f1926c4c694f41bca85f6342294691",
+      "chat_id": "d70efb14-c8cf-4704-b0b8-1d7906913e4b",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T19:16:30.407745Z",
+      "last_seq": 22
+    },
+    {
+      "id": "8d1d8752099a42b8b14e44059d02571f",
+      "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+      "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T19:19:32.051636Z",
+      "last_seq": 22
+    },
+    {
+      "id": "5fe04ea8079d4c0dab5000bfcd643e3f",
+      "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+      "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+      "kind": "run",
+      "status": "cancelled",
+      "created_at": "2026-11-13T19:31:34.833612Z",
+      "last_seq": 12
+    },
+    {
+      "id": "4d0e74249aa2432c9fb2595245181a0e",
+      "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+      "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T19:32:52.043026Z",
+      "last_seq": 7
+    },
+    {
+      "id": "4e0b89b9268a4b55bd9ecadf747fb42f",
+      "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+      "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+      "kind": "compact",
+      "status": "completed",
+      "created_at": "2026-11-13T19:34:49.111123Z",
+      "last_seq": 4
+    },
+    {
+      "id": "7e78acabe9b346adb93953fca9246d7a",
+      "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+      "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T19:35:45.288183Z",
+      "last_seq": 6
+    },
+    {
+      "id": "bb0171f13f3b49339fa16fdd05ba254c",
+      "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+      "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T19:38:59.401896Z",
+      "last_seq": 7
+    },
+    {
+      "id": "e8e2fa3267f844f7aab09a84a3a29a2c",
+      "session_id": "8d48a05d42ed44f2b11d29ca0957c575",
+      "chat_id": "bbbbbbdf-d5fc-47e1-8ec2-07c4f70a495d",
+      "kind": "run",
+      "status": "completed",
+      "created_at": "2026-11-13T19:42:43.177924Z",
+      "last_seq": 85
+    }
+  ],
+  "native": {
+    "59f1926c4c694f41bca85f6342294691": {
+      "native_id": "session-c83fb1126c05426894806f017763474b",
+      "source_log_sha256": "b7adff6617a1437b473d6db90715b1f45a2fae2ab4729dc3868227a648ed71b7",
+      "events": [
+        {
+          "type": "permission/preset",
+          "seq": 0,
+          "time": 1794597390260,
+          "data": {
+            "preset": "workspace-write"
+          }
+        },
+        {
+          "type": "sandbox/mode",
+          "seq": 1,
+          "time": 1794597390265,
+          "data": {
+            "mode": "workspace-write"
+          }
+        },
+        {
+          "type": "approval/policy",
+          "seq": 2,
+          "time": 1794597390266,
+          "data": {
+            "policy": "ask"
+          }
+        },
+        {
+          "type": "turn/start",
+          "seq": 4,
+          "time": 1794597391957,
+          "data": {
+            "turn": 1
+          }
+        },
+        {
+          "type": "tool/call",
+          "seq": 17,
+          "time": 1794597394103,
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "callId": "call_00_j6bkhom46PwGFXFqvF8F3405",
+            "name": "bash",
+            "arguments": "{\"description\": \"Run required marker-file shell command\", \"command\": \"test \\\"$(pwd -P)\\\" = /var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691 && set -C && printf '%s\\\\n' A_OFFICIAL_628ccb4fe104 > deny-54551e58100245c4abf2f239b5dd7972.txt\"}"
+          }
+        },
+        {
+          "type": "job/registered",
+          "seq": 18,
+          "time": 1794597394118,
+          "data": {
+            "jobId": "bash-a206ffcfc963494b",
+            "owner": "session-c83fb1126c05426894806f017763474b",
+            "kind": "bash",
+            "label": "test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691 && set -C && printf '%s\\n' A_OFFICIAL_628ccb4fe104 > deny-54551e58100245c4abf2f239b5dd7972.txt",
+            "startedAt": 1794597394118,
+            "toolCall": {
+              "callId": "call_00_j6bkhom46PwGFXFqvF8F3405",
+              "rootCallId": "call_00_j6bkhom46PwGFXFqvF8F3405"
+            }
+          }
+        },
+        {
+          "type": "job/settled",
+          "seq": 19,
+          "time": 1794597394142,
+          "data": {
+            "jobId": "bash-a206ffcfc963494b",
+            "owner": "session-c83fb1126c05426894806f017763474b",
+            "kind": "bash",
+            "label": "test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691 && set -C && printf '%s\\n' A_OFFICIAL_628ccb4fe104 > deny-54551e58100245c4abf2f239b5dd7972.txt",
+            "startedAt": 1794597394118,
+            "toolCall": {
+              "callId": "call_00_j6bkhom46PwGFXFqvF8F3405",
+              "rootCallId": "call_00_j6bkhom46PwGFXFqvF8F3405"
+            },
+            "finishedAt": 1794597394142,
+            "status": "failed",
+            "cause": "producer",
+            "producerReported": true,
+            "detail": "sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — otherwise switch the consumer to danger-full-access."
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 20,
+          "time": 1794597394148,
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "message": {
+              "role": "tool",
+              "source": {
+                "kind": "tool",
+                "callId": "call_00_j6bkhom46PwGFXFqvF8F3405"
+              },
+              "toolCallId": "call_00_j6bkhom46PwGFXFqvF8F3405",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Error: sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — otherwise switch the consumer to danger-full-access."
+                }
+              ],
+              "isError": true,
+              "id": "1efc09fe-1e2f-4389-a7f0-6edd417c3f84"
+            },
+            "error": {
+              "name": "SandboxUnavailableError",
+              "code": "SANDBOX_UNAVAILABLE"
+            }
+          },
+          "sourceEventSeqs": [
+            17
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "tool/call",
+          "seq": 25,
+          "time": 1794597396190,
+          "data": {
+            "turn": 1,
+            "step": 2,
+            "callId": "call_00_od1ldSA6QzphJVIlTKxu9457",
+            "name": "bash",
+            "arguments": "{\"command\": \"test \\\"$(pwd -P)\\\" = /var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691 && set -C && printf '%s\\\\n' A_OFFICIAL_628ccb4fe104 > deny-54551e58100245c4abf2f239b5dd7972.txt\", \"description\": \"Retry marker-file command with one-time approval\", \"justification\": \"The configured workspace-write sandbox backend is unusable on this host, so the exact requested command cannot run without a one-time danger-full-access approval.\", \"sandbox_permissions\": \"danger-full-access\"}"
+          }
+        },
+        {
+          "type": "approval/asked",
+          "seq": 26,
+          "time": 1794597396197,
+          "data": {
+            "id": "81ede15e-16ff-43d0-b8fd-45220572e665",
+            "toolName": "bash",
+            "callId": "call_00_od1ldSA6QzphJVIlTKxu9457",
+            "reason": "escalate sandbox to danger-full-access: The configured workspace-write sandbox backend is unusable on this host, so the exact requested command cannot run without a one-time danger-full-access approval."
+          }
+        },
+        {
+          "type": "approval/decided",
+          "seq": 27,
+          "time": 1794597506300,
+          "data": {
+            "id": "81ede15e-16ff-43d0-b8fd-45220572e665",
+            "outcome": "rejected"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 28,
+          "time": 1794597506302,
+          "data": {
+            "turn": 1,
+            "step": 2,
+            "message": {
+              "role": "tool",
+              "source": {
+                "kind": "tool",
+                "callId": "call_00_od1ldSA6QzphJVIlTKxu9457"
+              },
+              "toolCallId": "call_00_od1ldSA6QzphJVIlTKxu9457",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Error: the user rejected escalating this command to \"danger-full-access\"; it stays denied, so stop and explain instead of working around it"
+                }
+              ],
+              "isError": true,
+              "id": "b3ae38b1-a177-451a-bca6-8cd77aa7b116"
+            },
+            "error": {
+              "name": "SandboxEscalationError",
+              "code": "SANDBOX_ESCALATION_REJECTED"
+            }
+          },
+          "sourceEventSeqs": [
+            25
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "tool/call",
+          "seq": 33,
+          "time": 1794597509438,
+          "data": {
+            "turn": 1,
+            "step": 3,
+            "callId": "call_00_tHDtHSeMpGpVEPTLtOWG9224",
+            "name": "glob",
+            "arguments": "{\"pattern\": \"deny-54551e58100245c4abf2f239b5dd7972.txt\", \"path\": \"/var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691\"}"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 34,
+          "time": 1794597509514,
+          "data": {
+            "turn": 1,
+            "step": 3,
+            "message": {
+              "role": "tool",
+              "source": {
+                "kind": "tool",
+                "callId": "call_00_tHDtHSeMpGpVEPTLtOWG9224"
+              },
+              "toolCallId": "call_00_tHDtHSeMpGpVEPTLtOWG9224",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "No files found"
+                }
+              ],
+              "isError": false,
+              "id": "7dc377d0-2634-4418-8d36-03a38a84d656"
+            },
+            "meta": {
+              "shape": "paths",
+              "paths": [],
+              "truncated": false,
+              "total": 0
+            }
+          },
+          "sourceEventSeqs": [
+            33
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "turn/end",
+          "seq": 40,
+          "time": 1794597511783,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "model_usage": [
+        {
+          "event_type": "assistant/message",
+          "seq": 16,
+          "time": 1794597394100,
+          "usage": {
+            "inputTokens": 9192,
+            "outputTokens": 328,
+            "cacheReadTokens": 0,
+            "cacheWriteTokens": 0,
+            "totalTokens": 9520
+          }
+        },
+        {
+          "event_type": "assistant/message",
+          "seq": 24,
+          "time": 1794597396189,
+          "usage": {
+            "inputTokens": 139,
+            "outputTokens": 313,
+            "cacheReadTokens": 9472,
+            "cacheWriteTokens": 0,
+            "totalTokens": 9924
+          }
+        },
+        {
+          "event_type": "assistant/message",
+          "seq": 32,
+          "time": 1794597509436,
+          "usage": {
+            "inputTokens": 235,
+            "outputTokens": 222,
+            "cacheReadTokens": 9728,
+            "cacheWriteTokens": 0,
+            "totalTokens": 10185
+          }
+        },
+        {
+          "event_type": "assistant/message",
+          "seq": 38,
+          "time": 1794597511780,
+          "usage": {
+            "inputTokens": 216,
+            "outputTokens": 229,
+            "cacheReadTokens": 9984,
+            "cacheWriteTokens": 0,
+            "totalTokens": 10429
+          }
+        }
+      ],
+      "request_contexts": [
+        {
+          "provider": "deepseek-official",
+          "model": "deepseek-flash",
+          "contextWindow": 1048576,
+          "systemPromptUpdate": "in-history"
+        }
+      ]
+    },
+    "8d48a05d42ed44f2b11d29ca0957c575": {
+      "native_id": "01a1d66f-0879-7692-b88d-a0aa1e072886",
+      "source_log_sha256": "9dad3a4dc3a2f503bf2a56e9c6d3041c2bda28b6ca19af4a8dc97bf20f060d6a",
+      "custom_tool_records": [
+        {
+          "timestamp": "2026-11-13T19:42:46.265Z",
+          "payload": {
+            "type": "custom_tool_call",
+            "id": "53ab67fb-69db-4c19-a31c-4c94a9aed54a",
+            "status": "completed",
+            "call_id": "call_00_Tr3ib5haDlXNMGXz2V8r2002",
+            "name": "apply_patch",
+            "input": "*** Begin Patch\n*** Add File: native-marker-f06647a91de04e2cb861c45cd1683807.txt\n+OFFICIAL_CODEX_9828e1c79ac2\n*** End Patch\n",
+            "internal_chat_message_metadata_passthrough": {
+              "turn_id": "01a1d66f-088e-7733-af1b-b2c7feaa0563"
+            }
+          }
+        },
+        {
+          "timestamp": "2026-11-13T19:45:51.222Z",
+          "payload": {
+            "type": "custom_tool_call_output",
+            "id": "ctco_01a1d671-e676-74e3-9927-34d054b1d146",
+            "call_id": "call_00_Tr3ib5haDlXNMGXz2V8r2002",
+            "output": "Exit code: 0\nWall time: 0 seconds\nOutput:\nSuccess. Updated the following files:\nA native-marker-f06647a91de04e2cb861c45cd1683807.txt\n",
+            "internal_chat_message_metadata_passthrough": {
+              "turn_id": "01a1d66f-088e-7733-af1b-b2c7feaa0563",
+              "create_time": 1794599151.2229125
+            }
+          }
+        }
+      ],
+      "token_counts": [
+        {
+          "timestamp": "2026-11-13T19:45:51.224Z",
+          "info": {
+            "total_token_usage": {
+              "input_tokens": 9904,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 185,
+              "reasoning_output_tokens": 80,
+              "total_tokens": 10089
+            },
+            "last_token_usage": {
+              "input_tokens": 9904,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 185,
+              "reasoning_output_tokens": 80,
+              "total_tokens": 10089
+            },
+            "model_context_window": 996147
+          }
+        },
+        {
+          "timestamp": "2026-11-13T19:45:53.828Z",
+          "info": {
+            "total_token_usage": {
+              "input_tokens": 20050,
+              "cached_input_tokens": 9984,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 251,
+              "reasoning_output_tokens": 87,
+              "total_tokens": 20301
+            },
+            "last_token_usage": {
+              "input_tokens": 10146,
+              "cached_input_tokens": 9984,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 66,
+              "reasoning_output_tokens": 7,
+              "total_tokens": 10212
+            },
+            "model_context_window": 996147
+          }
+        }
+      ]
+    },
+    "a16311bfa8874adf9e60ee3ca400bfed": {
+      "native_id": "session-eb6033e1b1374f98b704ef06b2e92b2d",
+      "source_log_sha256": "c0cacb31261debe326d98d9ead380b2ac17e6507070f5801524467e0ccb862c5",
+      "events": [
+        {
+          "type": "permission/preset",
+          "seq": 0,
+          "time": 1794597571875,
+          "data": {
+            "preset": "workspace-write"
+          }
+        },
+        {
+          "type": "sandbox/mode",
+          "seq": 1,
+          "time": 1794597571880,
+          "data": {
+            "mode": "workspace-write"
+          }
+        },
+        {
+          "type": "approval/policy",
+          "seq": 2,
+          "time": 1794597571881,
+          "data": {
+            "policy": "ask"
+          }
+        },
+        {
+          "type": "turn/start",
+          "seq": 4,
+          "time": 1794597573599,
+          "data": {
+            "turn": 1
+          }
+        },
+        {
+          "type": "tool/call",
+          "seq": 17,
+          "time": 1794597576370,
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "callId": "call_00_ty69j0UB1a4YETGPcvUQ9513",
+            "name": "bash",
+            "arguments": "{\"description\": \"Create the single marker file with the exact command\", \"command\": \"test \\\"$(pwd -P)\\\" = /var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed && set -C && printf '%s\\\\n' A_OFFICIAL_e524b80d54f0 > allow-9ff52ce6e8bb41faa1aebe758244a666.txt\"}"
+          }
+        },
+        {
+          "type": "job/registered",
+          "seq": 18,
+          "time": 1794597576384,
+          "data": {
+            "jobId": "bash-b1f8b8309dd746ed",
+            "owner": "session-eb6033e1b1374f98b704ef06b2e92b2d",
+            "kind": "bash",
+            "label": "test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed && set -C && printf '%s\\n' A_OFFICIAL_e524b80d54f0 > allow-9ff52ce6e8bb41faa1aebe758244a666.txt",
+            "startedAt": 1794597576384,
+            "toolCall": {
+              "callId": "call_00_ty69j0UB1a4YETGPcvUQ9513",
+              "rootCallId": "call_00_ty69j0UB1a4YETGPcvUQ9513"
+            }
+          }
+        },
+        {
+          "type": "job/settled",
+          "seq": 19,
+          "time": 1794597576408,
+          "data": {
+            "jobId": "bash-b1f8b8309dd746ed",
+            "owner": "session-eb6033e1b1374f98b704ef06b2e92b2d",
+            "kind": "bash",
+            "label": "test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed && set -C && printf '%s\\n' A_OFFICIAL_e524b80d54f0 > allow-9ff52ce6e8bb41faa1aebe758244a666.txt",
+            "startedAt": 1794597576384,
+            "toolCall": {
+              "callId": "call_00_ty69j0UB1a4YETGPcvUQ9513",
+              "rootCallId": "call_00_ty69j0UB1a4YETGPcvUQ9513"
+            },
+            "finishedAt": 1794597576408,
+            "status": "failed",
+            "cause": "producer",
+            "producerReported": true,
+            "detail": "sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — otherwise switch the consumer to danger-full-access."
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 20,
+          "time": 1794597576414,
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "message": {
+              "role": "tool",
+              "source": {
+                "kind": "tool",
+                "callId": "call_00_ty69j0UB1a4YETGPcvUQ9513"
+              },
+              "toolCallId": "call_00_ty69j0UB1a4YETGPcvUQ9513",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Error: sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — otherwise switch the consumer to danger-full-access."
+                }
+              ],
+              "isError": true,
+              "id": "b727c54c-9464-4350-9f73-f86c125fc1e3"
+            },
+            "error": {
+              "name": "SandboxUnavailableError",
+              "code": "SANDBOX_UNAVAILABLE"
+            }
+          },
+          "sourceEventSeqs": [
+            17
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "tool/call",
+          "seq": 25,
+          "time": 1794597578445,
+          "data": {
+            "turn": 1,
+            "step": 2,
+            "callId": "call_00_EytqAdmKaqvnOluBNYuw1085",
+            "name": "bash",
+            "arguments": "{\"command\": \"test \\\"$(pwd -P)\\\" = /var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed && set -C && printf '%s\\\\n' A_OFFICIAL_e524b80d54f0 > allow-9ff52ce6e8bb41faa1aebe758244a666.txt\", \"description\": \"One-shot approved retry of the exact marker command\", \"justification\": \"The configured workspace-write sandbox has no usable backend on this host, so the exact marker-writing command cannot run without the normal one-time full-access approval.\", \"sandbox_permissions\": \"danger-full-access\"}"
+          }
+        },
+        {
+          "type": "approval/asked",
+          "seq": 26,
+          "time": 1794597578454,
+          "data": {
+            "id": "532c4a53-cecf-48f3-a63d-9a036c37dda1",
+            "toolName": "bash",
+            "callId": "call_00_EytqAdmKaqvnOluBNYuw1085",
+            "reason": "escalate sandbox to danger-full-access: The configured workspace-write sandbox has no usable backend on this host, so the exact marker-writing command cannot run without the normal one-time full-access approval."
+          }
+        },
+        {
+          "type": "approval/decided",
+          "seq": 27,
+          "time": 1794597710230,
+          "data": {
+            "id": "532c4a53-cecf-48f3-a63d-9a036c37dda1",
+            "outcome": "allowed-once"
+          }
+        },
+        {
+          "type": "job/registered",
+          "seq": 28,
+          "time": 1794597710302,
+          "data": {
+            "jobId": "bash-69dfedc3fbc649f1",
+            "owner": "session-eb6033e1b1374f98b704ef06b2e92b2d",
+            "kind": "bash",
+            "label": "test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed && set -C && printf '%s\\n' A_OFFICIAL_e524b80d54f0 > allow-9ff52ce6e8bb41faa1aebe758244a666.txt",
+            "startedAt": 1794597710301,
+            "toolCall": {
+              "callId": "call_00_EytqAdmKaqvnOluBNYuw1085",
+              "rootCallId": "call_00_EytqAdmKaqvnOluBNYuw1085"
+            }
+          }
+        },
+        {
+          "type": "job/settled",
+          "seq": 29,
+          "time": 1794597710307,
+          "data": {
+            "jobId": "bash-69dfedc3fbc649f1",
+            "owner": "session-eb6033e1b1374f98b704ef06b2e92b2d",
+            "kind": "bash",
+            "label": "test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed && set -C && printf '%s\\n' A_OFFICIAL_e524b80d54f0 > allow-9ff52ce6e8bb41faa1aebe758244a666.txt",
+            "startedAt": 1794597710301,
+            "toolCall": {
+              "callId": "call_00_EytqAdmKaqvnOluBNYuw1085",
+              "rootCallId": "call_00_EytqAdmKaqvnOluBNYuw1085"
+            },
+            "finishedAt": 1794597710307,
+            "status": "completed",
+            "cause": "producer",
+            "producerReported": true,
+            "detail": "exit code: 0"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 30,
+          "time": 1794597710312,
+          "data": {
+            "turn": 1,
+            "step": 2,
+            "message": {
+              "role": "tool",
+              "source": {
+                "kind": "tool",
+                "callId": "call_00_EytqAdmKaqvnOluBNYuw1085"
+              },
+              "toolCallId": "call_00_EytqAdmKaqvnOluBNYuw1085",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "(no output)"
+                }
+              ],
+              "isError": false,
+              "id": "2356bfb3-f653-46e8-8dbe-40240c0ff5fc"
+            },
+            "meta": {
+              "cwd": "/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed"
+            }
+          },
+          "sourceEventSeqs": [
+            25
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "tool/call",
+          "seq": 35,
+          "time": 1794597714474,
+          "data": {
+            "turn": 1,
+            "step": 3,
+            "callId": "call_00_zbd5Cu99TDUkUIjxN4QU9464",
+            "name": "read",
+            "arguments": "{\"file_path\": \"/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/allow-9ff52ce6e8bb41faa1aebe758244a666.txt\"}"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 36,
+          "time": 1794597714487,
+          "data": {
+            "turn": 1,
+            "step": 3,
+            "message": {
+              "role": "tool",
+              "source": {
+                "kind": "tool",
+                "callId": "call_00_zbd5Cu99TDUkUIjxN4QU9464"
+              },
+              "toolCallId": "call_00_zbd5Cu99TDUkUIjxN4QU9464",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "<path>/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/allow-9ff52ce6e8bb41faa1aebe758244a666.txt</path>\n<type>file</type>\n<content>\n1: A_OFFICIAL_e524b80d54f0\n\n(End of file - total 1 lines)\n</content>"
+                }
+              ],
+              "isError": false,
+              "id": "3c4dc547-0cfb-4ce4-b0ce-98505daa2216"
+            },
+            "meta": {
+              "path": "/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/allow-9ff52ce6e8bb41faa1aebe758244a666.txt",
+              "offset": 1,
+              "lines": [
+                {
+                  "number": 1,
+                  "text": "A_OFFICIAL_e524b80d54f0"
+                }
+              ],
+              "totalLines": 1
+            }
+          },
+          "sourceEventSeqs": [
+            35
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "turn/end",
+          "seq": 42,
+          "time": 1794597716600,
+          "data": {
+            "turn": 1,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        },
+        {
+          "type": "turn/start",
+          "seq": 44,
+          "time": 1794598294843,
+          "data": {
+            "turn": 2
+          }
+        },
+        {
+          "type": "tool/call",
+          "seq": 51,
+          "time": 1794598303030,
+          "data": {
+            "turn": 2,
+            "step": 1,
+            "callId": "call_00_1zGdefUr2tD05onfZCgN0211",
+            "name": "bash",
+            "arguments": "{\"command\": \"test \\\"$(pwd -P)\\\" = '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed' && set -C && printf '%s\\\\n' '2b8f4419cb6b4185b1a80063af519066' > '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/d-2b8f4419cb6b4185b1a80063af519066.started' && sleep 30 && printf '%s\\\\n' '2b8f4419cb6b4185b1a80063af519066' > '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/d-2b8f4419cb6b4185b1a80063af519066.late'\", \"description\": \"Run the exact foreground acceptance command once\", \"timeoutMs\": 120000, \"justification\": \"The configured workspace-write sandbox has no usable backend on this host (as already observed), so this single exact acceptance command needs the normal one-time full-access approval to write its two marker files.\", \"sandbox_permissions\": \"danger-full-access\"}"
+          }
+        },
+        {
+          "type": "approval/asked",
+          "seq": 52,
+          "time": 1794598303039,
+          "data": {
+            "id": "08b798a5-ad9a-4a17-b659-03bf60f1c4aa",
+            "toolName": "bash",
+            "callId": "call_00_1zGdefUr2tD05onfZCgN0211",
+            "reason": "escalate sandbox to danger-full-access: The configured workspace-write sandbox has no usable backend on this host (as already observed), so this single exact acceptance command needs the normal one-time full-access approval to write its two marker files."
+          }
+        },
+        {
+          "type": "approval/decided",
+          "seq": 53,
+          "time": 1794598303234,
+          "data": {
+            "id": "08b798a5-ad9a-4a17-b659-03bf60f1c4aa",
+            "outcome": "allowed-once"
+          }
+        },
+        {
+          "type": "job/registered",
+          "seq": 54,
+          "time": 1794598303247,
+          "data": {
+            "jobId": "bash-232011fcfdee4559",
+            "owner": "session-eb6033e1b1374f98b704ef06b2e92b2d",
+            "kind": "bash",
+            "label": "test \"$(pwd -P)\" = '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed' && set -C && printf '%s\\n' '2b8f4419cb6b4185b1a80063af519066' > '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/d-2b8f4419cb6b4185b1a80063af519066.started' && sleep 30 && printf '%s\\n' '2b8f4419cb6b4185b1a80063af519066' > '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/d-2b8f4419cb6b4185b1a80063af519066.late'",
+            "startedAt": 1794598303247,
+            "toolCall": {
+              "callId": "call_00_1zGdefUr2tD05onfZCgN0211",
+              "rootCallId": "call_00_1zGdefUr2tD05onfZCgN0211"
+            }
+          }
+        },
+        {
+          "type": "job/settled",
+          "seq": 55,
+          "time": 1794598303439,
+          "data": {
+            "jobId": "bash-232011fcfdee4559",
+            "owner": "session-eb6033e1b1374f98b704ef06b2e92b2d",
+            "kind": "bash",
+            "label": "test \"$(pwd -P)\" = '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed' && set -C && printf '%s\\n' '2b8f4419cb6b4185b1a80063af519066' > '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/d-2b8f4419cb6b4185b1a80063af519066.started' && sleep 30 && printf '%s\\n' '2b8f4419cb6b4185b1a80063af519066' > '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/d-2b8f4419cb6b4185b1a80063af519066.late'",
+            "startedAt": 1794598303247,
+            "toolCall": {
+              "callId": "call_00_1zGdefUr2tD05onfZCgN0211",
+              "rootCallId": "call_00_1zGdefUr2tD05onfZCgN0211"
+            },
+            "finishedAt": 1794598303439,
+            "status": "killed",
+            "cause": "kill",
+            "producerReported": true,
+            "detail": "signal: SIGTERM; tool call aborted"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 56,
+          "time": 1794598303441,
+          "data": {
+            "turn": 2,
+            "step": 1,
+            "message": {
+              "role": "tool",
+              "source": {
+                "kind": "tool",
+                "callId": "call_00_1zGdefUr2tD05onfZCgN0211"
+              },
+              "toolCallId": "call_00_1zGdefUr2tD05onfZCgN0211",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Error: tool call aborted"
+                }
+              ],
+              "isError": true,
+              "id": "5c68a0a4-aa03-4e8e-9886-224af36ead19"
+            },
+            "error": {
+              "name": "AbortError",
+              "code": "ABORTED"
+            }
+          },
+          "sourceEventSeqs": [
+            51
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "turn/end",
+          "seq": 58,
+          "time": 1794598303442,
+          "data": {
+            "turn": 2,
+            "reason": {
+              "kind": "aborted",
+              "reason": {
+                "kind": "disposed"
+              }
+            }
+          }
+        },
+        {
+          "type": "turn/start",
+          "seq": 61,
+          "time": 1794598377339,
+          "data": {
+            "turn": 3
+          }
+        },
+        {
+          "type": "turn/end",
+          "seq": 69,
+          "time": 1794598402890,
+          "data": {
+            "turn": 3,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        },
+        {
+          "type": "compaction/start",
+          "seq": 71,
+          "time": 1794598489126,
+          "data": {
+            "compactionId": "ab5ee40d-dce8-46b7-b39c-c7c4164e1465",
+            "sourceCommandId": "cmd-afa93882-1",
+            "turn": null
+          }
+        },
+        {
+          "type": "compaction/summary",
+          "seq": 73,
+          "time": 1794598498249,
+          "data": {
+            "compactionId": "ab5ee40d-dce8-46b7-b39c-c7c4164e1465",
+            "sourceCommandId": "cmd-afa93882-1",
+            "shadowedSeqs": [
+              8,
+              9,
+              10,
+              11,
+              16,
+              20,
+              24,
+              30,
+              34,
+              36,
+              40,
+              47,
+              48,
+              50,
+              56,
+              64
+            ],
+            "shadowedTokenCount": 3915,
+            "provider": "deepseek-official",
+            "model": "deepseek-flash",
+            "maxTokens": 65536,
+            "usage": {
+              "inputTokens": 484,
+              "outputTokens": 1675,
+              "cacheReadTokens": 12800,
+              "cacheWriteTokens": 0,
+              "totalTokens": 14959
+            },
+            "summary_sha256": "9a13670e0175f4fb74fa7081afb4e3ee1736a79e852de4ea3d12d89d06d70378",
+            "summary_chars": 4278,
+            "rawOutput_sha256": "8a63d6f523465b941ba008e3ad1deec01c236eefa4839be56b67efdf9bd8c00e",
+            "rawOutput_chars": 6332
+          }
+        },
+        {
+          "type": "compaction/end",
+          "seq": 75,
+          "time": 1794598498251,
+          "data": {
+            "compactionId": "ab5ee40d-dce8-46b7-b39c-c7c4164e1465",
+            "sourceCommandId": "cmd-afa93882-1",
+            "turn": null
+          }
+        },
+        {
+          "type": "turn/start",
+          "seq": 78,
+          "time": 1794598545294,
+          "data": {
+            "turn": 4
+          }
+        },
+        {
+          "type": "turn/end",
+          "seq": 88,
+          "time": 1794598547427,
+          "data": {
+            "turn": 4,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        },
+        {
+          "type": "turn/start",
+          "seq": 91,
+          "time": 1794598739430,
+          "data": {
+            "turn": 5
+          }
+        },
+        {
+          "type": "turn/end",
+          "seq": 99,
+          "time": 1794598742918,
+          "data": {
+            "turn": 5,
+            "reason": {
+              "kind": "completed"
+            }
+          }
+        }
+      ],
+      "model_usage": [
+        {
+          "event_type": "assistant/message",
+          "seq": 16,
+          "time": 1794597576366,
+          "usage": {
+            "inputTokens": 870,
+            "outputTokens": 352,
+            "cacheReadTokens": 8320,
+            "cacheWriteTokens": 0,
+            "totalTokens": 9542
+          }
+        },
+        {
+          "event_type": "assistant/message",
+          "seq": 24,
+          "time": 1794597578443,
+          "usage": {
+            "inputTokens": 161,
+            "outputTokens": 349,
+            "cacheReadTokens": 9472,
+            "cacheWriteTokens": 0,
+            "totalTokens": 9982
+          }
+        },
+        {
+          "event_type": "assistant/message",
+          "seq": 34,
+          "time": 1794597714471,
+          "usage": {
+            "inputTokens": 140,
+            "outputTokens": 395,
+            "cacheReadTokens": 9856,
+            "cacheWriteTokens": 0,
+            "totalTokens": 10391
+          }
+        },
+        {
+          "event_type": "assistant/message",
+          "seq": 40,
+          "time": 1794597716598,
+          "usage": {
+            "inputTokens": 259,
+            "outputTokens": 265,
+            "cacheReadTokens": 10240,
+            "cacheWriteTokens": 0,
+            "totalTokens": 10764
+          }
+        },
+        {
+          "event_type": "assistant/message",
+          "seq": 50,
+          "time": 1794598303028,
+          "usage": {
+            "inputTokens": 417,
+            "outputTokens": 1302,
+            "cacheReadTokens": 10752,
+            "cacheWriteTokens": 0,
+            "totalTokens": 12471
+          }
+        },
+        {
+          "event_type": "assistant/message",
+          "seq": 67,
+          "time": 1794598402882,
+          "usage": {
+            "inputTokens": 489,
+            "outputTokens": 4395,
+            "cacheReadTokens": 12416,
+            "cacheWriteTokens": 0,
+            "totalTokens": 17300
+          }
+        },
+        {
+          "event_type": "compaction/summary",
+          "seq": 73,
+          "time": 1794598498249,
+          "usage": {
+            "inputTokens": 484,
+            "outputTokens": 1675,
+            "cacheReadTokens": 12800,
+            "cacheWriteTokens": 0,
+            "totalTokens": 14959
+          }
+        },
+        {
+          "event_type": "assistant/message",
+          "seq": 86,
+          "time": 1794598547425,
+          "usage": {
+            "inputTokens": 6321,
+            "outputTokens": 14,
+            "cacheReadTokens": 8320,
+            "cacheWriteTokens": 0,
+            "totalTokens": 14655
+          }
+        },
+        {
+          "event_type": "assistant/message",
+          "seq": 97,
+          "time": 1794598742915,
+          "usage": {
+            "inputTokens": 216,
+            "outputTokens": 276,
+            "cacheReadTokens": 14464,
+            "cacheWriteTokens": 0,
+            "totalTokens": 14956
+          }
+        }
+      ],
+      "request_contexts": [
+        {
+          "provider": "deepseek-official",
+          "model": "deepseek-flash",
+          "contextWindow": 1048576,
+          "systemPromptUpdate": "in-history"
+        }
+      ]
+    }
+  },
+  "runner_integrity": "ok",
+  "provision": {
+    "app_url_remote": "http://127.0.0.1:51211",
+    "runner_url_remote": "http://127.0.0.1:51212",
+    "hermes_gateway": "not started; dedicated home and locks prepared; native dynamic loopback API",
+    "container": "chatraw-official-test",
+    "volume": "chatraw_official_test_data",
+    "same_image_id": "sha256:09bda4d9e7a59bbfc760160be861780baa4f9bdaf268576fe6624ccba8bc580f",
+    "runner_source_matches_main": true,
+    "runner_source_manifest": {
+      "agent_runner/registry.py": "44f1bf7aa91dc00f03f90f844423feae83aff06637239a7d8ecc863a727db269",
+      "agent_runner/__main__.py": "a7b96e6264905a95ffe767c10e6026fedc2b0c935e001c7f407a2aef7f18b3da",
+      "agent_runner/server.py": "080fe14ba98309e792172f823dfeb6d87329364278d522b1e6cae912fc0210a9",
+      "agent_runner/store.py": "bcd803674b0867d4d09b0355ca73b39c659ffdfa2f5be46aa0aee9ad8f52c10e",
+      "agent_runner/files.py": "d07b1cc228ca4be9f48b0ee5014032ad57ca6650e386b4e70a8a149a0287bcaa",
+      "agent_runner/validation.py": "64abd70c55159511e032ee4108a6af11edf738363317929cabebfad29f327555",
+      "agent_runner/__init__.py": "61afe23bad88334e862bd873ad6c4e28e73d1ec4f10716539f156460e66fb181",
+      "agent_runner/runtime.py": "fded694fd508ba5490eaa1671419fa949dfd941e4815bdf8ad603240bbea97da",
+      "agent_runner/adapters/hermes.py": "83277e8f2304a29c57b54b62b63007c74f4ecf4185ec8d75525f95dfab640460",
+      "agent_runner/adapters/pi.py": "add83d8995784fa7eaaf6083b3a2059505ee2e6ad2191a33e1238fd737d7f7a9",
+      "agent_runner/adapters/base.py": "2ad8b55da9e4acdea8a0240359cd35ae840bf4d96406dee1f9162197c177d907",
+      "agent_runner/adapters/deepseek.py": "03635326fac7ec64be64e6bafdbf4f0b52fb1a76e03dc5378806938d9284f934",
+      "agent_runner/adapters/codex_responses.py": "0229ba36d65ed2d913312750b32e028bff21a747748e900d7f076a8bf6f185a6",
+      "agent_runner/adapters/__init__.py": "8b0d29606bf671145dbaad800aa0117fb92862a96b871dcbe73d3da039a8d732",
+      "agent_runner/adapters/codex.py": "04d302dd63fe2b2092e742a0031d7992dd991c1cff91903cad6aa245ee630b5a",
+      "agent_runner/adapters/claude.py": "905b326ea3ae573ace75e922d9cc1ed8b0132896559d9fda925acef4e18a5362"
+    },
+    "config_root": "/etc/chatraw-official-test",
+    "data_root": "/var/lib/chatraw-official-test",
+    "key_file_mode": "0o600",
+    "main_config_changed": false,
+    "existing_homes_copied": false,
+    "generation_calls": 0
+  },
+  "shutdown": {
+    "isolated_nonterminal_before_stop": [],
+    "isolated_runner_active": "inactive",
+    "isolated_container_state": "exited",
+    "main_runner_state": "active",
+    "main_hermes_state": "active",
+    "main_container_running": "true",
+    "data_retained": true,
+    "config_retained": true,
+    "credential_mode": "0o600",
+    "hermes_isolated_service_created": false,
+    "boot_id": "24e4247d-cfe9-4001-a26a-35268e37bf8c"
+  },
+  "main_isolation": {
+    "chatraw-runner": {
+      "pid": 3424,
+      "state": "active",
+      "official_key_present": false
+    },
+    "chatraw-hermes": {
+      "pid": 1378,
+      "state": "active",
+      "official_key_present": false
+    },
+    "/etc/chatraw-runner/environment": {
+      "sha256": "79982afc9e5a12bc3453f9002c1f72ae67decb2c98535b391529e789d2feacb2",
+      "official_key_present": false
+    },
+    "/etc/chatraw-runner/config.json": {
+      "sha256": "3f2645b7093fcf6fe9802d36f601f8dda1a72269321025c5f5982be56ece4bbb",
+      "official_key_present": false
+    },
+    "container": {
+      "id": "480aac4d4306a35f1c445a8897effb8d33f077f8632c95dcae81c9f27c22e7ae",
+      "image": "sha256:09bda4d9e7a59bbfc760160be861780baa4f9bdaf268576fe6624ccba8bc580f",
+      "running": true
+    },
+    "old_unknown": [
+      "e05b8525931c4d1585cae79770c7be3d",
+      "unknown"
+    ]
+  },
+  "main_user_chat_check": {
+    "current_message_count": 0,
+    "old_baseline_message_count": 12,
+    "all_old_ids_absent": true,
+    "preexisting_delete_before_this_test": true,
+    "evidence": "main-old-chat-preexisting-deletion.json",
+    "no_restoration_or_modification": true
+  },
+  "actual_initial_observations": {
+    "main_runner_pid": 3424,
+    "main_runner_working_directory": "/opt/chatraw-runner",
+    "main_image_id": "sha256:09bda4d9e7a59bbfc760160be861780baa4f9bdaf268576fe6624ccba8bc580f",
+    "isolated_ports_51211_51212_free": true,
+    "existing_chat_message_snapshot_at_official_start": "not collected; old 12-message baseline must not be used as current"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "agent": "deepseek",
+  "case": "image-resume",
+  "steps": [
+    {
+      "label": "image-resume",
+      "client_request_id": "b9d9d3337c704375a2bfb5cdc2230924",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+        "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "4d0e74249aa2432c9fb2595245181a0e",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+        "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+        "status": "completed",
+        "last_seq": 7,
+        "run_id": "4d0e74249aa2432c9fb2595245181a0e",
+        "interactions": [],
+        "final_text": "{\"image_digits\":\"119780\",\"continuity_marker\":\"A_OFFICIAL_e524b80d54f0\"}"
+      }
+    }
+  ],
+  "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+  "binding": {
+    "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+    "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "a16311bfa8874adf9e60ee3ca400bfed",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "5fe04ea8079d4c0dab5000bfcd643e3f"
+  },
+  "expected_continuity": "A_OFFICIAL_e524b80d54f0",
+  "fixture_source_sha256": "016a12bbb8615d2525a06ff5ed50161fb626bd61443f6381c7726b261d3832bb",
+  "image": {
+    "expected_digits": "111978",
+    "sha256": "91182c48ae8e2fb35132d6d39e01bd8e74346b1f0a55a0032f535e7b349ab0d1",
+    "upload": {
+      "attachment_id": "343190e410084b2c81b29a3dfe3c7dab",
+      "name": "D-vision.png",
+      "mime_type": "image/png",
+      "size": 317
+    }
+  },
+  "answer": {
+    "image_digits": "119780",
+    "continuity_marker": "A_OFFICIAL_e524b80d54f0"
+  },
+  "outcome": "failed: expected 111978, returned 119780; continuity marker passed",
+  "continuity_passed": true
+}

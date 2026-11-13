@@ -1,0 +1,29 @@
+{
+  "observed_at_utc": "2026-11-13T19:49:51.380754+00:00",
+  "http_status": 200,
+  "endpoint": "https://api.deepseek.com/anthropic/v1/files/file-api-e63dd479-82f8-422a-87c9-db1936de82c3",
+  "headers": {
+    "Content-Type": "application/json",
+    "x-ds-trace-id": "f10e8847646684b8a21fc5a7dfc63123",
+    "Date": "Fri, 13 Nov 2026 19:49:51 GMT"
+  },
+  "response_sha256": "ed5cd5a73b15b3849edc8ef8ef36abfa1b8fb158bc79bafcf9260ac065697588",
+  "metadata": {
+    "id": "file-api-e63dd479-82f8-422a-87c9-db1936de82c3",
+    "type": "file",
+    "size_bytes": 3632,
+    "created_at": "2026-11-13T19:32:57.628+00:00",
+    "filename": "dsh-23299d96829b230f-8788bb24.jpeg",
+    "mime_type": "image/jpeg"
+  },
+  "local_upload_index_entry": {
+    "attachmentId": "sha256:23299d96829b230fdc5c6acde3e9701c666a092bfe1e2a80eb0d73bad82fdeb4",
+    "variantId": "sha256:8788bb247e7cbb44756c0dc9423167e7893e23ce2b4cbd07e4629695e3358a52",
+    "fileId": "file-api-e63dd479-82f8-422a-87c9-db1936de82c3",
+    "bytes": 3632,
+    "createdAt": 1794598377000
+  },
+  "size_matches_local_jpeg": true,
+  "generation_calls": 0,
+  "uploads": 0
+}

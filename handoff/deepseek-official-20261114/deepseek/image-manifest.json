@@ -1,0 +1,27 @@
+{
+  "public_chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+  "public_run_id": "4d0e74249aa2432c9fb2595245181a0e",
+  "runner_session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+  "native_session_id": "session-eb6033e1b1374f98b704ef06b2e92b2d",
+  "public_attachment": {
+    "attachment_id": "343190e410084b2c81b29a3dfe3c7dab",
+    "name": "D-vision.png",
+    "mime_type": "image/png",
+    "size": 317
+  },
+  "input_png_sha256": "91182c48ae8e2fb35132d6d39e01bd8e74346b1f0a55a0032f535e7b349ab0d1",
+  "native_attachment_id": "sha256:23299d96829b230fdc5c6acde3e9701c666a092bfe1e2a80eb0d73bad82fdeb4",
+  "native_image_sha256": "23299d96829b230fdc5c6acde3e9701c666a092bfe1e2a80eb0d73bad82fdeb4",
+  "native_user_message_seq": 64,
+  "native_image_metadata": {
+    "mediaType": "image/jpeg",
+    "width": 284,
+    "height": 80,
+    "bytes": 3632
+  },
+  "expected_digits": "111978",
+  "actual_response": "{\"image_digits\":\"119780\",\"continuity_marker\":\"A_OFFICIAL_e524b80d54f0\"}",
+  "continuity_marker_correct": true,
+  "official_serialized_http_image_body_captured": false,
+  "keys_or_credentials_included": false
+}

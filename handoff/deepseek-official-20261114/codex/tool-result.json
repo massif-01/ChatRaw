@@ -1,0 +1,98 @@
+{
+  "agent": "codex",
+  "case": "tool",
+  "steps": [
+    {
+      "label": "tool",
+      "client_request_id": "93d0fe5c24de4334b4e099e6174ca120",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "bbbbbbdf-d5fc-47e1-8ec2-07c4f70a495d",
+        "session_id": "8d48a05d42ed44f2b11d29ca0957c575",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "e8e2fa3267f844f7aab09a84a3a29a2c",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "bbbbbbdf-d5fc-47e1-8ec2-07c4f70a495d",
+        "session_id": "8d48a05d42ed44f2b11d29ca0957c575",
+        "status": "completed",
+        "last_seq": 85,
+        "run_id": "e8e2fa3267f844f7aab09a84a3a29a2c",
+        "interactions": [],
+        "final_text": "I’m creating the requested marker file with the exact contents and no other changes.Created `native-marker-f06647a91de04e2cb861c45cd1683807.txt`.\n\nTool result: `Success. Updated the following files: A native-marker-f06647a91de04e2cb861c45cd1683807.txt`"
+      }
+    }
+  ],
+  "chat_id": "bbbbbbdf-d5fc-47e1-8ec2-07c4f70a495d",
+  "binding": {
+    "chat_id": "bbbbbbdf-d5fc-47e1-8ec2-07c4f70a495d",
+    "session_id": "8d48a05d42ed44f2b11d29ca0957c575",
+    "agent_id": "codex",
+    "workspace": {
+      "id": "8d48a05d42ed44f2b11d29ca0957c575",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "expected_marker": "OFFICIAL_CODEX_9828e1c79ac2",
+  "outcome": "passed",
+  "reviewed_file_approval": {
+    "public_interaction": {
+      "allow_cancel": true,
+      "decisions": [
+        {
+          "id": "accept",
+          "label": "Allow once",
+          "scope": "once"
+        },
+        {
+          "id": "decline",
+          "label": "Deny",
+          "scope": "once"
+        },
+        {
+          "id": "cancel",
+          "label": "Cancel",
+          "scope": "once"
+        }
+      ],
+      "kind": "approval",
+      "operation": {
+        "paths": [
+          "/var/lib/chatraw-official-test/runner/workspaces/8d48a05d42ed44f2b11d29ca0957c575/native-marker-f06647a91de04e2cb861c45cd1683807.txt"
+        ],
+        "tool": "fileChange"
+      },
+      "title": "Codex requests approval",
+      "interaction_id": "3b240548923c4000ac7cd5c2045c1845"
+    },
+    "native_patch_proof": {
+      "call_id": "call_00_Tr3ib5haDlXNMGXz2V8r2002",
+      "patch": "*** Begin Patch\n*** Add File: native-marker-f06647a91de04e2cb861c45cd1683807.txt\n+OFFICIAL_CODEX_9828e1c79ac2\n*** End Patch\n",
+      "target_absent": true
+    },
+    "receipt": {
+      "interaction_id": "3b240548923c4000ac7cd5c2045c1845",
+      "status": "accepted"
+    },
+    "decision": "accept"
+  },
+  "file_result": {
+    "sha256": "74887eb7ea5fef3dbea6e4fb6301d6ecc50fe57d16eb753dd22bd2a1a0b08ba6",
+    "content": "OFFICIAL_CODEX_9828e1c79ac2\n",
+    "binding": {
+      "agent_id": "codex",
+      "native": {
+        "run_id": "e8e2fa3267f844f7aab09a84a3a29a2c",
+        "thread_id": "01a1d66f-0879-7692-b88d-a0aa1e072886",
+        "turn_id": "01a1d66f-088e-7733-af1b-b2c7feaa0563"
+      },
+      "session_id": "8d48a05d42ed44f2b11d29ca0957c575",
+      "workspace": "/var/lib/chatraw-official-test/runner/workspaces/8d48a05d42ed44f2b11d29ca0957c575"
+    }
+  }
+}

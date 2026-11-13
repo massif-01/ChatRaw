@@ -1,0 +1,46 @@
+{
+  "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+  "old_message_id_baseline_source": "handoff/rm01-deployment-20261113/34-ui-before.json",
+  "baseline_ids": [
+    "agent-8fd852ee00c24c0985bd000d02ffafeb-user",
+    "agent-8fd852ee00c24c0985bd000d02ffafeb-assistant",
+    "agent-e62e05ca92744e399ea75c3e445e2b33-user",
+    "agent-e62e05ca92744e399ea75c3e445e2b33-assistant",
+    "agent-b13f4c69e3b14d56b121e963e54b136b-user",
+    "agent-b13f4c69e3b14d56b121e963e54b136b-assistant",
+    "agent-ee8310a52ad440bbb75a88706d9c812b-user",
+    "agent-ee8310a52ad440bbb75a88706d9c812b-assistant",
+    "agent-41dfa460416e41ed8f37c753f0045709-user",
+    "agent-41dfa460416e41ed8f37c753f0045709-assistant",
+    "agent-5bb85815054a4cf4ae110322532b59c7-user",
+    "agent-5bb85815054a4cf4ae110322532b59c7-assistant"
+  ],
+  "comparison_method": "Read-only ID existence check; no comparison of API canonical hash against DB row hashes",
+  "current": {
+    "present_ids": [],
+    "missing_ids": [
+      "agent-8fd852ee00c24c0985bd000d02ffafeb-user",
+      "agent-8fd852ee00c24c0985bd000d02ffafeb-assistant",
+      "agent-e62e05ca92744e399ea75c3e445e2b33-user",
+      "agent-e62e05ca92744e399ea75c3e445e2b33-assistant",
+      "agent-b13f4c69e3b14d56b121e963e54b136b-user",
+      "agent-b13f4c69e3b14d56b121e963e54b136b-assistant",
+      "agent-ee8310a52ad440bbb75a88706d9c812b-user",
+      "agent-ee8310a52ad440bbb75a88706d9c812b-assistant",
+      "agent-41dfa460416e41ed8f37c753f0045709-user",
+      "agent-41dfa460416e41ed8f37c753f0045709-assistant",
+      "agent-5bb85815054a4cf4ae110322532b59c7-user",
+      "agent-5bb85815054a4cf4ae110322532b59c7-assistant"
+    ]
+  },
+  "current_chat_row_exists": false,
+  "current_message_count": 0,
+  "agent_binding_still_present": true,
+  "access_log_evidence": "2026-11-13T17:16:49.118375195Z INFO: 10.10.99.100:53497 - DELETE /api/chats/6a5b5091-00be-4bf3-90cf-303160876c4a HTTP/1.1 200 OK",
+  "deletion_time_cst": "2026-11-14 01:16:49",
+  "first_official_metadata_check_utc": "2026-11-13T19:07:15.660213+00:00",
+  "deletion_precedes_this_test": true,
+  "operator_identity_not_established": true,
+  "old_12_message_baseline_not_current_at_test_start": true,
+  "no_restore_or_modification": true
+}
