@@ -1,0 +1,151 @@
+{
+  "A_final_archive_commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+  "sources": [
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/README.md",
+      "sha256": "2832cbb73ceb77685c7d7b30e4fae58e214b5c804b58e6b17e8ce3c8566a1467"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/scope-after-reduction.json",
+      "sha256": "726a4e901b6de2312aa8f4f3666818d17343f0faff04b8a8c19c2871fe2583e6"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/summary.json",
+      "sha256": "13d85b6c9e475b03a9bf5e3a0b90e505f94f75e1c588ba6a3ee51a6b4367aea6"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/usage-summary.json",
+      "sha256": "0f66b8a269e0432139c6534088b56d2b3e7fc206752e07e93c146eaace9ccb4e"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/usage-ledger.jsonl",
+      "sha256": "d159402a00f4123e0fc01a25690c83c950a041a51bf28ad101e2ae5d02035d25"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/native-final-and-isolation.json",
+      "sha256": "3f6508cada800764e09ad0557bdb440695f78cb8ef38661830d3dea89c72bfa3"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/main-old-chat-preexisting-deletion.json",
+      "sha256": "c218319c59a3752af48c17da7e04d8af1731c116a80783afdb1bd960770201db"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/deny-public.json",
+      "sha256": "effba55da416cd2ee29dd0d8c2bccc57673d5d6281ad36c3d0d42ca472bcf5c3"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/deny-native.json",
+      "sha256": "32c3a40fc1c3296ab91eb48174a91e4b5ffcc11afd7c35a65255baf6da75268d"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/allow-public.json",
+      "sha256": "a42a9049a40862ae5a6e99f795a8bb2ff2d76537e8bd4e9b96cbce18a25c4c43"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/allow-native.json",
+      "sha256": "47aa62be11f9cd3b55fb853bea41cded39db0dc80daef306de1f754f563df239"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/stop.json",
+      "sha256": "9d1b4d72fb7a541c828b3f450a68a26dc11f372d3f73736d73c9dc619a334d80"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/compact.json",
+      "sha256": "c494a63d14d337acda7809a99d58bcc08ead94a2bb7f0612843366a2f1129e5f"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/postcompact.json",
+      "sha256": "230f58e2c957752a9bec206a0a386003bc357587a0d9c2d9e11af7d81c8bdd0c"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/postrestart.json",
+      "sha256": "9532f03d7b2380ca068c8c4a6ae9e48c02ffc6b46afe61f17e3bdaa9a8a85035"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/image-resume.json",
+      "sha256": "9a9f96cbf6c3ca49f5d12889b085917a7cfbed1e0c7cd950f400aa1de631da23"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/image-manifest.json",
+      "sha256": "643f70759192f3148811f62891f0fbf8c5a08b07bb9837347d460acc7b122441"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/image-input.png",
+      "sha256": "91182c48ae8e2fb35132d6d39e01bd8e74346b1f0a55a0032f535e7b349ab0d1"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/image-native-normalized.jpg",
+      "sha256": "23299d96829b230fdc5c6acde3e9701c666a092bfe1e2a80eb0d73bad82fdeb4"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/image-files-index-entry.json",
+      "sha256": "fe93cbd2920eb504f5ac77b05492fa9ab8c486558723a73c66e9194fa554e041"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/image-official-file-metadata.json",
+      "sha256": "406b3b283bdbf5302a2d8d1a3b5ff430918481a3316d13c8247d1dfd11ad5e1b"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/deepseek/same-file-empty-history-control.json",
+      "sha256": "1501e75d7f50fff5f42f7093ee792a09bd35310f581d3c4ab16c75f574ed1af5"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/codex/context.json",
+      "sha256": "926b178d307e811e8b78ecbe0138d413d0bf5580a883445a4f1ea3efb7f1a107"
+    },
+    {
+      "commit": "e803f26c5b81f9d28aa7cd75d19fc109680fb449",
+      "path": "handoff/deepseek-official-20261114/codex/tool-result.json",
+      "sha256": "5995179fe4d23d11cafe2082640cb0344b74590f15647913acf9ec3bea7170a6"
+    },
+    {
+      "commit": "1a0306a7c5e4bd820a4a79e5184b53175571c574",
+      "path": "docs/agent-platform/handoffs/E/field/official-flash/README.md",
+      "sha256": "356fb60caeacb2571e9d79a2e5ceb8635d9c48b3082b59f779b2569694074922"
+    },
+    {
+      "commit": "1a0306a7c5e4bd820a4a79e5184b53175571c574",
+      "path": "docs/agent-platform/handoffs/E/field/official-flash/metrics.json",
+      "sha256": "70de9be9f0b5628883c331c86768ebf6a83e0eeb338e78bb9a7a18baf23c8edc"
+    },
+    {
+      "commit": "c74eff5e7e4f1e861c96a8828cdd02e7286bb829",
+      "path": "docs/agent-platform/handoffs/C-local-model-98/deepseek-official-codex-claude.md",
+      "sha256": "7f7504245361f07f19870f70d2ed33caf79e5f28f757b15234c05526213aa512"
+    },
+    {
+      "commit": "c606b77b414297cc403ed1696ebf660d6e82d8de",
+      "path": "docs/agent-platform/handoffs/D-field/deepseek-official-flash.md",
+      "sha256": "06f4786287925534f8fd6abb3f143beec442e71a7b5f139c2f88fc19b6bd76e3"
+    },
+    {
+      "commit": "c606b77b414297cc403ed1696ebf660d6e82d8de",
+      "path": "docs/agent-platform/handoffs/D-field/evidence/deepseek-official-flash-loopback.json",
+      "sha256": "e37e5ee527ab7bf48cc675556f22f0d299b05f90c6cca77b0fe0fe3ef4e63ced"
+    }
+  ],
+  "review_mode": "Existing local archives only; no Key or live field access"
+}
