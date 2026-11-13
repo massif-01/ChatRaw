@@ -38,6 +38,8 @@ class _Model(BaseHTTPRequestHandler):
                 part.get("text", "") for part in content if isinstance(part, dict)
             )
         )
+        if deepseek and "TEST_MAX_TOKENS" in text:
+            self.server.max_tokens.append(body.get("max_tokens"))
         tool = None
         tool_result = (
             latest["role"] == "tool"
@@ -465,6 +467,33 @@ class DeepSeekNativeTests(_NativeCase):
         environment.start()
         self.addCleanup(environment.stop)
         self.config = {"dsh_home": str(self.root)}
+        self.server.max_tokens = []
+
+    async def test_sdk_output_budget_reaches_model_and_omission_keeps_default(self):
+        from deepseek_harness import HarnessClient
+
+        initialize = []
+        request = HarnessClient.request
+
+        def record_request(client, method, params, **kwargs):
+            if method == "initialize":
+                initialize.append(dict(params))
+            return request(client, method, params, **kwargs)
+
+        with patch.object(HarnessClient, "request", record_request):
+            for name, settings in (("explicit", {"max_tokens": 8192}), ("default", {})):
+                adapter = DeepSeekAdapter()
+                binding = await self.binding(adapter, {**self.config, **settings}, name)
+                result = await asyncio.wait_for(
+                    self.run_input(adapter, binding, "TEST_MAX_TOKENS", name), 15
+                )
+                self.assertEqual(result["status"], "completed", result)
+
+        # The pinned runtime supplies its own budget when the setting is absent.
+        explicit, default = initialize
+        self.assertEqual(explicit["maxTokens"], 8192)
+        self.assertNotIn("maxTokens", default)
+        self.assertEqual(self.server.max_tokens, [8192, 256_000])
 
     async def test_sdk_batch_stop_and_strict_resume(self):
         adapter = DeepSeekAdapter()

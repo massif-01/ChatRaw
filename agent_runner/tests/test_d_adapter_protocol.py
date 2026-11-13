@@ -191,6 +191,18 @@ class _LostDeepSeek(DeepSeekAdapter):
 
 
 class DeepSeekProtocolTests(unittest.IsolatedAsyncioTestCase):
+    def test_max_tokens_requires_a_positive_safe_integer(self):
+        adapter = DeepSeekAdapter()
+        config = {"dsh_home": "/tmp"}
+        self.assertNotIn("max_tokens", adapter.validate_config(config))
+        self.assertEqual(
+            adapter.validate_config({**config, "max_tokens": 1})["max_tokens"], 1
+        )
+        for value in (True, False, None, 0, -1, 1.0, "8192", 2**53):
+            with self.subTest(value=value), self.assertRaises(AdapterError) as error:
+                adapter.validate_config({**config, "max_tokens": value})
+            self.assertIn("max_tokens", str(error.exception))
+
     async def test_transport_loss_requires_owned_shutdown_evidence(self):
         async def emit(event):
             self.fail(event)

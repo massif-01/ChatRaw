@@ -23,6 +23,7 @@ from .base import (
 
 
 _SDK_VERSION = "0.2.2rc2"
+_MAX_SAFE_INTEGER = 2**53 - 1
 _IMAGES = {"image/png", "image/jpeg", "image/gif", "image/webp"}
 _IMAGE_LIMIT = 8 * 1024 * 1024
 _APPROVAL_CHOICES = {"allowed-once": "Allow once", "rejected": "Deny"}
@@ -58,6 +59,11 @@ class DeepSeekAdapter(AgentAdapter):
         "properties": {
             "model": {"type": "string", "minLength": 1},
             "reasoning_effort": {"type": "string", "minLength": 1},
+            "max_tokens": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": _MAX_SAFE_INTEGER,
+            },
         },
     }
 
@@ -71,7 +77,7 @@ class DeepSeekAdapter(AgentAdapter):
         self._loop = None
 
     def validate_config(self, config):
-        if set(config) - {"dsh_home", "model", "reasoning_effort"}:
+        if set(config) - {"dsh_home", "model", "reasoning_effort", "max_tokens"}:
             raise AdapterError("invalid_config", "Unknown DeepSeek configuration field")
         home = config.get("dsh_home")
         if not _text(home) or "\0" in home or not Path(home).is_absolute():
@@ -84,6 +90,13 @@ class DeepSeekAdapter(AgentAdapter):
             if key in config
         ):
             raise AdapterError("invalid_config", "Invalid DeepSeek model settings")
+        if "max_tokens" in config:
+            max_tokens = config["max_tokens"]
+            if type(max_tokens) is not int or not 1 <= max_tokens <= _MAX_SAFE_INTEGER:
+                raise AdapterError(
+                    "invalid_config",
+                    "DeepSeek max_tokens must be a positive safe integer",
+                )
         return dict(config)
 
     @staticmethod
@@ -181,7 +194,9 @@ class DeepSeekAdapter(AgentAdapter):
         from deepseek_harness import DeepSeekHarness
 
         settings = {
-            key: config[key] for key in ("model", "reasoning_effort") if key in config
+            key: config[key]
+            for key in ("model", "reasoning_effort", "max_tokens")
+            if key in config
         }
         return DeepSeekHarness(
             profile="sdk",

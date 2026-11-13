@@ -8,7 +8,7 @@
 - Pi 宿主配置需要 `executable` 和 `session_root`，均为绝对路径。使用 `@earendil-works/pi-coding-agent@1.5.2`，该发行包要求 Node ≥22.19。由管理员准备 Runner 账户可写的持久会话根目录。保留发行包目录结构及仓库中 `agent_runner/adapters/pi_extensions/chatraw.ts` 的相对位置。适配器用显式 `--extension` 装载配套扩展，启动时核对扩展实际注册。使用该运行账户的 Pi 认证和模型配置。
 - DeepSeek 宿主配置需要 `dsh_home`，指向已存在、由 Runner 账户管理的绝对根目录。每个 ChatRaw session 在根目录下使用独立的原生 `DSH_HOME` 和 Python SDK runtime。给 Runner 的受控服务环境注入 `DEEPSEEK_API_KEY`，由官方 SDK 读取。可在相同服务环境设置可信的 `DEEPSEEK_BASE_URL`。SDK 通过匹配的官方 runtime wheel 自带程序，宿主无需为 DeepSeek 安装 Node。
 - DeepSeek 依赖交 A 纳入 Runner 的 Python 环境。验证版本为 `deepseek-harness-sdk==0.2.2rc2`，其依赖固定 `deepseek-harness-runtime-bin==0.2.2rc2`，另要求 `pydantic>=2.12,<3`。SDK 要求 Python ≥3.10，Runner 合同要求 Python ≥3.11。RM-01 Python 3.12 落在声明范围内，实际 wheel、宿主沙箱与运行账户待现场验证。D 线未修改公共依赖与部署文件。
-- 浏览器可编辑 Pi 的 `model`、`provider`、`thinking`。单独指定 `provider` 时，Pi CLI 要求同时指定 `model`。DeepSeek 可编辑 `model`、`reasoning_effort`，随官方 `sdk` profile 使用默认 DeepSeek provider。省略字段由原生程序决定；设置按 create/resume 边界取快照。两者均不接收浏览器提供的可执行路径、凭据或任意目录。
+- 浏览器可编辑 Pi 的 `model`、`provider`、`thinking`。单独指定 `provider` 时，Pi CLI 要求同时指定 `model`。DeepSeek 可编辑 `model`、`reasoning_effort` 和可选的 `max_tokens`，随官方 `sdk` profile 使用默认 DeepSeek provider。`max_tokens` 必须是 SDK 支持的正安全整数，限制单次模型调用的输出预算。省略字段由原生程序决定，设置按 create/resume 边界取快照。两者均不接收浏览器提供的可执行路径、凭据或任意目录。
 - `probe` 验证程序和协议。Pi 仅返回其 RPC 注册表提供的可用模型 ID 与 provider，DeepSeek 不合成模型列表。Pi 有可用当前模型、DeepSeek 有服务凭据配置时返回 `ready`，认证和模型请求仍为 `not_checked`。模型实际可用性需经独立测试。
 - 为两个根目录准备持久挂载与备份。Pi 绑定原生 transcript 和 session ID，恢复前比对文件头 ID 和工作目录，再核对 Pi RPC 返回的同一身份。DeepSeek 保留原始 session ID 与独立 home，恢复只调用 `resume_session(id)`。两者都拒绝缺失的原会话，运行失联后使用公共 `recover_run` 的 `unknown`，没有重新发送原输入。
 
@@ -50,4 +50,5 @@ CHATRAW_TEST_PI=/absolute/path/to/pi CHATRAW_TEST_DEEPSEEK=1 \
 - 协议模拟验证 EOF、重试与最终文本替换，交互过期和迟到回复，手动压缩取消证据，未支持附件拒绝及 DeepSeek 失联后有无原生 shutdown 证据的分流。
 - 本机原生集成环境为 macOS arm64、Python 3.12、Node 24.10.0。真实 Pi CLI 与 DeepSeek SDK/runtime 使用 loopback 模型替身，覆盖原生进程启动、批次问答、审批拒绝与一次授权、停止时拒收旧交互、跨会话隔离、恢复原生历史和缺失会话拒绝。两个程序都验证了正在运行的 shell 在停止后未写入延迟标记。图片验证到 Pi 的模型请求和 DeepSeek 的原生附件存储。压缩验证到 Pi transcript 的原生压缩记录和 DeepSeek 的空历史原生响应。另验证了 DeepSeek 原生计划审阅取消。
 - DeepSeek SDK 0.2.2rc2 的关闭路径在 Python 3.12 和 3.14 的 unittest 下报告上游 stdout/stderr 文件对象的 `ResourceWarning`。原生进程退出、工具停止及原会话恢复通过。
+- 输出预算验证使用同一原生 SDK/runtime 和本地模型替身。设置 `8192` 后，SDK 初始化和模型 HTTP 请求分别收到 `maxTokens: 8192` 和 `max_tokens: 8192`。省略时，初始化报文无此字段，模型请求使用原生默认 `256000`。
 - RM-01 和真实模型服务的身份认证、模型请求、图片与压缩质量、Linux 实际工具作用域及主机重启仍待总控现场验收。以本机原生协议证据和现场证据分别登记 G02、G05–G08。
