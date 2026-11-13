@@ -26,6 +26,8 @@ from .base import (
 
 _SDK_VERSION = "0.2.2rc2"
 _MAX_SAFE_INTEGER = 2**53 - 1
+_PROVIDER_MAX_LENGTH = 128
+_PROVIDER_PATTERN = r"[A-Za-z0-9][A-Za-z0-9._-]*"
 _IMAGES = {"image/png", "image/jpeg", "image/gif", "image/webp"}
 _IMAGE_LIMIT = 8 * 1024 * 1024
 _APPROVAL_CHOICES = {"allowed-once": "Allow once", "rejected": "Deny"}
@@ -98,6 +100,7 @@ class DeepSeekAdapter(AgentAdapter):
         if set(config) - {
             "dsh_home",
             "model",
+            "provider",
             "reasoning_effort",
             "max_tokens",
             "patches",
@@ -114,6 +117,17 @@ class DeepSeekAdapter(AgentAdapter):
             if key in config
         ):
             raise AdapterError("invalid_config", "Invalid DeepSeek model settings")
+        if "provider" in config:
+            provider = config["provider"]
+            if (
+                not isinstance(provider, str)
+                or len(provider) > _PROVIDER_MAX_LENGTH
+                or not re.fullmatch(_PROVIDER_PATTERN, provider)
+            ):
+                raise AdapterError(
+                    "invalid_config",
+                    "DeepSeek provider must be a non-empty route name of at most 128 characters",
+                )
         if "max_tokens" in config:
             max_tokens = config["max_tokens"]
             if type(max_tokens) is not int or not 1 <= max_tokens <= _MAX_SAFE_INTEGER:
@@ -230,7 +244,7 @@ class DeepSeekAdapter(AgentAdapter):
 
         settings = {
             key: config[key]
-            for key in ("model", "reasoning_effort", "max_tokens")
+            for key in ("model", "provider", "reasoning_effort", "max_tokens")
             if key in config
         }
         if "patches" in config:

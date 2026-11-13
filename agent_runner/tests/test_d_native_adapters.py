@@ -31,6 +31,8 @@ class _Model(BaseHTTPRequestHandler):
             self.send_error(404)
             return
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        if (requests := getattr(self.server, "provider_requests", None)) is not None:
+            requests.append((self.path, body))
         messages = body["messages"]
         latest = messages[-1]
         content = latest["content"]
@@ -97,7 +99,7 @@ class _Model(BaseHTTPRequestHandler):
                 "command": f"printf ran > {target}",
                 "description": "Write fixture marker",
             }
-            if deepseek:
+            if deepseek or body["model"] == "fixture-qwen":
                 args.update(
                     command="# " + "x" * 2200 + "\n" + args["command"],
                     sandbox_permissions="danger-full-access",
@@ -501,6 +503,7 @@ class DeepSeekNativeTests(_NativeCase):
 
         # The pinned runtime supplies its own budget when the setting is absent.
         explicit, default = initialize
+        self.assertEqual(default["provider"], "deepseek-official")
         self.assertEqual(explicit["maxTokens"], 8192)
         self.assertNotIn("maxTokens", default)
         self.assertEqual(self.server.max_tokens, [8192, 256_000])
@@ -532,6 +535,118 @@ class DeepSeekNativeTests(_NativeCase):
             result, {"status": "completed", "final_text": "history present"}
         )
         self.assertEqual(self.server.max_tokens, [256_000, 8192])
+
+    async def test_sdk_resumes_with_explicit_openai_provider_and_native_approval(self):
+        patch_file = self.root / "openai-provider.yml"
+        patch_source = (
+            Path(__file__).resolve().parents[2]
+            / "docs/agent-platform/handoffs/D-field/deepseek-rm01-models-v2.patch.yml"
+        )
+        patch_file.write_text(
+            patch_source.read_text(encoding="utf-8")
+            .replace("http://10.10.99.98:58000/v1", self.url)
+            .replace("RM-01 VLM", "fixture-qwen"),
+            encoding="utf-8",
+        )
+        config = {
+            **self.config,
+            "model": "fixture-qwen",
+            "max_tokens": 8192,
+        }
+        chat_config = {
+            **config,
+            "patches": [str(patch_file)],
+            "provider": "rm01-qwen",
+            "reasoning_effort": "high",
+        }
+        self.server.provider_requests = []
+        legacy = DeepSeekAdapter()
+        legacy_binding = await self.binding(legacy, config, "legacy")
+        self.assertEqual(
+            (await self.run_input(legacy, legacy_binding, "TEST_HISTORY", "old"))[
+                "status"
+            ],
+            "completed",
+        )
+        await legacy.close(legacy_binding)
+
+        adapter = DeepSeekAdapter()
+        binding = await self.binding(adapter, chat_config, "chat-provider")
+        self.assertEqual(
+            (
+                await asyncio.wait_for(
+                    self.run_input(adapter, binding, "TEST_HISTORY", "before"), 15
+                )
+            )["status"],
+            "completed",
+        )
+        await adapter.close(binding)
+
+        for effort, decision in (("high", "rejected"), ("off", "allowed-once")):
+            adapter = DeepSeekAdapter()
+            resumed = await adapter.resume_session(
+                binding,
+                {**chat_config, "reasoning_effort": effort},
+            )
+            self.addAsyncCleanup(adapter.close, resumed)
+            self.assertEqual(resumed, binding)
+            cursor = len(self.server.provider_requests)
+            marker = Path(binding["workspace"]) / effort
+            task = asyncio.create_task(
+                self.run_input(adapter, resumed, f"TEST_BASH {marker}", effort)
+            )
+            approval = await self.interaction(task)
+            self.assertEqual(
+                approval["data"]["operation"],
+                {
+                    "tool": "bash",
+                    "command": "# "
+                    + "x" * 2200
+                    + f"\nprintf ran > {shlex.quote(str(marker))}",
+                    "cwd_label": binding["workspace"],
+                },
+            )
+            self.assertFalse(marker.exists())
+            await adapter.respond(
+                resumed, approval["native_key"], {"decision_id": decision}
+            )
+            self.assertEqual((await asyncio.wait_for(task, 15))["status"], "completed")
+            self.assertEqual(marker.exists(), decision == "allowed-once")
+            path, outgoing = self.server.provider_requests[cursor]
+            self.assertEqual(path, "/v1/chat/completions")
+            self.assertEqual(
+                outgoing["chat_template_kwargs"], {"enable_thinking": effort == "high"}
+            )
+            self.assertIn("TEST_HISTORY", json.dumps(outgoing["messages"]))
+            self.assertEqual(outgoing["max_tokens"], 8192)
+            self.assertEqual(
+                {tool["function"]["name"] for tool in outgoing["tools"]},
+                {tool["name"] for tool in self.server.provider_requests[0][1]["tools"]},
+            )
+            await adapter.close(resumed)
+
+        path, outgoing = self.server.provider_requests[0]
+        self.assertEqual(path, "/v1/messages")
+        self.assertEqual(len(outgoing["tools"]), 31)
+        self.assertEqual(outgoing["max_tokens"], 8192)
+        self.assertNotIn("chat_template_kwargs", outgoing)
+        path, first_chat_request = self.server.provider_requests[1]
+        self.assertEqual(path, "/v1/chat/completions")
+        self.assertEqual(
+            first_chat_request["chat_template_kwargs"], {"enable_thinking": True}
+        )
+
+        resumed_legacy = await legacy.resume_session(legacy_binding, config)
+        self.assertEqual(resumed_legacy, legacy_binding)
+        self.assertEqual(
+            await self.run_input(
+                legacy, resumed_legacy, "TEST_RESUME", "legacy-resume"
+            ),
+            {"status": "completed", "final_text": "history present"},
+        )
+        path, legacy_request = self.server.provider_requests[-1]
+        self.assertEqual(path, "/v1/messages")
+        self.assertNotIn("chat_template_kwargs", legacy_request)
 
     async def test_host_profile_patch_delivers_custom_model_image(self):
         patch_file = self.root / "vision.patch.yml"

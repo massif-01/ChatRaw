@@ -193,6 +193,32 @@ class _LostDeepSeek(DeepSeekAdapter):
 
 
 class DeepSeekProtocolTests(unittest.IsolatedAsyncioTestCase):
+    def test_provider_accepts_only_bounded_route_names(self):
+        adapter = DeepSeekAdapter()
+        config = {"dsh_home": "/tmp"}
+        self.assertNotIn("provider", adapter.validate_config(config))
+        for provider in ("rm01-qwen", "a" * 128):
+            self.assertEqual(
+                adapter.validate_config({**config, "provider": provider})["provider"],
+                provider,
+            )
+        for provider in (
+            "",
+            " ",
+            "rm01-qwen\n",
+            "https://host/v1",
+            "a" * 129,
+            None,
+            True,
+        ):
+            with self.subTest(provider=provider), self.assertRaises(AdapterError):
+                adapter.validate_config({**config, "provider": provider})
+        self.assertEqual(
+            set(adapter.settings_schema["properties"]),
+            {"model", "reasoning_effort", "max_tokens"},
+        )
+        self.assertFalse(adapter.settings_schema["additionalProperties"])
+
     def test_native_patches_are_host_only_absolute_paths(self):
         adapter = DeepSeekAdapter()
         config = {"dsh_home": "/tmp"}
