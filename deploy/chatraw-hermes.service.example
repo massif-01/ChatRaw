@@ -1,0 +1,20 @@
+# Dedicated Gateway example. Replace rm01 if using another service account.
+# Do not overwrite an existing account's Gateway service.
+[Unit]
+Description=ChatRaw dedicated Hermes native Gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rm01
+WorkingDirectory=/var/lib/chatraw-runner/hermes-home
+EnvironmentFile=/etc/chatraw-runner/environment
+ExecStart=/opt/chatraw-agents/hermes/source/.venv/bin/hermes gateway run
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=60
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

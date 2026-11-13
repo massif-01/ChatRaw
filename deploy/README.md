@@ -1,104 +1,324 @@
-# ChatRaw Docker + 宿主 Runner
+# ChatRaw Docker 与宿主 Agent 部署
 
-普通聊天可以独立使用根目录 `docker-compose.yml`，不要求 Runner 或凭据。
-Agent 的正式拓扑为浏览器 → ChatRaw Docker 同源 API → 宿主 loopback Runner → 原生 Agent。
-不把五种 Agent 安装进主镜像。
+本指南供 Linux 管理员安装、更新和恢复 ChatRaw。普通聊天运行在 Docker 中；五种 Agent 由宿主上的 Runner 调用各自原生程序。浏览器只访问 ChatRaw，Runner 只监听宿主回环地址。
 
-## 宿主准备
+2026-11-13 已在 Ubuntu 24.04.4、Linux/amd64 上完成实际部署。本文给出人工操作步骤，**不是一键安装器**。已有部署请先阅读“更新、备份与恢复”，不要直接重跑首次安装命令。
 
-由管理员在批准的部署窗口操作。`install-runner.sh` 只安装 Runner 与基础 Python 依赖，
-不会启动服务、安装/升级原生 Agent、修改已有 Agent home 或停止已有 Hermes Gateway。
+## 1. 确认环境与安装账户
 
-```sh
-sudo bash deploy/install-runner.sh EXISTING_AGENT_ACCOUNT
-```
-
-选择实际持有原生认证和会话状态的现有账户。脚本准备：
-
-- `/opt/chatraw-runner`：服务代码与独立 venv；
-- `/etc/chatraw-runner/config.json`：首次安装复制示例，后续不覆盖；
-- `/etc/chatraw-runner/token`：首次生成专用随机凭据，不打印；
-- `/var/lib/chatraw-runner`：该账户所有，含独立 SQLite、工作目录、文件副本、Pi/DeepSeek持久根目录；
-- `/etc/systemd/system/chatraw-runner.service`：服务用户固定为指定账户，尚未启动。
-
-审核示例里的绝对路径并填入真实安装位置。`agents` 只放宿主配置；网页中的 model、provider、
-reasoning 等按 adapter schema 保存，正在运行的任务保留原快照，下一次执行在空闲会话的
-close/resume边界应用新设置，原生session不变。可执行程序、home及宿主目录变更用于新会话，
-不会静默重定向已绑定聊天。
-
-`workspaces` 例如 `{"project-a":{"path":"/srv/projects/a","label":"Project A"}}`。
-浏览器只看到项目ID/label。普通任务的managed目录按session隔离。cwd不是权限沙箱。
-
-## 原生程序与认证
-
-|Agent|管理员准备项|
+|组件|现场验证版本|
 |---|---|
-|Hermes|在该账户安装并配置支持canonical Gateway的Hermes，原生Gateway事先启动；`agents.hermes.executable`可为绝对路径，`home`可指定现有home。Runner仅运行`gateway attach --json`，不带start/recover，且只连接loopback。|
-|Codex|服务账户PATH中的Codex CLI和原生认证。保持该账户原生配置/会话目录。当前C线验证0.153.4。|
-|Claude|Runner venv可选安装`agent_runner/requirements-claude.txt`，锁SDK0.2.180。服务环境提供`ANTHROPIC_API_KEY`；不把订阅CLI OAuth当第三方SDK授权。|
-|Pi|`executable`与`session_root`必须绝对路径，保留配套`pi_extensions`目录；当前D线验证1.5.2，需要Node≥22.19。使用服务账户原生认证。|
-|DeepSeek|Runner venv可选安装`agent_runner/requirements-deepseek.txt`，SDK/runtime锁0.2.2rc2；`dsh_home`为已存在持久根目录，服务环境提供`DEEPSEEK_API_KEY`，可按需要提供`DEEPSEEK_BASE_URL`。每session独占runtime/home。|
+|Docker Engine / Compose|29.9.3 / 5.7.1|
+|Runner Python|3.12.3；项目要求 Python 3.11 或更新版本|
+|Node.js / npm|22.23.2 / 10.9.8；本次 Pi 使用 Node 22|
+|Codex CLI|0.153.4|
+|Claude Agent SDK / 随附 Claude Code|0.2.180 / 2.1.321|
+|Pi|1.5.2，包名 `@earendil-works/pi-coding-agent`|
+|DeepSeek SDK / runtime|均为 0.2.2rc2|
+|Hermes|提交 `6a0d2d12815c0546b0bcaf05046e2fe3293f60aa`；该锁文件要求 Python 3.14 或更新版本，现场使用独立的 3.14.10|
+|uv|0.13.8，用于项目独立 Python 环境|
 
-可选SDK安装由管理员显式选择，在Runner venv内完成，不升级用户全局Agent。
-`/etc/chatraw-runner/environment` 为 systemd 的私密 EnvironmentFile；需要时配置PATH与API key，
-权限限制为root和服务账户可读，不提交到仓库、不通过网页普通settings发送。
-服务本身按对应用户运行，认证文件由该账户的原生程序发现；不复制其他账户的凭据。
-
-确认路径、程序、目录权限后才启动：
+先检查现有 Docker 与 Compose，已可用就复用。新 Ubuntu 主机按 [Docker 官方安装说明](https://docs.docker.com/engine/install/ubuntu/)安装 Engine 和 Compose 插件；ChatRaw 的脚本不安装 Docker。
 
 ```sh
-sudo systemctl enable --now chatraw-runner
-sudo systemctl status chatraw-runner
+docker version
+docker compose version
+python3 --version
+node --version
+npm --version
 ```
 
-这些命令在本次本地交付中未执行。RM-01的Docker Engine/Podman与原生安装由总控统一安排，
-此脚本不安装Docker Engine、不卸载Podman。
+选择已有的非 root 服务账户，以下例子使用 `rm01`。如使用其他账户，替换命令和 systemd 模板中的账户，并按实际主组调整权限。Docker 操作需要该账户具有 Docker 权限，或由管理员执行。
 
-## Agent Docker 部署
+先确认 51111 未被占用；51112 只供本机 Runner 使用。保留宿主现有服务，不为安装 ChatRaw 停用无关服务。
 
-Linux host networking使主容器可访问宿主127.0.0.1；基础Compose不挂载秘密。
-启用Agent使用专用overlay：
+## 2. 安装 Runner 和原生程序
+
+以下命令从**本次发布源码的仓库根目录**执行，普通命令使用服务账户。部署前保存源码版本、镜像标签和文件校验值，后续恢复使用相同版本。
+
+### Runner
+
+先准备可创建 venv 且带 pip 的 Python。在新 Ubuntu 主机上可安装与系统 Python 匹配的 `python3-venv` 组件，再执行：
+
+```sh
+sudo bash deploy/install-runner.sh rm01
+```
+
+该脚本复制 Runner、建立独立 venv、安装基础依赖、首次创建配置与 token、安装 systemd unit 并刷新服务配置。它**不会启动服务、安装五种 Agent、配置模型或部署 Docker 容器**。它会更新 Runner 代码和 unit，因此已有部署必须在维护窗口使用。
+
+如果 Python 报 `ensurepip is not available`，先处理环境，不要反复重跑脚本。现场采用了人工替代路径：复制相同 Runner 代码与 unit，以 `python3 -m venv --without-pip` 创建环境，再用项目内 uv 的 `pip install --python /opt/chatraw-runner/venv/bin/python` 安装相同 requirements；目录、首次 token 和账户权限仍需管理员完整准备。这是现场手动安装记录，不是 `install-runner.sh` 已支持的自动分支。一般新部署补齐 venv 组件后使用上面的脚本更直接。
+
+按需要在 Runner venv 安装可选 SDK；这两份 requirements 已固定对应版本：
+
+```sh
+sudo /opt/chatraw-runner/venv/bin/python -m pip install \
+  -r /opt/chatraw-runner/agent_runner/requirements-claude.txt \
+  -r /opt/chatraw-runner/agent_runner/requirements-deepseek.txt
+```
+
+### Codex 与 Pi
+
+使用项目独立目录，避免覆盖账户已有的全局安装：
+
+```sh
+sudo install -d -m 0755 -o rm01 -g rm01 /opt/chatraw-agents/codex /opt/chatraw-agents/pi
+npm install --prefix /opt/chatraw-agents/codex --no-audit --no-fund @openai/codex@0.153.4
+npm install --prefix /opt/chatraw-agents/pi --no-audit --no-fund @earendil-works/pi-coding-agent@1.5.2
+/opt/chatraw-agents/codex/node_modules/.bin/codex --version
+/opt/chatraw-agents/pi/node_modules/.bin/pi --version
+```
+
+Pi 的可执行路径是 `node_modules/.bin/pi`。Runner 源码中的 `pi_extensions` 必须一同保留。
+
+### Hermes
+
+使用支持原生 Gateway 的已验证提交。先按 [uv 官方说明](https://docs.astral.sh/uv/getting-started/installation/)将 uv 0.13.8 准备在 `/opt/chatraw-agents/tools/bin/uv`；可从官方发行包安装到此目录，不需要更换系统 Python。以下是首次安装命令，目标目录应为空：
+
+```sh
+sudo install -d -m 0755 -o rm01 -g rm01 /opt/chatraw-agents/hermes /opt/chatraw-agents/python /opt/chatraw-agents/cache
+git clone https://github.com/NousResearch/hermes-agent.git /opt/chatraw-agents/hermes/source
+git -C /opt/chatraw-agents/hermes/source checkout --detach 6a0d2d12815c0546b0bcaf05046e2fe3293f60aa
+export UV_PYTHON_INSTALL_DIR=/opt/chatraw-agents/python
+export UV_CACHE_DIR=/opt/chatraw-agents/cache/uv
+/opt/chatraw-agents/tools/bin/uv sync --project /opt/chatraw-agents/hermes/source --locked --no-dev --python 3.14.10
+/opt/chatraw-agents/tools/bin/uv pip install --python /opt/chatraw-agents/hermes/source/.venv/bin/python aiohttp==3.14.5
+/opt/chatraw-agents/hermes/source/.venv/bin/hermes --version
+```
+
+这组命令把 Python 和依赖放在项目目录。`aiohttp` 是本次 Gateway 接线实际使用的显式依赖。升级 Hermes 前应重新验证 Gateway 协议，不能只依赖 CLI 版本命令成功。
+
+## 3. 配置目录、账户与服务环境
+
+首次部署准备独立原生 home。已有账户正在使用的 home 不应被这些示例覆盖：
+
+```sh
+sudo install -d -m 0700 -o rm01 -g rm01 \
+  /var/lib/chatraw-runner/codex-home /var/lib/chatraw-runner/claude-home \
+  /var/lib/chatraw-runner/pi-home /var/lib/chatraw-runner/hermes-home
+```
+
+|位置|用途与权限|
+|---|---|
+|`/opt/chatraw-runner`|Runner 代码和 venv，管理员维护|
+|`/opt/chatraw-agents`|独立原生程序、Hermes Python 与依赖|
+|`/etc/chatraw-runner`|配置目录，root 与服务账户主组可进入，0750|
+|`/etc/chatraw-runner/token`|Runner 专用随机凭据，服务账户可读，0600；不输出其内容|
+|`/etc/chatraw-runner/environment`|systemd 环境文件，root/服务账户主组可读，0640|
+|`/var/lib/chatraw-runner`|Runner 数据库、工作目录、附件副本及原生会话，服务账户拥有，0700|
+|Docker 卷 `chatraw_chatraw_data`|ChatRaw 数据库、模型配置、附件、已安装插件及插件设置|
+
+按 [runner-config.example.json](runner-config.example.json)核对 `/etc/chatraw-runner/config.json`，并用 [runner-environment.example](runner-environment.example)准备环境文件。**示例不是已授权覆盖现有文件的命令**；先检查目标文件，再由管理员编辑和设置权限。
+
+首次部署且目标 environment 尚不存在时，可复制示例后编辑：
+
+```sh
+sudo install -m 0640 -o root -g rm01 deploy/runner-environment.example /etc/chatraw-runner/environment
+```
+
+配置中的 `workspaces` 可登记已有项目，例如 `{"project-a":{"path":"/srv/projects/a","label":"Project A"}}`。未选择项目时，每个聊天获得独立工作目录。工作目录并不等于权限沙箱；原生 Agent 的权限与审批仍然生效。
+
+宿主配置包括程序路径、home、会话根目录和 DeepSeek `patches`。这些配置只用于新会话；旧聊天继续使用建立时保存的宿主配置。网页中的模型、provider、推理强度、DeepSeek `max_tokens` 等在下一轮空闲会话恢复时生效，不替换原生会话 ID。
+
+## 4. 接入模型：以 RM-01 本地服务为例
+
+下面例子对应已验证服务 `http://10.10.99.98:58000`、精确模型名 `RM-01 VLM`，上下文上限262144。该局域网端点无需认证；示例中的占位 key 只用于满足 SDK 格式检查。其他服务必须使用它实际要求的认证，不能照搬无鉴权配置。
+
+环境文件中的 `NO_PROXY` 和 `no_proxy` 应覆盖回环地址及模型、ChatRaw 的实际内网地址，避免局域网请求被账户代理转发。此处只设置项目服务环境，不修改系统全局代理。
+
+### Codex
+
+服务账户的 `/var/lib/chatraw-runner/codex-home/config.toml`：
+
+```toml
+model = "RM-01 VLM"
+model_provider = "rm01"
+
+[model_providers.rm01]
+name = "RM-01 local vLLM"
+base_url = "http://10.10.99.98:58000/v1"
+wire_api = "responses"
+requires_openai_auth = false
+supports_websockets = false
+
+[model_providers.rm01.capabilities]
+remote_compaction = "unsupported"
+```
+
+该直连服务没有 Responses compact 接口，配置选择原生本地压缩。现场已发现压缩后续接被模型消息模板拒绝，**不能将压缩回合完成视为续接通过**。当前直连部署仍保留这一限制。提供下述可选兼容配置；只有发布版本包含该模块并完成相应审查与现场验收后才启用。
+
+在 Runner 宿主配置的 `agents.codex` 中增加：
+
+```json
+{
+  "responses_compat_upstream": "http://10.10.99.98:58000/v1/responses"
+}
+```
+
+这必须是已确认无鉴权的固定上游，不能填带凭据的地址。省略字段时仍使用上面的原生 provider。该字段不属于网页插件设置；启用后 Runner 管理仅监听本机的临时兼容入口，将原生指令顺序调整为该模型服务接受的形式，保留普通消息、工具、图片与流式响应。管理员不需要再配置对外监听端口。
+
+该结构性配置只用于**新绑定的会话**，旧聊天继续使用原快照；不要重写旧绑定或将新聊天冒充旧会话恢复。仍用同一 CODEX_HOME、原模型名称及原权限/审批策略。当前配置和实现说明见发布附带的 `docs/agent-platform/handoffs/C-local-model-98/codex-responses-compat.md`。本指南此项尚不代表现场验收通过。
+
+### Claude
+
+环境示例使用 `ANTHROPIC_BASE_URL=http://10.10.99.98:58000`，**不带 `/v1`**；将默认 Haiku/Sonnet/Opus 模型均指向 `RM-01 VLM`，网页插件设置也选择该精确模型名。原生 home 由 `CLAUDE_CONFIG_DIR` 指定。接入需要认证的服务时使用 SDK 支持的凭据，不把其他账户的订阅登录状态复制过来。
+
+### Pi
+
+创建 `/var/lib/chatraw-runner/pi-home/models.json`：
+
+```json
+{
+  "providers": {
+    "rm01": {
+      "baseUrl": "http://10.10.99.98:58000/v1",
+      "api": "openai-completions",
+      "apiKey": "local-no-auth-placeholder",
+      "models": [{
+        "id": "RM-01 VLM",
+        "input": ["text", "image"],
+        "contextWindow": 262144,
+        "maxTokens": 8192
+      }]
+    }
+  }
+}
+```
+
+网页中 Pi 的 provider 选择 `rm01`、model 填 `RM-01 VLM`。配置文件由服务账户读取，保持0600权限。
+
+### Hermes
+
+创建 `/var/lib/chatraw-runner/hermes-home/config.yaml`：
+
+```yaml
+model:
+  provider: custom
+  default: RM-01 VLM
+  base_url: http://10.10.99.98:58000/v1
+  supports_vision: true
+agent:
+  image_input_mode: native
+auxiliary:
+  title_generation:
+    enabled: false
+plugins:
+  auto_update_check_hours: 0
+```
+
+网页中 provider 选择 `custom`、model 填 `RM-01 VLM`。环境中的 `OPENAI_BASE_URL` 同样带 `/v1`。图片应走原生图片通道，不以文字描述替代附件。使用独立 Gateway 服务前，确认不会接管或停止账户已有的 Gateway。
+
+### DeepSeek Harness
+
+环境中 `DEEPSEEK_BASE_URL=http://10.10.99.98:58000/v1`；当前 SDK 使用 Messages 协议。网页中 model 填 `RM-01 VLM`，`max_tokens` 填 **8192**。省略预算会沿用原生默认值；现场默认256000曾使输入加输出预算超过模型上限。
+
+未知自定义模型在原生目录中默认仅支持文本。需要该 VLM 的图片能力时：
+
+1. 将 [deepseek-rm01-models-v1.patch.example.yml](deepseek-rm01-models-v1.patch.example.yml)复制到 `/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml`，核对模型名和上下文上限。文件由 root 管理、服务账户主组可读，0440。
+2. 在宿主 `agents.deepseek` 中增加 `"patches": ["/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml"]`。这不是网页设置，也不能接受浏览器传入的任意路径。
+3. 在维护窗口加载新配置，然后**新建 Agent 聊天**。旧聊天不回填该结构性配置。
+
+已被会话引用的版本化 patch 文件保持内容稳定；修改模型目录时另建版本文件并改用新路径。保留旧文件，供原会话恢复。
+
+### 普通聊天
+
+Agent 插件设置与普通聊天模型配置彼此独立。普通聊天需要单独配置一个聊天模型：api_url 填 `http://10.10.99.98:58000/v1`，model_id 为 `RM-01 VLM`，context_length262144、max_output8192，后端会追加 `/chat/completions`。现场保留了原模型配置 ID `default-chat`。
+
+没有对应服务时，让 embedding/rerank 保持未配置，不要把 VLM 填成嵌入或重排模型。
+
+## 5. 启动 Gateway、Runner 与 ChatRaw
+
+首次使用本部署专属 Hermes Gateway，可依据 [chatraw-hermes.service.example](chatraw-hermes.service.example)创建 unit，替换其中账户。它加载相同的项目环境文件，运行 `hermes gateway run`。不要覆盖同名既有服务。
+
+确认该 unit 尚不存在且模板账户正确后，首次安装：
+
+```sh
+sudo install -m 0644 deploy/chatraw-hermes.service.example /etc/systemd/system/chatraw-hermes.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now chatraw-hermes
+sudo systemctl enable --now chatraw-runner
+systemctl is-active chatraw-hermes chatraw-runner
+```
+
+Runner 只执行 `hermes gateway attach --json` 连接已有 Gateway，不负责自动启动或恢复共享 Gateway。
+
+确认环境与路径后构建 ChatRaw。项目名固定为 `chatraw`，避免不慎创建另一个空数据卷：
 
 ```sh
 export CHATRAW_RUNNER_TOKEN_FILE=/etc/chatraw-runner/token
-docker compose -f docker-compose.yml -f deploy/docker-compose.agent.yml up -d --build
+docker compose -p chatraw -f docker-compose.yml -f deploy/docker-compose.agent.yml up -d --build chatraw
 ```
 
-token以只读文件挂载进容器，容器内路径为`/run/secrets/chatraw-runner-token`。
-不把token放进浏览器、镜像层、启动命令参数或日志。Runner协议入口要求Bearer凭据，
-资源请求另核对chat归属；ChatRaw同时检查同源、限流、安装启用状态和绑定。
+Linux host networking 使容器能访问宿主127.0.0.1:51112。token从宿主只读挂载至 `/run/secrets/chatraw-runner-token`，不放进镜像、浏览器或普通插件设置。
 
-## 迁移、备份与回退
+使用交付的预构建镜像时，先校验文件、`docker load` 导入，再增加一个明确指定该镜像的 Compose overlay：
 
-ChatRaw首次Agent schema迁移在有旧聊天时自动生成`chatraw.db.pre-agent-v1.bak`，新增绑定、
-准入/显示投影表，不改写旧messages/model/settings。原Hermes key服务名与插件配置资料保留。
-旧聊天没有可靠Agent身份字段，因此不猜测或自动重传历史；新建Agent聊天后绑定。
-旧Hermes执行入口返回410，生产模块已移除旧执行循环/活动状态机。详见`docs/hermes.md`。
+```yaml
+services:
+  chatraw:
+    image: YOUR_VERIFIED_IMAGE_TAG
+    pull_policy: never
+```
 
-Runner schema2为M1数据增加宿主基础配置快照；从schema1迁移前生成`runner.pre-v2.bak`。
-M1旧会话原完整快照作为其迁移基线保存；新公共设置从下一轮起覆盖可编辑字段。
-数据库使用WAL，不能只复制正在运行的`.db`而丢弃WAL；用SQLite backup：
+将其作为最后一个 `-f` 文件，使用 `up -d --no-build --no-deps chatraw`。不要直接照填未确认的标签，也不要仅往旧容器热拷贝文件当作最终部署。已安装插件在数据卷中；镜像的插件市场文件更新不会自动覆盖已安装副本。需要同步单个资产时，只替换目标文件并验证设置保持不变，不通过卸载重装实现。
+
+## 6. 检查是否可用
+
+打开 `http://HOST:51111`，先确认普通聊天能返回一条短回答。再在插件市场安装并启用所需 Agent，逐项保存模型设置，查看能力检查并新建对应 Agent 聊天。
 
 ```sh
-python script/agent_db_backup.py /path/chatraw.db /backup/chatraw-20261112.db
-python script/agent_db_backup.py /var/lib/chatraw-runner/runner.db /backup/runner-20261112.db
+curl -fsS http://127.0.0.1:51111/ready
+curl -fsS -H 'Origin: http://127.0.0.1:51111' http://127.0.0.1:51111/api/agents
 ```
 
-工具拒绝覆盖现有目标，并运行integrity_check。ChatRaw与Runner的SQLite均使用FULL同步；
-不同数据库之间没有分布式事务，需要一致回退点时先停止新准入并核实活动run，再在同一窗口备份。
-备份还要覆盖Runner工作目录/文件副本、
-Pi与DeepSeek根目录和各原生程序的会话存储；凭据按现有私密备份规则管理。
+`/ready` 检查主服务和数据库；Agent“ready”主要确认程序、协议及配置，不能代替真实模型请求。至少核对一条回答、一次无害工具操作、一次停止及同聊天续接；需要图片时用只有像素包含答案的图片确认，不以回合 completed 单独判定。
 
-回退先显式停止并核实活动run；unknown不能当成已停。停ChatRaw/Runner后保留当前数据库和
-文件树，恢复对应版本的备份到新位置再切换；不要对新schema做破坏性反向改写。
-恢复旧ChatRaw版本时只恢复匹配旧schema的备份，较新记录保留供导出，不静默删除。
-本地测试已验证加表后旧记录不变、备份可恢复为旧schema；现场停机/断电演练仍待验收。
+现场部分原生沙箱受到宿主限制。命令若被沙箱拒绝，应查看原生错误，按准确命令选择单次批准或拒绝；不要为了通过检查关闭系统保护或将全部任务改成无约束执行。`unknown` 的含义见下节。
 
-## 重启语义
+2026-11-13 已验证普通聊天、五 Agent 基础工具/会话恢复/生成停止，以及对应专项记录。Codex 工具中途停止修复已通过新会话现场测试；旧未知记录仍保持隔离。**整机重启、断电恢复和手机实机验收尚未通过，本轮暂缓，执行前需要另行确认。**具体范围以 [验收记录](../docs/agent-platform/VALIDATION.md)为准。
 
-网页关闭或ChatRaw重启不取消宿主运行。ChatRaw后台按持久准入键找回run并按run_id幂等保存
-最终显示记录。Runner重启先使旧交互失效；已派发任务核对原生状态，不重发prompt。
-无可靠证据保持unknown并继续占session及总并发位。只有原生结束证据才能释放活动位。
-不承诺断电无缝续跑；工具提交给外部服务的动作需要各Agent原生证据核实。
+## 7. 更新、备份与恢复
 
-验收时分别测试网页、ChatRaw、Runner、整机四层重启，不能用本地进程测试替代宿主断电证据。
+### 先判断任务状态
+
+关闭网页或重建 ChatRaw 容器不会主动取消宿主任务。Runner 重启则需要检查原生状态，旧审批会失效；它不会自动重发已提交的提示。
+
+`unknown` 表示无法确认任务是否结束。它继续占用原会话和一个并发位置，不能当作已停止，也不能通过编辑数据库、删除聊天或伪造成功来释放。先保留 run/session ID、原生记录和工作目录，由管理员核实。需要运维重启时应明确维护窗口及恢复行为，保存前后证据，不能顺便清除未知记录。
+
+更新前检查所有聊天，不只看管理员当前打开的一条。确认没有排队、执行中、待审批/待输入或停止中的任务，通知使用者维护窗口，再更新需要变更的层：仅前端/主镜像更新只重建ChatRaw；Runner或原生配置变更才安排相应服务重启。不要取消用户任务来腾出更新窗口。
+
+### 备份内容与一致性
+
+至少保存：
+
+- ChatRaw整个数据卷：聊天数据库、附件、模型配置、已安装插件和插件设置。
+- `/var/lib/chatraw-runner`：Runner数据库、工作目录、附件副本、五种原生home与会话目录。
+- `/etc/chatraw-runner`：配置、环境文件、token及所有仍被会话引用的版本化patch。
+- 部署源码/镜像标签与摘要、原生版本、systemd unit和Compose文件。
+
+备份含凭据，应限制为管理员可读。若使用本指南之外的既有Agent home或项目目录，也要纳入备份范围。
+
+SQLite使用WAL。在线备份单个数据库请用仓库工具，不能只复制一个正在使用的`.db`文件：
+
+```sh
+python3 script/agent_db_backup.py SOURCE_DATABASE NEW_BACKUP_DATABASE
+```
+
+该工具拒绝覆盖已有目标，并执行integrity_check。它保证单个SQLite快照，不保证ChatRaw、Runner及原生文件树之间的统一时点。
+
+需要可协调回退的完整备份时，在维护窗口阻止新请求、核实任务，再停止ChatRaw、Runner和**由本部署管理的**Hermes Gateway。确认无文件写入后备份两侧数据库和完整目录。若仍有无法核实的unknown，可先保留只读快照和证据，但不能把它称为已验证的一致恢复点，也不要清账后继续。
+
+ChatRaw数据库位置为卷内 `chatraw.db`，Runner为 `/var/lib/chatraw-runner/runner.db`。可用以下命令定位实际卷，不依赖猜测宿主路径：
+
+```sh
+docker volume inspect chatraw_chatraw_data --format '{{.Mountpoint}}'
+```
+
+原生Agent会话文件和Hermes自身数据库同样需要备份；只保存ChatRaw消息不能恢复原生上下文。
+
+### 回退与重新启动
+
+先保留当前数据副本，核实并停止相关写入，再恢复一套匹配的代码、数据库和原生文件。不要把较新数据库直接交给旧代码，也不要执行破坏性的反向schema修改。首次Agent数据库迁移可能生成迁移前备份，但它不包含之后的新消息，不能代替日常备份。
+
+恢复后先启动必要的原生Gateway和Runner，再启动同一项目名/数据卷的ChatRaw。检查 `/ready`、原聊天消息、Agent绑定和原生会话身份，再在维护窗口内验证续接。遇到unknown继续保留隔离，原工具对外部系统造成的效果需要单独核实。
+
+已验证的是具体服务重启与会话恢复行为，不承诺断电后所有任务无缝继续。

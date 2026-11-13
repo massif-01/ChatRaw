@@ -1,0 +1,8 @@
+# Copy to a versioned, root-managed absolute host path before referencing it.
+# Keep published file contents stable for sessions that already reference it.
+- id: llm-deepseek
+  config:
+    models:
+      - id: RM-01 VLM
+        inputModalities: [text, image]
+        contextWindow: 262144
