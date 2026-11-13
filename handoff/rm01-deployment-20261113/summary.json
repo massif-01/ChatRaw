@@ -274,6 +274,15 @@
     "report": "112-deepseek-final-summary-three-arm-results.md",
     "public_model_identity": "113-summary-diagnostic-model-identity.json",
     "raw_evidence_location": "Private temporary directory; hashes and minimal excerpts only in repository",
-    "g05_execution_acceptance_unchanged": true
+    "g05_execution_acceptance_unchanged": true,
+    "raw_generated_final_text_verification": {
+      "detokenize_requests": 2,
+      "new_generations": 0,
+      "both_exact_match_message_content": true,
+      "false_denial_present_before_response_parsing": true,
+      "layer_conclusion": "False final statements exist in raw generated tokens; not introduced by vLLM response parsing or ChatRaw projection. Cause of generation error remains unresolved.",
+      "reasoning_text_saved": false,
+      "evidence": "115-deepseek-summary-generated-token-verification.json"
+    }
   }
 }

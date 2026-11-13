@@ -15,3 +15,11 @@
 本组说明，在这份固定最终历史中，仅补成功退出码或再补真实审批事实都未得到可验收的正确总结；不能据此外推所有历史/提示或模型的普遍行为，也尚未定位造成错误归纳的具体责任层。原G05真实审批与文件副作用证据不变，本问题仍是待解决的最终总结事实准确性。
 
 109记录前两臂与格式校验失败；111记录第三臂字段不变量、哈希、usage、耗时和短片段。完整body、原始HTTP/响应实体和生成token IDs保存在`/tmp/chatraw-deepseek-summary-bqs7enr3/http-final-seq54-nonstream`受限目录，原失败ChatRaw聊天/run未被改写或重放。
+
+## 补充：原始生成token责任层核验
+
+仅将baseline和exit0+approval两条现成response的completion token IDs送往`/detokenize`，共2次无生成请求。两条均只有一个`</think>`分界；取其后的最终回答，仅删除终端特殊token `<|im_end|>`，不做空白或正文归一化，即与各自`response.message.content`逐字符完全一致。错误否认提权的短句在两个版本中同时存在。
+
+这排除了vLLM响应解析或ChatRaw投影额外改写出否认语句：本两次错误陈述已存在于模型原始生成的最终回答中。此结论定位的是错误产生的输出层，不等于已解释造成该生成错误的输入、历史、模板或模型行为原因，也不将补充状态文本判为有效修复。
+
+[115号核验](115-deepseek-summary-generated-token-verification.json)仅保存字符串匹配断言、请求/响应/最终正文哈希及短摘录；detokenize得到的reasoning全文没有落盘。没有新增推理、源码或推理配置变更。

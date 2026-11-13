@@ -81,3 +81,5 @@ Codex e889688前台工具停止修复已部署，新会话单轮现场验收通�
 2026-11-14后续原始协议诊断与修复：92–98记录SDK前的空参数生成格式和thinking单变量因果证据；99–107记录官方原生provider部署、总控真实页面拒绝/单次允许及接收端证据。G05的真实公开审批执行范围已通过，旧失败记录保留。最终模型总结与执行事实矛盾、实际出站结果未捕获的限制单列。见[106号验收报告](106-deepseek-v2-public-approval-acceptance.md)及[107号结果配对](107-deepseek-v2-result-pairing.json)。
 
 2026-11-14最终总结专项诊断：108–114归档私密原生副本哈希、三次有效生成与一次无生成400。baseline复现错误；只补exit0耗尽预算且无最终正文；再补真实allowed-once仍错误。不部署状态扩展，不追加推理，G05执行验收结论不变。见[112号三臂结果](112-deepseek-final-summary-three-arm-results.md)。
+
+[115号原始token核验](115-deepseek-summary-generated-token-verification.json)：两条错误最终答案与原始生成token解码结果逐字符一致，排除vLLM响应解析／ChatRaw投影产生该否认语句；错误生成的原因仍未解决。仅2次detokenize、0次新生成。
