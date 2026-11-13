@@ -1,0 +1,9 @@
+test_finished_tool_and_replaced_harness_cannot_dispatch_allow (test_deepseek_approval_independent.BoundaryTests.test_finished_tool_and_replaced_harness_cannot_dispatch_allow) ... ok
+test_run_changes_during_directory_lookup_cancel_without_publication (test_deepseek_approval_independent.BoundaryTests.test_run_changes_during_directory_lookup_cancel_without_publication) ... ok
+test_timeout_late_call_and_new_run_do_not_reuse_old_match (test_deepseek_approval_independent.BoundaryTests.test_timeout_late_call_and_new_run_do_not_reuse_old_match) ... ok
+test_unreviewable_cwd_and_missing_file_path_are_denied (test_deepseek_approval_independent.BoundaryTests.test_unreviewable_cwd_and_missing_file_path_are_denied) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.034s
+
+OK

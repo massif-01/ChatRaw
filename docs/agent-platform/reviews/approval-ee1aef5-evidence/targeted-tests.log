@@ -1,0 +1,16 @@
+test_exact_call_identity_in_either_event_order (agent_runner.tests.test_d_adapter_protocol.DeepSeekApprovalTests.test_exact_call_identity_in_either_event_order) ... ok
+test_file_approval_projects_scope_without_file_contents (agent_runner.tests.test_d_adapter_protocol.DeepSeekApprovalTests.test_file_approval_projects_scope_without_file_contents) ... ok
+test_missing_mismatched_or_unreviewable_calls_never_offer_allow (agent_runner.tests.test_d_adapter_protocol.DeepSeekApprovalTests.test_missing_mismatched_or_unreviewable_calls_never_offer_allow) ... ok
+test_stop_rejects_new_or_pending_approval (agent_runner.tests.test_d_adapter_protocol.DeepSeekApprovalTests.test_stop_rejects_new_or_pending_approval) ... ok
+test_sdk_native_plan_and_permission (agent_runner.tests.test_d_native_adapters.DeepSeekNativeTests.test_sdk_native_plan_and_permission) ... /private/tmp/chatraw-d-dsh-py312/lib/python3.12/site-packages/deepseek_harness/api.py:172: ResourceWarning: unclosed file <_io.TextIOWrapper name=10 encoding='utf-8'>
+  self._client.close()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/private/tmp/chatraw-d-dsh-py312/lib/python3.12/site-packages/deepseek_harness/api.py:172: ResourceWarning: unclosed file <_io.TextIOWrapper name=12 encoding='utf-8'>
+  self._client.close()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.727s
+
+OK
