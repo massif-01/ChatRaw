@@ -228,6 +228,12 @@ class DeepSeekAdapter(AgentAdapter):
                 "reason": "DeepSeek SDK initialization failed",
             }
         checks["protocol"] = "passed"
+        if config.get("provider", "deepseek-official") != "deepseek-official":
+            return {
+                **result,
+                "availability": "ready",
+                "reason": "DeepSeek SDK initialized the configured provider; authentication and model request unverified",
+            }
         if not _text(getenv("DEEPSEEK_API_KEY")):
             return {
                 **result,

@@ -21,6 +21,9 @@ from agent_runner.adapters.deepseek import DeepSeekAdapter
 from agent_runner.adapters.pi import PiAdapter
 
 
+_COMPACTION_CONTEXT = "TEST_COMPACTION_CONTEXT"
+
+
 class _Model(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
@@ -121,7 +124,21 @@ class _Model(BaseHTTPRequestHandler):
         elif "TEST_PLAN" in text and not tool_result:
             tool = ("exit_plan_mode", {"plan": "# Fixture plan\n\nAdd a test."})
 
-        if "TEST_IMAGE" in text and isinstance(content, list):
+        if text.startswith("You are now acting as a compaction engine"):
+            answer = (
+                "Checkpoint preserves " + _COMPACTION_CONTEXT
+                if _COMPACTION_CONTEXT in json.dumps(messages)
+                else "Checkpoint did not receive early context"
+            )
+        elif "TEST_COMPACTION_CONTINUATION" in json.dumps(messages):
+            history = json.dumps(messages)
+            answer = (
+                "checkpoint present"
+                if "Checkpoint preserves " + _COMPACTION_CONTEXT in history
+                and "<compacted-summary>" in history
+                else "checkpoint missing"
+            )
+        elif "TEST_IMAGE" in text and isinstance(content, list):
             answer = (
                 "image present"
                 if any(part.get("type") in ("image", "image_url") for part in content)
@@ -560,6 +577,24 @@ class DeepSeekNativeTests(_NativeCase):
             "reasoning_effort": "high",
         }
         self.server.provider_requests = []
+        for official_key in ("", "fixture-key"):
+            with patch.dict(os.environ, {"DEEPSEEK_API_KEY": official_key}):
+                health = await DeepSeekAdapter().probe(chat_config)
+            self.assertEqual(health["availability"], "ready", health)
+            self.assertEqual(
+                health["checks"],
+                {
+                    "program": "passed",
+                    "protocol": "passed",
+                    "authentication": "not_checked",
+                    "model_request": "not_checked",
+                },
+            )
+            self.assertIn(
+                "authentication and model request unverified", health["reason"]
+            )
+            self.assertFalse(self.server.provider_requests)
+
         legacy = DeepSeekAdapter()
         legacy_binding = await self.binding(legacy, config, "legacy")
         self.assertEqual(
@@ -575,7 +610,13 @@ class DeepSeekNativeTests(_NativeCase):
         self.assertEqual(
             (
                 await asyncio.wait_for(
-                    self.run_input(adapter, binding, "TEST_HISTORY", "before"), 15
+                    self.run_input(
+                        adapter,
+                        binding,
+                        f"TEST_HISTORY {_COMPACTION_CONTEXT}",
+                        "before",
+                    ),
+                    15,
                 )
             )["status"],
             "completed",
@@ -635,6 +676,59 @@ class DeepSeekNativeTests(_NativeCase):
         self.assertEqual(
             first_chat_request["chat_template_kwargs"], {"enable_thinking": True}
         )
+
+        resumed = await adapter.resume_session(binding, chat_config)
+        self.assertEqual(resumed, binding)
+        async with asyncio.timeout(20):
+            self.assertEqual(
+                await self.run_image(adapter, resumed),
+                {"status": "completed", "final_text": "image present"},
+            )
+        path, image_request = self.server.provider_requests[-1]
+        self.assertEqual(path, "/v1/chat/completions")
+        (image_url,) = [
+            part["image_url"]["url"]
+            for part in image_request["messages"][-1]["content"]
+            if part["type"] == "image_url"
+        ]
+        media, encoded = image_url.split(",", 1)
+        signatures = {
+            "data:image/png;base64": b"\x89PNG\r\n\x1a\n",
+            "data:image/jpeg;base64": b"\xff\xd8",
+            "data:image/webp;base64": b"RIFF",
+        }
+        self.assertIn(media, signatures)
+        self.assertTrue(
+            base64.b64decode(encoded, validate=True).startswith(signatures[media])
+        )
+
+        cursor = len(self.server.provider_requests)
+        async with asyncio.timeout(20):
+            compact = await adapter.compact(resumed, {"run_id": "compact"}, self.emit)
+        self.assertEqual(compact["status"], "completed", compact)
+        self.assertRegex(compact["final_text"], r"^Compacted [1-9][0-9]* history items")
+        ((path, summary_request),) = self.server.provider_requests[cursor:]
+        self.assertEqual(path, "/v1/chat/completions")
+        self.assertIn(_COMPACTION_CONTEXT, json.dumps(summary_request["messages"]))
+        await adapter.close(resumed)
+
+        resumed = await adapter.resume_session(binding, chat_config)
+        self.assertEqual(resumed, binding)
+        self.assertEqual(adapter._session.id, binding["native"]["session_id"])
+        async with asyncio.timeout(20):
+            self.assertEqual(
+                await self.run_input(
+                    adapter, resumed, "TEST_COMPACTION_CONTINUATION", "after-compact"
+                ),
+                {"status": "completed", "final_text": "checkpoint present"},
+            )
+        path, continued_request = self.server.provider_requests[-1]
+        self.assertEqual(path, "/v1/chat/completions")
+        self.assertIn(
+            "Checkpoint preserves " + _COMPACTION_CONTEXT,
+            json.dumps(continued_request["messages"]),
+        )
+        await adapter.close(resumed)
 
         resumed_legacy = await legacy.resume_session(legacy_binding, config)
         self.assertEqual(resumed_legacy, legacy_binding)
