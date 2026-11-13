@@ -1,36 +1,52 @@
-# 集成验收进度
+# 最终集成与验收记录
 
-2026-11-12，总控完整集成源码 `165a509`（`2d770f0`＋标题与Claude问答增量）。本地已知P0/P1已清零；现场门槛仍未关闭，不是全项目发布通过声明。
-`simulated_pass` 包括真实浏览器/原生程序配合受控 API 或模型替身；真实引擎证据与真实模型服务认证分开记录。
+2026-11-13。软件运行代码与前端已集成、提交并部署至 RM-01。**原先三项功能问题已关闭；当前不是所有现场验收门槛均已通过。**
 
-|门槛|阶段状态|已有证据|仍需完成|
-|---|---|---|---|
-|G01 插件|simulated_pass|B 五插件安装/设置/启停/卸载及聊天单选，真实 109/157＋API fixture；总控集成树157复验通过|最终网关的真实安装与配置链路|
-|G02 会话|simulated_pass|五款原生程序＋本地模型替身；C/D续接，F独立验证Pi/DeepSeek全新实例和聊天隔离，D验证Hermes真实Gateway|最终Runner持久映射、RM-01账户与真实模型|
-|G03 上下文|simulated_pass|B输入只含本轮内容/附件引用；C真实Claude请求保留原生CLAUDE.md/Skill，不含ChatRaw哨兵|最终网关与五适配器完整链路|
-|G04 状态|simulated_pass|公共合同及叶模块EOF/错run/replay反例；B断线与丢失接收响应fixture|最终Runner权威状态和恢复|
-|G05 交互|simulated_pass|C-F02与F-PLAT-01均关闭；真实UI编码→Runner→Claude保留选项与补充文字，无效选项派发前拒绝且允许修正；F定向9项通过|现场原生服务与真实账号流程|
-|G06 停止|simulated_pass|Pi/DeepSeek真实shell停止由F复验；Hermes保留Gateway；C-F01修复后F确认Codex无延迟写入，失败保持unknown|最终Runner持久隔离与Linux环境|
-|G07 恢复|simulated_pass|F核验Runner子进程突然退出后的真实SQLite/WAL恢复、unknown占位及不重发；ChatRaw组件/数据库重开单次投影；总控容器替换保留数据|RM-01真实运行环境与整机重启单独验证|
-|G08 附件|simulated_pass|C/D图片到原生请求或存储；B附件/产物fixture|最终归属、下载、刷新与现场能力声明|
-|G09 渲染|real_pass|总控集成树Chrome157实际渲染；B/E真实109测试：稳定DOM、公式/图表、原文复制、reduced motion；原KaTeX停顿问题关闭|正式后端流接线复验，不扩大视觉设计范围|
-|G10 手机|simulated_pass|320/375/390/430及横屏截图，模拟visualViewport缩小与焦点检查|iPhone Safari/Android Chrome实际设备和软键盘|
-|G11 Chrome109|real_pass|E在最终后端上用实际Chromium109.0.5414.46跑通普通聊天、离线插件、真实网关和跨浏览器审批；Agent端受控|Windows8实机证据单列，不把macOS上的实际109说成Win8实机|
-|G12 本地UI资源|real_pass|E最终109/157外部请求尝试为0；本地市场安装、残缺旧插件字体升级、CSV兼容、公式/图表/PDF通过；总控无网络Docker复验|业务模型/搜索API不属于离线保证|
-|G13 迁移|simulated_pass|F核验旧记录、旧schema恢复、活动WAL备份、拒绝覆盖；旧Hermes执行已移除|现场数据/文件树一致回退窗口|
-|G14 普通聊天|simulated_pass|F固定集成版本153项执行通过、23可选原生跳过；普通压缩/Skill/TLS/字体83项通过；E实际后端普通聊天流通过|真实模型服务和现场环境；跳过不计通过|
-|G15 部署|simulated_pass|arm64/amd64镜像已作本机验证；RM-01已实际安装Docker Engine 29.9.3和Compose 5.7.1，两个Compose命令实际运行容器，Docker/containerd已设置开机启动|RM-01的ChatRaw容器与宿主Runner部署、原生持久目录、五Agent认证和整机重启验收|
+现场：ChatRaw Docker + 宿主 Runner，10.10.99.99:51111；五种原生 Agent 使用 10.10.99.98:58000 的 RM-01 VLM。前端最终构建源于03d35e5，构建产物在f3edd81；宿主运行文件逐项匹配adeb279。后续文档和验证脚本提交不改变上述运行字节。
 
-## 独立审查与可重跑入口
+## 本轮结果
 
-- [D适配器审查](reviews/F-D-round2-20261112.md)：16项原有＋6项独立检查通过，无叶模块集成阻塞。现场门槛保留。
-- [C适配器审查](reviews/F-C-round3-20261112.md)发现的C-F01/C-F02已由[独立复验](reviews/F-C-round4-20261112.md)关闭：34项回归＋4项原反例＋5项边界检查通过，未放宽原断言。
-- [B界面与脚本](handoffs/B/README.md)、[E资源与浏览器](handoffs/E/README.md)、[真实HermesGateway](handoffs/D-hermes/README.md)。
-- [E最终G11/G12报告](reviews/E-2d770f0/REPORT.md)及[总控网关/镜像记录](reviews/integration-2d770f0/README.md)固定到同一集成提交，附截图与原始日志。
-- [F完整平台报告](reviews/F-platform-2d770f0-20261112.md)列明7项独立权威层检查与唯一问答P1；[标题增量](reviews/F-title-cb4d9fc-20261112.md)另经5项检查通过。
-- [F最终有界结论](reviews/F-platform-final-69a7427-20261112.md)关闭问答P1，本地已审查组合无已知未闭环P0/P1。总控在165a509重跑双浏览器网关与最终Docker持久卷检查通过。
-- [部署产物准备](reviews/deployment-e91d32f/README.md)：固定源码包与受测amd64镜像已生成并校验，现场安装未执行。
-- [RM-01 Docker安装记录](reviews/docker-install-rm01-20261112.md)：真实主机安装与Compose容器测试通过；ChatRaw和Agent尚未部署。
-- 总控在集成树运行 `npm run build`、`npm run vendor:check` 通过；指定本机Chrome路径后运行 `scripts/test-agent-ui.mjs` 和 `scripts/test-stream-markdown.mjs` 通过。默认Playwright缓存未安装浏览器，使用 `CHROME_PATH` 指定已安装程序，不以下载失败冒充产品失败。
+- Codex 原生压缩→同一 thread 续接→工具写入/读回→图片像素挑战均已在真实模型链路通过。兼容处理仅在宿主显式启用，未修改共享模型服务。
+- Codex 前台工具停止修复已现场通过。DeepSeek 的工具执行中停止也已通过，所属运行时、bash、sleep退出，完整延时观察无迟到写入。
+- DeepSeek 完整命令/cwd审批投影修复已通过真实 SDK 和独立边界验证并部署。当前本地模型的三次现场审批尝试没有到达公开审批，**不得将其计为拒绝/允许通过**；详见G05。
+- Firefox150.0.2和Chromium109.0.5414.46的最终部署复验通过，包含短横屏菜单、焦点、减少动效和历史原文复制。Chrome157已有对应本地及现场证据。
+- 本地最终集成回归169项执行通过，29项可选原生测试跳过；原生与现场结果分别记录。CI增加Runner触发与协议/持久化检查，本地工作流解析通过，未推送或声称GitHub Actions已运行。
 
-目前不具备整体发布通过条件。每个门槛以最终提交、实际接收端和明确环境为准；实现者完成、程序安装成功、模型目录可读均不等于真实模型认证通过。
+## 固定 G01–G15 清单
+
+采用分层组合证据：协议与失败边界在受控接收端验证，关键原生正向能力在RM-01真实模型链路验证。不得把模型替身、程序安装或skip单独算作现场通过。
+
+|门槛|结论|证据与边界|
+|---|---|---|
+|G01 插件|通过|五独立插件安装/配置/启用、聊天单选与持久绑定；实际浏览器和网关覆盖禁用/卸载与保留行为。无需为验收反复卸载用户插件。|
+|G02 会话|通过|五Agent多轮与Runner重启后续接；四种原生压缩边界已核对，Codex兼容后同thread压缩/续接/工具/图片现场通过。|
+|G03 上下文|通过|Agent只接本轮输入/支持附件；原生提示、Skills与压缩归Agent，普通聊天增强保留；兼容处理保留原生指令、消息、工具ID和图片。|
+|G04 状态|通过|统一权威账本、断线/丢响应/重放与单次投影；旧Codex测试unknown继续隔离、不重发、不强制终态。|
+|G05 交互|部分通过；现场补项未验证|通用问答、批次、审批及失效/跨run边界已过。DeepSeek完整命令/cwd修复通过实际SDK和独立审查；新修复在当前.98模型上未触发公开审批，拒绝/允许端到端NOT_VERIFIED。|
+|G06 停止|通过|五Agent生成停止及工具执行中停止有对应证据；DeepSeek按独占进程停止核验，不描述成首字后流式取消；历史unknown不追溯清账。|
+|G07 恢复|组件通过；整机待确认|网页、ChatRaw、Runner层级恢复及等待审批期间主程序重启已验；整机重启尚未执行，必须先取得用户确认。|
+|G08 附件|通过|五种真实图片像素挑战通过；归属/下载边界有真实网关反例。DeepSeek模态配置只影响新会话，旧宿主快照不回填。|
+|G09 渲染|通过|已认可柔和出字、增量Markdown、复杂内容/原文复制/reduced motion；任务详情加载、空态、工具及审批回放通过实际部署浏览器。|
+|G10 手机|布局通过；实机暂缓|四种窄屏、横屏、模拟键盘/焦点已验，短横屏菜单修复通过。真实iPhone/Android软键盘按用户明确要求暂缓。|
+|G11 浏览器|通过已声明环境|实际Chromium109、Chrome157、Playwright Firefox150.0.2引擎。不是伪造UA；不宣称Windows8、Mozilla品牌发行版、旧ESR115或手机实机通过。|
+|G12 本地UI资源|通过|核心和官方插件资源本地化，实际浏览器外部请求0，vendor清单与断网镜像验证；模型/搜索业务API不属于离线保证。|
+|G13 迁移与备份|通过所列范围|旧记录/schema保留、迁移/备份反例；现场私密副本12库完整性、6156文件、25绑定/目录核对；维护窗口静止双库备份/恢复核对。未在线回滚生产，不宣称跨库事务或断电恢复。|
+|G14 普通聊天|通过|普通聊天、Skills、压缩、TLS、字体、插件与Agent网关回归；现场普通聊天使用真实模型完成且无Agent绑定。|
+|G15 部署|运行部署通过|Docker主程序、持久卷、宿主服务账户/目录、五原生环境/真实本地模型均已运行；最终部署字节已核对。整机开机恢复归G07，不混计。|
+
+汇总：**12项通过所声明范围，G05保留现场模型验证缺口，G07保留整机确认，G10按用户要求暂缓实机。**这不是15/15全现场通过声明。
+
+## DeepSeek 现场审批缺口
+
+三次尝试均在独立验收聊天内：第一轮模型返回空工具参数并报MALFORMED_RESPONSE；简化后首次参数有效但宿主沙箱不可用，模型后续又返回空参数；第三轮使用官方支持的首调用单次权限申请参数，模型将调用JSON当普通文本返回。都没有收到可供明确提交的公开审批，目标文件均不存在。不存在文件不能证明拒绝路径通过，文本JSON不能当成真实工具调用。
+
+已停止此项推理，不改写失败，不把模型文本自行转换为工具执行，不更改共享模型服务器或全局沙箱策略。代码和真实SDK验证是已完成的软件证据；本地模型生成行为限制单列，不能据此宣布最终端到端审批已通过。若后续继续该现场补项，应先确定可稳定发起合法原生工具调用的模型配置，再验证公开完整命令/cwd、拒绝无副作用和单次允许的结果。
+
+## 证据入口
+
+- [最终现场部署与模型记录](../../handoff/rm01-deployment-20261113/81-final-combined-field-report.md)、[现场索引](../../handoff/rm01-deployment-20261113/README.md)。原始失败和后续结果分开保留。
+- [Codex停止](../../handoff/rm01-deployment-20261113/63-codex-foreground-stop.md)、[DeepSeek工具停止](handoffs/D-field/README.md)、[五图片与四Agent原生压缩](../../handoff/rm01-deployment-20261113/49-deepseek-patches-and-compact-verification.md)。
+- [现场隔离恢复](../../handoff/rm01-deployment-20261113/66-isolated-restore-report.md)，私密数据库/凭据未进入仓库。
+- [最终Firefox/109](handoffs/E/field/menu-fix/README.md)、[前期现场浏览器记录](handoffs/E/field/README.md)。
+- [Codex兼容独立审查](reviews/F-codex-responses-3bcb6a2-20261113.md)、[DeepSeek审批独立审查](reviews/F-deepseek-approval-ee1aef5-20261113.md)、[最终本地回归清单](reviews/final-integration-20261113/manifest.json)。
+- 历史[平台审查](reviews/F-platform-final-69a7427-20261112.md)和[缺口盘点](reviews/F-validation-gaps-7f4fda0-20261113.md)保留当时结论，当前状态以上表为准，不用早期“尚未部署”等表述替代现场记录。

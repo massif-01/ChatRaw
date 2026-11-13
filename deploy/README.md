@@ -144,7 +144,7 @@ supports_websockets = false
 remote_compaction = "unsupported"
 ```
 
-该直连服务没有 Responses compact 接口，配置选择原生本地压缩。现场已发现压缩后续接被模型消息模板拒绝，**不能将压缩回合完成视为续接通过**。当前直连部署仍保留这一限制。提供下述可选兼容配置；只有发布版本包含该模块并完成相应审查与现场验收后才启用。
+该直连服务没有 Responses compact 接口，配置选择原生本地压缩。其消息模板会拒绝压缩后的原生权限消息位置；本版本提供下述可选兼容配置，并已在 RM-01 验证同一原生会话的压缩、标记续接、工具执行和图片输入。该兼容配置默认关闭，使用本地模型且需要此兼容行为时由管理员明确启用。
 
 在 Runner 宿主配置的 `agents.codex` 中增加：
 
@@ -156,7 +156,7 @@ remote_compaction = "unsupported"
 
 这必须是已确认无鉴权的固定上游，不能填带凭据的地址。省略字段时仍使用上面的原生 provider。该字段不属于网页插件设置；启用后 Runner 管理仅监听本机的临时兼容入口，将原生指令顺序调整为该模型服务接受的形式，保留普通消息、工具、图片与流式响应。管理员不需要再配置对外监听端口。
 
-该结构性配置只用于**新绑定的会话**，旧聊天继续使用原快照；不要重写旧绑定或将新聊天冒充旧会话恢复。仍用同一 CODEX_HOME、原模型名称及原权限/审批策略。当前配置和实现说明见发布附带的 `docs/agent-platform/handoffs/C-local-model-98/codex-responses-compat.md`。本指南此项尚不代表现场验收通过。
+该结构性配置只用于**新绑定的会话**，旧聊天继续使用原快照；不要重写旧绑定或将新聊天冒充旧会话恢复。仍用同一 CODEX_HOME、原模型名称及原权限/审批策略。当前配置和实现说明见发布附带的 `docs/agent-platform/handoffs/C-local-model-98/codex-responses-compat.md`。RM-01 的新建验收会话已通过实际模型验证；历史失败回合保留，不改写为成功。
 
 ### Claude
 
@@ -322,3 +322,9 @@ docker volume inspect chatraw_chatraw_data --format '{{.Mountpoint}}'
 恢复后先启动必要的原生Gateway和Runner，再启动同一项目名/数据卷的ChatRaw。检查 `/ready`、原聊天消息、Agent绑定和原生会话身份，再在维护窗口内验证续接。遇到unknown继续保留隔离，原工具对外部系统造成的效果需要单独核实。
 
 已验证的是具体服务重启与会话恢复行为，不承诺断电后所有任务无缝继续。
+
+## 浏览器与设备验证
+
+本次已在 macOS 上使用实际 Chromium 109.0.5414.46、Chrome 157 和 Playwright Firefox 150.0.2 引擎验证核心界面，并在 RM-01 部署上复验。Firefox 和 Chromium 109 的横屏菜单、键盘焦点、减少动效、历史回放及原文复制已通过。参见[现场浏览器记录](../docs/agent-platform/handoffs/E/field/README.md)及[横屏修复复验](../docs/agent-platform/handoffs/E/field/menu-fix/README.md)。
+
+不支持 IE。上述结果不是 Windows 8 实机、旧版 Firefox ESR 115 或手机软键盘实测；手机实机检查按用户安排暂缓。刷新页面可加载本次带版本号的新前端资源。
