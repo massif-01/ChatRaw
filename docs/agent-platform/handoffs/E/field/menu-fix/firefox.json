@@ -1,0 +1,110 @@
+{
+  "origin": "http://10.10.99.99:51111",
+  "chat": "b1a8f3a5-2234-4945-bae0-1f4a4b4372d6",
+  "engine": "firefox",
+  "version": "150.0.2",
+  "platform": "darwin",
+  "arch": "arm64",
+  "resources": {
+    "/": 200,
+    "/fonts/remixicon/remixicon.woff2": 200,
+    "/app.min.js": 200,
+    "/vendor/alpinejs/3.13.3/alpine.min.js": 200,
+    "/vendor/collapse/3.13.3/collapse.min.js": 200,
+    "/vendor/marked/9.1.6/marked.min.js": 200,
+    "/styles.min.css": 200,
+    "/fonts/remixicon/remixicon.css": 200,
+    "/agents.js": 200,
+    "/stream-markdown.js": 200
+  },
+  "errors": [],
+  "external": [],
+  "writes": [],
+  "layouts": [
+    {
+      "width": 320,
+      "height": 740,
+      "box": {
+        "x": 23,
+        "right": 293,
+        "y": 197,
+        "bottom": 637,
+        "width": 320,
+        "height": 740,
+        "rootWidth": 320,
+        "scrollWidth": 268,
+        "clientWidth": 268,
+        "scrollHeight": 573,
+        "clientHeight": 438,
+        "scroll": 135,
+        "pointerCoarse": false,
+        "visualHeight": 740,
+        "maxHeight": "440px",
+        "chatTop": 61,
+        "reducedMotion": true,
+        "focusedOption": "codex",
+        "focusVisible": true
+      }
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "box": {
+        "x": 23,
+        "right": 363,
+        "y": 301,
+        "bottom": 741,
+        "width": 390,
+        "height": 844,
+        "rootWidth": 390,
+        "scrollWidth": 338,
+        "clientWidth": 338,
+        "scrollHeight": 521,
+        "clientHeight": 438,
+        "scroll": 83,
+        "pointerCoarse": false,
+        "visualHeight": 844,
+        "maxHeight": "440px",
+        "chatTop": 61,
+        "reducedMotion": true,
+        "focusedOption": "codex",
+        "focusVisible": true
+      }
+    },
+    {
+      "width": 740,
+      "height": 320,
+      "box": {
+        "x": 23,
+        "right": 373,
+        "y": 69,
+        "bottom": 217,
+        "width": 740,
+        "height": 320,
+        "rootWidth": 740,
+        "scrollWidth": 348,
+        "clientWidth": 348,
+        "scrollHeight": 521,
+        "clientHeight": 146,
+        "scroll": 375,
+        "pointerCoarse": false,
+        "visualHeight": 320,
+        "maxHeight": "148px",
+        "chatTop": 61,
+        "reducedMotion": true,
+        "focusedOption": "codex",
+        "focusVisible": true
+      }
+    }
+  ],
+  "assets": {
+    "index": "97d8952abacc68fe233bc458d3dd276cf22edb82d1a585cb3ccc4e29e7fe264b",
+    "agents": "9744c4bf0fc4c499437784ecb8d864ccf97e4c05049916b37c0d97f079228205",
+    "app": "cdfe94f136a01b8af324ff7ca4406ab00371882b85a8f894a7c01daf6e1f223c",
+    "css": "8124b8ebd53864226336974feb99d2806f602dc9eeec7b12a5a691bbcf8206f3"
+  },
+  "run": "2b51cd7b85114cf7bdc0d7ada6d8412c",
+  "originalSha256": "65fbdd4f4f948daef8f797f10d6ac6a51b236fea9a9b822337e4eed8b8f7daf2",
+  "copyMatches": true,
+  "layoutFailures": []
+}

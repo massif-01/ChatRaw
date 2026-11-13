@@ -91,6 +91,33 @@ try {
     await modePanel.getByRole('button', { name: 'Apply', exact: true }).click();
     await page.getByRole('button', { name: 'Chat mode — Codex CLI' }).waitFor();
 
+    await page.setViewportSize({ width: 740, height: 320 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await mode.focus();
+    await mode.press('Enter');
+    const selectedAgent = modePanel.getByRole('radio', { name: 'Codex CLI', exact: true });
+    await selectedAgent.waitFor();
+    await page.waitForFunction(() => document.activeElement?.matches('.agent-mode-panel input:checked'));
+    const menuFits = () => page.waitForFunction(() => {
+        const panel = document.querySelector('.agent-mode-panel');
+        const box = panel.getBoundingClientRect();
+        const top = Math.max(window.visualViewport?.offsetTop || 0, panel.closest('.chat-container').getBoundingClientRect().top);
+        const focused = document.activeElement.getBoundingClientRect();
+        return box.top >= top - 1 && box.bottom <= innerHeight + 1 &&
+            box.left >= 0 && box.right <= innerWidth + 1 &&
+            document.activeElement.matches('.agent-mode-panel input:checked') &&
+            focused.top >= box.top - 1 && focused.bottom <= box.bottom + 1;
+    });
+    await menuFits();
+    await page.screenshot({ path: evidence + '/landscape-bound-agent-menu.png' });
+    await page.setViewportSize({ width: 390, height: 740 });
+    await menuFits();
+    await selectedAgent.press('Escape');
+    await modePanel.waitFor({ state: 'hidden' });
+    assert.equal(await mode.evaluate(button => button === document.activeElement), true);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.setViewportSize({ width: 320, height: 740 });
+
     await page.locator('input[type=file][x-ref=agentFileInput]').setInputFiles({
         name: 'input.txt', mimeType: 'text/plain', buffer: Buffer.from('demo')
     });

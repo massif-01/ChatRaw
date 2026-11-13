@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
-import { chromium } from 'playwright-core';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 import { startFixture } from './fixtures/browser-server.mjs';
 
@@ -9,7 +8,13 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const code = process.env.CHATRAW_GATEWAY_CODE_ROOT || root;
 const evidence = process.env.CHATRAW_EVIDENCE_DIR || resolve(root, 'outputs', 'agent-gateway-ui');
 await mkdir(evidence, { recursive: true });
-const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || undefined });
+const engine = process.env.CHATRAW_TEST_ENGINE || 'chromium';
+const playwright = process.env.CHATRAW_PLAYWRIGHT_MODULE
+    ? pathToFileURL(resolve(process.env.CHATRAW_PLAYWRIGHT_MODULE)).href
+    : 'playwright-core';
+const browsers = await import(playwright);
+const executablePath = engine === 'firefox' ? process.env.FIREFOX_PATH : process.env.CHROME_PATH;
+const browser = await browsers[engine].launch({ executablePath });
 const state = await mkdtemp(resolve(evidence, 'state-'));
 let fixture;
 try {
@@ -104,7 +109,7 @@ try {
     const approved = workspaces.find(file => file.endsWith('approved.txt'));
     assert(approved);
     assert.equal(await readFile(resolve(state, 'runner', 'workspaces', approved), 'utf8'), 'native action executed');
-    console.log('Real ChatRaw gateway and Runner, Chromium', browser.version(), 'local install/settings/attachment, tab close, second-device approval, final projection and reload passed; ControlledAdapter receiver');
+    console.log('Real ChatRaw gateway and Runner,', engine, browser.version(), 'local install/settings/attachment, tab close, second-device approval, final projection and reload passed; ControlledAdapter receiver');
 } catch (error) {
     console.error(errors);
     throw error;
