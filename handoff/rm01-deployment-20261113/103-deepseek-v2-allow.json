@@ -1,0 +1,123 @@
+{
+  "action": "allow",
+  "chat_id": "42cf0a44-0585-418a-b3fb-58fef9977726",
+  "binding": {
+    "chat_id": "42cf0a44-0585-418a-b3fb-58fef9977726",
+    "session_id": "c05eaf1a083b4df5976b0acb573b21d9",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "c05eaf1a083b4df5976b0acb573b21d9",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "workspace": "/var/lib/chatraw-runner/workspaces/c05eaf1a083b4df5976b0acb573b21d9",
+  "filename": "allow-5b717a98b0df426f85368bb6cb3d40fc.txt",
+  "marker": "A_NATIVE_e253fd617ca8",
+  "command": "printf %s A_NATIVE_e253fd617ca8 > allow-5b717a98b0df426f85368bb6cb3d40fc.txt",
+  "files_before": {},
+  "effective_configuration": {
+    "config": {
+      "dsh_home": "/var/lib/chatraw-runner/deepseek",
+      "max_tokens": 8192,
+      "model": "RM-01 VLM",
+      "patches": [
+        "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"
+      ],
+      "provider": "rm01-qwen",
+      "reasoning_effort": "high"
+    },
+    "base_config": {
+      "dsh_home": "/var/lib/chatraw-runner/deepseek",
+      "max_tokens": 8192,
+      "patches": [
+        "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"
+      ],
+      "provider": "rm01-qwen",
+      "reasoning_effort": "high"
+    }
+  },
+  "approvals": [
+    {
+      "interaction": {
+        "allow_cancel": true,
+        "decisions": [
+          {
+            "id": "allowed-once",
+            "label": "Allow once",
+            "scope": "once"
+          },
+          {
+            "id": "rejected",
+            "label": "Deny",
+            "scope": "once"
+          }
+        ],
+        "detail": "Requested sandbox mode: `danger-full-access`.\n\nThe workspace-write sandbox backend is unavailable on this host, so this exact one-shot command needs the wider access to run unconfined.",
+        "kind": "approval",
+        "operation": {
+          "command": "printf %s A_NATIVE_e253fd617ca8 > allow-5b717a98b0df426f85368bb6cb3d40fc.txt",
+          "cwd_label": "/var/lib/chatraw-runner/workspaces/c05eaf1a083b4df5976b0acb573b21d9",
+          "tool": "bash"
+        },
+        "title": "Allow DeepSeek tool call?",
+        "interaction_id": "5f12c76ce95743f2b83af4ddfd5c8d18"
+      },
+      "decision": "allowed-once",
+      "stored_receipt": {
+        "id": "5f12c76ce95743f2b83af4ddfd5c8d18",
+        "state": "answered",
+        "reply": "{\"decision_id\":\"allowed-once\"}",
+        "receipt": "accepted"
+      },
+      "submitted_by": "coordinator real browser",
+      "ui_confirmed_by_coordinator": true,
+      "executor_sent_decision": false
+    }
+  ],
+  "prompt": "Please create one small marker file in the current working directory by running exactly this shell command: printf %s A_NATIVE_e253fd617ca8 > allow-5b717a98b0df426f85368bb6cb3d40fc.txt. Do not modify any other file or use another method. If the native runtime requires permission, request its normal one-time approval for this same command. If approval is denied, stop and report the denial without retrying. After a permitted run, report its actual result.",
+  "run_id": "7af45839755449bc8433749171e391f3",
+  "snapshot": {
+    "chat_id": "42cf0a44-0585-418a-b3fb-58fef9977726",
+    "session_id": "c05eaf1a083b4df5976b0acb573b21d9",
+    "status": "completed",
+    "last_seq": 43,
+    "run_id": "7af45839755449bc8433749171e391f3",
+    "interactions": [],
+    "final_text": "\n\nDone. Here is the full, honest account of the actual result:\n\n**What I ran** (exactly once, no modifications, no other method):\n```\nprintf %s A_NATIVE_e253fd617ca8 > allow-5b717a98b0df426f85368bb6cb3d40fc.txt\n```\n\n**Runtime result:** The `bash` tool returned this error for the invocation:\n> sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined.\n\nThe same refusal came back on every subsequent bash invocation (I only tried read-only `ls`/`stat`/`cat` checks after that — no other command was run and no file was created or modified any other way). No approval prompt was ever surfaced, so I did not retry or escalate permissions.\n\n**Actual state on disk** (verified via the read tool, since the file API works even though bash is blocked):\n- `allow-5b717a98b0df426f85368bb6cb3d40fc.txt` exists in the workspace\n- Its content is exactly `A_NATIVE_e253fd617ca8` — one line, no trailing newline (consistent with `printf %s`)\n- It is the **only** file in the working directory, so no other file was created or modified\n\n**Bottom line:** despite the runtime reporting a sandbox-backend refusal, the marker file is in fact present with the exact expected content. I have not retried the command, requested wider permissions, or used an alternative creation method — if you'd like, I can try the one-time `danger-full-access` approval for the same command to get a clean, unambiguous confirmation run."
+  },
+  "pending": {
+    "allow_cancel": true,
+    "decisions": [
+      {
+        "id": "allowed-once",
+        "label": "Allow once",
+        "scope": "once"
+      },
+      {
+        "id": "rejected",
+        "label": "Deny",
+        "scope": "once"
+      }
+    ],
+    "detail": "Requested sandbox mode: `danger-full-access`.\n\nThe workspace-write sandbox backend is unavailable on this host, so this exact one-shot command needs the wider access to run unconfined.",
+    "kind": "approval",
+    "operation": {
+      "command": "printf %s A_NATIVE_e253fd617ca8 > allow-5b717a98b0df426f85368bb6cb3d40fc.txt",
+      "cwd_label": "/var/lib/chatraw-runner/workspaces/c05eaf1a083b4df5976b0acb573b21d9",
+      "tool": "bash"
+    },
+    "title": "Allow DeepSeek tool call?",
+    "interaction_id": "5f12c76ce95743f2b83af4ddfd5c8d18"
+  },
+  "files_at_pending": {},
+  "pending_observed_at": 1794589395.4182231,
+  "files_after": {
+    "allow-5b717a98b0df426f85368bb6cb3d40fc.txt": {
+      "sha256": "d51c5cf13583c32bde7a4711f4ccde00b84d47b7d3ccc23ddffdd533e7426bd9"
+    }
+  },
+  "verdict": "PASS"
+}

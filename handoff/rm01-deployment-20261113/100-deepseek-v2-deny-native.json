@@ -1,0 +1,324 @@
+{
+  "session": {
+    "id": "f2cc630c894b48298de054264ed19e9b",
+    "chat_id": "7f614811-44d8-406a-8795-906588c48133",
+    "binding": {
+      "agent_id": "deepseek",
+      "native": {
+        "dsh_home": "/var/lib/chatraw-runner/deepseek/session-92e3246ccafd44339547768cbbee70e5",
+        "session_id": "session-92e3246ccafd44339547768cbbee70e5"
+      },
+      "session_id": "f2cc630c894b48298de054264ed19e9b",
+      "workspace": "/var/lib/chatraw-runner/workspaces/f2cc630c894b48298de054264ed19e9b"
+    },
+    "base_config": {
+      "dsh_home": "/var/lib/chatraw-runner/deepseek",
+      "max_tokens": 8192,
+      "patches": [
+        "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"
+      ],
+      "provider": "rm01-qwen",
+      "reasoning_effort": "high"
+    },
+    "config": {
+      "dsh_home": "/var/lib/chatraw-runner/deepseek",
+      "max_tokens": 8192,
+      "model": "RM-01 VLM",
+      "patches": [
+        "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"
+      ],
+      "provider": "rm01-qwen",
+      "reasoning_effort": "high"
+    }
+  },
+  "native_record_count": 43,
+  "events": [
+    {
+      "type": "permission/preset",
+      "seq": 0,
+      "time": 1794589045632,
+      "data": {
+        "preset": "workspace-write"
+      }
+    },
+    {
+      "type": "sandbox/mode",
+      "seq": 1,
+      "time": 1794589045637,
+      "data": {
+        "mode": "workspace-write"
+      }
+    },
+    {
+      "type": "approval/policy",
+      "seq": 2,
+      "time": 1794589045638,
+      "data": {
+        "policy": "ask"
+      }
+    },
+    {
+      "type": "turn/start",
+      "seq": 4,
+      "time": 1794589046877,
+      "data": {
+        "turn": 1
+      }
+    },
+    {
+      "type": "tool/call",
+      "seq": 16,
+      "time": 1794589081025,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "callId": "call_57b44818b8014d4d9316bd49",
+        "name": "bash",
+        "arguments": "{\"description\":\"Create marker file with printf\",\"command\":\"printf %s A_NATIVE_71ec2936781f > deny-046fe2774d92425ba06d0b72790fda82.txt\"}"
+      }
+    },
+    {
+      "type": "job/registered",
+      "seq": 17,
+      "time": 1794589081041,
+      "data": {
+        "jobId": "bash-6e1a934263814ebf",
+        "owner": "session-92e3246ccafd44339547768cbbee70e5",
+        "kind": "bash",
+        "label": "printf %s A_NATIVE_71ec2936781f > deny-046fe2774d92425ba06d0b72790fda82.txt",
+        "startedAt": 1794589081041,
+        "toolCall": {
+          "callId": "call_57b44818b8014d4d9316bd49",
+          "rootCallId": "call_57b44818b8014d4d9316bd49"
+        }
+      }
+    },
+    {
+      "type": "job/settled",
+      "seq": 18,
+      "time": 1794589081066,
+      "data": {
+        "jobId": "bash-6e1a934263814ebf",
+        "owner": "session-92e3246ccafd44339547768cbbee70e5",
+        "kind": "bash",
+        "label": "printf %s A_NATIVE_71ec2936781f > deny-046fe2774d92425ba06d0b72790fda82.txt",
+        "startedAt": 1794589081041,
+        "toolCall": {
+          "callId": "call_57b44818b8014d4d9316bd49",
+          "rootCallId": "call_57b44818b8014d4d9316bd49"
+        },
+        "finishedAt": 1794589081066,
+        "status": "failed",
+        "cause": "producer",
+        "producerReported": true,
+        "detail": "sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — otherwise switch the consumer to danger-full-access."
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 19,
+      "time": 1794589081071,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_57b44818b8014d4d9316bd49"
+          },
+          "toolCallId": "call_57b44818b8014d4d9316bd49",
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — otherwise switch the consumer to danger-full-access."
+            }
+          ],
+          "isError": true,
+          "id": "29525ff8-16cf-4c0b-9975-5c2a3a320320"
+        },
+        "error": {
+          "name": "SandboxUnavailableError",
+          "code": "SANDBOX_UNAVAILABLE"
+        }
+      },
+      "sourceEventSeqs": [
+        16
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 23,
+      "time": 1794589132772,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "callId": "call_abf188ff2ed040a18b81099f",
+        "name": "bash",
+        "arguments": "{\"description\":\"Create marker file with printf\",\"command\":\"printf %s A_NATIVE_71ec2936781f > deny-046fe2774d92425ba06d0b72790fda82.txt\",\"sandbox_permissions\":\"danger-full-access\",\"justification\":\"The workspace-write sandbox backend is unavailable on this host, so the exact same printf command needs a one-time approval to run unconfined and create the marker file in the session working directory.\"}"
+      }
+    },
+    {
+      "type": "approval/asked",
+      "seq": 24,
+      "time": 1794589132781,
+      "data": {
+        "id": "6ad11744-c5e0-4f97-b1c2-8ea9cdac150b",
+        "toolName": "bash",
+        "callId": "call_abf188ff2ed040a18b81099f",
+        "reason": "escalate sandbox to danger-full-access: The workspace-write sandbox backend is unavailable on this host, so the exact same printf command needs a one-time approval to run unconfined and create the marker file in the session working directory."
+      }
+    },
+    {
+      "type": "approval/decided",
+      "seq": 25,
+      "time": 1794589172743,
+      "data": {
+        "id": "6ad11744-c5e0-4f97-b1c2-8ea9cdac150b",
+        "outcome": "rejected"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 26,
+      "time": 1794589172745,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_abf188ff2ed040a18b81099f"
+          },
+          "toolCallId": "call_abf188ff2ed040a18b81099f",
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: the user rejected escalating this command to \"danger-full-access\"; it stays denied, so stop and explain instead of working around it"
+            }
+          ],
+          "isError": true,
+          "id": "f1fa5188-7b3f-4346-876e-cd114ffcb9c0"
+        },
+        "error": {
+          "name": "SandboxEscalationError",
+          "code": "SANDBOX_ESCALATION_REJECTED"
+        }
+      },
+      "sourceEventSeqs": [
+        23
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 30,
+      "time": 1794589239400,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "callId": "call_db759e51b1df46c6a43f0391",
+        "name": "working_directory",
+        "arguments": "{}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 31,
+      "time": 1794589239408,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_db759e51b1df46c6a43f0391"
+          },
+          "toolCallId": "call_db759e51b1df46c6a43f0391",
+          "content": [
+            {
+              "type": "text",
+              "text": "/var/lib/chatraw-runner/workspaces/f2cc630c894b48298de054264ed19e9b"
+            }
+          ],
+          "isError": false,
+          "id": "0f77518d-f577-4fd4-80de-f921e619771b"
+        }
+      },
+      "sourceEventSeqs": [
+        30
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 35,
+      "time": 1794589277123,
+      "data": {
+        "turn": 1,
+        "step": 4,
+        "callId": "call_e40e89cebbb346d3b1fec1ac",
+        "name": "glob",
+        "arguments": "{\"pattern\":\"deny-046fe2774d92425ba06d0b72790fda82.txt\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 36,
+      "time": 1794589277216,
+      "data": {
+        "turn": 1,
+        "step": 4,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_e40e89cebbb346d3b1fec1ac"
+          },
+          "toolCallId": "call_e40e89cebbb346d3b1fec1ac",
+          "content": [
+            {
+              "type": "text",
+              "text": "No files found"
+            }
+          ],
+          "isError": false,
+          "id": "6e0686b6-4a7c-47cb-8afb-4f9fdd2348e4"
+        },
+        "meta": {
+          "shape": "paths",
+          "paths": [],
+          "truncated": false,
+          "total": 0
+        }
+      },
+      "sourceEventSeqs": [
+        35
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "turn/end",
+      "seq": 41,
+      "time": 1794589298602,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    }
+  ],
+  "public_receipts": [
+    {
+      "id": "e4edc52ce3ee4062acea599096ae14d1",
+      "run_id": "4972775a3e0c453582494e9c7e5544e5",
+      "state": "answered",
+      "reply": "{\"decision_id\":\"rejected\"}",
+      "receipt": "accepted"
+    }
+  ]
+}

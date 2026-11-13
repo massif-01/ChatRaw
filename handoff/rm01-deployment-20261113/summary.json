@@ -152,29 +152,18 @@
     "native_compact_continuity_tool_image_all_passed": true
   },
   "deepseek_public_approval_field": {
-    "verdict": "NOT_VERIFIED",
-    "bounded_cases": 3,
-    "public_approvals_received": 0,
-    "rejection_test": "NOT_REACHED",
-    "allow_test": "NOT_RUN after first-call failure",
-    "target_files_created": false,
-    "cases": [
-      {
-        "run_id": "fafcabb8c61c4e8780b592a7200f6d96",
-        "result": "invalid empty tool args, then MALFORMED_RESPONSE"
-      },
-      {
-        "run_id": "e36a20cbd531425db3ba895dc20ff678",
-        "result": "short command valid; sandbox unavailable; next tool args empty and MALFORMED_RESPONSE"
-      },
-      {
-        "run_id": "d784beb1261b490a83ea823fee0809a9",
-        "result": "explicit native escalation JSON echoed as plain assistant text; zero tool calls"
-      }
-    ],
-    "window_released": true,
-    "classification": "NOT_VERIFIED / provider tool-call behavior limitation",
-    "code_and_native_sdk_validation": "passed local independent review, as confirmed by root"
+    "date_local": "2026-11-14",
+    "verdict": "PASS within real public decision and side-effect scope",
+    "new_managed_sessions": 2,
+    "public_approvals_received": 2,
+    "submitted_by": "coordinator real browser; A sent no decision API request",
+    "rejection_test": "PASS: accepted rejected receipt; native rejection; target absent; completed",
+    "allow_test": "PASS: one accepted allowed-once; native job exit code 0; exactly intended file and content; completed",
+    "additional_automatic_authorizations": 0,
+    "later_bash_checks": "Both remained sandbox denied; one-time grant did not persist",
+    "report": "106-deepseek-v2-public-approval-acceptance.md",
+    "quality_limit": "Final assistant narrative falsely denied approval/escalation. Native call/result/job ledger verified; actual outgoing model payload not recorded, so fault layer remains unverified.",
+    "result_pairing": "107-deepseek-v2-result-pairing.json"
   },
   "original_three_closure": {
     "codex_native_compact_continuity": {
@@ -230,5 +219,43 @@
     "old_unknown_preserved_not_replayed": true,
     "g05_retested": false,
     "report": "91-whole-host-reboot-acceptance.md"
+  },
+  "deepseek_public_approval_field_20261113": {
+    "verdict": "NOT_VERIFIED",
+    "bounded_cases": 3,
+    "public_approvals_received": 0,
+    "rejection_test": "NOT_REACHED",
+    "allow_test": "NOT_RUN after first-call failure",
+    "target_files_created": false,
+    "cases": [
+      {
+        "run_id": "fafcabb8c61c4e8780b592a7200f6d96",
+        "result": "invalid empty tool args, then MALFORMED_RESPONSE"
+      },
+      {
+        "run_id": "e36a20cbd531425db3ba895dc20ff678",
+        "result": "short command valid; sandbox unavailable; next tool args empty and MALFORMED_RESPONSE"
+      },
+      {
+        "run_id": "d784beb1261b490a83ea823fee0809a9",
+        "result": "explicit native escalation JSON echoed as plain assistant text; zero tool calls"
+      }
+    ],
+    "window_released": true,
+    "classification": "NOT_VERIFIED / provider tool-call behavior limitation",
+    "code_and_native_sdk_validation": "passed local independent review, as confirmed by root"
+  },
+  "deepseek_provider_deployment": {
+    "reviewed_root_commit": "ca98b3b56a3ff473e2e59b3e48a0360f7e9be9c7",
+    "provider": "rm01-qwen",
+    "native_plugin": "llm-pi-ai/openai-completions",
+    "patch": "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml",
+    "effective_reasoning_effort": "high",
+    "effective_max_tokens": 8192,
+    "public_settings_unchanged": true,
+    "v1_and_existing_frozen_bindings_preserved": true,
+    "runner_restart_only": true,
+    "no_98_or_sdk_modifications": true,
+    "final_state": "105-deepseek-v2-final-state.json"
   }
 }

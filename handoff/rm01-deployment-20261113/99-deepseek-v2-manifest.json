@@ -1,0 +1,10 @@
+{
+  "candidate_commit": "ca98b3b56a3ff473e2e59b3e48a0360f7e9be9c7",
+  "files": {
+    "deepseek.py": "03635326fac7ec64be64e6bafdbf4f0b52fb1a76e03dc5378806938d9284f934",
+    "deepseek-rm01-models-v2.patch.yml": "26b6a8db9895ed5444e60fb2f8d6ef8e7ed23306265c38704948e0d4e7c766b3"
+  },
+  "expected_current_adapter_sha256": "42efff6611a411aa7876a15dc9065a060e729e0713cea78929ce661f5074b07f",
+  "reviewed_root_commit": "ca98b3b56a3ff473e2e59b3e48a0360f7e9be9c7",
+  "review_evidence_commit": "147089e"
+}

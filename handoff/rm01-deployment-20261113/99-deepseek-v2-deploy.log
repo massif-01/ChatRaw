@@ -1,0 +1,2 @@
+active
+{"candidate_commit": "ca98b3b56a3ff473e2e59b3e48a0360f7e9be9c7", "adapter_sha256": "03635326fac7ec64be64e6bafdbf4f0b52fb1a76e03dc5378806938d9284f934", "v2_sha256": "26b6a8db9895ed5444e60fb2f8d6ef8e7ed23306265c38704948e0d4e7c766b3", "v1_unchanged": true, "all_old_bindings_and_host_snapshots_preserved": true, "provider_for_new_bindings": "rm01-qwen", "runner_restart_only": true, "effective_reasoning_effort": "high", "effective_max_tokens": 8192, "public_settings_unchanged": true, "backup_directory": "/home/rm01/chatraw/deepseek-provider-ca98b3b/before"}

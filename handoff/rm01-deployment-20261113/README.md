@@ -77,3 +77,5 @@ Codex e889688前台工具停止修复已部署，新会话单轮现场验收通�
 最终归类见 [84号交接](84-final-closeout.md)：原三项通过；新增DeepSeek真实公开审批为NOT_VERIFIED/provider行为限制，三次不同失败全部保留。无新增现场操作。
 
 用户随后明确授权的2026-11-14整机重启已验收通过：服务自动恢复，五条原生会话短续接5/5通过，旧数据/unknown保留，无手动服务恢复。见 [91号报告](91-whole-host-reboot-acceptance.md)。G05仍未验证。
+
+2026-11-14后续原始协议诊断与修复：92–98记录SDK前的空参数生成格式和thinking单变量因果证据；99–107记录官方原生provider部署、总控真实页面拒绝/单次允许及接收端证据。G05的真实公开审批执行范围已通过，旧失败记录保留。最终模型总结与执行事实矛盾、实际出站结果未捕获的限制单列。见[106号验收报告](106-deepseek-v2-public-approval-acceptance.md)及[107号结果配对](107-deepseek-v2-result-pairing.json)。
