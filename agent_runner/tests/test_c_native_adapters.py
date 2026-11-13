@@ -29,6 +29,7 @@ class _ModelServer(ThreadingHTTPServer):
         self.requests = []
         self.counts = Counter()
         self.approval_command = None
+        self.codex_yield_time_ms = 1000
         self.hold_after_codex_tool = False
 
 
@@ -233,7 +234,7 @@ class _ModelHandler(BaseHTTPRequestHandler):
                     {
                         "cmd": self.server.approval_command
                         or "touch codex-approval-fixture",
-                        "yield_time_ms": 1000,
+                        "yield_time_ms": self.server.codex_yield_time_ms,
                         "sandbox_permissions": "require_escalated",
                         "justification": "Create fixture file",
                     }
@@ -722,6 +723,31 @@ class NativeAdapterTests(unittest.IsolatedAsyncioTestCase):
             ):
                 await asyncio.sleep(0.02)
         self.assertTrue((self.workspace / "shell-started").exists())
+        await adapter.cancel(self.sink.binding, "shell")
+        self.assertEqual((await task)["status"], "cancelled")
+        await asyncio.sleep(4.1)
+        self.assertFalse((self.workspace / "shell-late").exists())
+
+    async def test_codex_native_stop_confirms_foreground_shell(self):
+        adapter = CodexAdapter()
+        self.model.approval_command = "touch shell-started; sleep 4; touch shell-late"
+        self.model.codex_yield_time_ms = 30000
+        await self._start(adapter, {})
+        task = asyncio.create_task(self.sink.run(adapter, "shell", "approval-fixture"))
+        event = await self._interaction(task)
+        await adapter.respond(
+            self.sink.binding, event["native_key"], {"decision_id": "accept"}
+        )
+        async with asyncio.timeout(6):
+            while not (self.workspace / "shell-started").exists():
+                await asyncio.sleep(0.02)
+        self.assertFalse(
+            any(
+                item.get("type") == "function_call_output"
+                for _, body in self.model.requests
+                for item in body.get("input", [])
+            )
+        )
         await adapter.cancel(self.sink.binding, "shell")
         self.assertEqual((await task)["status"], "cancelled")
         await asyncio.sleep(4.1)

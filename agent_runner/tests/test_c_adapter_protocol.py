@@ -26,6 +26,8 @@ class _CodexWire:
         self.calls = []
         self.sent = []
         self.background = deque()
+        self.background_after_interrupt = deque()
+        self.interrupted = False
 
     async def call(self, method, params):
         self.calls.append((method, params))
@@ -34,7 +36,12 @@ class _CodexWire:
         if method == "turn/start":
             return {"turn": {"id": "turn"}}
         if method == "thread/backgroundTerminals/list":
-            return {"data": self.background.popleft() if self.background else []}
+            pages = (
+                self.background_after_interrupt if self.interrupted else self.background
+            )
+            return {"data": pages.popleft() if pages else []}
+        if method == "turn/interrupt":
+            self.interrupted = True
         if method == "thread/backgroundTerminals/terminate":
             return {"terminated": True}
         if method == "thread/turns/list":
@@ -198,7 +205,7 @@ class CodexProtocolTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(mismatch["status"], "unknown")
         self.assertEqual([method for method, _ in wire.calls], ["thread/turns/list"])
 
-    async def _interrupt_running_tool(self, pages):
+    async def _interrupt_running_tool(self, pages, *, before_interrupt=()):
         wire = _CodexWire(
             {
                 "method": "item/started",
@@ -213,7 +220,8 @@ class CodexProtocolTests(unittest.IsolatedAsyncioTestCase):
                 },
             }
         )
-        wire.background.extend(pages)
+        wire.background.extend(before_interrupt)
+        wire.background_after_interrupt.extend(pages)
         task = asyncio.create_task(self._run(wire))
         async with asyncio.timeout(1):
             while not any(event["type"] == "tool_started" for event in self.events):
@@ -263,6 +271,25 @@ class CodexProtocolTests(unittest.IsolatedAsyncioTestCase):
             )
         self.assertEqual(recovered["status"], "unknown")
         open_server.assert_not_called()
+
+    async def test_stop_waits_for_foreground_registration_before_interrupt(self):
+        owned = {"itemId": "owned-tool", "processId": "owned-process"}
+        result, wire = await self._interrupt_running_tool(
+            [[owned], []], before_interrupt=[[], [owned]]
+        )
+        self.assertEqual(result["status"], "cancelled")
+        commands = [method for method, _ in wire.calls[2:]]
+        self.assertEqual(
+            commands,
+            [
+                "thread/backgroundTerminals/list",
+                "thread/backgroundTerminals/list",
+                "turn/interrupt",
+                "thread/backgroundTerminals/list",
+                "thread/backgroundTerminals/terminate",
+                "thread/backgroundTerminals/list",
+            ],
+        )
 
 
 class _NativeMessage:

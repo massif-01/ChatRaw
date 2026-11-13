@@ -31,6 +31,7 @@ from .base import (
 _RPC_TIMEOUT = 15
 _STOP_RPC_TIMEOUT = 5
 _STOP_TIMEOUT = 30
+_EXEC_REGISTRATION_TIMEOUT = 0.5
 _APPROVAL_TEXT_LIMIT = 100_000  # Runner operation field limit.
 _INLINE_CREDENTIAL = re.compile(
     r"(?i)(\b(?:[\w-]*(?:token|secret|password|api[_-]?key)[\w-]*)"
@@ -1013,6 +1014,7 @@ class CodexAdapter(AgentAdapter):
             # Recovery on a new transport cannot inspect this server's tools.
             await self._checkpoint_turn(turn)
         finally:
+            await self._wait_for_exec_registration(turn)
             try:
                 await asyncio.wait_for(
                     turn.server.call(
@@ -1024,6 +1026,25 @@ class CodexAdapter(AgentAdapter):
             except (_Disconnected, _Rejected, TimeoutError):
                 # The terminal notification may have raced the interrupt response.
                 pass
+
+    async def _wait_for_exec_registration(self, turn: _Turn) -> None:
+        try:
+            async with asyncio.timeout(_EXEC_REGISTRATION_TIMEOUT):
+                while True:
+                    running = {
+                        item_id
+                        for item_id in turn.tools.keys() & turn.command_items
+                        if turn.approval_gates.get(item_id) is not False
+                    }
+                    if not running or running <= set(
+                        (await self._owned_background(turn)).values()
+                    ):
+                        return
+                    # Codex can spawn a foreground command before registering
+                    # it. Interrupting that interval can suppress its exit item.
+                    await asyncio.sleep(0.05)
+        except (_Disconnected, _Rejected, TimeoutError, KeyError, TypeError):
+            return
 
     @staticmethod
     async def _owned_background(turn: _Turn) -> dict[str, str]:
