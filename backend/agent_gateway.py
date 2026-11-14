@@ -470,18 +470,29 @@ class AgentGateway:
             if not binding["confirmed"]:
                 raise HTTPException(
                     status_code=409,
-                    detail="Agent binding needs verification before deleting this chat",
+                    detail={"code": "chat_binding_unverified", "message": "Agent binding needs verification before deleting this chat"},
                 )
             snapshot = await self.bound_snapshot(chat_id)
             if snapshot["active_run_id"]:
-                raise HTTPException(
-                    status_code=409,
-                    detail="Stop or verify the active Agent run before deleting this chat",
+                run = await self.client.request(
+                    "GET", f"/v1/runs/{quote(snapshot['active_run_id'], safe='')}", chat_id=chat_id
                 )
+                if run["status"] not in TERMINAL:
+                    unverified = run["status"] == "unknown"
+                    raise HTTPException(
+                        status_code=409,
+                        detail={
+                            "code": "chat_run_unverified" if unverified else "chat_run_active",
+                            "message": (
+                                "The native task state is unconfirmed. An administrator must verify it has stopped before deletion."
+                                if unverified else "Stop the active Agent task or wait for it to finish before deleting this chat."
+                            ),
+                        },
+                    )
             if any(row["chat_id"] == chat_id for row in self.storage.pending()):
                 raise HTTPException(
                     status_code=409,
-                    detail="Agent submission needs verification before deleting this chat",
+                    detail={"code": "chat_submission_unverified", "message": "Agent submission needs verification before deleting this chat"},
                 )
 
     def enrich_messages(self, messages):

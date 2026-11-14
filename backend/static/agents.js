@@ -21,6 +21,10 @@ window.ChatRawAgents = (() => {
             newBinding: 'Start a new chat with this selection? This chat keeps its current Agent and workspace.',
             bindingFailed: 'Could not load this chat’s mode. Reload the chat before sending.',
             busy: 'A run is active. Your draft will stay here.', bindingLocked: 'A run is active in this chat. Stop it or wait for it to finish before deleting the chat.',
+            deleteUnknown: 'This task’s status is unconfirmed, so this chat has been kept. Ask an administrator to verify that the native task has stopped before deleting it.',
+            deleteBinding: 'This chat’s Agent binding has not been verified. Check the Runner connection and reload the chat before retrying.',
+            deleteSubmission: 'The Agent submission receipt is unconfirmed, so this chat has been kept. Check the request status before retrying; do not resend it.',
+            deletePartial: '{count} chat(s) kept: {reason}',
             admissionUnknown: 'Agent receipt is unconfirmed. Your draft is still here.',
             verify: 'Check request status', rejected: 'The Agent did not receive the request. You can send it again.',
             noReady: 'Agent unavailable', noFiles: 'This Agent does not accept this attachment type.',
@@ -56,6 +60,10 @@ window.ChatRawAgents = (() => {
             newBinding: '使用此选择创建新聊天？当前聊天会保留原有的 Agent 和工作目录。',
             bindingFailed: '无法读取此聊天的模式。请重新载入聊天后再发送。',
             busy: '任务仍在执行，草稿会保留在这里。', bindingLocked: '此聊天有未结束的任务。请先停止任务或等待任务结束，再删除聊天。',
+            deleteUnknown: '任务状态尚无法确认，因此保留了此对话。请由管理员核实原生任务已停止后再删除，不必一直等待。',
+            deleteBinding: '此对话的 Agent 绑定尚未核实。请检查执行服务连接，重新打开对话后再试。',
+            deleteSubmission: 'Agent 提交回执尚未确认，因此保留了此对话。请先检查请求状态后再试，不要重复发送任务。',
+            deletePartial: '有 {count} 个对话未删除：{reason}',
             admissionUnknown: 'Agent 是否已接收请求仍待核实，草稿已保留。',
             verify: '核实请求状态', rejected: 'Agent 未接收此请求，可以重新发送。',
             noReady: 'Agent 当前不可用', noFiles: '此 Agent 不支持该附件类型。',
@@ -358,6 +366,16 @@ window.ChatRawAgents = (() => {
 
             agentErrorMessage(body, fallback) {
                 return errorMessage(body, fallback);
+            },
+
+            chatDeleteErrorMessage(body, status) {
+                const code = body?.detail?.code || body?.error?.code;
+                const key = {
+                    chat_run_active: 'bindingLocked', chat_run_unverified: 'deleteUnknown',
+                    chat_binding_unverified: 'deleteBinding', chat_submission_unverified: 'deleteSubmission'
+                }[code];
+                return key ? this.at(key) : errorMessage(body,
+                    status === 409 ? this.at('bindingLocked') : this.t('deleteFailed'));
             },
 
             async loadAgentCatalog() {

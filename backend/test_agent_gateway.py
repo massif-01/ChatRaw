@@ -209,6 +209,13 @@ class GatewayTests(unittest.IsolatedAsyncioTestCase):
         run, adapter = await self.submit("approval")
         deletion = await self.client.delete(f"/api/chats/{self.chat_id}")
         self.assertEqual(deletion.status_code, 409)
+        self.assertEqual(deletion.json()["detail"]["code"], "chat_run_active")
+        with self.runtime.store.db:
+            self.runtime.store.status(run["run_id"], "unknown", "Test unverified task")
+        blocked = await self.client.delete(f"/api/chats/{self.chat_id}")
+        self.assertEqual(blocked.status_code, 409)
+        self.assertEqual(blocked.json()["detail"]["code"], "chat_run_unverified")
+        self.assertIn(self.chat_id, [chat.id for chat in self.database.get_chats()])
         rebind = await self.client.put(
             f"/api/chats/{self.chat_id}/agent",
             json={"agent_id": None, "workspace": {"kind": "managed"}},

@@ -758,20 +758,20 @@ function app() {
             }
         },
 
-        async deleteChat(chatId, quiet = false) {
+        async deleteChat(chatId, quiet = false, failures = null) {
             try {
                 if (this.currentChatId === chatId && this.isGenerating) this.stopGeneration();
                 const response = await fetch('/api/chats/' + encodeURIComponent(chatId), { method: 'DELETE' });
                 if (!response.ok) {
                     const data = await response.json().catch(() => ({}));
-                    throw new Error(response.status === 409 ? this.at('bindingLocked') :
-                        this.agentErrorMessage(data, this.t('deleteFailed')));
+                    throw new Error(this.chatDeleteErrorMessage(data, response.status));
                 }
                 this.chats = this.chats.filter(chat => chat.id !== chatId);
                 if (this.currentChatId === chatId) await this.selectChat(null);
                 this.forgetAgentDraft(chatId);
                 return true;
             } catch (error) {
+                if (failures) failures.push(error.message);
                 if (!quiet) this.showToast(error.message, 'error');
                 return false;
             }
@@ -779,11 +779,14 @@ function app() {
 
         async clearAllChats() {
             if (!confirm(this.t('confirmClearAll'))) return;
-            let failed = false;
+            const failures = [];
             for (const chat of [...this.chats]) {
-                if (!await this.deleteChat(chat.id, true)) failed = true;
+                await this.deleteChat(chat.id, true, failures);
             }
-            this.showToast(failed ? this.t('deleteFailed') : this.t('allChatsCleared'), failed ? 'error' : 'success');
+            const message = failures.length ? this.at('deletePartial')
+                .replace('{count}', String(failures.length))
+                .replace('{reason}', [...new Set(failures)].join('； ')) : this.t('allChatsCleared');
+            this.showToast(message, failures.length ? 'error' : 'success');
         },
 
         stopGeneration() {

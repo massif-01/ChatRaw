@@ -297,7 +297,7 @@ curl -fsS -H 'Origin: http://127.0.0.1:51111' http://127.0.0.1:51111/api/agents
 
 现场部分原生沙箱受到宿主限制。命令若被沙箱拒绝，应查看原生错误，按准确命令选择单次批准或拒绝；不要为了通过检查关闭系统保护或将全部任务改成无约束执行。`unknown` 的含义见下节。
 
-2026-11-13 已验证普通聊天、五 Agent 基础工具/会话恢复/生成停止，以及对应专项记录。Codex 工具中途停止修复已通过新会话现场测试；旧未知记录仍保持隔离。2026-11-14经用户明确授权完成一次正常整机重启：服务自动恢复，五Agent在原生会话中正确续答，配置/聊天/工作目录保留。手机实机仍按用户要求暂缓；不承诺运行中强制断电后任务无缝继续。具体范围以 [验收记录](../docs/agent-platform/VALIDATION.md)为准。
+2026-11-13 已验证普通聊天、五 Agent 基础工具/会话恢复/生成停止，以及对应专项记录。Codex 工具中途停止修复已通过新会话现场测试；旧未知记录仍保持隔离。2026-11-14经用户明确授权完成一次正常整机重启：服务自动恢复，五Agent在原生会话中正确续答，配置/聊天/工作目录保留。手机 iPhone 15 Pro Safari 在布局修复后已由用户实机复验通过；不承诺运行中强制断电后任务无缝继续。具体范围以 [验收记录](../docs/agent-platform/VALIDATION.md)为准。
 
 <a id="maintenance"></a>
 ## 7. 更新、备份与恢复
@@ -351,4 +351,4 @@ docker volume inspect chatraw_chatraw_data --format '{{.Mountpoint}}'
 
 本次已在 macOS 上使用实际 Chromium 109.0.5414.46、Chrome 157 和 Playwright Firefox 150.0.2 引擎验证核心界面，并在 RM-01 部署上复验。Firefox 和 Chromium 109 的横屏菜单、键盘焦点、减少动效、历史回放及原文复制已通过。参见[现场浏览器记录](../docs/agent-platform/handoffs/E/field/README.md)及[横屏修复复验](../docs/agent-platform/handoffs/E/field/menu-fix/README.md)。
 
-不支持 IE。上述结果不是 Windows 8 实机、旧版 Firefox ESR 115 或手机软键盘实测；手机实机检查按用户安排暂缓。刷新页面可加载本次带版本号的新前端资源。
+不支持 IE。上述结果不是 Windows 8 实机、旧版 Firefox ESR 115 或手机软键盘实测；iPhone 15 Pro Safari 的实际键盘与横屏布局已由用户在修复后复验通过，未外推到 Android 或所有机型。刷新页面可加载本次带版本号的新前端资源。
