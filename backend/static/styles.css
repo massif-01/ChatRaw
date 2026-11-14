@@ -2133,6 +2133,8 @@ input[type=range]::-webkit-slider-thumb:hover {
     
     .sidebar.collapsed {
         transform: translateX(-100%);
+        box-shadow: none;
+        visibility: hidden;
         width: 280px;
         min-width: 280px;
     }
@@ -2293,7 +2295,7 @@ input[type=range]::-webkit-slider-thumb:hover {
     .input-area {
         flex-shrink: 0;
         padding: 12px;
-        padding-bottom: max(20px, env(safe-area-inset-bottom));
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
     }
     
     .input-container-inner {
@@ -2494,14 +2496,6 @@ input[type=range]::-webkit-slider-thumb:hover {
     display: none;
 }
 
-/* Safe Area Support for iPhone X+ */
-.input-area {
-    padding-bottom: max(40px, env(safe-area-inset-bottom) + 20px);
-}
-
-.sidebar-footer {
-    padding-bottom: max(20px, env(safe-area-inset-bottom) + 20px);
-}
 
 /* Tablet optimization (iPad, etc.) */
 @media (min-width: 769px) and (max-width: 1024px) {
@@ -2630,6 +2624,16 @@ input[type=range]::-webkit-slider-thumb:hover {
         padding-top: 8px;
         padding-bottom: max(12px, env(safe-area-inset-bottom));
     }
+}
+
+/* Short phone viewports scroll the entire drawer, including its footer. */
+@media (max-height: 500px) and (max-width: 900px) and (pointer: coarse) {
+    .sidebar { overflow-y: auto; overscroll-behavior: contain; }
+    .sidebar > * { flex-shrink: 0; }
+    .sidebar .chat-list { flex: 1 0 auto; min-height: 88px; overflow: visible; }
+    .sidebar-header { height: 52px; padding: 8px 20px; }
+    .sidebar .btn-new-chat { margin-bottom: 8px; }
+    .sidebar-footer { padding: 8px 20px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
 }
 
 /* Thinking Block */
@@ -3817,6 +3821,10 @@ input[type=range]::-webkit-slider-thumb:hover {
     }
 
     .settings-modal,
+    .plugin-modal.settings-modal {
+        height: 100%;
+        max-height: 100%;
+    }
     .plugin-settings-modal,
     .plugin-fullscreen-content { max-height: calc(var(--visual-height, 100dvh) - 12px); }
     .plugin-settings-modal .input-minimal,
@@ -3838,6 +3846,19 @@ input[type=range]::-webkit-slider-thumb:hover {
 
     .input-toolbar > * { flex-shrink: 0; }
     .agent-mode-button { min-height: 44px; }
+    .agent-option { align-items: center; }
+    .agent-option input { margin: 0; }
+    .agent-mode-panel { padding: 12px; }
+    .agent-options { margin-bottom: 8px; }
+    .agent-workspace {
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+    }
+    .agent-workspace select { height: 44px; min-height: 44px; padding: 8px 10px; }
+    .agent-workspace small { grid-column: 1 / -1; }
+    .agent-menu-actions { margin-top: 8px; }
+    .sidebar-footer { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
     .agent-option,
     .agent-request,
     .agent-menu-actions button,
@@ -3866,7 +3887,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 @media (max-height: 450px) and (pointer: coarse) {
     .mobile-header { padding-block: 4px; }
-    .input-area { padding-block: 4px; }
+    .input-area { padding-top: 4px; padding-bottom: max(4px, env(safe-area-inset-bottom)); }
     .input-wrapper textarea { max-height: min(84px, 28vh); }
     .agent-dialog-header { padding-block: 6px; }
     .agent-dialog-actions { padding-block: 4px; }
