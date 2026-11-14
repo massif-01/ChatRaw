@@ -1,0 +1,131 @@
+{
+  "target": {
+    "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a",
+    "run_id": "e05b8525931c4d1585cae79770c7be3d",
+    "session_id": "c5f1cad44b9b463385077611859b4cc4"
+  },
+  "stop_evidence": {
+    "observed_at_utc": "2026-11-14T15:15:42.407252+00:00",
+    "target_processes": [],
+    "unreadable_processes": [],
+    "native_log_sha256": "444e21c9d887dddc53db3db10f6f5c9a8d70908274b1e0d112b8a28f38e5bada",
+    "native_record_count": 18,
+    "native_last_timestamp": "2026-11-13T13:55:54.717Z",
+    "native_end": "turn_aborted, reason interrupted",
+    "current_boot_id": "24e4247d-cfe9-4001-a26a-35268e37bf8c",
+    "started_marker_exists": true,
+    "late_marker_exists": false
+  },
+  "settlement": {
+    "method": "Store.settle under exclusive lock while Runner stopped",
+    "status": "interrupted",
+    "final_text": null,
+    "error_code": "operator_verified_interrupted",
+    "prior_events_preserved": true,
+    "other_records_unchanged": true,
+    "status_event_seq": 42,
+    "done_event_seq": 43,
+    "native_log_and_workspace_retained": true,
+    "backup_path": "/var/lib/chatraw-runner/operator-cleanup-e05b-20261114/runner.before.db"
+  },
+  "delete": {
+    "delete_http_status": 200,
+    "delete_response": {
+      "success": true
+    },
+    "verified_at_utc": "2026-11-14T15:16:04.174320+00:00",
+    "other_chats_unchanged": true,
+    "other_web_records_unchanged": true,
+    "retained_run": {
+      "status": "interrupted",
+      "last_seq": 43
+    },
+    "nonterminal_runs": []
+  },
+  "deployment": {
+    "source_commit": "4f7b550b830c87abb525850a3192aa7293c9461e",
+    "switched_at_utc": "2026-11-14T15:16:24.459630+00:00",
+    "verified_at_utc": "2026-11-14T15:16:27.856355+00:00",
+    "elapsed_to_ready_and_assets_seconds": 3.397,
+    "old_image_tag": "chatraw-agent-integration:fcc75be-phone-v82",
+    "new_image_tag": "chatraw-agent-integration:4f7b550-feedback-v83",
+    "http_checks": {
+      "backend/agent_gateway.py": {
+        "container_sha256": "09e403d39e70444e992b5054008722cc24f8fa21578fb651e6ef7557f502ff9a"
+      },
+      "agents.js": {
+        "http_status": 200,
+        "sha256": "c34eb98903da6abef0724f5a2788dc23c1f6a46a5354f2ceba5aa9d4cbad0fa0"
+      },
+      "app.js": {
+        "http_status": 200,
+        "sha256": "f4f6b62a347a63d615057ad6a30f5a88574232c7b09e82dab26e424a6f3b70a2"
+      },
+      "app.min.js": {
+        "http_status": 200,
+        "sha256": "490e666d71ef0fa3b22cc112f5ed07c842a37bea52c29955f06a6ada4b19a1c5"
+      },
+      "index.html": {
+        "http_status": 200,
+        "sha256": "dcfe567d91c7f47632b4bfa65d11aedad20e7cf6dd54ed79bd480a95b917f444"
+      }
+    },
+    "rolled_back": false
+  },
+  "assets": {
+    "source_commit": "4f7b550b830c87abb525850a3192aa7293c9461e",
+    "assets_sha256": {
+      "backend/agent_gateway.py": "09e403d39e70444e992b5054008722cc24f8fa21578fb651e6ef7557f502ff9a",
+      "backend/static/agents.js": "c34eb98903da6abef0724f5a2788dc23c1f6a46a5354f2ceba5aa9d4cbad0fa0",
+      "backend/static/app.js": "f4f6b62a347a63d615057ad6a30f5a88574232c7b09e82dab26e424a6f3b70a2",
+      "backend/static/app.min.js": "490e666d71ef0fa3b22cc112f5ed07c842a37bea52c29955f06a6ada4b19a1c5",
+      "backend/static/index.html": "dcfe567d91c7f47632b4bfa65d11aedad20e7cf6dd54ed79bd480a95b917f444"
+    }
+  },
+  "verification": {
+    "unchanged_during_web_deploy": [
+      "runner_and_hermes_services",
+      "boot_id",
+      "mounts",
+      "environment",
+      "runner_configuration",
+      "settings_models_bindings",
+      "plugin_configuration",
+      "styles"
+    ],
+    "external_http_checks": {
+      "agents.js": {
+        "status": 200,
+        "sha256": "c34eb98903da6abef0724f5a2788dc23c1f6a46a5354f2ceba5aa9d4cbad0fa0"
+      },
+      "app.js": {
+        "status": 200,
+        "sha256": "f4f6b62a347a63d615057ad6a30f5a88574232c7b09e82dab26e424a6f3b70a2"
+      },
+      "app.min.js": {
+        "status": 200,
+        "sha256": "490e666d71ef0fa3b22cc112f5ed07c842a37bea52c29955f06a6ada4b19a1c5"
+      },
+      "index.html": {
+        "status": 200,
+        "sha256": "dcfe567d91c7f47632b4bfa65d11aedad20e7cf6dd54ed79bd480a95b917f444"
+      }
+    },
+    "deleted_chat_still_absent": true,
+    "nonterminal_runs": [],
+    "image_id": "sha256:ce1fb58cde9a2dfafa25957a9307da9b7b74f4db0d51c410c7d437bd34e9d55c",
+    "runner_pid": "12337",
+    "hermes_pid": "1378"
+  },
+  "maintenance": {
+    "runner_stopped_twice": true,
+    "first_stop_seconds": 0.651,
+    "first_settlement_attempt": "Guard rejected because normal Runner shutdown appended events; no manual ledger mutation occurred; Runner restored.",
+    "second_stop_seconds": 0.363,
+    "second_settlement_attempt": "Fresh verification after shutdown; interrupted settlement succeeded; Runner restored.",
+    "hermes_restarted": false,
+    "web_update_restarted_runner": false
+  },
+  "model_requests": 0,
+  "physical_iphone_acceptance": "Not performed; user device verification remains separate."
+}
