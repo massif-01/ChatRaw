@@ -1,0 +1,18 @@
+{
+  "date": "2026-11-13 Asia/Shanghai",
+  "source_commit": "1cdc681258470524f40c4d57675adc9ac2b10a29",
+  "integration_base": "0a805fc4a788fa84c211eeffa277eb71ada2f2ff",
+  "snapshot": "/private/tmp/chatraw-f-hostpatch-0a805fc.bsj1wn",
+  "target_files_match_source": {
+    "agent_runner/adapters/deepseek.py": true,
+    "agent_runner/tests/test_d_adapter_protocol.py": true,
+    "agent_runner/tests/test_d_native_adapters.py": true,
+    "docs/agent-platform/D-adapters.md": true
+  },
+  "mode": "Local configuration/constructor/controlled-runtime checks only; no native runtime or model request",
+  "evidence_sha256": {
+    "path-validation.log": "ca6da330cad2f57a134c7c6f4c8c2e5a423daead60db02a86bda336ac28de96c",
+    "sdk-construction.json": "7033e48a34799d56c166137a0c052d7b73bb1a978d5af3bcf760379ba5cef497",
+    "host-snapshot-boundary.json": "d0a8320b1f886e78a524875ca2c9441bde6cb48aa7f3b4ce7c1403f160a72a02"
+  }
+}

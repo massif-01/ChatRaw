@@ -1,0 +1,96 @@
+{
+  "sources": [
+    {
+      "path": "/Users/massif/.codex/worktrees/04ec/ChatRaw/handoff/rm01-deployment-20261113/99-deepseek-v2-manifest.json",
+      "sha256": "27c0d79eb7586a78e1a2ff5ba1dad0a2c63b84aa1760115c889980b7e221124b",
+      "archive_commit": "ac2cb62bb66f075bcfb1882eadd0f4579a59ddcc",
+      "repository_path": "handoff/rm01-deployment-20261113/99-deepseek-v2-manifest.json"
+    },
+    {
+      "path": "/Users/massif/.codex/worktrees/04ec/ChatRaw/handoff/rm01-deployment-20261113/99-deepseek-v2-deploy.log",
+      "sha256": "1495d5b28b3ab51b639976cf7257c930b4f74f53cdcf018b2f491c09952434c8",
+      "archive_commit": "ac2cb62bb66f075bcfb1882eadd0f4579a59ddcc",
+      "repository_path": "handoff/rm01-deployment-20261113/99-deepseek-v2-deploy.log"
+    },
+    {
+      "path": "/Users/massif/.codex/worktrees/04ec/ChatRaw/handoff/rm01-deployment-20261113/100-deepseek-v2-deny.json",
+      "sha256": "6d903b8a62d5363935596d25c17c8b22f1ce90533ab5e47014309cfe1b1a23ff",
+      "archive_commit": "ac2cb62bb66f075bcfb1882eadd0f4579a59ddcc",
+      "repository_path": "handoff/rm01-deployment-20261113/100-deepseek-v2-deny.json"
+    },
+    {
+      "path": "/Users/massif/.codex/worktrees/04ec/ChatRaw/handoff/rm01-deployment-20261113/100-deepseek-v2-deny-native.json",
+      "sha256": "06349386f045d9c3480b79a718cb56fa43e5b20f97961c94172d4d2b48932f8c",
+      "archive_commit": "ac2cb62bb66f075bcfb1882eadd0f4579a59ddcc",
+      "repository_path": "handoff/rm01-deployment-20261113/100-deepseek-v2-deny-native.json"
+    },
+    {
+      "path": "/Users/massif/.codex/worktrees/04ec/ChatRaw/handoff/rm01-deployment-20261113/103-deepseek-v2-allow.json",
+      "sha256": "09474fd3e111e55293c00e3d0d59b18649a3e092cf7d9359e01ff00ad10a8414",
+      "archive_commit": "ac2cb62bb66f075bcfb1882eadd0f4579a59ddcc",
+      "repository_path": "handoff/rm01-deployment-20261113/103-deepseek-v2-allow.json"
+    },
+    {
+      "path": "/Users/massif/.codex/worktrees/04ec/ChatRaw/handoff/rm01-deployment-20261113/103-deepseek-v2-allow-native.json",
+      "sha256": "4464dfcc73e5dbe0522f4931d0f4878b2ef9013b765ef05eed35bdbae230fb22",
+      "archive_commit": "ac2cb62bb66f075bcfb1882eadd0f4579a59ddcc",
+      "repository_path": "handoff/rm01-deployment-20261113/103-deepseek-v2-allow-native.json"
+    },
+    {
+      "path": "/Users/massif/.codex/worktrees/04ec/ChatRaw/handoff/rm01-deployment-20261113/105-deepseek-v2-final-state.json",
+      "sha256": "19d603e545c0493105b8f8811e8e9b396a9b934487eef301b6393866e9ad109e",
+      "archive_commit": "ac2cb62bb66f075bcfb1882eadd0f4579a59ddcc",
+      "repository_path": "handoff/rm01-deployment-20261113/105-deepseek-v2-final-state.json"
+    },
+    {
+      "path": "/Users/massif/.codex/worktrees/04ec/ChatRaw/handoff/rm01-deployment-20261113/107-deepseek-v2-result-pairing.json",
+      "sha256": "cd3b1a3c937accb69bce40e99a05cc2386d0ed5ebe15705799d2b3de5d499470",
+      "archive_commit": "ac2cb62bb66f075bcfb1882eadd0f4579a59ddcc",
+      "repository_path": "handoff/rm01-deployment-20261113/107-deepseek-v2-result-pairing.json"
+    },
+    {
+      "path": "/Users/massif/ChatRaw/docs/agent-platform/reviews/deepseek-approval-20261114/deny-pending.yml",
+      "sha256": "51665e61d7ce4c21bcba3892b90d2face6752e618ae28e174322b2ba6cf0ccee"
+    },
+    {
+      "path": "/Users/massif/ChatRaw/docs/agent-platform/reviews/deepseek-approval-20261114/deny-pending.png",
+      "sha256": "98887359d853c06dd58180388044635095aff443e2009f87ec70afd52c50ce27"
+    },
+    {
+      "path": "/Users/massif/ChatRaw/docs/agent-platform/reviews/deepseek-approval-20261114/allow-pending.yml",
+      "sha256": "7f8afe0b319ec32d401121963a4f91c0de3f7321e2923c2566d270904099239f"
+    },
+    {
+      "path": "/Users/massif/ChatRaw/docs/agent-platform/reviews/deepseek-approval-20261114/allow-pending.png",
+      "sha256": "ba9d9f35fe422352125c2473ff42125c39f7f1c39f8dcdddd61f4096d3d09482"
+    },
+    {
+      "path": "/Users/massif/ChatRaw/docs/agent-platform/reviews/deepseek-approval-20261114/allow-answered.yml",
+      "sha256": "47e74577c1ea57586cb69a5f14202ce92685f324f8375701363d7b54124277fc"
+    },
+    {
+      "path": "/Users/massif/ChatRaw/docs/agent-platform/reviews/deepseek-approval-20261114/root-site-check.json",
+      "sha256": "343329198b82ed364d7efc111c661b40ea6bff3b9866eed4d3f6d1f3a690596c"
+    },
+    {
+      "path": "/Users/massif/ChatRaw/docs/agent-platform/reviews/deepseek-approval-20261114/deny-answered.png",
+      "sha256": "0695c4a7824c00dff7d8f498faf006f5503cb746de61a4a0b7547681dbf2e82b"
+    },
+    {
+      "path": "/Users/massif/ChatRaw/docs/agent-platform/reviews/deepseek-approval-20261114/allow-answered.png",
+      "sha256": "79d0a281f66d2c212e16e6ea2aef6b62d80e8d10e275e4384ba67addb97f4269"
+    },
+    {
+      "path": "/Users/massif/ChatRaw/docs/agent-platform/reviews/deepseek-approval-20261114/README.md",
+      "sha256": "82da659d8625b9374cb2c767de2ca55b1cd6e84a9434a33cafde7586249e5faa"
+    },
+    {
+      "path": "/Users/massif/.codex/worktrees/04ec/ChatRaw/handoff/rm01-deployment-20261113/106-deepseek-v2-public-approval-acceptance.md",
+      "sha256": "fb41928d32f17253cf6a506d63e83c64af421c18b494e34bcb49a006f3b851e8",
+      "archive_commit": "ac2cb62bb66f075bcfb1882eadd0f4579a59ddcc",
+      "repository_path": "handoff/rm01-deployment-20261113/106-deepseek-v2-public-approval-acceptance.md"
+    }
+  ],
+  "A_archive_commit": "ac2cb62bb66f075bcfb1882eadd0f4579a59ddcc",
+  "root_browser_evidence": "root working tree; exact reviewed byte hashes retained"
+}

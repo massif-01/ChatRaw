@@ -1,0 +1,45 @@
+{
+  "agent": "codex",
+  "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+  "expected_marker": "D-54B28E292E",
+  "runner_session": "dc93d52367cb49f8a4909e297c214a3f",
+  "before_native_identity": "01a1d581-d366-7db1-a194-a75060d24e47",
+  "started_at_utc": "2026-11-13T16:08:51.943631+00:00",
+  "run_id": "ed79a4172ccc4383a4ad3a079afd3269",
+  "binding_before": {
+    "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+    "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+    "agent_id": "codex",
+    "workspace": {
+      "id": "dc93d52367cb49f8a4909e297c214a3f",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "9697fc7d74b544bf957c4f444b96f6dd"
+  },
+  "snapshot": {
+    "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+    "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+    "status": "completed",
+    "last_seq": 8,
+    "run_id": "ed79a4172ccc4383a4ad3a079afd3269",
+    "interactions": [],
+    "final_text": "D-54B28E292E"
+  },
+  "elapsed_seconds": 4.788,
+  "tool_events": 0,
+  "binding_after": {
+    "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+    "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+    "agent_id": "codex",
+    "workspace": {
+      "id": "dc93d52367cb49f8a4909e297c214a3f",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "ed79a4172ccc4383a4ad3a079afd3269"
+  },
+  "verdict": "PASS"
+}

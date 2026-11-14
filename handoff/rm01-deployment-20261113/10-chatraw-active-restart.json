@@ -1,0 +1,61 @@
+{
+  "before": {
+    "chat_id": "ba5a7cb3-9e0f-45e6-b406-b7678a0507b9",
+    "session_id": "7efd25b09ff14e52be71f94abc638a1c",
+    "status": "waiting_approval",
+    "last_seq": 6,
+    "run_id": "e024335f7bde4ebd846260c15b3eab50",
+    "interactions": [
+      {
+        "allow_cancel": true,
+        "decisions": [
+          {
+            "id": "allow",
+            "label": "Allow once"
+          },
+          {
+            "id": "deny",
+            "label": "Deny"
+          }
+        ],
+        "kind": "approval",
+        "operation": {
+          "command": "pwd",
+          "tool": "bash"
+        },
+        "title": "Allow Pi tool call?",
+        "interaction_id": "5911578cdbc94587bcf4eb42972de842"
+      }
+    ]
+  },
+  "after": {
+    "chat_id": "ba5a7cb3-9e0f-45e6-b406-b7678a0507b9",
+    "session_id": "7efd25b09ff14e52be71f94abc638a1c",
+    "status": "waiting_approval",
+    "last_seq": 6,
+    "run_id": "e024335f7bde4ebd846260c15b3eab50",
+    "interactions": [
+      {
+        "allow_cancel": true,
+        "decisions": [
+          {
+            "id": "allow",
+            "label": "Allow once"
+          },
+          {
+            "id": "deny",
+            "label": "Deny"
+          }
+        ],
+        "kind": "approval",
+        "operation": {
+          "command": "pwd",
+          "tool": "bash"
+        },
+        "title": "Allow Pi tool call?",
+        "interaction_id": "5911578cdbc94587bcf4eb42972de842"
+      }
+    ]
+  },
+  "container_restart": "chatraw"
+}

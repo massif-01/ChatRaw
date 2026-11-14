@@ -1,0 +1,50 @@
+{
+  "observed_at_utc": "2026-11-13T13:44:25.564391+00:00",
+  "native_session_id": "session-2c63be8b22744b3cb0c81413a51f6aad",
+  "headers": [
+    {
+      "seq": 12,
+      "budgets": [
+        {
+          "maxTokens": 256000,
+          "provider": "deepseek-official",
+          "model": "RM-01 VLM",
+          "reasoningEffort": "high"
+        }
+      ]
+    },
+    {
+      "seq": 22,
+      "budgets": [
+        {
+          "maxTokens": 256000,
+          "provider": "deepseek-official",
+          "model": "RM-01 VLM",
+          "reasoningEffort": "high"
+        }
+      ]
+    },
+    {
+      "seq": 34,
+      "budgets": [
+        {
+          "maxTokens": 8192,
+          "provider": "deepseek-official",
+          "model": "RM-01 VLM",
+          "reasoningEffort": "high"
+        }
+      ]
+    },
+    {
+      "seq": 63,
+      "budgets": [
+        {
+          "maxTokens": 8192,
+          "provider": "deepseek-official",
+          "model": "RM-01 VLM",
+          "reasoningEffort": "high"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "session": {
+    "id": "a2ec26bdb2174e4d900605587f58371c",
+    "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-a04287c037c3459599805304ae0edc40\",\"session_id\":\"session-a04287c037c3459599805304ae0edc40\"},\"session_id\":\"a2ec26bdb2174e4d900605587f58371c\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/a2ec26bdb2174e4d900605587f58371c\"}",
+    "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\",\"patches\":[\"/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml\"]}"
+  },
+  "events": [
+    {
+      "type": "tool/call",
+      "seq": 17,
+      "time": 1794583724916,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "callId": "call_964ca172da0d4cb49fd6fb65",
+        "name": "bash",
+        "arguments": "{}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 18,
+      "time": 1794583724930,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_964ca172da0d4cb49fd6fb65"
+          },
+          "toolCallId": "call_964ca172da0d4cb49fd6fb65",
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: invalid arguments: missing required property \"description\"; missing required property \"command\""
+            }
+          ],
+          "isError": true,
+          "id": "9cdce6d6-d117-41dd-a48a-0ef77b310d91"
+        },
+        "error": {
+          "name": "ToolArgsError",
+          "code": "INVALID_ARGS"
+        }
+      },
+      "sourceEventSeqs": [
+        17
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 23,
+      "time": 1794583727364,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "callId": "call_7665a7e612164145acb24a7f",
+        "name": "bash",
+        "arguments": "{}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 24,
+      "time": 1794583727371,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_7665a7e612164145acb24a7f"
+          },
+          "toolCallId": "call_7665a7e612164145acb24a7f",
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: invalid arguments: missing required property \"description\"; missing required property \"command\""
+            }
+          ],
+          "isError": true,
+          "id": "9567f619-a98f-4d91-b252-b10f02825068"
+        },
+        "error": {
+          "name": "ToolArgsError",
+          "code": "INVALID_ARGS"
+        }
+      },
+      "sourceEventSeqs": [
+        23
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "assistant/attempt",
+      "seq": 28,
+      "finish": [
+        {
+          "type": "chunk",
+          "time": 1794583729979,
+          "chunk": {
+            "type": "finish",
+            "reason": {
+              "kind": "error",
+              "failure": {
+                "message": "DeepSeek Messages stream: tool input is invalid JSON",
+                "code": "MALFORMED_RESPONSE"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "turn/end",
+      "seq": 30,
+      "time": 1794583729982,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "error",
+          "error": {
+            "message": "DeepSeek Messages stream: tool input is invalid JSON",
+            "code": "MALFORMED_RESPONSE"
+          }
+        }
+      }
+    }
+  ]
+}

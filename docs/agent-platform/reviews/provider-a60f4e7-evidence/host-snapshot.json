@@ -1,0 +1,22 @@
+{
+  "public_rejected_400": [
+    "provider",
+    "patches",
+    "baseURL",
+    "api_key"
+  ],
+  "old_base_config_and_binding_unchanged": true,
+  "old_resume_config": {
+    "dsh_home": "/tmp",
+    "patches": [
+      "/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml"
+    ],
+    "reasoning_effort": "off"
+  },
+  "new_session_provider": "rm01-qwen",
+  "new_session_patch": [
+    "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"
+  ],
+  "public_reasoning_overrides_host_default": true,
+  "boundary": "controlled receiver; real Runtime/store/schema; no native or model"
+}

@@ -1,0 +1,589 @@
+{
+  "session": {
+    "id": "c05eaf1a083b4df5976b0acb573b21d9",
+    "chat_id": "42cf0a44-0585-418a-b3fb-58fef9977726",
+    "binding": {
+      "agent_id": "deepseek",
+      "native": {
+        "dsh_home": "/var/lib/chatraw-runner/deepseek/session-43af9254637f4e6c83a2fabe88a511b8",
+        "session_id": "session-43af9254637f4e6c83a2fabe88a511b8"
+      },
+      "session_id": "c05eaf1a083b4df5976b0acb573b21d9",
+      "workspace": "/var/lib/chatraw-runner/workspaces/c05eaf1a083b4df5976b0acb573b21d9"
+    },
+    "base_config": {
+      "dsh_home": "/var/lib/chatraw-runner/deepseek",
+      "max_tokens": 8192,
+      "patches": [
+        "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"
+      ],
+      "provider": "rm01-qwen",
+      "reasoning_effort": "high"
+    },
+    "config": {
+      "dsh_home": "/var/lib/chatraw-runner/deepseek",
+      "max_tokens": 8192,
+      "model": "RM-01 VLM",
+      "patches": [
+        "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"
+      ],
+      "provider": "rm01-qwen",
+      "reasoning_effort": "high"
+    }
+  },
+  "native_record_count": 61,
+  "events": [
+    {
+      "type": "permission/preset",
+      "seq": 0,
+      "time": 1794589335345,
+      "data": {
+        "preset": "workspace-write"
+      }
+    },
+    {
+      "type": "sandbox/mode",
+      "seq": 1,
+      "time": 1794589335350,
+      "data": {
+        "mode": "workspace-write"
+      }
+    },
+    {
+      "type": "approval/policy",
+      "seq": 2,
+      "time": 1794589335350,
+      "data": {
+        "policy": "ask"
+      }
+    },
+    {
+      "type": "turn/start",
+      "seq": 4,
+      "time": 1794589336591,
+      "data": {
+        "turn": 1
+      }
+    },
+    {
+      "type": "tool/call",
+      "seq": 16,
+      "time": 1794589346133,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "callId": "call_01ce05910f5f4205be52aeea",
+        "name": "bash",
+        "arguments": "{\"description\":\"Create marker file with exact printf command\",\"command\":\"printf %s A_NATIVE_e253fd617ca8 > allow-5b717a98b0df426f85368bb6cb3d40fc.txt\"}"
+      }
+    },
+    {
+      "type": "job/registered",
+      "seq": 17,
+      "time": 1794589346149,
+      "data": {
+        "jobId": "bash-52090d156740467f",
+        "owner": "session-43af9254637f4e6c83a2fabe88a511b8",
+        "kind": "bash",
+        "label": "printf %s A_NATIVE_e253fd617ca8 > allow-5b717a98b0df426f85368bb6cb3d40fc.txt",
+        "startedAt": 1794589346149,
+        "toolCall": {
+          "callId": "call_01ce05910f5f4205be52aeea",
+          "rootCallId": "call_01ce05910f5f4205be52aeea"
+        }
+      }
+    },
+    {
+      "type": "job/settled",
+      "seq": 18,
+      "time": 1794589346173,
+      "data": {
+        "jobId": "bash-52090d156740467f",
+        "owner": "session-43af9254637f4e6c83a2fabe88a511b8",
+        "kind": "bash",
+        "label": "printf %s A_NATIVE_e253fd617ca8 > allow-5b717a98b0df426f85368bb6cb3d40fc.txt",
+        "startedAt": 1794589346149,
+        "toolCall": {
+          "callId": "call_01ce05910f5f4205be52aeea",
+          "rootCallId": "call_01ce05910f5f4205be52aeea"
+        },
+        "finishedAt": 1794589346173,
+        "status": "failed",
+        "cause": "producer",
+        "producerReported": true,
+        "detail": "sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — otherwise switch the consumer to danger-full-access."
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 19,
+      "time": 1794589346180,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_01ce05910f5f4205be52aeea"
+          },
+          "toolCallId": "call_01ce05910f5f4205be52aeea",
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — otherwise switch the consumer to danger-full-access."
+            }
+          ],
+          "isError": true,
+          "id": "c4db9795-d905-4022-bfb9-ed1ffffe5b7c"
+        },
+        "error": {
+          "name": "SandboxUnavailableError",
+          "code": "SANDBOX_UNAVAILABLE"
+        }
+      },
+      "sourceEventSeqs": [
+        16
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 23,
+      "time": 1794589394760,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "callId": "call_784e35af63404745b8e1ba9b",
+        "name": "bash",
+        "arguments": "{\"description\":\"Create marker file with exact printf command\",\"command\":\"printf %s A_NATIVE_e253fd617ca8 > allow-5b717a98b0df426f85368bb6cb3d40fc.txt\",\"sandbox_permissions\":\"danger-full-access\",\"justification\":\"The workspace-write sandbox backend is unavailable on this host, so this exact one-shot command needs the wider access to run unconfined.\"}"
+      }
+    },
+    {
+      "type": "approval/asked",
+      "seq": 24,
+      "time": 1794589394769,
+      "data": {
+        "id": "dbb3fc40-8fb9-40e0-b6ae-f8ff41f1fe90",
+        "toolName": "bash",
+        "callId": "call_784e35af63404745b8e1ba9b",
+        "reason": "escalate sandbox to danger-full-access: The workspace-write sandbox backend is unavailable on this host, so this exact one-shot command needs the wider access to run unconfined."
+      }
+    },
+    {
+      "type": "approval/decided",
+      "seq": 25,
+      "time": 1794589443399,
+      "data": {
+        "id": "dbb3fc40-8fb9-40e0-b6ae-f8ff41f1fe90",
+        "outcome": "allowed-once"
+      }
+    },
+    {
+      "type": "job/registered",
+      "seq": 26,
+      "time": 1794589443466,
+      "data": {
+        "jobId": "bash-db855745e90c4709",
+        "owner": "session-43af9254637f4e6c83a2fabe88a511b8",
+        "kind": "bash",
+        "label": "printf %s A_NATIVE_e253fd617ca8 > allow-5b717a98b0df426f85368bb6cb3d40fc.txt",
+        "startedAt": 1794589443466,
+        "toolCall": {
+          "callId": "call_784e35af63404745b8e1ba9b",
+          "rootCallId": "call_784e35af63404745b8e1ba9b"
+        }
+      }
+    },
+    {
+      "type": "job/settled",
+      "seq": 27,
+      "time": 1794589443471,
+      "data": {
+        "jobId": "bash-db855745e90c4709",
+        "owner": "session-43af9254637f4e6c83a2fabe88a511b8",
+        "kind": "bash",
+        "label": "printf %s A_NATIVE_e253fd617ca8 > allow-5b717a98b0df426f85368bb6cb3d40fc.txt",
+        "startedAt": 1794589443466,
+        "toolCall": {
+          "callId": "call_784e35af63404745b8e1ba9b",
+          "rootCallId": "call_784e35af63404745b8e1ba9b"
+        },
+        "finishedAt": 1794589443471,
+        "status": "completed",
+        "cause": "producer",
+        "producerReported": true,
+        "detail": "exit code: 0"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 28,
+      "time": 1794589443476,
+      "data": {
+        "turn": 1,
+        "step": 2,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_784e35af63404745b8e1ba9b"
+          },
+          "toolCallId": "call_784e35af63404745b8e1ba9b",
+          "content": [
+            {
+              "type": "text",
+              "text": "(no output)"
+            }
+          ],
+          "isError": false,
+          "id": "fdeed1f1-937d-4201-8fa4-d6933cf9cbf0"
+        },
+        "meta": {
+          "cwd": "/var/lib/chatraw-runner/workspaces/c05eaf1a083b4df5976b0acb573b21d9"
+        }
+      },
+      "sourceEventSeqs": [
+        23
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 32,
+      "time": 1794589456501,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "callId": "call_97640acc07f84233bbea074c",
+        "name": "bash",
+        "arguments": "{\"description\":\"Verify marker file content\",\"command\":\"cat allow-5b717a98b0df426f85368bb6cb3d40fc.txt; echo; ls -l allow-5b717a98b0df426f85368bb6cb3d40fc.txt\"}"
+      }
+    },
+    {
+      "type": "job/registered",
+      "seq": 33,
+      "time": 1794589456509,
+      "data": {
+        "jobId": "bash-6c3e9195c29f4297",
+        "owner": "session-43af9254637f4e6c83a2fabe88a511b8",
+        "kind": "bash",
+        "label": "cat allow-5b717a98b0df426f85368bb6cb3d40fc.txt; echo; ls -l allow-5b717a98b0df426f85368bb6cb3d40fc.txt",
+        "startedAt": 1794589456509,
+        "toolCall": {
+          "callId": "call_97640acc07f84233bbea074c",
+          "rootCallId": "call_97640acc07f84233bbea074c"
+        }
+      }
+    },
+    {
+      "type": "job/settled",
+      "seq": 34,
+      "time": 1794589456511,
+      "data": {
+        "jobId": "bash-6c3e9195c29f4297",
+        "owner": "session-43af9254637f4e6c83a2fabe88a511b8",
+        "kind": "bash",
+        "label": "cat allow-5b717a98b0df426f85368bb6cb3d40fc.txt; echo; ls -l allow-5b717a98b0df426f85368bb6cb3d40fc.txt",
+        "startedAt": 1794589456509,
+        "toolCall": {
+          "callId": "call_97640acc07f84233bbea074c",
+          "rootCallId": "call_97640acc07f84233bbea074c"
+        },
+        "finishedAt": 1794589456511,
+        "status": "failed",
+        "cause": "producer",
+        "producerReported": true,
+        "detail": "sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — otherwise switch the consumer to danger-full-access."
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 35,
+      "time": 1794589456513,
+      "data": {
+        "turn": 1,
+        "step": 3,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_97640acc07f84233bbea074c"
+          },
+          "toolCallId": "call_97640acc07f84233bbea074c",
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — otherwise switch the consumer to danger-full-access."
+            }
+          ],
+          "isError": true,
+          "id": "7a792913-8167-4346-9312-a5eab927ab91"
+        },
+        "error": {
+          "name": "SandboxUnavailableError",
+          "code": "SANDBOX_UNAVAILABLE"
+        }
+      },
+      "sourceEventSeqs": [
+        32
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 39,
+      "time": 1794589476334,
+      "data": {
+        "turn": 1,
+        "step": 4,
+        "callId": "call_a84f9e18025b423d936143f0",
+        "name": "read",
+        "arguments": "{\"file_path\":\"allow-5b717a98b0df426f85368bb6cb3d40fc.txt\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 40,
+      "time": 1794589476348,
+      "data": {
+        "turn": 1,
+        "step": 4,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_a84f9e18025b423d936143f0"
+          },
+          "toolCallId": "call_a84f9e18025b423d936143f0",
+          "content": [
+            {
+              "type": "text",
+              "text": "<path>/var/lib/chatraw-runner/workspaces/c05eaf1a083b4df5976b0acb573b21d9/allow-5b717a98b0df426f85368bb6cb3d40fc.txt</path>\n<type>file</type>\n<content>\n1: A_NATIVE_e253fd617ca8\n\n(End of file - total 1 lines)\n</content>"
+            }
+          ],
+          "isError": false,
+          "id": "f61c6dd6-2380-4ecd-91ce-c8600ef62ff5"
+        },
+        "meta": {
+          "path": "/var/lib/chatraw-runner/workspaces/c05eaf1a083b4df5976b0acb573b21d9/allow-5b717a98b0df426f85368bb6cb3d40fc.txt",
+          "offset": 1,
+          "lines": [
+            {
+              "number": 1,
+              "text": "A_NATIVE_e253fd617ca8"
+            }
+          ],
+          "totalLines": 1
+        }
+      },
+      "sourceEventSeqs": [
+        39
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 44,
+      "time": 1794589606541,
+      "data": {
+        "turn": 1,
+        "step": 5,
+        "callId": "call_a97fb80ef7a149cfb813ebd3",
+        "name": "bash",
+        "arguments": "{\"description\":\"Check marker file metadata and directory contents\",\"command\":\"ls -la --time-style=full-iso . && stat allow-5b717a98b0df426f85368bb6cb3d40fc.txt && date -u\"}"
+      }
+    },
+    {
+      "type": "job/registered",
+      "seq": 45,
+      "time": 1794589606549,
+      "data": {
+        "jobId": "bash-1f6e4a8e5e444899",
+        "owner": "session-43af9254637f4e6c83a2fabe88a511b8",
+        "kind": "bash",
+        "label": "ls -la --time-style=full-iso . && stat allow-5b717a98b0df426f85368bb6cb3d40fc.txt && date -u",
+        "startedAt": 1794589606549,
+        "toolCall": {
+          "callId": "call_a97fb80ef7a149cfb813ebd3",
+          "rootCallId": "call_a97fb80ef7a149cfb813ebd3"
+        }
+      }
+    },
+    {
+      "type": "job/settled",
+      "seq": 46,
+      "time": 1794589606550,
+      "data": {
+        "jobId": "bash-1f6e4a8e5e444899",
+        "owner": "session-43af9254637f4e6c83a2fabe88a511b8",
+        "kind": "bash",
+        "label": "ls -la --time-style=full-iso . && stat allow-5b717a98b0df426f85368bb6cb3d40fc.txt && date -u",
+        "startedAt": 1794589606549,
+        "toolCall": {
+          "callId": "call_a97fb80ef7a149cfb813ebd3",
+          "rootCallId": "call_a97fb80ef7a149cfb813ebd3"
+        },
+        "finishedAt": 1794589606550,
+        "status": "failed",
+        "cause": "producer",
+        "producerReported": true,
+        "detail": "sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — otherwise switch the consumer to danger-full-access."
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 47,
+      "time": 1794589606552,
+      "data": {
+        "turn": 1,
+        "step": 5,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_a97fb80ef7a149cfb813ebd3"
+          },
+          "toolCallId": "call_a97fb80ef7a149cfb813ebd3",
+          "content": [
+            {
+              "type": "text",
+              "text": "Error: sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined. Install bubblewrap or run a Landlock-enforcing kernel (Linux), ensure sandbox-exec is usable (macOS), or ensure the ACL restricted-token runner can start (Windows) — otherwise switch the consumer to danger-full-access."
+            }
+          ],
+          "isError": true,
+          "id": "5e1284d5-046b-49e8-b57e-3ca15dd8fa5a"
+        },
+        "error": {
+          "name": "SandboxUnavailableError",
+          "code": "SANDBOX_UNAVAILABLE"
+        }
+      },
+      "sourceEventSeqs": [
+        44
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/call",
+      "seq": 51,
+      "time": 1794589625845,
+      "data": {
+        "turn": 1,
+        "step": 6,
+        "callId": "call_0e3e13695d6649f4ab1202e2",
+        "name": "read",
+        "arguments": "{\"file_path\":\"allow-5b717a98b0df426f85368bb6cb3d40fc.txt\"}"
+      }
+    },
+    {
+      "type": "tool/call",
+      "seq": 52,
+      "time": 1794589625847,
+      "data": {
+        "turn": 1,
+        "step": 6,
+        "callId": "call_af88e654fa684b51be0c38b6",
+        "name": "glob",
+        "arguments": "{\"pattern\":\"*\"}"
+      }
+    },
+    {
+      "type": "tool/result",
+      "seq": 53,
+      "time": 1794589625873,
+      "data": {
+        "turn": 1,
+        "step": 6,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_0e3e13695d6649f4ab1202e2"
+          },
+          "toolCallId": "call_0e3e13695d6649f4ab1202e2",
+          "content": [
+            {
+              "type": "text",
+              "text": "<path>/var/lib/chatraw-runner/workspaces/c05eaf1a083b4df5976b0acb573b21d9/allow-5b717a98b0df426f85368bb6cb3d40fc.txt</path>\n<type>file</type>\n<content>\n1: A_NATIVE_e253fd617ca8\n\n(End of file - total 1 lines)\n</content>"
+            }
+          ],
+          "isError": false,
+          "id": "d31866b6-4948-4d0f-8112-26282ad06f18"
+        },
+        "meta": {
+          "path": "/var/lib/chatraw-runner/workspaces/c05eaf1a083b4df5976b0acb573b21d9/allow-5b717a98b0df426f85368bb6cb3d40fc.txt",
+          "offset": 1,
+          "lines": [
+            {
+              "number": 1,
+              "text": "A_NATIVE_e253fd617ca8"
+            }
+          ],
+          "totalLines": 1
+        }
+      },
+      "sourceEventSeqs": [
+        51
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "tool/result",
+      "seq": 54,
+      "time": 1794589625874,
+      "data": {
+        "turn": 1,
+        "step": 6,
+        "message": {
+          "role": "tool",
+          "source": {
+            "kind": "tool",
+            "callId": "call_af88e654fa684b51be0c38b6"
+          },
+          "toolCallId": "call_af88e654fa684b51be0c38b6",
+          "content": [
+            {
+              "type": "text",
+              "text": "allow-5b717a98b0df426f85368bb6cb3d40fc.txt"
+            }
+          ],
+          "isError": false,
+          "id": "6d1887ee-bd63-4be2-b540-cbb5185f49df"
+        },
+        "meta": {
+          "shape": "paths",
+          "paths": [
+            "allow-5b717a98b0df426f85368bb6cb3d40fc.txt"
+          ],
+          "truncated": false,
+          "total": 1
+        }
+      },
+      "sourceEventSeqs": [
+        52
+      ],
+      "surfaceOp": "append"
+    },
+    {
+      "type": "turn/end",
+      "seq": 59,
+      "time": 1794589705276,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    }
+  ],
+  "public_receipts": [
+    {
+      "id": "5f12c76ce95743f2b83af4ddfd5c8d18",
+      "run_id": "7af45839755449bc8433749171e391f3",
+      "state": "answered",
+      "reply": "{\"decision_id\":\"allowed-once\"}",
+      "receipt": "accepted"
+    }
+  ]
+}

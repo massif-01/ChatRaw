@@ -17,7 +17,7 @@
   "hooks": ["parse_document"],
   "fileTypes": [".csv", ".tsv"],
   "dependencies": {
-    "papaparse": "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"
+    "papaparse": "/vendor/papaparse/5.4.1/papaparse.min.js"
   },
   "settings": [],
   "proxy": []

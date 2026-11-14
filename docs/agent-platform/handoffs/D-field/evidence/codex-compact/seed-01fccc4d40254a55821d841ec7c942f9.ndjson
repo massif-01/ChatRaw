@@ -1,0 +1,5 @@
+{"data": {"status": "queued"}, "run_id": "01fccc4d40254a55821d841ec7c942f9", "schema_version": 1, "seq": 1, "session_id": "2fa5efdd1bfa4e41ad0673570446a1b2", "timestamp": "2026-11-13T13:58:56.429176Z", "type": "status"}
+{"data": {"status": "running"}, "run_id": "01fccc4d40254a55821d841ec7c942f9", "schema_version": 1, "seq": 2, "session_id": "2fa5efdd1bfa4e41ad0673570446a1b2", "timestamp": "2026-11-13T13:58:56.430503Z", "type": "status"}
+{"data": {"message_id": "93dbbb198ac6b019", "text": "OK"}, "run_id": "01fccc4d40254a55821d841ec7c942f9", "schema_version": 1, "seq": 3, "session_id": "2fa5efdd1bfa4e41ad0673570446a1b2", "timestamp": "2026-11-13T13:58:58.905687Z", "type": "text_delta"}
+{"data": {"status": "completed"}, "run_id": "01fccc4d40254a55821d841ec7c942f9", "schema_version": 1, "seq": 4, "session_id": "2fa5efdd1bfa4e41ad0673570446a1b2", "timestamp": "2026-11-13T13:58:59.073825Z", "type": "status"}
+{"data": {"final_text": "OK", "status": "completed"}, "run_id": "01fccc4d40254a55821d841ec7c942f9", "schema_version": 1, "seq": 5, "session_id": "2fa5efdd1bfa4e41ad0673570446a1b2", "timestamp": "2026-11-13T13:58:59.074018Z", "type": "done"}

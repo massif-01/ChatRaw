@@ -1,0 +1,100 @@
+{
+  "origin": "http://127.0.0.1:51211",
+  "engine": "chromium",
+  "version": "109.0.5414.46",
+  "cases": [
+    {
+      "agent": "deepseek",
+      "id": "d70efb14-c8cf-4704-b0b8-1d7906913e4b",
+      "blocked": [],
+      "writes": [],
+      "pageErrors": 0,
+      "failedResponses": [],
+      "runs": [
+        {
+          "id": "7952e4ac2a664f498df6a2b00f264d81",
+          "contentSha256": "8d0080a83769c7e16477cb1f788dc49e1fb4d9834ea925661ebfb323d8b785d0",
+          "status": "completed",
+          "lastSeq": 22,
+          "tools": 3,
+          "approvals": [
+            {
+              "id": "d6a85aaf72654df2bb42fa885bf3d1b2",
+              "outcome": "answered",
+              "tool": "bash",
+              "pathsCount": 0,
+              "commandSha256": "c97752663908c8be012e713dfa9197c8efdaace1830c057ec2cfb4e89a3c0d06",
+              "cwdSha256": "4783a6e24834e65acb0764808ebf5e77923a771068334f8c741d63fc9445b468"
+            }
+          ],
+          "copyMatches": true
+        }
+      ],
+      "indexSha256": "97d8952abacc68fe233bc458d3dd276cf22edb82d1a585cb3ccc4e29e7fe264b",
+      "assistantCount": 1,
+      "passed": true
+    },
+    {
+      "agent": "deepseek",
+      "id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+      "blocked": [],
+      "writes": [],
+      "pageErrors": 0,
+      "failedResponses": [],
+      "runs": [
+        {
+          "id": "8d1d8752099a42b8b14e44059d02571f",
+          "contentSha256": "5d3829dadbdffc0da451ead72e8fdc6f5cfd2903f0a72ab391214d456c328967",
+          "status": "completed",
+          "lastSeq": 22,
+          "tools": 3,
+          "approvals": [
+            {
+              "id": "bb997fec83d740219fedb7e12539edd7",
+              "outcome": "answered",
+              "tool": "bash",
+              "pathsCount": 0,
+              "commandSha256": "ceca7ccbd3fc44a96e365fe1b16c4d740614d7c2575bd2e7613c9eedecbedf80",
+              "cwdSha256": "3b70ce9951d02b40ca10f3006f1f3cd44f9f279fd79881b6b7f163dd18eae553"
+            }
+          ],
+          "copyMatches": true
+        }
+      ],
+      "indexSha256": "97d8952abacc68fe233bc458d3dd276cf22edb82d1a585cb3ccc4e29e7fe264b",
+      "assistantCount": 6,
+      "passed": true
+    },
+    {
+      "agent": "codex",
+      "id": "bbbbbbdf-d5fc-47e1-8ec2-07c4f70a495d",
+      "blocked": [],
+      "writes": [],
+      "pageErrors": 0,
+      "failedResponses": [],
+      "runs": [
+        {
+          "id": "e8e2fa3267f844f7aab09a84a3a29a2c",
+          "contentSha256": "f18f6df9d8eaeaf7ee7589164360c6f9a1c42f785d13ba41c539b74d6dec1b51",
+          "status": "completed",
+          "lastSeq": 85,
+          "tools": 1,
+          "approvals": [
+            {
+              "id": "3b240548923c4000ac7cd5c2045c1845",
+              "outcome": "answered",
+              "tool": "fileChange",
+              "pathsCount": 1,
+              "commandSha256": null,
+              "cwdSha256": null
+            }
+          ],
+          "copyMatches": true
+        }
+      ],
+      "indexSha256": "97d8952abacc68fe233bc458d3dd276cf22edb82d1a585cb3ccc4e29e7fe264b",
+      "assistantCount": 1,
+      "passed": true
+    }
+  ]
+}

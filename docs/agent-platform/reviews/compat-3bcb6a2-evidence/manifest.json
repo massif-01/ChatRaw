@@ -1,0 +1,39 @@
+{
+  "reviewed_commit": "3bcb6a2aadf36192257f9c2d687cac55130efebf",
+  "protocol_native_snapshot": "/private/tmp/chatraw-f-compat-3bcb6a2.ObcaY4",
+  "runtime_base": "8c0da0cf93fa7952833fa37fce1ba9ed768efa5b",
+  "runtime_snapshot": "/var/folders/88/hzsgvlyj5xzghddxy9rk5_5m0000gn/T/chatraw-f-compat-runtime-qoczygcr",
+  "runtime_overlay": [
+    "agent_runner/adapters/codex.py",
+    "agent_runner/adapters/codex_responses.py"
+  ],
+  "codex_version": "codex-cli 0.153.4",
+  "checks": {
+    "protocol_http": 11,
+    "native_codex": 2,
+    "independent": 4,
+    "host_snapshot": "passed"
+  },
+  "commands": {
+    "protocol": "PYTHONDONTWRITEBYTECODE=1 /Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python -B -m unittest -v agent_runner.tests.test_c_responses_compat",
+    "native": "CHATRAW_C_NATIVE_TESTS=1 PYTHONDONTWRITEBYTECODE=1 /private/tmp/chatraw-c.fMJYKf/venv/bin/python -B -m unittest -v agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_compat_native_compaction_and_followup agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_text_and_resume",
+    "independent": "CHATRAW_C_NATIVE_TESTS=1 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<protocol_native_snapshot> /private/tmp/chatraw-c.fMJYKf/venv/bin/python -B -m unittest discover -s <F>/docs/agent-platform/reviews -p test_codex_responses_independent.py -v",
+    "host_snapshot": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=<runtime_snapshot> /Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python -B <evidence>/host_snapshot_check.py.txt"
+  },
+  "source_sha256": {
+    "agent_runner/adapters/codex.py": "04d302dd63fe2b2092e742a0031d7992dd991c1cff91903cad6aa245ee630b5a",
+    "agent_runner/adapters/codex_responses.py": "0229ba36d65ed2d913312750b32e028bff21a747748e900d7f076a8bf6f185a6",
+    "agent_runner/tests/test_c_responses_compat.py": "51fee9d09e5c9b2c1f6983c06ea9812a77fcbce503d8ba9916e042e1e7689708",
+    "agent_runner/tests/test_c_native_adapters.py": "15f7ae9f18e328866332189158b8ca9893c965f890bdd5a5ced682b09bfcceb2"
+  },
+  "evidence_sha256": {
+    "compat-regression.log": "e8ccb80df8727908c8f22287c7eb1105a49cf44bc340f7a9a3689e2cf7bdec87",
+    "host-snapshot-boundary.json": "8c1c2b49d0633fcd4fd0dd493ffc774fbd28e096aa1eae7a1ab5e4d9efaf31b7",
+    "host_snapshot_check.py.txt": "5b3612655a7bfc867f55fdde2f25b87791c4344c0aee5fa93f15adf55c85da6d",
+    "independent-boundaries.log": "e2bee28f544be24ca1b5995d89591caf554f6fa97427785c6362c366e38b6d5f",
+    "native-regression.log": "8ebbcd54b05bde01246416081e55f04e6d4f857a3b46868484530a01a9f94241",
+    "test_codex_responses_independent.py.txt": "53cc6cac009a3c67fe0b164d5810e7414f4a5a0a27c9ad0d5bd477e777cec395"
+  },
+  "field_model_requests": 0,
+  "field_mutations": 0
+}

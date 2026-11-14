@@ -1,0 +1,7 @@
+test_ui_multiselect_plus_custom_reaches_declared_native_answer (test_platform_question_contract.QuestionContractTests.test_ui_multiselect_plus_custom_reaches_declared_native_answer) ... {"ui_payload": {"answers": [{"question_id": "0", "option_ids": ["0"], "text": "Custom size"}]}, "receipt": "accepted", "native_answers": [{"Which sizes?": ["Small", "Custom size"]}], "corrected_retry": "not_attempted"}
+ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.047s
+
+OK

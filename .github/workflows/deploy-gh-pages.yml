@@ -27,14 +27,14 @@ jobs:
 
       - name: Prepare artifact
         run: |
-          mkdir -p deploy
-          cp -r backend/static/* deploy/
-          touch deploy/.nojekyll
+          mkdir -p "$RUNNER_TEMP/chatraw-pages"
+          cp -R backend/static/. "$RUNNER_TEMP/chatraw-pages/"
+          touch "$RUNNER_TEMP/chatraw-pages/.nojekyll"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: deploy
+          path: ${{ runner.temp }}/chatraw-pages
 
       - name: Deploy to GitHub Pages
         id: deployment

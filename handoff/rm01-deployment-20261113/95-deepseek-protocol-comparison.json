@@ -1,0 +1,160 @@
+{
+  "date_local": "2026-11-14",
+  "restricted_host_directory": "/home/rm01/chatraw-diagnostics/deepseek-wire-20261114-01/protocol-compare",
+  "purpose": "Messages versus source-equivalent Chat; same captured first-turn prompt, 31 tools, stream=false, temperature=0, max_tokens=8192, auto tool choice",
+  "generation_requests_this_pair": 2,
+  "generation_requests_total_diagnostic": 4,
+  "tools_executed": 0,
+  "production_changes": false,
+  "render": {
+    "token_count": 9209,
+    "sampling_params": {
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "repetition_penalty": 1.0,
+      "temperature": 0.0,
+      "stop": [],
+      "stop_token_ids": [],
+      "max_tokens": 8192,
+      "output_kind": 2,
+      "skip_clone": true,
+      "bad_words": [],
+      "skip_reading_prefix_cache": false
+    },
+    "all_tools_preserved": true,
+    "rendered_bash_schema_exact": true,
+    "tool_syntax": [
+      "<tool_call>",
+      "<function=...>",
+      "<parameter=...>"
+    ],
+    "assistant_prefix": "<|im_start|>assistant\n<think>\n\n</think>\n\n",
+    "request_sha256": "d4c1e5b30c7e76b7affb30c7b1ffaf3717c141230661d61fa69c63f15103632e"
+  },
+  "messages": {
+    "metadata": {
+      "path": "/v1/messages",
+      "status": 200,
+      "at_utc": "2026-11-13T16:37:06.546003+00:00",
+      "request_sha256": "745d0113a807746eb68b2f8fd3a9b2c5ed769a01ec5fbcfb8e1ec20dc6fb5844",
+      "response_http_sha256": "3f119893467ab46a182cb6d366216b907345450f8dbd97949b925795456e00cd",
+      "response_body_sha256": "affce49fafdede27d87d21129f2b1b2ab3819d65219725ea67a89a179eba23e9",
+      "first_response_seconds": 3.7117019330000858,
+      "elapsed_seconds": 3.713630433000162,
+      "response_body_bytes": 259,
+      "tools_executed": 0
+    },
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "chatcmpl-tool-810056c60088c688",
+        "name": "bash",
+        "input": {}
+      }
+    ],
+    "stop_reason": "tool_use",
+    "usage": {
+      "input_tokens": 9209,
+      "output_tokens": 40
+    }
+  },
+  "chat": {
+    "metadata": {
+      "path": "/v1/chat/completions",
+      "status": 200,
+      "at_utc": "2026-11-13T16:37:13.856354+00:00",
+      "request_sha256": "2344f910534f5889b4779e9c0ad823a8666d9084581a45bb5d303257c7d28bb7",
+      "response_http_sha256": "bd3fb0d8724b48dd072ca458885f94a57c5ddfe11729235d1ac52617d54342c3",
+      "response_body_sha256": "a21867d5914bfac2faabd56ebb99fdfb753b031ce104508a44a13f0f8d96c73b",
+      "first_response_seconds": 3.6900514530000237,
+      "elapsed_seconds": 3.693405322000217,
+      "response_body_bytes": 42991,
+      "tools_executed": 0
+    },
+    "message": {
+      "role": "assistant",
+      "content": null,
+      "refusal": null,
+      "annotations": null,
+      "audio": null,
+      "function_call": null,
+      "tool_calls": [
+        {
+          "id": "chatcmpl-tool-987b3e8d5a2397dc",
+          "type": "function",
+          "function": {
+            "name": "bash",
+            "arguments": "{}"
+          }
+        }
+      ],
+      "reasoning": null
+    },
+    "finish_reason": "tool_calls",
+    "generated_token_ids": [
+      248058,
+      198,
+      27,
+      1628,
+      21402,
+      956,
+      29,
+      198,
+      4532,
+      420,
+      7734,
+      321,
+      1301,
+      14648,
+      10811,
+      999,
+      1,
+      3108,
+      420,
+      2437,
+      984,
+      82,
+      94782,
+      64063,
+      79837,
+      835,
+      14648,
+      67463,
+      3778,
+      976,
+      7993,
+      14648,
+      67463,
+      3778,
+      1,
+      198,
+      510,
+      1628,
+      29,
+      248046
+    ],
+    "generated_token_count": 40,
+    "usage": {
+      "prompt_tokens": 9209,
+      "total_tokens": 9249,
+      "completion_tokens": 40,
+      "prompt_tokens_details": null
+    },
+    "prompt_token_ids_equal_render": true
+  },
+  "same_chat_generation_raw_text": "<tool_call>\n<function=bash>\ndescription=\"Write and read diagnostic marker file\" command=\"printf %s DIAG_FIXED_MARKER > diagnostic-marker.txt && cat diagnostic-marker.txt\"\n</function><|im_end|>",
+  "detokenize_metadata": {
+    "path": "/detokenize",
+    "status": 200,
+    "at_utc": "2026-11-13T16:37:19.277749+00:00",
+    "request_sha256": "fa761643c57b6790b374b0fd7ae6a59af92e8155f984daaa760b4d21f477e0bb",
+    "response_http_sha256": "df10b65a4a2e0f7a07ffbbc631a7c8a14af4365cda31648bcd4fa1e25fe0645a",
+    "response_body_sha256": "c9606427dd5ef2bf755fc20c02b8fd3c631d4e47c989ccabe205b5aca3d59d4e",
+    "first_response_seconds": 0.009059544999900027,
+    "elapsed_seconds": 0.00973964599984356,
+    "response_body_bytes": 212,
+    "tools_executed": 0
+  },
+  "finding": "Same Chat generation has parameter content in invalid inline assignment syntax, without required <parameter=...> tags; Chat parser yields {}, before Messages response conversion and before SDK. Separate Messages generation also returns empty input. Not a claim that every historical failure has the same cause.",
+  "next_candidate_not_run": "Preserve full body and auto choice; explicit chat_template_kwargs.enable_thinking=true then render confirmation; no prompt change, no named forcing, no approval bypass."
+}

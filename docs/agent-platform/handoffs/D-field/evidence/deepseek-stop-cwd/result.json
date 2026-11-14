@@ -1,0 +1,82 @@
+{
+  "agent": "deepseek",
+  "case": "stop",
+  "steps": [
+    {
+      "label": "stop",
+      "client_request_id": "ce5b3611795546279365777db09077ad",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "e7c455a2-aa7c-4c0d-9d86-671fb88edba6",
+        "session_id": "2e9396c599fe41a296c74c890fa2f058",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "474834ac504a4cafa59e0b9c59f14006",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "e7c455a2-aa7c-4c0d-9d86-671fb88edba6",
+        "session_id": "2e9396c599fe41a296c74c890fa2f058",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "474834ac504a4cafa59e0b9c59f14006",
+        "interactions": [],
+        "final_text": "The request is asking me to run a single command that will verify the current working directory and then create two marker files, one immediately and another after a 30-second delay.\n\nThis is a legitimate task in what appears to be an acceptance testing scenario for a \"deepseek tool stop\" feature, where they're likely testing how the system handles a tool being called with a stop command.\n\nLet me look at the actual command: it checks if the current working directory is the assigned workspace, then writes to that directory. The policy is workspace-write, so writing there is allowed. The command has a 30-second sleep, so I need to set the timeout to at least 45 seconds as instructed.\n\nI'll call the bash tool once with a 60-second timeout to be safe, keeping the command literal as specified, then wait for it to complete.\n\nThe command writes to the assigned managed working directory, which is allowed under the current workspace-write policy. I'll run it once in the foreground with a sufficient timeout."
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "0.2.2rc2",
+    "reason": "DeepSeek SDK and credential configuration are ready; model request unverified",
+    "capabilities": {
+      "streaming_text": false,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "process_stop",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "text_delivery": "committed_message",
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "image_total_bytes": 8388608,
+        "images_require_model_support": true
+      }
+    }
+  },
+  "chat_id": "e7c455a2-aa7c-4c0d-9d86-671fb88edba6",
+  "binding": {
+    "chat_id": "e7c455a2-aa7c-4c0d-9d86-671fb88edba6",
+    "session_id": "2e9396c599fe41a296c74c890fa2f058",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "2e9396c599fe41a296c74c890fa2f058",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "markers": {
+    "token": "0c96e9b31e37440e996c0786bc3ece92",
+    "workspace": "/var/lib/chatraw-runner/workspaces/2e9396c599fe41a296c74c890fa2f058",
+    "command": "test \"$(pwd -P)\" = '/var/lib/chatraw-runner/workspaces/2e9396c599fe41a296c74c890fa2f058' && set -C && printf '%s\\n' '0c96e9b31e37440e996c0786bc3ece92' > '/var/lib/chatraw-runner/workspaces/2e9396c599fe41a296c74c890fa2f058/d-0c96e9b31e37440e996c0786bc3ece92.started' && sleep 30 && printf '%s\\n' '0c96e9b31e37440e996c0786bc3ece92' > '/var/lib/chatraw-runner/workspaces/2e9396c599fe41a296c74c890fa2f058/d-0c96e9b31e37440e996c0786bc3ece92.late'",
+    "before": {
+      "started": "missing",
+      "late": "missing"
+    }
+  },
+  "outcome": "unverified",
+  "reason": "Run reached completed before mid-tool stop"
+}

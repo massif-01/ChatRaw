@@ -1,0 +1,44 @@
+{
+  "authentication": "PASS via actual GET /models",
+  "selected_model": {
+    "id": "deepseek-flash",
+    "object": "model",
+    "owned_by": "deepseek",
+    "name": "DeepSeek-V4.1-Flash",
+    "context_window": 1048576,
+    "max_output_tokens": 393216,
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "effort": {
+      "supported_levels": [
+        "low",
+        "high",
+        "max"
+      ],
+      "default_level": "high"
+    },
+    "api_capabilities": {
+      "anthropic_messages": {
+        "system_prompt_update": "in-history",
+        "tool_update": "addition-only"
+      }
+    }
+  },
+  "metadata": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "Date": "Fri, 13 Nov 2026 19:07:15 GMT"
+    },
+    "elapsed_seconds": 0.14061220799339935,
+    "at_utc": "2026-11-13T19:07:15.660213+00:00",
+    "endpoint": "https://api.deepseek.com/models",
+    "response_sha256": "b4a502059eb2dafad6380e0a57b2debf31219ae859cba9f0e019d48ae473be2f"
+  },
+  "generation_calls": 0
+}

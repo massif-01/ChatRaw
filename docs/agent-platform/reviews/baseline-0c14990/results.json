@@ -1,0 +1,102 @@
+{
+  "started_at": "2026-11-11T20:18:25.918510+00:00",
+  "commit": "0c14990d86066f6baf0d7de137b26f4e665c28d7",
+  "python": "3.12.4 | packaged by Anaconda, Inc. | (main, Jun 18 2024, 10:07:17) [Clang 14.0.6 ]",
+  "executable": "/Users/massif/ChatRaw/.venv/bin/python",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "packages": {
+    "fastapi": "0.136.3",
+    "aiohttp": "3.14.1",
+    "pydantic": "2.13.4",
+    "certifi": "2026.5.20",
+    "python-multipart": "0.0.32"
+  },
+  "boundary": "Legacy unit tests and local HTTP fake; no real agent/browser/RM01",
+  "results": [
+    {
+      "module": "backend.test_context_compaction",
+      "command": [
+        "/Users/massif/ChatRaw/.venv/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "backend.test_context_compaction",
+        "-v"
+      ],
+      "returncode": 0,
+      "tests": 20,
+      "log": "test_context_compaction.log"
+    },
+    {
+      "module": "backend.test_fonts_route",
+      "command": [
+        "/Users/massif/ChatRaw/.venv/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "backend.test_fonts_route",
+        "-v"
+      ],
+      "returncode": 0,
+      "tests": 2,
+      "log": "test_fonts_route.log"
+    },
+    {
+      "module": "backend.test_hermes_bridge",
+      "command": [
+        "/Users/massif/ChatRaw/.venv/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "backend.test_hermes_bridge",
+        "-v"
+      ],
+      "returncode": 0,
+      "tests": 52,
+      "log": "test_hermes_bridge.log"
+    },
+    {
+      "module": "backend.test_hermes_smoke",
+      "command": [
+        "/Users/massif/ChatRaw/.venv/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "backend.test_hermes_smoke",
+        "-v"
+      ],
+      "returncode": 0,
+      "tests": 11,
+      "log": "test_hermes_smoke.log"
+    },
+    {
+      "module": "backend.test_http_session_tls",
+      "command": [
+        "/Users/massif/ChatRaw/.venv/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "backend.test_http_session_tls",
+        "-v"
+      ],
+      "returncode": 0,
+      "tests": 4,
+      "log": "test_http_session_tls.log"
+    },
+    {
+      "module": "backend.test_skills",
+      "command": [
+        "/Users/massif/ChatRaw/.venv/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "backend.test_skills",
+        "-v"
+      ],
+      "returncode": 0,
+      "tests": 57,
+      "log": "test_skills.log"
+    }
+  ],
+  "finished_at": "2026-11-11T20:18:28.764315+00:00"
+}

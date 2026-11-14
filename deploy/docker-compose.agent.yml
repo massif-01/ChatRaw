@@ -1,0 +1,8 @@
+# Explicit Agent deployment overlay; basic docker-compose.yml needs no Runner.
+services:
+  chatraw:
+    volumes:
+      - ${CHATRAW_RUNNER_TOKEN_FILE:?Set the host Runner token file}:/run/secrets/chatraw-runner-token:ro
+    environment:
+      - CHATRAW_RUNNER_URL=http://127.0.0.1:51112
+      - CHATRAW_RUNNER_TOKEN_FILE=/run/secrets/chatraw-runner-token

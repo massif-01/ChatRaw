@@ -1,0 +1,119 @@
+{
+  "action": "deny",
+  "chat_id": "7f614811-44d8-406a-8795-906588c48133",
+  "binding": {
+    "chat_id": "7f614811-44d8-406a-8795-906588c48133",
+    "session_id": "f2cc630c894b48298de054264ed19e9b",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "f2cc630c894b48298de054264ed19e9b",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "workspace": "/var/lib/chatraw-runner/workspaces/f2cc630c894b48298de054264ed19e9b",
+  "filename": "deny-046fe2774d92425ba06d0b72790fda82.txt",
+  "marker": "A_NATIVE_71ec2936781f",
+  "command": "printf %s A_NATIVE_71ec2936781f > deny-046fe2774d92425ba06d0b72790fda82.txt",
+  "files_before": {},
+  "effective_configuration": {
+    "config": {
+      "dsh_home": "/var/lib/chatraw-runner/deepseek",
+      "max_tokens": 8192,
+      "model": "RM-01 VLM",
+      "patches": [
+        "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"
+      ],
+      "provider": "rm01-qwen",
+      "reasoning_effort": "high"
+    },
+    "base_config": {
+      "dsh_home": "/var/lib/chatraw-runner/deepseek",
+      "max_tokens": 8192,
+      "patches": [
+        "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"
+      ],
+      "provider": "rm01-qwen",
+      "reasoning_effort": "high"
+    }
+  },
+  "approvals": [
+    {
+      "interaction": {
+        "allow_cancel": true,
+        "decisions": [
+          {
+            "id": "allowed-once",
+            "label": "Allow once",
+            "scope": "once"
+          },
+          {
+            "id": "rejected",
+            "label": "Deny",
+            "scope": "once"
+          }
+        ],
+        "detail": "Requested sandbox mode: `danger-full-access`.\n\nThe workspace-write sandbox backend is unavailable on this host, so the exact same printf command needs a one-time approval to run unconfined and create the marker file in the session working directory.",
+        "kind": "approval",
+        "operation": {
+          "command": "printf %s A_NATIVE_71ec2936781f > deny-046fe2774d92425ba06d0b72790fda82.txt",
+          "cwd_label": "/var/lib/chatraw-runner/workspaces/f2cc630c894b48298de054264ed19e9b",
+          "tool": "bash"
+        },
+        "title": "Allow DeepSeek tool call?",
+        "interaction_id": "e4edc52ce3ee4062acea599096ae14d1"
+      },
+      "decision": "rejected",
+      "stored_receipt": {
+        "id": "e4edc52ce3ee4062acea599096ae14d1",
+        "state": "answered",
+        "reply": "{\"decision_id\":\"rejected\"}",
+        "receipt": "accepted"
+      },
+      "submitted_by": "coordinator real browser",
+      "ui_confirmed_by_coordinator": true,
+      "executor_sent_decision": false
+    }
+  ],
+  "prompt": "Please create one small marker file in the current working directory by running exactly this shell command: printf %s A_NATIVE_71ec2936781f > deny-046fe2774d92425ba06d0b72790fda82.txt. Do not modify any other file or use another method. If the native runtime requires permission, request its normal one-time approval for this same command. If approval is denied, stop and report the denial without retrying. After a permitted run, report its actual result.",
+  "run_id": "4972775a3e0c453582494e9c7e5544e5",
+  "snapshot": {
+    "chat_id": "7f614811-44d8-406a-8795-906588c48133",
+    "session_id": "f2cc630c894b48298de054264ed19e9b",
+    "status": "completed",
+    "last_seq": 31,
+    "run_id": "4972775a3e0c453582494e9c7e5544e5",
+    "interactions": [],
+    "final_text": "\n\nStopping as instructed. The file was not created. Here is what happened:\n\n1. **First attempt** — I ran the exact command `printf %s A_NATIVE_71ec2936781f > deny-046fe2774d92425ba06d0b72790fda82.txt` under the session's default `workspace-write` policy. The native runtime **refused to execute it at all**: the error reported that no sandbox backend is usable on this host (no bubblewrap/Landlock on Linux, no usable sandbox-exec on macOS, no ACL restricted-token runner on Windows), so it declined to run the command unconfined under `workspace-write`.\n\n2. **One-time approval request** — Per your instruction, I requested the normal one-time approval (escalation of that same command to `danger-full-access` so it could run unconfined) with a justification explaining it was the identical `printf` command writing one small marker file into the session working directory.\n\n3. **Result** — The approval was **rejected** (\"the user rejected escalating this command to danger-full-access\"), and the runtime confirmed the command stays denied. I did not retry, did not use any alternative method (e.g., the file-writing tools), and modified no other files.\n\n4. **Actual state** — I verified with a glob that `deny-046fe2774d92425ba06d0b72790fda82.txt` does not exist in `/var/lib/chatraw-runner/workspaces/f2cc630c894b48298de054264ed19e9b`. The marker file was never written.\n\nIf you'd like, the underlying fix would be installing a sandbox backend on this host (or switching the consumer to a policy the runtime can enforce), after which the same command could be re-run under its normal sandbox."
+  },
+  "pending": {
+    "allow_cancel": true,
+    "decisions": [
+      {
+        "id": "allowed-once",
+        "label": "Allow once",
+        "scope": "once"
+      },
+      {
+        "id": "rejected",
+        "label": "Deny",
+        "scope": "once"
+      }
+    ],
+    "detail": "Requested sandbox mode: `danger-full-access`.\n\nThe workspace-write sandbox backend is unavailable on this host, so the exact same printf command needs a one-time approval to run unconfined and create the marker file in the session working directory.",
+    "kind": "approval",
+    "operation": {
+      "command": "printf %s A_NATIVE_71ec2936781f > deny-046fe2774d92425ba06d0b72790fda82.txt",
+      "cwd_label": "/var/lib/chatraw-runner/workspaces/f2cc630c894b48298de054264ed19e9b",
+      "tool": "bash"
+    },
+    "title": "Allow DeepSeek tool call?",
+    "interaction_id": "e4edc52ce3ee4062acea599096ae14d1"
+  },
+  "files_at_pending": {},
+  "pending_observed_at": 1794589133.036586,
+  "files_after": {},
+  "verdict": "PASS"
+}

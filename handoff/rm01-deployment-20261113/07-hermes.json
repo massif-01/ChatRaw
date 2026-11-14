@@ -1,0 +1,35 @@
+{
+  "agent": "hermes",
+  "started_at": 1794576581.086563,
+  "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+  "binding": {
+    "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+    "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+    "agent_id": "hermes",
+    "workspace": {
+      "id": "4e7b1a3095494a64a9d61f5f2732712a",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "submitted": {
+    "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+    "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+    "status": "queued",
+    "last_seq": 1,
+    "run_id": "882a5e73da164864a38f556f2e4357bc",
+    "interactions": []
+  },
+  "snapshot": {
+    "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+    "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+    "status": "completed",
+    "last_seq": 27,
+    "run_id": "882a5e73da164864a38f556f2e4357bc",
+    "interactions": [],
+    "final_text": "Working directory: `/var/lib/chatraw-runner/workspaces/4e7b1a3095494a64a9d61f5f2732712a`\n\nRM99_NATIVE_OK"
+  },
+  "elapsed": 25.93
+}

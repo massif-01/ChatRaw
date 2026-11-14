@@ -1,0 +1,126 @@
+{
+  "verdict": "SELECTED_READ_ONLY_RESTORE_VERIFIED",
+  "private_directory": "/var/backups/chatraw/20261113T151205Z-isolated-265c378f",
+  "directory_mode": "0o700",
+  "backup_started_at": "2026-11-13T15:12:05.356599+00:00",
+  "backup_manifest_written_at": "2026-11-13T15:12:09.054421+00:00",
+  "verification_finished_at": "2026-11-13T15:16:26.227465+00:00",
+  "primary_snapshot_windows": [
+    {
+      "database": "chatraw/chatraw.db",
+      "started_at": "2026-11-13T15:12:06.691809+00:00",
+      "finished_at": "2026-11-13T15:12:06.713120+00:00"
+    },
+    {
+      "database": "runner/runner.db",
+      "started_at": "2026-11-13T15:12:06.727612+00:00",
+      "finished_at": "2026-11-13T15:12:06.743565+00:00"
+    }
+  ],
+  "primary_whole_state_unchanged": false,
+  "observed_metadata_changes": [
+    {
+      "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a",
+      "columns": [
+        "updated_at"
+      ]
+    }
+  ],
+  "message_binding_configuration_and_runner_tables_unchanged": true,
+  "regular_files_unchanged_during_backup": true,
+  "database_checks": [
+    {
+      "database": "chatraw/chatraw.db",
+      "integrity_check": "ok",
+      "backup_bytes_match": true
+    },
+    {
+      "database": "runner/runner.db",
+      "integrity_check": "ok",
+      "backup_bytes_match": true
+    },
+    {
+      "database": "runner/codex-home/queue_1.sqlite",
+      "integrity_check": "ok",
+      "backup_bytes_match": true
+    },
+    {
+      "database": "runner/codex-home/thread_history_1.sqlite",
+      "integrity_check": "ok",
+      "backup_bytes_match": true
+    },
+    {
+      "database": "runner/codex-home/goals_1.sqlite",
+      "integrity_check": "ok",
+      "backup_bytes_match": true
+    },
+    {
+      "database": "runner/codex-home/state_5.sqlite",
+      "integrity_check": "ok",
+      "backup_bytes_match": true
+    },
+    {
+      "database": "runner/codex-home/logs_2.sqlite",
+      "integrity_check": "ok",
+      "backup_bytes_match": true
+    },
+    {
+      "database": "runner/codex-home/memories_1.sqlite",
+      "integrity_check": "ok",
+      "backup_bytes_match": true
+    },
+    {
+      "database": "runner/hermes-home/state.db",
+      "integrity_check": "ok",
+      "backup_bytes_match": true
+    },
+    {
+      "database": "runner/hermes-home/kanban.db",
+      "integrity_check": "ok",
+      "backup_bytes_match": true
+    },
+    {
+      "database": "runner/hermes-home/projects.db",
+      "integrity_check": "ok",
+      "backup_bytes_match": true
+    },
+    {
+      "database": "runner/hermes-home/cron/executions.db",
+      "integrity_check": "ok",
+      "backup_bytes_match": true
+    }
+  ],
+  "regular_files_restored_and_hashed": 6156,
+  "regular_bytes": 95144044,
+  "restored_bindings_checked": 25,
+  "restored_managed_directories_checked": 25,
+  "restored_workspace_file_count": 6,
+  "representative_marker_sha256": "a9802a2aa15a757c6be485c60fbd6f2d454d40326bc6b1132ccc3a0e8e9dd3cb",
+  "representative_native_state_present": {
+    "codex": 1,
+    "claude": 1,
+    "pi": 1,
+    "deepseek": 1,
+    "hermes": 1
+  },
+  "user_original_message_counts": {
+    "messages": 12,
+    "agent_projection_links": 12
+  },
+  "old_unknown": {
+    "id": "e05b8525931c4d1585cae79770c7be3d",
+    "status": "unknown"
+  },
+  "nonterminal_after": [
+    {
+      "id": "e05b8525931c4d1585cae79770c7be3d",
+      "status": "unknown"
+    }
+  ],
+  "runtime_symlinks_and_sockets_not_restored": 6,
+  "production_data_switched": false,
+  "restored_services_or_native_agents_started": false,
+  "cross_database_transaction_consistency_claimed": false,
+  "full_startup_or_power_loss_recovery_verified": false,
+  "private_manifest_sha256": "3056baac18eb32ff1563ce101cc9aed237ed4eb6353c2a1e56e1688be153f973"
+}

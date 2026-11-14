@@ -1,99 +1,22 @@
 {
   "id": "hermes",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "name": {
-    "en": "Hermes Router",
-    "zh": "Hermes 路由"
+    "en": "Hermes",
+    "zh": "Hermes"
   },
   "description": {
-    "en": "Route selected ChatRaw messages to a local or confirmed remote Hermes API server through the secure host bridge.",
-    "zh": "通过安全宿主桥接，将选定的 ChatRaw 消息路由到本机或已确认放行的远程 Hermes API Server。"
+    "en": "Use Hermes in ChatRaw with its own conversation, workspace, and capability check.",
+    "zh": "在 ChatRaw 中使用 Hermes，支持独立会话、工作目录和能力检查。"
   },
   "author": "ChatRaw",
   "homepage": "https://github.com/massif-01/ChatRaw",
   "icon": "icon.png",
   "main": "main.js",
-  "type": "message_router",
-  "hooks": ["route_message", "custom_settings"],
-  "customSettings": true,
-  "settings": [
-    {
-      "id": "baseUrl",
-      "type": "string",
-      "label": {
-        "en": "Hermes base URL",
-        "zh": "Hermes 基础 URL"
-      },
-      "default": "http://127.0.0.1:8642/v1"
-    },
-    {
-      "id": "model",
-      "type": "string",
-      "label": {
-        "en": "Model name",
-        "zh": "模型名称"
-      },
-      "default": "hermes-agent"
-    },
-    {
-      "id": "apiMode",
-      "type": "select",
-      "label": {
-        "en": "Execution mode",
-        "zh": "执行模式"
-      },
-      "default": "chat_completions",
-      "options": [
-        {
-          "value": "chat_completions",
-          "label": {
-            "en": "Chat Completions",
-            "zh": "Chat Completions"
-          }
-        },
-        {
-          "value": "runs",
-          "label": {
-            "en": "Runs",
-            "zh": "Runs"
-          }
-        }
-      ]
-    },
-    {
-      "id": "requestTimeoutSeconds",
-      "type": "number",
-      "label": {
-        "en": "Request timeout (seconds)",
-        "zh": "请求超时时间（秒）"
-      },
-      "default": 600,
-      "min": 30,
-      "max": 3600
-    }
-  ],
-  "proxy": [
-    {
-      "id": "hermes",
-      "name": {
-        "en": "Hermes API Server Key (if required)",
-        "zh": "Hermes API Server Key（如服务要求）"
-      },
-      "description": {
-        "en": "API_SERVER_KEY for the Hermes API server. Official Hermes requires it; compatible no-auth servers may leave it empty.",
-        "zh": "Hermes API Server 的 API_SERVER_KEY。官方 Hermes 需要填写；无鉴权兼容服务可留空。"
-      }
-    },
-    {
-      "id": "hermes-session-key",
-      "name": {
-        "en": "Hermes Session Key",
-        "zh": "Hermes Session Key"
-      },
-      "description": {
-        "en": "Optional key sent by the backend as X-Hermes-Session-Key for Hermes session isolation.",
-        "zh": "后端可选发送为 X-Hermes-Session-Key，用于 Hermes session 隔离。"
-      }
-    }
-  ]
+  "type": "agent",
+  "agent": {
+    "id": "hermes"
+  },
+  "hooks": [],
+  "settings": []
 }

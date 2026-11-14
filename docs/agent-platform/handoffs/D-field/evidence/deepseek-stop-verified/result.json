@@ -1,0 +1,448 @@
+{
+  "agent": "deepseek",
+  "case": "stop",
+  "steps": [
+    {
+      "label": "stop",
+      "client_request_id": "e53fad93253948c1bc6b0c6271a7605a",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "779797c9-be32-4ac0-bdae-483106622be6",
+        "session_id": "70cea319563c4f82a84cd1ff200fa779",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "292b915f502f4f0f8d81a069624049a8",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "779797c9-be32-4ac0-bdae-483106622be6",
+        "session_id": "70cea319563c4f82a84cd1ff200fa779",
+        "status": "cancelled",
+        "last_seq": 19,
+        "run_id": "292b915f502f4f0f8d81a069624049a8",
+        "interactions": [],
+        "final_text": "The sandbox backend isn't available, so per the instructions I'll request approval once with the exact same command and working directory.\n\n"
+      },
+      "cancel_requested_at": "2026-11-13T14:57:14.701434+00:00",
+      "cancel_receipt": {
+        "run_id": "292b915f502f4f0f8d81a069624049a8",
+        "status": "stopping"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "0.2.2rc2",
+    "reason": "DeepSeek SDK and credential configuration are ready; model request unverified",
+    "capabilities": {
+      "streaming_text": false,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "process_stop",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "text_delivery": "committed_message",
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "image_total_bytes": 8388608,
+        "images_require_model_support": true
+      }
+    }
+  },
+  "chat_id": "779797c9-be32-4ac0-bdae-483106622be6",
+  "binding": {
+    "chat_id": "779797c9-be32-4ac0-bdae-483106622be6",
+    "session_id": "70cea319563c4f82a84cd1ff200fa779",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "70cea319563c4f82a84cd1ff200fa779",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "command": "test \"$(pwd -P)\" = '/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779' && set -C && printf '%s\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.started && sleep 30 && printf '%s\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.late",
+  "prompt": "D验收 DeepSeek shell. Actually use your native bash tool now. Run the command below verbatim in the session's default working directory, in the foreground. If bash reports SANDBOX_UNAVAILABLE, request approval once for the same exact command and working directory. Do not run any other command.\n\ntest \"$(pwd -P)\" = '/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779' && set -C && printf '%s\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.started && sleep 30 && printf '%s\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.late",
+  "marker_token": "4b4f39bd9467495ba643b814872d3257",
+  "markers_before": {
+    "started": "missing",
+    "late": "missing"
+  },
+  "native_before": {
+    "run_id": null,
+    "runner_session_id": "70cea319563c4f82a84cd1ff200fa779",
+    "native_session_id": "session-5a62981954574d9796ebf1747a282541",
+    "events": [],
+    "processes": [
+      {
+        "pid": 64016,
+        "kind": "runtime",
+        "state": "R",
+        "ppid": 63484,
+        "pgid": 63484,
+        "start_ticks": 34960644
+      }
+    ]
+  },
+  "outcome": "passed",
+  "approval_review": {
+    "interaction": {
+      "allow_cancel": true,
+      "decisions": [
+        {
+          "id": "allowed-once",
+          "label": "Allow once"
+        },
+        {
+          "id": "rejected",
+          "label": "Deny"
+        }
+      ],
+      "detail": "escalate sandbox to danger-full-access: The workspace-write sandbox backend is unavailable on this host, so the requested command needs wider access to run in the session's default working directory.",
+      "kind": "approval",
+      "operation": {
+        "tool": "bash"
+      },
+      "title": "Allow DeepSeek tool call?",
+      "interaction_id": "b7c1c72d70cc4dc789cba0e053c6688e"
+    },
+    "native": {
+      "run_id": "292b915f502f4f0f8d81a069624049a8",
+      "runner_session_id": "70cea319563c4f82a84cd1ff200fa779",
+      "native_session_id": "session-5a62981954574d9796ebf1747a282541",
+      "events": [
+        {
+          "type": "turn/start",
+          "seq": 4,
+          "time": 1794581771539,
+          "data": {
+            "turn": 1
+          }
+        },
+        {
+          "type": "tool/call",
+          "seq": 21,
+          "time": 1794581799492,
+          "data": {
+            "turn": 1,
+            "step": 1,
+            "callId": "call_919e71e938bf42e488d6c1ad",
+            "name": "bash",
+            "arguments": "{\"command\": \"test \\\"$(pwd -P)\\\" = '/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779' && set -C && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.started && sleep 30 && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.late\", \"workdir\": \"/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779\"}"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 22,
+          "time": 1794581799503,
+          "data": {
+            "turn": 1,
+            "call_id": "call_919e71e938bf42e488d6c1ad",
+            "is_error": true,
+            "error_code": "INVALID_ARGS"
+          },
+          "sourceEventSeqs": [
+            21
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "tool/call",
+          "seq": 27,
+          "time": 1794581814114,
+          "data": {
+            "turn": 1,
+            "step": 2,
+            "callId": "call_79e463432eaa4190b69e6ab2",
+            "name": "bash",
+            "arguments": "{\"command\": \"test \\\"$(pwd -P)\\\" = '/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779' && set -C && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.started && sleep 30 && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.late\", \"description\": \"Write .started marker, wait 30s, write .late marker\", \"workdir\": \"/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779\"}"
+          }
+        },
+        {
+          "type": "tool/result",
+          "seq": 30,
+          "time": 1794581814157,
+          "data": {
+            "turn": 1,
+            "call_id": "call_79e463432eaa4190b69e6ab2",
+            "is_error": true,
+            "error_code": "SANDBOX_UNAVAILABLE"
+          },
+          "sourceEventSeqs": [
+            27
+          ],
+          "surfaceOp": "append"
+        },
+        {
+          "type": "tool/call",
+          "seq": 35,
+          "time": 1794581832944,
+          "data": {
+            "turn": 1,
+            "step": 3,
+            "callId": "call_a8b11a98207c47c6bf4f67dd",
+            "name": "bash",
+            "arguments": "{\"command\": \"test \\\"$(pwd -P)\\\" = '/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779' && set -C && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.started && sleep 30 && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.late\", \"description\": \"Write .started marker, wait 30s, write .late marker\", \"sandbox_permissions\": \"danger-full-access\", \"justification\": \"The workspace-write sandbox backend is unavailable on this host, so the requested command needs wider access to run in the session's default working directory.\", \"workdir\": \"/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779\"}"
+          }
+        }
+      ],
+      "processes": [
+        {
+          "pid": 64016,
+          "kind": "runtime",
+          "state": "S",
+          "ppid": 63484,
+          "pgid": 63484,
+          "start_ticks": 34960644
+        }
+      ]
+    },
+    "exact_fixture": true,
+    "decision": "allowed-once",
+    "public_full_command": false,
+    "receipt": {
+      "interaction_id": "b7c1c72d70cc4dc789cba0e053c6688e",
+      "status": "accepted"
+    }
+  },
+  "markers_during": {
+    "started": "matched",
+    "late": "missing"
+  },
+  "native_during": {
+    "run_id": "292b915f502f4f0f8d81a069624049a8",
+    "runner_session_id": "70cea319563c4f82a84cd1ff200fa779",
+    "native_session_id": "session-5a62981954574d9796ebf1747a282541",
+    "events": [
+      {
+        "type": "turn/start",
+        "seq": 4,
+        "time": 1794581771539,
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "tool/call",
+        "seq": 21,
+        "time": 1794581799492,
+        "data": {
+          "turn": 1,
+          "step": 1,
+          "callId": "call_919e71e938bf42e488d6c1ad",
+          "name": "bash",
+          "arguments": "{\"command\": \"test \\\"$(pwd -P)\\\" = '/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779' && set -C && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.started && sleep 30 && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.late\", \"workdir\": \"/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779\"}"
+        }
+      },
+      {
+        "type": "tool/result",
+        "seq": 22,
+        "time": 1794581799503,
+        "data": {
+          "turn": 1,
+          "call_id": "call_919e71e938bf42e488d6c1ad",
+          "is_error": true,
+          "error_code": "INVALID_ARGS"
+        },
+        "sourceEventSeqs": [
+          21
+        ],
+        "surfaceOp": "append"
+      },
+      {
+        "type": "tool/call",
+        "seq": 27,
+        "time": 1794581814114,
+        "data": {
+          "turn": 1,
+          "step": 2,
+          "callId": "call_79e463432eaa4190b69e6ab2",
+          "name": "bash",
+          "arguments": "{\"command\": \"test \\\"$(pwd -P)\\\" = '/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779' && set -C && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.started && sleep 30 && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.late\", \"description\": \"Write .started marker, wait 30s, write .late marker\", \"workdir\": \"/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779\"}"
+        }
+      },
+      {
+        "type": "tool/result",
+        "seq": 30,
+        "time": 1794581814157,
+        "data": {
+          "turn": 1,
+          "call_id": "call_79e463432eaa4190b69e6ab2",
+          "is_error": true,
+          "error_code": "SANDBOX_UNAVAILABLE"
+        },
+        "sourceEventSeqs": [
+          27
+        ],
+        "surfaceOp": "append"
+      },
+      {
+        "type": "tool/call",
+        "seq": 35,
+        "time": 1794581832944,
+        "data": {
+          "turn": 1,
+          "step": 3,
+          "callId": "call_a8b11a98207c47c6bf4f67dd",
+          "name": "bash",
+          "arguments": "{\"command\": \"test \\\"$(pwd -P)\\\" = '/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779' && set -C && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.started && sleep 30 && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.late\", \"description\": \"Write .started marker, wait 30s, write .late marker\", \"sandbox_permissions\": \"danger-full-access\", \"justification\": \"The workspace-write sandbox backend is unavailable on this host, so the requested command needs wider access to run in the session's default working directory.\", \"workdir\": \"/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779\"}"
+        }
+      }
+    ],
+    "processes": [
+      {
+        "pid": 64016,
+        "kind": "runtime",
+        "state": "S",
+        "ppid": 63484,
+        "pgid": 63484,
+        "start_ticks": 34960644
+      },
+      {
+        "pid": 64244,
+        "kind": "fixture_bash",
+        "state": "S",
+        "ppid": 64016,
+        "pgid": 64244,
+        "start_ticks": 34967188
+      },
+      {
+        "pid": 64246,
+        "kind": "fixture_sleep",
+        "state": "S",
+        "ppid": 64244,
+        "pgid": 64244,
+        "start_ticks": 34967189
+      }
+    ]
+  },
+  "observed_at": "2026-11-13T14:57:14.688057+00:00",
+  "markers_after": {
+    "started": "matched",
+    "late": "missing"
+  },
+  "native_after": {
+    "run_id": "292b915f502f4f0f8d81a069624049a8",
+    "runner_session_id": "70cea319563c4f82a84cd1ff200fa779",
+    "native_session_id": "session-5a62981954574d9796ebf1747a282541",
+    "events": [
+      {
+        "type": "turn/start",
+        "seq": 4,
+        "time": 1794581771539,
+        "data": {
+          "turn": 1
+        }
+      },
+      {
+        "type": "tool/call",
+        "seq": 21,
+        "time": 1794581799492,
+        "data": {
+          "turn": 1,
+          "step": 1,
+          "callId": "call_919e71e938bf42e488d6c1ad",
+          "name": "bash",
+          "arguments": "{\"command\": \"test \\\"$(pwd -P)\\\" = '/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779' && set -C && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.started && sleep 30 && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.late\", \"workdir\": \"/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779\"}"
+        }
+      },
+      {
+        "type": "tool/result",
+        "seq": 22,
+        "time": 1794581799503,
+        "data": {
+          "turn": 1,
+          "call_id": "call_919e71e938bf42e488d6c1ad",
+          "is_error": true,
+          "error_code": "INVALID_ARGS"
+        },
+        "sourceEventSeqs": [
+          21
+        ],
+        "surfaceOp": "append"
+      },
+      {
+        "type": "tool/call",
+        "seq": 27,
+        "time": 1794581814114,
+        "data": {
+          "turn": 1,
+          "step": 2,
+          "callId": "call_79e463432eaa4190b69e6ab2",
+          "name": "bash",
+          "arguments": "{\"command\": \"test \\\"$(pwd -P)\\\" = '/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779' && set -C && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.started && sleep 30 && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.late\", \"description\": \"Write .started marker, wait 30s, write .late marker\", \"workdir\": \"/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779\"}"
+        }
+      },
+      {
+        "type": "tool/result",
+        "seq": 30,
+        "time": 1794581814157,
+        "data": {
+          "turn": 1,
+          "call_id": "call_79e463432eaa4190b69e6ab2",
+          "is_error": true,
+          "error_code": "SANDBOX_UNAVAILABLE"
+        },
+        "sourceEventSeqs": [
+          27
+        ],
+        "surfaceOp": "append"
+      },
+      {
+        "type": "tool/call",
+        "seq": 35,
+        "time": 1794581832944,
+        "data": {
+          "turn": 1,
+          "step": 3,
+          "callId": "call_a8b11a98207c47c6bf4f67dd",
+          "name": "bash",
+          "arguments": "{\"command\": \"test \\\"$(pwd -P)\\\" = '/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779' && set -C && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.started && sleep 30 && printf '%s\\\\n' '4b4f39bd9467495ba643b814872d3257' > d-4b4f39bd9467495ba643b814872d3257.late\", \"description\": \"Write .started marker, wait 30s, write .late marker\", \"sandbox_permissions\": \"danger-full-access\", \"justification\": \"The workspace-write sandbox backend is unavailable on this host, so the requested command needs wider access to run in the session's default working directory.\", \"workdir\": \"/var/lib/chatraw-runner/workspaces/70cea319563c4f82a84cd1ff200fa779\"}"
+        }
+      },
+      {
+        "type": "tool/result",
+        "seq": 40,
+        "time": 1794581834761,
+        "data": {
+          "turn": 1,
+          "call_id": "call_a8b11a98207c47c6bf4f67dd",
+          "is_error": true,
+          "error_code": "ABORTED"
+        },
+        "sourceEventSeqs": [
+          35
+        ],
+        "surfaceOp": "append"
+      },
+      {
+        "type": "turn/end",
+        "seq": 42,
+        "time": 1794581834762,
+        "data": {
+          "turn": 1,
+          "reason": {
+            "kind": "aborted",
+            "reason": {
+              "kind": "disposed"
+            }
+          }
+        }
+      }
+    ],
+    "processes": []
+  },
+  "checked_at": "2026-11-13T14:57:46.832687+00:00"
+}

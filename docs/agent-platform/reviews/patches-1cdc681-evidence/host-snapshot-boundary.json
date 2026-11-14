@@ -1,0 +1,11 @@
+{
+  "public_patches_rejected_400": true,
+  "old_binding_unchanged": true,
+  "old_resume_patches": [
+    "/etc/chatraw-runner/v1.patch.yml"
+  ],
+  "new_session_patches": [
+    "/etc/chatraw-runner/v2.patch.yml"
+  ],
+  "native_boundary": "controlled adapter; no SDK/model"
+}

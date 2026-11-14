@@ -1,0 +1,127 @@
+{
+  "action": "allow",
+  "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+  "binding": {
+    "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+    "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "a16311bfa8874adf9e60ee3ca400bfed",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "workspace": "/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed",
+  "filename": "allow-9ff52ce6e8bb41faa1aebe758244a666.txt",
+  "marker": "A_OFFICIAL_e524b80d54f0",
+  "command": "test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed && set -C && printf '%s\\n' A_OFFICIAL_e524b80d54f0 > allow-9ff52ce6e8bb41faa1aebe758244a666.txt",
+  "files_before": {},
+  "effective_configuration": {
+    "config": {
+      "dsh_home": "/var/lib/chatraw-official-test/deepseek",
+      "max_tokens": 8192,
+      "model": "deepseek-flash",
+      "provider": "deepseek-official",
+      "reasoning_effort": "high"
+    },
+    "base_config": {
+      "dsh_home": "/var/lib/chatraw-official-test/deepseek",
+      "max_tokens": 8192,
+      "model": "deepseek-flash",
+      "provider": "deepseek-official",
+      "reasoning_effort": "high"
+    },
+    "native_binding": {
+      "agent_id": "deepseek",
+      "native": {
+        "dsh_home": "/var/lib/chatraw-official-test/deepseek/session-eb6033e1b1374f98b704ef06b2e92b2d",
+        "session_id": "session-eb6033e1b1374f98b704ef06b2e92b2d"
+      },
+      "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+      "workspace": "/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed"
+    }
+  },
+  "approvals": [
+    {
+      "interaction": {
+        "allow_cancel": true,
+        "decisions": [
+          {
+            "id": "allowed-once",
+            "label": "Allow once",
+            "scope": "once"
+          },
+          {
+            "id": "rejected",
+            "label": "Deny",
+            "scope": "once"
+          }
+        ],
+        "detail": "Requested sandbox mode: `danger-full-access`.\n\nThe configured workspace-write sandbox has no usable backend on this host, so the exact marker-writing command cannot run without the normal one-time full-access approval.",
+        "kind": "approval",
+        "operation": {
+          "command": "test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed && set -C && printf '%s\\n' A_OFFICIAL_e524b80d54f0 > allow-9ff52ce6e8bb41faa1aebe758244a666.txt",
+          "cwd_label": "/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed",
+          "tool": "bash"
+        },
+        "title": "Allow DeepSeek tool call?",
+        "interaction_id": "bb997fec83d740219fedb7e12539edd7"
+      },
+      "decision": "allowed-once",
+      "stored_receipt": {
+        "id": "bb997fec83d740219fedb7e12539edd7",
+        "state": "answered",
+        "reply": "{\"decision_id\":\"allowed-once\"}",
+        "receipt": "accepted"
+      },
+      "submitted_by": "coordinator real browser",
+      "ui_confirmed_by_coordinator": true,
+      "executor_sent_decision": false
+    }
+  ],
+  "prompt": "Please create one small marker file in the current working directory by running exactly this shell command: test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed && set -C && printf '%s\\n' A_OFFICIAL_e524b80d54f0 > allow-9ff52ce6e8bb41faa1aebe758244a666.txt. Do not modify any other file or use another method. If the native runtime requires permission, request its normal one-time approval for this same command. If approval is denied, stop and report the denial without retrying. In the final answer, briefly state the actual execution result and any approval decision, using the tool results rather than guessing.",
+  "run_id": "8d1d8752099a42b8b14e44059d02571f",
+  "snapshot": {
+    "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+    "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+    "status": "completed",
+    "last_seq": 22,
+    "run_id": "8d1d8752099a42b8b14e44059d02571f",
+    "interactions": [],
+    "final_text": "Done.\n\n**First attempt:** the exact command failed before execution because the configured `workspace-write` sandbox has no usable backend on this host — it refused to run the command unconfined (no file was created).\n\n**Approval:** I requested the normal one-time wider permission for the same exact command via a `danger-full-access` retry. Approval was granted (no denial occurred).\n\n**Final execution:** the identical command `test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed && set -C && printf '%s\\n' A_OFFICIAL_e524b80d54f0 > allow-9ff52ce6e8bb41faa1aebe758244a666.txt` exited successfully with no output.\n\n**Result:** [allow-9ff52ce6e8bb41faa1aebe758244a666.txt](<allow-9ff52ce6e8bb41faa1aebe758244a666.txt>) now contains a single line, `A_OFFICIAL_e524b80d54f0`. No other files were modified and no other method was used."
+  },
+  "pending": {
+    "allow_cancel": true,
+    "decisions": [
+      {
+        "id": "allowed-once",
+        "label": "Allow once",
+        "scope": "once"
+      },
+      {
+        "id": "rejected",
+        "label": "Deny",
+        "scope": "once"
+      }
+    ],
+    "detail": "Requested sandbox mode: `danger-full-access`.\n\nThe configured workspace-write sandbox has no usable backend on this host, so the exact marker-writing command cannot run without the normal one-time full-access approval.",
+    "kind": "approval",
+    "operation": {
+      "command": "test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed && set -C && printf '%s\\n' A_OFFICIAL_e524b80d54f0 > allow-9ff52ce6e8bb41faa1aebe758244a666.txt",
+      "cwd_label": "/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed",
+      "tool": "bash"
+    },
+    "title": "Allow DeepSeek tool call?",
+    "interaction_id": "bb997fec83d740219fedb7e12539edd7"
+  },
+  "files_at_pending": {},
+  "pending_observed_at": 1794597579.203157,
+  "files_after": {
+    "allow-9ff52ce6e8bb41faa1aebe758244a666.txt": {
+      "sha256": "bfeac1a479b4bf17ab4c965639a471d701c0e1b87c0eb48a5392bd3c6e4eac93"
+    }
+  },
+  "verdict": "PASS"
+}

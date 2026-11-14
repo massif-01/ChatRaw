@@ -1,0 +1,9 @@
+{
+  "at_utc": "2026-11-13T15:55:46.394953+00:00",
+  "ready": {
+    "status": 200,
+    "body": "{\"status\":\"ready\",\"database\":\"connected\"}"
+  },
+  "user_chat_messages": 12,
+  "user_messages_sha256": "1cd9f66839cae5f43ce149e2f7a755e7ee16f252c0b138eab4cbfd4bde6b518d"
+}

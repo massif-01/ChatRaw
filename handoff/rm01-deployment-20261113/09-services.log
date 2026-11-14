@@ -1,0 +1,20 @@
+LISTEN 0      128      10.10.99.99:59090      0.0.0.0:*    users:(("python",pid=31977,fd=3))
+LISTEN 0      128      10.10.99.99:59009      0.0.0.0:*    users:(("tto-web",pid=1956,fd=3))
+LISTEN 0      128        127.0.0.1:51112      0.0.0.0:*    users:(("python",pid=35156,fd=10))
+LISTEN 0      64           0.0.0.0:2049       0.0.0.0:*
+LISTEN 0      2048         0.0.0.0:51111      0.0.0.0:*
+LISTEN 0      50           0.0.0.0:445        0.0.0.0:*
+LISTEN 0      50           0.0.0.0:139        0.0.0.0:*
+LISTEN 0      64              [::]:2049          [::]:*
+LISTEN 0      50              [::]:445           [::]:*
+LISTEN 0      50              [::]:139           [::]:*
+MainPID=35156
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/chatraw-runner.service
+
+MainPID=34685
+ActiveState=active
+SubState=running
+FragmentPath=/etc/systemd/system/chatraw-hermes.service
+sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724 [{"Type":"volume","Name":"chatraw_chatraw_data","Source":"/var/lib/docker/volumes/chatraw_chatraw_data/_data","Destination":"/app/data","Driver":"local","Mode":"rw","RW":true,"Propagation":""},{"Type":"bind","Source":"/etc/chatraw-runner/token","Destination":"/run/secrets/chatraw-runner-token","Mode":"ro","RW":false,"Propagation":"rprivate"}]

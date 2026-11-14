@@ -1,0 +1,130 @@
+{
+  "other_files": {
+    "/opt/chatraw-runner/agent_runner/adapters/deepseek.py": "60daa18d32f38d9999970f2a2a1b71e4b227193308ed14c49afb2c4873840391",
+    "/etc/chatraw-runner/config.json": "f92c7194aa720939e194c22dcf5ca36e6d1cd494142e47b48313cc50c846a3c9",
+    "/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml": "dbee21fc2b7f74fe07f01bf3641f4ce1146851a1e80f5db2b2df896d5013f703"
+  },
+  "sessions": [
+    {
+      "id": "b7fea9a288d84d1489ff634e753a6652",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"5bb85815054a4cf4ae110322532b59c7\",\"thread_id\":\"01a1d516-d830-7742-b766-ff1071485eaf\",\"turn_id\":\"01a1d52a-2f6b-7a92-90e5-6261a3cfc359\"},\"session_id\":\"b7fea9a288d84d1489ff634e753a6652\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/b7fea9a288d84d1489ff634e753a6652\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "88e2895ec55b4ab6872e731d8d0b67b4",
+      "binding": "{\"agent_id\":\"claude\",\"native\":{\"session_id\":\"ffe300d5-6381-40f5-8672-19a50375e8d4\"},\"session_id\":\"88e2895ec55b4ab6872e731d8d0b67b4\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/88e2895ec55b4ab6872e731d8d0b67b4\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "7efd25b09ff14e52be71f94abc638a1c",
+      "binding": "{\"agent_id\":\"pi\",\"native\":{\"session_id\":\"01a1d518-34ec-76f0-bcbe-2a6c95159e3e\",\"transcript\":\"/var/lib/chatraw-runner/pi-sessions/3e9d8bc52dc74ac68878f467ec150036/session.jsonl\"},\"session_id\":\"7efd25b09ff14e52be71f94abc638a1c\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/7efd25b09ff14e52be71f94abc638a1c\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/pi/node_modules/.bin/pi\",\"session_root\":\"/var/lib/chatraw-runner/pi-sessions\"}"
+    },
+    {
+      "id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-2c63be8b22744b3cb0c81413a51f6aad\",\"session_id\":\"session-2c63be8b22744b3cb0c81413a51f6aad\"},\"session_id\":\"14d1c7a3dbda4f3fad1a20a4b35d523f\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "4e7b1a3095494a64a9d61f5f2732712a",
+      "binding": "{\"agent_id\":\"hermes\",\"native\":{\"admission_id\":\"fe3a0def7e5744a7be6f9df20706b5cc\",\"operation\":\"run\",\"profile_id\":\"/var/lib/chatraw-runner/hermes-home\",\"run_id\":\"f16625359e924af293bb4dad54b470fc\",\"session_id\":\"local-cb96117cc03ecd20fa7eee4a023733f810fb93c0289610eea6afbe2996f6fab7\",\"settings\":{\"model\":\"RM-01 VLM\",\"provider\":\"custom\"}},\"session_id\":\"4e7b1a3095494a64a9d61f5f2732712a\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/4e7b1a3095494a64a9d61f5f2732712a\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/hermes/source/.venv/bin/hermes\",\"home\":\"/var/lib/chatraw-runner/hermes-home\"}"
+    },
+    {
+      "id": "9f5017b8efb7418eb1cdb780a3611b1b",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"2b51cd7b85114cf7bdc0d7ada6d8412c\",\"thread_id\":\"01a1d520-0caa-7643-bf4a-a43b9bab5cd1\",\"turn_id\":\"01a1d520-0cd8-7df0-a8f8-b517935bba25\"},\"session_id\":\"9f5017b8efb7418eb1cdb780a3611b1b\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/9f5017b8efb7418eb1cdb780a3611b1b\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "fc101f8889b14a0e9f52b3512c945555",
+      "binding": "{\"agent_id\":\"pi\",\"native\":{\"session_id\":\"01a1d52e-6487-7325-a003-5e779eeeb9e6\",\"transcript\":\"/var/lib/chatraw-runner/pi-sessions/d6a2c3ae707f40af953cbd372b27def1/session.jsonl\"},\"session_id\":\"fc101f8889b14a0e9f52b3512c945555\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/fc101f8889b14a0e9f52b3512c945555\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/pi/node_modules/.bin/pi\",\"session_root\":\"/var/lib/chatraw-runner/pi-sessions\"}"
+    },
+    {
+      "id": "0f731aaea66b46f78d6442e3eada335c",
+      "binding": "{\"agent_id\":\"pi\",\"native\":{\"session_id\":\"01a1d52f-3d36-74aa-88f8-b8b5b0705673\",\"transcript\":\"/var/lib/chatraw-runner/pi-sessions/7c754cbf3b9f4f44ba53848a591e6dbe/session.jsonl\"},\"session_id\":\"0f731aaea66b46f78d6442e3eada335c\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/0f731aaea66b46f78d6442e3eada335c\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/pi/node_modules/.bin/pi\",\"session_root\":\"/var/lib/chatraw-runner/pi-sessions\"}"
+    },
+    {
+      "id": "f6523c63113f450db6cfb2a394166bf7",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-79f17d14b00249c18b580614fad63c37\",\"session_id\":\"session-79f17d14b00249c18b580614fad63c37\"},\"session_id\":\"f6523c63113f450db6cfb2a394166bf7\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/f6523c63113f450db6cfb2a394166bf7\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "a205449b61b64574a0ea4e4732029dfb",
+      "binding": "{\"agent_id\":\"hermes\",\"native\":{\"admission_id\":\"8573c4c95a3042e9b1fd15ef392eab28\",\"operation\":\"run\",\"profile_id\":\"/var/lib/chatraw-runner/hermes-home\",\"run_id\":\"71c648dac20d490e821491c4e839fbfc\",\"session_id\":\"local-ba3da1fbfe16e6d9e7f0c85ccea1ac39fec52c75591c8a76adbfce20b6926b54\",\"settings\":{\"model\":\"RM-01 VLM\",\"provider\":\"custom\"}},\"session_id\":\"a205449b61b64574a0ea4e4732029dfb\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/a205449b61b64574a0ea4e4732029dfb\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/hermes/source/.venv/bin/hermes\",\"home\":\"/var/lib/chatraw-runner/hermes-home\"}"
+    },
+    {
+      "id": "8308839477934801b97f830d84a9b87b",
+      "binding": "{\"agent_id\":\"claude\",\"native\":{\"session_id\":\"a9562af0-8bf4-4d07-a7a3-4f8b1c1d160e\"},\"session_id\":\"8308839477934801b97f830d84a9b87b\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/8308839477934801b97f830d84a9b87b\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "2d3432cb86ff427582a2287f755c5c4f",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"d5c37b45945941ed908cba10bea53be0\",\"thread_id\":\"01a1d52f-fa3a-7142-ac62-4157362dee2e\",\"turn_id\":\"01a1d52f-fa67-7f63-9276-2bb673af41a7\"},\"session_id\":\"2d3432cb86ff427582a2287f755c5c4f\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/2d3432cb86ff427582a2287f755c5c4f\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "787447d7aab94b7d8ce4a6afcc4196b9",
+      "binding": "{\"agent_id\":\"claude\",\"native\":{\"session_id\":\"aeebcc46-36d5-44af-b240-2ad50ad03dd8\"},\"session_id\":\"787447d7aab94b7d8ce4a6afcc4196b9\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/787447d7aab94b7d8ce4a6afcc4196b9\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "c5f1cad44b9b463385077611859b4cc4",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"e05b8525931c4d1585cae79770c7be3d\",\"stop_requested\":true,\"thread_id\":\"01a1d531-0acc-76a0-9f94-7933d117fd87\",\"turn_id\":\"01a1d531-0af9-7450-a4ad-da4b03f162a4\"},\"session_id\":\"c5f1cad44b9b463385077611859b4cc4\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/c5f1cad44b9b463385077611859b4cc4\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "6f13a75149b248778a58e6f1557c0456",
+      "binding": "{\"agent_id\":\"hermes\",\"native\":{\"admission_id\":\"2e5d13c44b554fb7952e613edd6a06f6\",\"operation\":\"run\",\"profile_id\":\"/var/lib/chatraw-runner/hermes-home\",\"run_id\":\"5d6b1010bf6047c7a108c34ef83ef53d\",\"session_id\":\"local-e9583fa6269bdd3b136f826881593bf3c78e7b205b4489cc0570820a168b7c51\",\"settings\":{\"model\":\"RM-01 VLM\",\"provider\":\"custom\"}},\"session_id\":\"6f13a75149b248778a58e6f1557c0456\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/6f13a75149b248778a58e6f1557c0456\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/hermes/source/.venv/bin/hermes\",\"home\":\"/var/lib/chatraw-runner/hermes-home\"}"
+    },
+    {
+      "id": "27110c5454ed4d4baf77b9680e133b4f",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-c4c984f5bcfb43e5968f6b3a7b313cf8\",\"session_id\":\"session-c4c984f5bcfb43e5968f6b3a7b313cf8\"},\"session_id\":\"27110c5454ed4d4baf77b9680e133b4f\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/27110c5454ed4d4baf77b9680e133b4f\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "2fa5efdd1bfa4e41ad0673570446a1b2",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"cb7fea5232db43f093a71b0be18bef57\",\"thread_id\":\"01a1d534-4b2b-7aa2-85a6-f7f761d62bd7\",\"turn_id\":\"01a1d534-b980-76c3-8bd1-bbf75ff85825\"},\"session_id\":\"2fa5efdd1bfa4e41ad0673570446a1b2\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/2fa5efdd1bfa4e41ad0673570446a1b2\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "1e0072458ccd4be69b28326e72f2871a",
+      "binding": "{\"agent_id\":\"claude\",\"native\":{\"session_id\":\"5b81ece9-6e27-44bf-8179-e5d4744deb53\"},\"session_id\":\"1e0072458ccd4be69b28326e72f2871a\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/1e0072458ccd4be69b28326e72f2871a\"}",
+      "base_config": "{}"
+    },
+    {
+      "id": "6b359b8f76d94d06bc46868570909d22",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-1625a242811e4e3abbc5166a0556e39b\",\"session_id\":\"session-1625a242811e4e3abbc5166a0556e39b\"},\"session_id\":\"6b359b8f76d94d06bc46868570909d22\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/6b359b8f76d94d06bc46868570909d22\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "5eac256cd0494613bda3e16664001cba",
+      "binding": "{\"agent_id\":\"hermes\",\"native\":{\"admission_id\":\"c7a4281368a64656ae22f5ff092c64f7\",\"operation\":\"run\",\"profile_id\":\"/var/lib/chatraw-runner/hermes-home\",\"run_id\":\"614bca1480b34ce5b6bef99a76a0cc49\",\"session_id\":\"local-eb7920a203370c9e127f1dc4c30f8a8d004466af8691e1cfe5bc89b5ca7f122d\",\"settings\":{\"model\":\"RM-01 VLM\",\"provider\":\"custom\"}},\"session_id\":\"5eac256cd0494613bda3e16664001cba\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/5eac256cd0494613bda3e16664001cba\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/hermes/source/.venv/bin/hermes\",\"home\":\"/var/lib/chatraw-runner/hermes-home\"}"
+    },
+    {
+      "id": "dad3cb83129e46b8a8d48498b5642c74",
+      "binding": "{\"agent_id\":\"pi\",\"native\":{\"session_id\":\"01a1d537-c79a-70c9-a477-50a93b2aaaaf\",\"transcript\":\"/var/lib/chatraw-runner/pi-sessions/abb2359f0f5e452c9dd2d9e825a66401/session.jsonl\"},\"session_id\":\"dad3cb83129e46b8a8d48498b5642c74\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/dad3cb83129e46b8a8d48498b5642c74\"}",
+      "base_config": "{\"executable\":\"/opt/chatraw-agents/pi/node_modules/.bin/pi\",\"session_root\":\"/var/lib/chatraw-runner/pi-sessions\"}"
+    },
+    {
+      "id": "2e9396c599fe41a296c74c890fa2f058",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-9e6968fe8e2e418faceaf140327e706a\",\"session_id\":\"session-9e6968fe8e2e418faceaf140327e706a\"},\"session_id\":\"2e9396c599fe41a296c74c890fa2f058\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/2e9396c599fe41a296c74c890fa2f058\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "55512bdd173b496f8cc9be631380acbc",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-1e829c1aa4af44338cfdf30b60ad618a\",\"session_id\":\"session-1e829c1aa4af44338cfdf30b60ad618a\"},\"session_id\":\"55512bdd173b496f8cc9be631380acbc\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/55512bdd173b496f8cc9be631380acbc\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\",\"patches\":[\"/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml\"]}"
+    },
+    {
+      "id": "88053d718e83416db643f710cb2c63af",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"26c25ba7d3604bd1baa6b6c2f0bda1d7\",\"stop_requested\":true,\"thread_id\":\"01a1d563-5904-7820-a73a-79d127bb0584\",\"turn_id\":\"01a1d563-592f-79b3-93e6-1bb3567c4ba6\"},\"session_id\":\"88053d718e83416db643f710cb2c63af\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af\"}",
+      "base_config": "{}"
+    }
+  ],
+  "codex_sha256": "8778f84e49892f8a64dc78ffe95700b84132074b94fa2eae8d18c737beb0a972"
+}

@@ -1,0 +1,15 @@
+{
+  "ready": {
+    "status": "ready",
+    "database": "connected"
+  },
+  "agents_js_url": "http://10.10.99.99:51111/agents.js?v=2",
+  "agents_js_status": 200,
+  "sha256": {
+    "index.html": "86bd901644a82b24b4f145d369332da40ddab4e6a16ccd623b148cdbe3068626",
+    "agents.js": "5be914c38b03b24a11e349d7fc6150cf702deb6975f602a8258262106196ed85"
+  },
+  "index_script_references": [
+    "agents.js?v=2"
+  ]
+}

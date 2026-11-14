@@ -1,0 +1,85 @@
+{
+  "agent": "hermes",
+  "case": "image",
+  "steps": [
+    {
+      "label": "image",
+      "client_request_id": "5c2a65bf6d9549e5bfd51b441f0ba851",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "29880846-c591-453c-863d-c04b8e462e05",
+        "session_id": "a205449b61b64574a0ea4e4732029dfb",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "71c648dac20d490e821491c4e839fbfc",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "29880846-c591-453c-863d-c04b8e462e05",
+        "session_id": "a205449b61b64574a0ea4e4732029dfb",
+        "status": "completed",
+        "last_seq": 11,
+        "run_id": "71c648dac20d490e821491c4e839fbfc",
+        "interactions": [],
+        "final_text": "748944"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": null,
+    "reason": "Gateway authenticated; provider/model request has not been tested",
+    "capabilities": {
+      "streaming_text": true,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "native",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "questions": "Canonical clarification prompts; no secret/sudo input UI",
+        "workspace": "Gateway and Runner must run on the same host and account",
+        "image_mime_types": [
+          "image/png",
+          "image/jpeg",
+          "image/webp",
+          "image/gif"
+        ],
+        "images_require_model_support": true,
+        "max_image_bytes": 5242880,
+        "max_images": 4
+      }
+    }
+  },
+  "chat_id": "29880846-c591-453c-863d-c04b8e462e05",
+  "binding": {
+    "chat_id": "29880846-c591-453c-863d-c04b8e462e05",
+    "session_id": "a205449b61b64574a0ea4e4732029dfb",
+    "agent_id": "hermes",
+    "workspace": {
+      "id": "a205449b61b64574a0ea4e4732029dfb",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "image": {
+    "expected_code": "748944",
+    "sha256": "bbb51ab01a62f0198e3a99867881cb70aa1f909c05b1a832c4b0e9afb059e147",
+    "upload": {
+      "attachment_id": "a51f0b525b0d421886a2dc92d7f4935e",
+      "name": "D-vision.png",
+      "mime_type": "image/png",
+      "size": 429
+    },
+    "answer_matched": true
+  },
+  "outcome": "native_evidence_pending"
+}

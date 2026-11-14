@@ -1,0 +1,5 @@
+# Explicit optional installation into Runner's isolated venv; never user-global.
+-r requirements.txt
+deepseek-harness-sdk==0.2.2rc2
+deepseek-harness-runtime-bin==0.2.2rc2
+pydantic>=2.12,<3

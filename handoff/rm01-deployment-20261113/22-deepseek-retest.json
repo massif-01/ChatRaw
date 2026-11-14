@@ -1,0 +1,43 @@
+{
+  "agent": "deepseek",
+  "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+  "settings_response": {
+    "success": true,
+    "enabled": true
+  },
+  "before": {
+    "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+    "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "df3c329ec4db425c892bacd448570491"
+  },
+  "submitted": {
+    "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+    "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+    "status": "queued",
+    "last_seq": 1,
+    "run_id": "b5471970bbb24e639605d3c963d09907",
+    "interactions": []
+  },
+  "snapshot": {
+    "chat_id": "7660ee73-a125-49ed-9680-c9ab1b153b29",
+    "session_id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+    "status": "completed",
+    "last_seq": 16,
+    "run_id": "b5471970bbb24e639605d3c963d09907",
+    "interactions": [],
+    "final_text": "The native `pwd` ran successfully this turn (exit code 0).\n\nActual working directory: `/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f`\n\nRM99_DEEPSEEK_OK\n\nNote: the first attempt was refused because no sandbox backend (bubblewrap/Landlock) is available on this host, so the command ran once under the wider approval-granted access. No files were accessed and no network requests were made."
+  },
+  "approval_receipt": {
+    "interaction_id": "916ff63a556b4cd7a76797ded6a140c4",
+    "status": "accepted"
+  },
+  "elapsed_to_approval": 20.21,
+  "run_duration_seconds": 57.732852
+}

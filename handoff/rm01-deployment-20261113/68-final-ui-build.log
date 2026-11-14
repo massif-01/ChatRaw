@@ -1,0 +1,40 @@
+agents.js: OK
+app.js: OK
+app.min.js: OK
+styles.css: OK
+styles.min.css: OK
+index.html: OK
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 174B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/chatraw-agent-integration:b5cafcd-icon
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/2] FROM docker.io/library/chatraw-agent-integration:b5cafcd-icon@sha256:5e1ae59dfa5c07ffbfcdf1ed38441ad57bfe5f867405a2e747d6ffe68214d026
+#4 resolve docker.io/library/chatraw-agent-integration:b5cafcd-icon@sha256:5e1ae59dfa5c07ffbfcdf1ed38441ad57bfe5f867405a2e747d6ffe68214d026
+#4 resolve docker.io/library/chatraw-agent-integration:b5cafcd-icon@sha256:5e1ae59dfa5c07ffbfcdf1ed38441ad57bfe5f867405a2e747d6ffe68214d026 0.0s done
+#4 DONE 0.1s
+
+#5 [internal] load build context
+#5 transferring context: 489.23kB 0.0s done
+#5 DONE 0.0s
+
+#6 [2/2] COPY agents.js app.js app.min.js styles.css styles.min.css index.html /app/backend/static/
+#6 DONE 0.1s
+
+#7 exporting to image
+#7 exporting layers 0.1s done
+#7 exporting manifest sha256:12f505b9979c114db4955e01679401149a8e1e959198d12930b609f6ad089c8a 0.0s done
+#7 exporting config sha256:77d8a519f0ff3dfba066f938eb6f892ef895abde129f5f7d801e01060080e769 0.0s done
+#7 exporting attestation manifest sha256:54cf8bad9c882c40c2e706e3cd91315ba8a60712af85d4f3018c208fd9af7f9c 0.0s done
+#7 exporting manifest list sha256:09bda4d9e7a59bbfc760160be861780baa4f9bdaf268576fe6624ccba8bc580f 0.0s done
+#7 naming to docker.io/library/chatraw-agent-integration:adeb279-final-ui done
+#7 unpacking to docker.io/library/chatraw-agent-integration:adeb279-final-ui 0.0s done
+#7 DONE 0.3s

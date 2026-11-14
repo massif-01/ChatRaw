@@ -1,0 +1,17 @@
+{
+  "observed_generation_calls": 17,
+  "input_cache_miss_tokens": 43650,
+  "input_cache_hit_tokens": 135808,
+  "output_tokens": 15821,
+  "estimated_usd": 0.01644752,
+  "usd_per_million_tokens": {
+    "cache_hit": 0.003,
+    "cache_miss": 0.15,
+    "output": 0.6
+  },
+  "price_period": "off-peak: all recorded responses during UTC19; no peak-hours ambiguity",
+  "pricing_source": "https://api-docs.deepseek.com/quick_start/pricing/",
+  "model_version_pricing_page": "DeepSeek-V4.1-Flash-1017",
+  "model_used": "deepseek-flash",
+  "scope_note": "Counts are evidenced model generations, not a packet-level total of SDK metadata/Files HTTP operations. Cache/compaction usage included; reasoning tokens are included in output tokens, not added again. No search/fetch/OCR tools executed."
+}

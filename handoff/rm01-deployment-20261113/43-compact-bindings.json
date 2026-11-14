@@ -1,0 +1,222 @@
+[
+  {
+    "id": "1e0072458ccd4be69b28326e72f2871a",
+    "agent_id": "claude",
+    "binding": {
+      "agent_id": "claude",
+      "native": {
+        "session_id": "5b81ece9-6e27-44bf-8179-e5d4744deb53"
+      },
+      "session_id": "1e0072458ccd4be69b28326e72f2871a",
+      "workspace": "/var/lib/chatraw-runner/workspaces/1e0072458ccd4be69b28326e72f2871a"
+    },
+    "runs": [
+      {
+        "id": "d56be4f7d526485fb93a5ca286812fd4",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T13:59:27.884376Z",
+        "updated_at": "2026-11-13T13:59:33.838731Z"
+      },
+      {
+        "id": "fd9fdc088c0841c4afbebbeef1fe9e34",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T13:59:33.978600Z",
+        "updated_at": "2026-11-13T13:59:38.115300Z"
+      },
+      {
+        "id": "8526c1acf1d2486693d25135fff8c16e",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T13:59:40.049423Z",
+        "updated_at": "2026-11-13T13:59:44.271745Z"
+      },
+      {
+        "id": "3df8cb9182cd4f84ba64b7f6c1f305cd",
+        "kind": "compact",
+        "status": "completed",
+        "created_at": "2026-11-13T13:59:46.125265Z",
+        "updated_at": "2026-11-13T14:00:47.663060Z"
+      },
+      {
+        "id": "4e1d2b4fa30544cd8a62aa8f8f65044c",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:00:48.650451Z",
+        "updated_at": "2026-11-13T14:00:54.437967Z"
+      }
+    ]
+  },
+  {
+    "id": "dad3cb83129e46b8a8d48498b5642c74",
+    "agent_id": "pi",
+    "binding": {
+      "agent_id": "pi",
+      "native": {
+        "session_id": "01a1d537-c79a-70c9-a477-50a93b2aaaaf",
+        "transcript": "/var/lib/chatraw-runner/pi-sessions/abb2359f0f5e452c9dd2d9e825a66401/session.jsonl"
+      },
+      "session_id": "dad3cb83129e46b8a8d48498b5642c74",
+      "workspace": "/var/lib/chatraw-runner/workspaces/dad3cb83129e46b8a8d48498b5642c74"
+    },
+    "runs": [
+      {
+        "id": "92bc41d264e549b8b83e61370044e6e7",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:02:45.176293Z",
+        "updated_at": "2026-11-13T14:02:46.572839Z"
+      },
+      {
+        "id": "4533ffd77af04c5990532c332467720b",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:02:47.226280Z",
+        "updated_at": "2026-11-13T14:02:55.801643Z"
+      },
+      {
+        "id": "d692c1c364f34edfb7ac688b1ed337ad",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:02:57.340811Z",
+        "updated_at": "2026-11-13T14:03:13.108346Z"
+      },
+      {
+        "id": "3ca9d29d8e934990a4fef20c64caee57",
+        "kind": "compact",
+        "status": "completed",
+        "created_at": "2026-11-13T14:03:13.508163Z",
+        "updated_at": "2026-11-13T14:03:25.483220Z"
+      },
+      {
+        "id": "d0ce846cc3334a5fb3b16ea89f755cdf",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:03:25.631950Z",
+        "updated_at": "2026-11-13T14:03:46.606347Z"
+      }
+    ]
+  },
+  {
+    "id": "6b359b8f76d94d06bc46868570909d22",
+    "agent_id": "deepseek",
+    "binding": {
+      "agent_id": "deepseek",
+      "native": {
+        "dsh_home": "/var/lib/chatraw-runner/deepseek/session-1625a242811e4e3abbc5166a0556e39b",
+        "session_id": "session-1625a242811e4e3abbc5166a0556e39b"
+      },
+      "session_id": "6b359b8f76d94d06bc46868570909d22",
+      "workspace": "/var/lib/chatraw-runner/workspaces/6b359b8f76d94d06bc46868570909d22"
+    },
+    "runs": [
+      {
+        "id": "36d74a1e0029451a82df580bc5dec15c",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:01:01.529337Z",
+        "updated_at": "2026-11-13T14:01:04.763324Z"
+      },
+      {
+        "id": "3baee951788f4ceab667c7e9f4c610d0",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:01:05.582466Z",
+        "updated_at": "2026-11-13T14:01:07.438771Z"
+      },
+      {
+        "id": "477b502ba89d4d53bc1207f867d4586b",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:01:07.629659Z",
+        "updated_at": "2026-11-13T14:01:09.531202Z"
+      },
+      {
+        "id": "932b483d06c24f0c91074066040b91a9",
+        "kind": "compact",
+        "status": "completed",
+        "created_at": "2026-11-13T14:01:09.685491Z",
+        "updated_at": "2026-11-13T14:01:21.336271Z"
+      },
+      {
+        "id": "df6ad600c2834b1896599d3d2c4f2745",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:01:21.801352Z",
+        "updated_at": "2026-11-13T14:01:24.127811Z"
+      }
+    ]
+  },
+  {
+    "id": "5eac256cd0494613bda3e16664001cba",
+    "agent_id": "hermes",
+    "binding": {
+      "agent_id": "hermes",
+      "native": {
+        "admission_id": "c7a4281368a64656ae22f5ff092c64f7",
+        "operation": "run",
+        "profile_id": "/var/lib/chatraw-runner/hermes-home",
+        "run_id": "614bca1480b34ce5b6bef99a76a0cc49",
+        "session_id": "local-eb7920a203370c9e127f1dc4c30f8a8d004466af8691e1cfe5bc89b5ca7f122d",
+        "settings": {
+          "model": "RM-01 VLM",
+          "provider": "custom"
+        }
+      },
+      "session_id": "5eac256cd0494613bda3e16664001cba",
+      "workspace": "/var/lib/chatraw-runner/workspaces/5eac256cd0494613bda3e16664001cba"
+    },
+    "runs": [
+      {
+        "id": "553d772e86334e37b31a1a705a0fc066",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:01:31.344312Z",
+        "updated_at": "2026-11-13T14:01:35.384905Z"
+      },
+      {
+        "id": "491d9225c1b04a36b32f226f920a49af",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:01:35.420068Z",
+        "updated_at": "2026-11-13T14:01:39.459118Z"
+      },
+      {
+        "id": "ae77c1a1c9d3491ea0961887644efbcc",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:01:39.487252Z",
+        "updated_at": "2026-11-13T14:01:43.525623Z"
+      },
+      {
+        "id": "e99bb689018a41e7a6c57680de5204bb",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:01:43.557703Z",
+        "updated_at": "2026-11-13T14:01:47.595090Z"
+      },
+      {
+        "id": "da2a7f970751409bbec0dcb31b7c532d",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:01:47.629089Z",
+        "updated_at": "2026-11-13T14:01:51.666442Z"
+      },
+      {
+        "id": "059a2d604ee5445490d54a3c850de25d",
+        "kind": "compact",
+        "status": "completed",
+        "created_at": "2026-11-13T14:01:51.700590Z",
+        "updated_at": "2026-11-13T14:02:34.778768Z"
+      },
+      {
+        "id": "614bca1480b34ce5b6bef99a76a0cc49",
+        "kind": "run",
+        "status": "completed",
+        "created_at": "2026-11-13T14:02:36.037794Z",
+        "updated_at": "2026-11-13T14:02:42.089242Z"
+      }
+    ]
+  }
+]

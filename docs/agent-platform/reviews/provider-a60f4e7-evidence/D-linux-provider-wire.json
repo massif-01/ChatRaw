@@ -1,0 +1,64 @@
+{
+  "sdk": "0.2.2rc2",
+  "runtime": "0.2.2rc2",
+  "runtime_sha256": "1cc41d5a8745a5b9d47c8604e44f23eb8af2d8ca02b2afa0be101d5f71be6ea4",
+  "requests": [
+    {
+      "path": "/v1/chat/completions",
+      "model": "RM-01 VLM",
+      "stream": true,
+      "max_tokens": 8192,
+      "max_completion_tokens": null,
+      "reasoning_effort": null,
+      "chat_template_kwargs": {
+        "enable_thinking": true
+      },
+      "tool_types": [
+        "function"
+      ],
+      "tool_count": 31,
+      "auth_is_fixture": true,
+      "provider": "rm01-qwen",
+      "selected_effort": "high",
+      "finish": "error"
+    },
+    {
+      "path": "/v1/chat/completions",
+      "model": "RM-01 VLM",
+      "stream": true,
+      "max_tokens": 8192,
+      "max_completion_tokens": null,
+      "reasoning_effort": null,
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      },
+      "tool_types": [
+        "function"
+      ],
+      "tool_count": 31,
+      "auth_is_fixture": true,
+      "provider": "rm01-qwen",
+      "selected_effort": "off",
+      "finish": "error"
+    },
+    {
+      "path": "/v1/chat/completions",
+      "model": "RM-01 VLM",
+      "stream": true,
+      "max_tokens": 8192,
+      "max_completion_tokens": null,
+      "reasoning_effort": null,
+      "chat_template_kwargs": {
+        "enable_thinking": true
+      },
+      "tool_types": [
+        "function"
+      ],
+      "tool_count": 31,
+      "auth_is_fixture": true,
+      "provider": "deepseek-official",
+      "selected_effort": "high",
+      "finish": "error"
+    }
+  ]
+}

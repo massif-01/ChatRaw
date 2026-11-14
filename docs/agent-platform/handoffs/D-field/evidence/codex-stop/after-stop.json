@@ -1,0 +1,20 @@
+{
+  "markers": {
+    "started": "matched",
+    "late": "missing"
+  },
+  "snapshot": {
+    "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a",
+    "session_id": "c5f1cad44b9b463385077611859b4cc4",
+    "status": "unknown",
+    "last_seq": 9,
+    "run_id": "e05b8525931c4d1585cae79770c7be3d",
+    "interactions": [],
+    "error": {
+      "code": "codex_tool_stop_unverified",
+      "message": "Codex ended the turn, but an owned tool could not be confirmed stopped.",
+      "retryable": false
+    }
+  },
+  "checked_at": "2026-11-13T13:56:26.766591+00:00"
+}

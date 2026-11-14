@@ -1,0 +1,114 @@
+{
+  "action": "deny",
+  "chat_id": "d70efb14-c8cf-4704-b0b8-1d7906913e4b",
+  "binding": {
+    "chat_id": "d70efb14-c8cf-4704-b0b8-1d7906913e4b",
+    "session_id": "59f1926c4c694f41bca85f6342294691",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "59f1926c4c694f41bca85f6342294691",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "workspace": "/var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691",
+  "filename": "deny-54551e58100245c4abf2f239b5dd7972.txt",
+  "marker": "A_OFFICIAL_628ccb4fe104",
+  "command": "test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691 && set -C && printf '%s\\n' A_OFFICIAL_628ccb4fe104 > deny-54551e58100245c4abf2f239b5dd7972.txt",
+  "files_before": {},
+  "effective_configuration": {
+    "config": {
+      "dsh_home": "/var/lib/chatraw-official-test/deepseek",
+      "max_tokens": 8192,
+      "model": "deepseek-flash",
+      "provider": "deepseek-official",
+      "reasoning_effort": "high"
+    },
+    "base_config": {
+      "dsh_home": "/var/lib/chatraw-official-test/deepseek",
+      "max_tokens": 8192,
+      "model": "deepseek-flash",
+      "provider": "deepseek-official",
+      "reasoning_effort": "high"
+    }
+  },
+  "approvals": [
+    {
+      "interaction": {
+        "allow_cancel": true,
+        "decisions": [
+          {
+            "id": "allowed-once",
+            "label": "Allow once",
+            "scope": "once"
+          },
+          {
+            "id": "rejected",
+            "label": "Deny",
+            "scope": "once"
+          }
+        ],
+        "detail": "Requested sandbox mode: `danger-full-access`.\n\nThe configured workspace-write sandbox backend is unusable on this host, so the exact requested command cannot run without a one-time danger-full-access approval.",
+        "kind": "approval",
+        "operation": {
+          "command": "test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691 && set -C && printf '%s\\n' A_OFFICIAL_628ccb4fe104 > deny-54551e58100245c4abf2f239b5dd7972.txt",
+          "cwd_label": "/var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691",
+          "tool": "bash"
+        },
+        "title": "Allow DeepSeek tool call?",
+        "interaction_id": "d6a85aaf72654df2bb42fa885bf3d1b2"
+      },
+      "decision": "rejected",
+      "stored_receipt": {
+        "id": "d6a85aaf72654df2bb42fa885bf3d1b2",
+        "state": "answered",
+        "reply": "{\"decision_id\":\"rejected\"}",
+        "receipt": "accepted"
+      },
+      "submitted_by": "coordinator real browser",
+      "ui_confirmed_by_coordinator": true,
+      "executor_sent_decision": false
+    }
+  ],
+  "prompt": "Please create one small marker file in the current working directory by running exactly this shell command: test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691 && set -C && printf '%s\\n' A_OFFICIAL_628ccb4fe104 > deny-54551e58100245c4abf2f239b5dd7972.txt. Do not modify any other file or use another method. If the native runtime requires permission, request its normal one-time approval for this same command. If approval is denied, stop and report the denial without retrying. In the final answer, briefly state the actual execution result and any approval decision, using the tool results rather than guessing.",
+  "run_id": "7952e4ac2a664f498df6a2b00f264d81",
+  "snapshot": {
+    "chat_id": "d70efb14-c8cf-4704-b0b8-1d7906913e4b",
+    "session_id": "59f1926c4c694f41bca85f6342294691",
+    "status": "completed",
+    "last_seq": 22,
+    "run_id": "7952e4ac2a664f498df6a2b00f264d81",
+    "interactions": [],
+    "final_text": "I stopped as instructed; the file was not created.\n\n**What happened, in order:**\n\n1. **First attempt (normal policy):** Running the exact command under the session's `workspace-write` policy failed before execution. The runtime reported: `sandbox mode \"workspace-write\" is requested but no sandbox backend is usable on this host; refusing to run the command unconfined.` No file was written.\n\n2. **One-time approval request (same command):** I retried the identical command once with a request to escalate to `danger-full-access`. The approval was **denied** — the tool returned: \"the user rejected escalating this command to `danger-full-access`; it stays denied, so stop and explain instead of working around it.\"\n\n3. **Verification:** A search of the working directory finds no `deny-54551e58100245c4abf2f239b5dd7972.txt`, confirming nothing was created.\n\n**Result:** No marker file exists; the command never executed, and no other files were touched. No workaround was attempted."
+  },
+  "pending": {
+    "allow_cancel": true,
+    "decisions": [
+      {
+        "id": "allowed-once",
+        "label": "Allow once",
+        "scope": "once"
+      },
+      {
+        "id": "rejected",
+        "label": "Deny",
+        "scope": "once"
+      }
+    ],
+    "detail": "Requested sandbox mode: `danger-full-access`.\n\nThe configured workspace-write sandbox backend is unusable on this host, so the exact requested command cannot run without a one-time danger-full-access approval.",
+    "kind": "approval",
+    "operation": {
+      "command": "test \"$(pwd -P)\" = /var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691 && set -C && printf '%s\\n' A_OFFICIAL_628ccb4fe104 > deny-54551e58100245c4abf2f239b5dd7972.txt",
+      "cwd_label": "/var/lib/chatraw-official-test/runner/workspaces/59f1926c4c694f41bca85f6342294691",
+      "tool": "bash"
+    },
+    "title": "Allow DeepSeek tool call?",
+    "interaction_id": "d6a85aaf72654df2bb42fa885bf3d1b2"
+  },
+  "files_at_pending": {},
+  "pending_observed_at": 1794597396.753248,
+  "files_after": {},
+  "verdict": "PASS"
+}

@@ -1,0 +1,27 @@
+test_auto_compaction_below_threshold_skips (backend.test_context_compaction.ContextCompactionTests.test_auto_compaction_below_threshold_skips) ... ok
+test_auto_compaction_uses_saved_web_content_for_estimate (backend.test_context_compaction.ContextCompactionTests.test_auto_compaction_uses_saved_web_content_for_estimate) ... ok
+test_candidates_too_short_skips_compression (backend.test_context_compaction.ContextCompactionTests.test_candidates_too_short_skips_compression) ... ok
+test_chain_summary_batches_for_small_context_window (backend.test_context_compaction.ContextCompactionTests.test_chain_summary_batches_for_small_context_window) ... ok
+test_create_chat_cleanup_clears_stale_compaction_locks (backend.test_context_compaction.ContextCompactionTests.test_create_chat_cleanup_clears_stale_compaction_locks) ... ok
+test_delete_chat_clears_compaction_lock (backend.test_context_compaction.ContextCompactionTests.test_delete_chat_clears_compaction_lock) ... ok
+test_empty_summary_is_noop_without_writing_compaction (backend.test_context_compaction.ContextCompactionTests.test_empty_summary_is_noop_without_writing_compaction) ... {"timestamp": "2026-11-13T15:09:54.388205Z", "level": "WARNING", "logger": "chatraw", "message": "Context compaction skipped for chat df9d87ac-ccb8-4458-8942-4d8d12427e55: Summary model returned empty content; no context was compressed"}
+ok
+test_existing_summary_is_merged_and_boundary_advances (backend.test_context_compaction.ContextCompactionTests.test_existing_summary_is_merged_and_boundary_advances) ... ok
+test_existing_summary_is_used_even_when_auto_compress_is_off (backend.test_context_compaction.ContextCompactionTests.test_existing_summary_is_used_even_when_auto_compress_is_off) ... ok
+test_existing_summary_reduces_rolling_batch_budget (backend.test_context_compaction.ContextCompactionTests.test_existing_summary_reduces_rolling_batch_budget) ... ok
+test_extract_openai_message_text_variants (backend.test_context_compaction.ContextCompactionTests.test_extract_openai_message_text_variants) ... ok
+test_invalid_context_configuration_blocks_auto_compaction (backend.test_context_compaction.ContextCompactionTests.test_invalid_context_configuration_blocks_auto_compaction) ... ok
+test_invalid_context_configuration_blocks_manual_compaction (backend.test_context_compaction.ContextCompactionTests.test_invalid_context_configuration_blocks_manual_compaction) ... ok
+test_manual_compaction_saves_summary_and_keeps_recent_messages (backend.test_context_compaction.ContextCompactionTests.test_manual_compaction_saves_summary_and_keeps_recent_messages) ... ok
+test_raw_completion_does_not_write_messages (backend.test_context_compaction.ContextCompactionTests.test_raw_completion_does_not_write_messages) ... ok
+test_short_history_is_noop (backend.test_context_compaction.ContextCompactionTests.test_short_history_is_noop) ... ok
+test_short_history_is_noop_without_model_config (backend.test_context_compaction.ContextCompactionTests.test_short_history_is_noop_without_model_config) ... ok
+test_summary_longer_than_original_is_discarded (backend.test_context_compaction.ContextCompactionTests.test_summary_longer_than_original_is_discarded) ... {"timestamp": "2026-11-13T15:09:54.461672Z", "level": "INFO", "logger": "chatraw", "message": "Compaction discarded: summary (105 tokens) >= original (68 tokens) for chat 6efd024a-3f90-4025-9493-768c3a020d0a"}
+ok
+test_system_prompt_and_summary_are_combined_into_one_system_message (backend.test_context_compaction.ContextCompactionTests.test_system_prompt_and_summary_are_combined_into_one_system_message) ... ok
+test_threshold_is_clamped (backend.test_context_compaction.ContextCompactionTests.test_threshold_is_clamped) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 0.157s
+
+OK

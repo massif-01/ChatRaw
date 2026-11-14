@@ -1,0 +1,14 @@
+{
+  "chat_metadata_hash": true,
+  "messages_hash": true,
+  "message_count": true,
+  "message_ids": true,
+  "binding": true,
+  "unknown_run": true,
+  "models_hash": true,
+  "settings_hash": true,
+  "runner_hermes_pids": true,
+  "mounts_unchanged": true,
+  "container_recreated": true,
+  "image_changed": true
+}

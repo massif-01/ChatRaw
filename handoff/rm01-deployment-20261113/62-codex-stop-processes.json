@@ -1,0 +1,33 @@
+{
+  "observed_at": "2026-11-13T14:52:31.131691+00:00",
+  "workspace_processes": [
+    {
+      "pid": 63788,
+      "cwd": "/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af",
+      "argv": [
+        "node",
+        "/opt/chatraw-agents/codex/node_modules/.bin/codex",
+        "app-server",
+        "--listen",
+        "stdio://"
+      ]
+    },
+    {
+      "pid": 63796,
+      "cwd": "/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af",
+      "argv": [
+        "/opt/chatraw-agents/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/codex",
+        "app-server",
+        "--listen",
+        "stdio://"
+      ]
+    }
+  ],
+  "nonterminal": [
+    {
+      "id": "e05b8525931c4d1585cae79770c7be3d",
+      "status": "unknown",
+      "chat_id": "2ed4de0d-ef0f-4dbf-9f97-7ec9d0eaab8a"
+    }
+  ]
+}

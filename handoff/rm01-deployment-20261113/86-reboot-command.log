@@ -1,0 +1,1 @@
+{"at_utc": "2026-11-13T16:03:20.926253+00:00", "authorized_target": "10.10.99.99", "remaining_nonterminal": [["e05b8525931c4d1585cae79770c7be3d", "unknown"]], "action": "systemctl reboot"}

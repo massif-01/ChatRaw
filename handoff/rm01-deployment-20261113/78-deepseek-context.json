@@ -1,0 +1,15 @@
+{
+  "chat_id": "a83f4451-13a0-468b-8091-8432b79fed3c",
+  "binding": {
+    "chat_id": "a83f4451-13a0-468b-8091-8432b79fed3c",
+    "session_id": "5f775d782b4a4d40bb81a8d1a5bc8aad",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "5f775d782b4a4d40bb81a8d1a5bc8aad",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  }
+}

@@ -1,0 +1,7 @@
+- 支持在聊天中选择 Hermes、Codex CLI、Claude Code、Pi 和 DeepSeek Harness，保留各自的会话与工作目录。
+- 在聊天中查看任务详情、回答 Agent 提问、处理审批和停止任务。删除或清空对话时会说明哪些对话被保留以及原因。
+- 回复文字柔和显现，Markdown 随回复逐步渲染。
+- 改善手机键盘、横屏侧栏、Agent 菜单和设置页的布局，已在 iPhone 15 Pro 上复验。
+- 界面资源随应用提供，已验证 Chromium 109 和 Firefox 兼容性。
+- 提供 Linux Runner 交互式安装，支持新机器部署和接入已有 Agent。
+- Docker Hub 提供 `2.3` 和 `latest` 镜像。本次随附原版 ChatRaw for Mac 2.2.1 安装包。

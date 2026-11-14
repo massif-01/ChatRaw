@@ -1,0 +1,19 @@
+{
+  "image_tag": "chatraw-agent-integration:e91d32f-amd64",
+  "docker_image_id": "sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724",
+  "archive_config_digest": "sha256:faeb75dc86eb10583fa0af6a800e3c630247e2a193d7c7f2cd232d48162a45a9",
+  "descriptor": {
+    "mediaType": "application/vnd.oci.image.manifest.v1+json",
+    "digest": "sha256:2baa5f343ed1e2069caa04de4aafb9b499548f388b41702aa41cc06323e0e724",
+    "size": 2078,
+    "annotations": {
+      "io.containerd.image.name": "docker.io/library/chatraw-agent-integration:e91d32f-amd64",
+      "org.opencontainers.image.ref.name": "e91d32f-amd64"
+    }
+  },
+  "architecture": "amd64",
+  "os": "linux",
+  "rootfs_layers_equal": true,
+  "config_equal": true,
+  "layer_count": 12
+}

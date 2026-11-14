@@ -1,0 +1,74 @@
+"""Bounded stale-run and final-dispatch checks against ee1aef5."""
+import asyncio
+from types import SimpleNamespace
+from unittest.mock import patch
+from agent_runner.adapters.base import AdapterError
+from agent_runner.adapters.deepseek import _Run
+from agent_runner.tests import test_d_adapter_protocol as protocol
+
+
+class BoundaryTests(protocol.DeepSeekApprovalTests):
+    async def test_run_changes_during_directory_lookup_cancel_without_publication(self):
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def directory(*args):
+            entered.set()
+            await release.wait()
+            return "/tmp"
+
+        await self.call("native", "old", {"command": "pwd"})
+        with patch.object(self.adapter, "_approval_working_directory", directory):
+            task = self.request("native", "old")
+            await asyncio.wait_for(entered.wait(), 1)
+            self.adapter._active = _Run("next", self.emit)
+            release.set()
+            await asyncio.wait_for(task, 1)
+        self.assertEqual(await self.responses.get(), ("old", {"outcome": "cancelled"}))
+        self.assertTrue(self.events.empty())
+
+    async def test_finished_tool_and_replaced_harness_cannot_dispatch_allow(self):
+        for replacement in ("tool-result", "harness"):
+            call_id = replacement
+            await self.call("native", call_id, {"command": "pwd", "workdir": "/tmp"})
+            task = self.request("native", call_id)
+            event = await asyncio.wait_for(self.events.get(), 1)
+            if replacement == "tool-result":
+                await self.adapter._project(self.active, "native", SimpleNamespace(method="session.event", payload={"sessionId": "native", "event": {"type": "tool/result", "data": {"message": {"toolCallId": call_id}}}}))
+                self.assertEqual((await self.events.get())["type"], "tool_completed")
+            else:
+                self.adapter._harness = SimpleNamespace()
+            with self.assertRaises(AdapterError):
+                await self.adapter.respond(self.binding, event["native_key"], {"decision_id": "allowed-once"})
+            self.assertTrue(self.responses.empty())
+            task.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await task
+            await self.events.get()  # invalidated
+
+    async def test_timeout_late_call_and_new_run_do_not_reuse_old_match(self):
+        with patch("agent_runner.adapters.deepseek._APPROVAL_LOOKUP_TIMEOUT", 0.01):
+            await asyncio.wait_for(self.request("native", "late"), 1)
+            self.assertEqual(await self.responses.get(), ("late", {"outcome": "cancelled"}))
+            await self.call("native", "late", {"command": "pwd", "workdir": "/tmp"})
+            self.assertTrue(self.events.empty())
+            self.active = self.adapter._active = _Run("next", self.emit)
+            await asyncio.wait_for(self.request("native", "late"), 1)
+            self.assertEqual(await self.responses.get(), ("late", {"outcome": "cancelled"}))
+            self.assertTrue(self.events.empty())
+
+    async def test_unreviewable_cwd_and_missing_file_path_are_denied(self):
+        cases = [({"command": "pwd", "workdir": "API_KEY=fixture-sensitive"}, "bash"), ({"command": "pwd", "workdir": "/" + "x" * 100000}, "bash"), ({"command": "pwd", "workdir": "nul\0path"}, "bash"), ({"content": "unshown"}, "write"), ({"old_string": "x", "new_string": "y"}, "edit")]
+        for i, (arguments, name) in enumerate(cases):
+            call_id = str(i)
+            await self.call("native", call_id, arguments, name)
+            await asyncio.wait_for(self.request("native", call_id, name), 1)
+            self.assertEqual(await self.responses.get(), (call_id, {"outcome": "cancelled"}))
+            event = await self.events.get()
+            self.assertEqual(event["type"], "error")
+            self.assertNotIn("fixture-sensitive", str(event))
+            self.assertTrue(self.events.empty())
+
+
+for name in dir(protocol.DeepSeekApprovalTests):
+    if name.startswith("test_") and name not in BoundaryTests.__dict__:
+        setattr(BoundaryTests, name, None)

@@ -1,0 +1,24 @@
+{
+  "sessions": [
+    {
+      "id": "b7fea9a288d84d1489ff634e753a6652",
+      "agent_id": "codex",
+      "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"8fd852ee00c24c0985bd000d02ffafeb\",\"thread_id\":\"01a1d516-d830-7742-b766-ff1071485eaf\",\"turn_id\":\"01a1d516-d844-7891-9a15-acdc4c554412\"},\"session_id\":\"b7fea9a288d84d1489ff634e753a6652\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/b7fea9a288d84d1489ff634e753a6652\"}"
+    },
+    {
+      "id": "88e2895ec55b4ab6872e731d8d0b67b4",
+      "agent_id": "claude",
+      "binding": "{\"agent_id\":\"claude\",\"native\":{\"session_id\":\"ffe300d5-6381-40f5-8672-19a50375e8d4\"},\"session_id\":\"88e2895ec55b4ab6872e731d8d0b67b4\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/88e2895ec55b4ab6872e731d8d0b67b4\"}"
+    },
+    {
+      "id": "7efd25b09ff14e52be71f94abc638a1c",
+      "agent_id": "pi",
+      "binding": "{\"agent_id\":\"pi\",\"native\":{\"session_id\":\"01a1d518-34ec-76f0-bcbe-2a6c95159e3e\",\"transcript\":\"/var/lib/chatraw-runner/pi-sessions/3e9d8bc52dc74ac68878f467ec150036/session.jsonl\"},\"session_id\":\"7efd25b09ff14e52be71f94abc638a1c\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/7efd25b09ff14e52be71f94abc638a1c\"}"
+    },
+    {
+      "id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+      "agent_id": "deepseek",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-2c63be8b22744b3cb0c81413a51f6aad\",\"session_id\":\"session-2c63be8b22744b3cb0c81413a51f6aad\"},\"session_id\":\"14d1c7a3dbda4f3fad1a20a4b35d523f\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f\"}"
+    }
+  ]
+}

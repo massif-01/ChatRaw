@@ -34,7 +34,7 @@
 ![Model Configuration](assets/model-configuration.png)
 
 ### Plugin Market
-![Plugin Market](assets/plugin-market.png?v=2)
+![Plugin Market](assets/plugin-market.png?v=3)
 
 ---
 
@@ -46,9 +46,9 @@ Many developers, AI hardware vendors, and users just need a simple, lightweight 
 
 ## ChatRaw for Mac
 
-ChatRaw now includes a native macOS desktop version: **ChatRaw for Mac**. It wraps the same lightweight web interface in a SwiftUI + WKWebView desktop shell, automatically starts a local ChatRaw backend, and loads the app through a local `127.0.0.1` address. This gives macOS users a double-click desktop experience while keeping the same model settings, plugin system, document parsing, image understanding, and OpenAI-compatible API support as the web/Docker version.
+ChatRaw now includes a native macOS desktop version: **ChatRaw for Mac**. It wraps the same lightweight web interface in a SwiftUI + WKWebView desktop shell, automatically starts a local ChatRaw backend, and loads the app through a local `127.0.0.1` address. The Mac app provides model settings, plugins, document parsing, image understanding, and support for OpenAI-compatible APIs.
 
-The current macOS package targets Apple Silicon and requires macOS 14 or later. A DMG package is available from [Releases](https://github.com/massif-01/ChatRaw/releases), and developers can also build and run it from source with the included script.
+The Mac download that accompanies ChatRaw 2.3 is the original `ChatRaw-for-Mac-2.2.1.dmg` from the v2.2.1 release. It targets Apple Silicon and requires macOS 14 or later. For native Agent setup in the Linux edition, see the [deployment guide](deploy/README.md).
 
 ---
 
@@ -66,17 +66,19 @@ The current macOS package targets Apple Silicon and requires macOS 14 or later. 
 - **Document Parsing** - Native PDF, DOCX, TXT, MD parsing as chat context
 - **Vision AI Ready** - Multimodal image understanding with auto-compression when the chat model's Vision capability is enabled
 - **Thinking Mode** - Support for reasoning models (DeepSeek-R1, Qwen, o1, etc.)
-- **Responsive Design** - Optimized for desktop, tablet, and mobile with touch-friendly UI
+- **Mobile Layout** - Touch-friendly controls, a scrollable landscape sidebar, and an input area that adapts to the on-screen keyboard
+- **Streaming Replies** - Text appears with a soft reveal while Markdown renders as the response arrives
+- **Local UI Assets** - Core interface resources and supported plugin libraries are bundled locally
+- **Browser Compatibility** - Tested on Chromium 109, Firefox, and Safari on iPhone 15 Pro
 - **One-Click Copy** - Copy AI responses instantly (text only, no metadata)
 - **Bilingual UI** - English & Chinese with one-click switch
 - **Zero Registration** - Settings auto-saved locally
-- **One-Click Deploy** - Docker deployment in 30 seconds
+- **Docker Deployment** - Start ordinary chat with Docker or use the interactive Linux installer for the host Runner
 
 ### Key Features
 
 **Multi-Model Configuration**
-- Supports unlimited chat, embedding, and reranking models
-- Automatic API key rotation to bypass rate limits
+- Configure multiple chat, embedding, and reranking models
 - Built-in endpoint validation and testing
 
 **Thinking Mode**
@@ -103,14 +105,17 @@ ChatRaw features a complete **plugin system** to extend functionality:
 - **Lightweight RAG Demo** — Knowledge base retrieval
 - **Bocha Search** — Web / AI search
 - **Tavily Search** — Web search with AI answers
-- **Excel Parser** — Parse .xlsx/.xls for chat
+- **Excel Parser Pro** — Parse .xlsx/.xls for chat
 - **CSV Parser** — Parse CSV/TSV for chat
 - **Enhanced Web Parsing** — Parse web pages (browser / Firecrawl / Jina)
 - **Multi-Model Manager** — Manage and switch models
 - **Markdown Renderer Plus** — Math (KaTeX), Mermaid, code copy, offline
-- **Context Compressor** — Compact older chat history automatically or from the input toolbar
+- **Mindmap Renderer** — Turn outlines and Markmap blocks into interactive mind maps
+- **Enhanced Export** — Save replies as TXT, Markdown, PDF, or HTML
+- **Voice Input** — Dictate messages in browsers that support speech recognition
+- **Context Compressor** — Compact ordinary chat history automatically or from the input toolbar
 - **Skill Manager** — Install Agent Skills from GitHub or local files and activate them inline with `/skill-name`
-- **Hermes Router** — Route selected messages to a local or confirmed remote Hermes API Server through the secure backend bridge
+- **Hermes, Codex CLI, Claude Code, Pi, DeepSeek Harness** — Five independent Agent plugins with native sessions, a shared interface for task details, questions, approvals, and stopping tasks, plus persistent workspaces
 - **Toolbar Extension Demo** — Demo plugin showcasing UI Extension API
 
 ### Toolbar Extension
@@ -124,7 +129,11 @@ ChatRaw features a complete **plugin system** to extend functionality:
 
 **Plugin Development Guide**: [Plugins/README.md](Plugins/README.md)
 
-**Hermes Router Guide**: [docs/hermes.md](docs/hermes.md)
+### Use native Agents
+
+Install and enable the Agent plugins you need, configure each one in its settings, then select one from the chat mode menu beside the message box. Each chat uses one Agent and retains its native session. The Agent manages its own context, instructions, Skills, and compaction; ChatRaw sends the current input and supported attachments. Tasks can continue after you close the page. Use **Stop** to request cancellation.
+
+For native Agents, run ChatRaw in Docker and install the Runner on the same Linux host. Install the Agent programs you need under an account the Runner can use. The native Hermes plugin replaces the former Hermes Router. Configure its Gateway and start a new Agent chat. See the [deployment guide](deploy/README.md) and [Hermes migration guide](docs/hermes.md).
 
 ---
 
@@ -150,11 +159,13 @@ ChatRaw features a complete **plugin system** to extend functionality:
 
 ## Quick Start
 
+> **Using native Agents?** Follow the [deployment guide](deploy/README.md) to install the host Runner on a new machine or connect your existing Agents.
+
 ### Option 1: Docker (Recommended)
 
 **Prerequisites**: [Docker](https://docs.docker.com/get-docker/) installed.
 
-Docker images are published to **Docker Hub** and **GitHub Container Registry**. To get the **latest** image (not a cached old one), always run `docker pull` with the tag you want before creating the container. Use `:latest` for the current release, or a version tag (e.g. `v2.1.2`) from [Releases](https://github.com/massif-01/ChatRaw/releases) for a fixed version.
+Images are published to **Docker Hub**. Pull `massif01/chatraw:latest` for the current release or `massif01/chatraw:2.3` for this version.
 
 **Supported platforms**: linux/amd64 (Intel/AMD), linux/arm64 (Apple Silicon, Raspberry Pi 4/5).
 
@@ -246,15 +257,15 @@ python main.py
 | Source | Pull command |
 |--------|----------------|
 | Docker Hub | `docker pull massif01/chatraw:latest` |
-| GitHub Container Registry | `docker pull ghcr.io/massif-01/chatraw:latest` |
-
-Use the same tag for a specific version, e.g. `massif01/chatraw:v2.1.2` (see [Releases](https://github.com/massif-01/ChatRaw/releases)).
+| Docker Hub (2.3) | `docker pull massif01/chatraw:2.3` |
 
 ---
 
 ## Update Guide
 
 ### Docker (docker run)
+
+For a deployment with a host Runner, follow the [update and backup instructions](deploy/REFERENCE.md#maintenance).
 
 ```bash
 # Stop and remove the current container
@@ -326,13 +337,13 @@ In **Settings** → **Interface**, you can customize:
 3. Click **Install** on any plugin
 4. After installation, enable the plugin in the **Installed** tab
 
-For **Context Compressor**, enable the plugin to use compacted history in model requests. The
+In ordinary chat, enable **Context Compressor** to use compacted history in model requests. The
 `autoCompress` setting creates or updates summaries automatically; when it is off, existing summaries are
 still used and you can click the input toolbar compression button to compact manually.
 
-### Use Agent Skills
+### Use Skills in ordinary chat
 
-Install and enable **Skill Manager** to manage Agent Skills. You can install skills from a GitHub
+Install and enable **Skill Manager** to manage Skills for ordinary chat. You can install skills from a GitHub
 repository URL, `owner/repo` shorthand, raw/blob `SKILL.md`, public tree URL, or upload a local
 `SKILL.md` / `.zip` package. GitHub repository roots are accepted when ChatRaw can resolve exactly one
 skill, such as a root `SKILL.md` or a single `skills/<name>/SKILL.md`; repositories with multiple skills
@@ -412,7 +423,7 @@ MIT License
 ![模型配置](assets/model-configuration.png)
 
 ### 插件市场
-![插件市场](assets/plugin-market.png?v=2)
+![插件市场](assets/plugin-market.png?v=3)
 
 ---
 
@@ -424,9 +435,9 @@ MIT License
 
 ## ChatRaw for Mac
 
-ChatRaw 现在提供原生 macOS 桌面版本：**ChatRaw for Mac**。它使用 SwiftUI + WKWebView 桌面外壳承载同一套轻量 Web 界面，并自动启动本地 ChatRaw 后端，通过本机 `127.0.0.1` 地址加载应用。macOS 用户可以像普通桌面 App 一样双击使用，同时保留与 Web/Docker 版本一致的模型配置、插件系统、文档解析、图片理解和 OpenAI 兼容 API 支持。
+ChatRaw 现在提供原生 macOS 桌面版本：**ChatRaw for Mac**。它使用 SwiftUI + WKWebView 桌面外壳承载同一套轻量 Web 界面，并自动启动本地 ChatRaw 后端，通过本机 `127.0.0.1` 地址加载应用。Mac 应用支持模型配置、插件、文档解析、图片理解和 OpenAI 兼容 API。
 
-当前 macOS 安装包面向 Apple Silicon，要求 macOS 14 或更高版本。可在 [Releases](https://github.com/massif-01/ChatRaw/releases) 下载 DMG 安装包；开发者也可以使用仓库内置脚本从源码构建并运行。
+ChatRaw 2.3 随附 v2.2.1 发布中的原版 `ChatRaw-for-Mac-2.2.1.dmg`。安装包面向 Apple Silicon，要求 macOS 14 或更高版本。Linux 版的原生 Agent 配置请参阅[部署指南](deploy/README.md)。
 
 ---
 
@@ -444,17 +455,19 @@ ChatRaw 现在提供原生 macOS 桌面版本：**ChatRaw for Mac**。它使用 
 - **文档解析** - 原生支持 PDF、DOCX、TXT、MD 解析作为聊天上下文
 - **视觉 AI 就绪** - 在聊天模型启用“视觉”能力后支持多模态图片理解和自动压缩
 - **思考模式** - 支持推理模型（DeepSeek-R1、Qwen、o1 等）
-- **响应式设计** - 完美适配桌面、平板和移动设备，触控友好
+- **手机适配** - 支持触控、横屏侧栏滚动，输入区随软键盘调整
+- **流式回复** - 新文字柔和显现，Markdown 随回复增量渲染
+- **界面资源本地化** - 核心界面资源和受支持的插件库随应用提供
+- **浏览器兼容** - 已验证 Chromium 109、Firefox 和 iPhone 15 Pro 上的 Safari
 - **一键复制** - 一键复制 AI 回复内容（纯文本，不含元数据）
 - **双语界面** - 中英文一键切换
 - **零注册** - 设置本地自动保存
-- **一键部署** - Docker 30 秒部署
+- **Docker 部署** - 普通聊天可用 Docker 启动，Linux 宿主 Runner 提供交互式安装
 
 ### 主要功能
 
 **多模型配置**
-- 支持无限数量的聊天、嵌入和重排模型
-- 自动 API Key 轮换以绕过速率限制
+- 可配置多个聊天、嵌入和重排模型
 - 内置端点验证和测试
 
 **思考模式**
@@ -481,14 +494,17 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 - **轻量 RAG 演示** — 知识库检索
 - **博查搜索** — Web / AI 搜索
 - **Tavily 搜索** — Web 搜索 + AI 答案
-- **Excel 解析器** — 解析 .xlsx/.xls 供对话使用
+- **Excel 增强解析器** — 解析 .xlsx/.xls 供对话使用
 - **CSV 解析器** — 解析 CSV/TSV 供对话使用
 - **增强网页解析** — 解析网页（浏览器 / Firecrawl / Jina）
 - **多模型管理** — 管理并切换模型
 - **Markdown 渲染增强** — 数学公式、Mermaid、代码复制，离线可用
-- **上下文压缩** — 自动或通过输入框工具栏压缩较早聊天历史
+- **思维导图渲染** — 将大纲或 Markmap 代码块渲染为交互式思维导图
+- **增强导出** — 将回复保存为 TXT、Markdown、PDF 或 HTML
+- **语音输入** — 在支持语音识别的浏览器中口述消息
+- **上下文压缩** — 自动或通过输入框工具栏压缩普通聊天的历史
 - **Skill 管理器** — 从 GitHub 或本地文件安装 Agent Skills，并用 `/skill-name` 在输入框内联激活
-- **Hermes Router** — 通过安全后端桥接，将选定消息路由到本机或已确认放行的远程 Hermes API Server
+- **Hermes、Codex CLI、Claude Code、Pi、DeepSeek Harness** — 五个独立 Agent 插件，保留原生会话，可查看任务详情、回答问题、处理审批和停止任务，并保留工作目录
 - **工具栏扩展演示** — 展示 UI 扩展 API 的演示插件
 
 ### 工具栏扩展
@@ -502,7 +518,11 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 
 **插件开发指南**: [Plugins/README.md](Plugins/README.md)
 
-**Hermes Router 指南**: [docs/hermes.md](docs/hermes.md)
+### 使用原生 Agent
+
+安装并启用需要的 Agent 插件，分别打开设置完成配置，然后从输入框旁的聊天模式菜单中选择一个 Agent。每个聊天绑定一个 Agent，并保留原生会话。上下文、提示词、Skills 和压缩由 Agent 自己管理；ChatRaw 交付本轮输入和受支持的附件。关闭页面后任务仍可继续。需要取消时，请点击**停止**。
+
+使用原生 Agent 时，在同一台 Linux 主机上运行 Docker 版 ChatRaw 和宿主 Runner，并按需准备 Runner 账户可以访问的 Agent。新版 Hermes 插件接替旧版路由插件。升级后请配置原生 Gateway，再新建 Agent 对话。具体步骤见[部署指南](deploy/README.md)和 [Hermes 迁移说明](docs/hermes.md)。
 
 ---
 
@@ -523,11 +543,13 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 
 ## 快速开始
 
+> **需要使用原生 Agent？** 请按[详细部署说明](deploy/README.md)安装宿主 Runner。向导支持新机器和已有 Agent 的机器。
+
 ### 方式一：Docker（推荐）
 
 **前置条件**：已安装 [Docker](https://docs.docker.com/get-docker/)。
 
-镜像发布在 **Docker Hub** 和 **GitHub Container Registry**。若想用**最新**镜像（避免用到本地缓存的旧镜像），在创建容器前请先执行一次 `docker pull`。使用 `:latest` 表示当前最新版本；如需固定版本，可使用 [Releases](https://github.com/massif-01/ChatRaw/releases) 中的版本号标签（如 `v2.1.2`）。
+镜像发布在 **Docker Hub**。拉取 `massif01/chatraw:latest` 获取最新版，或使用 `massif01/chatraw:2.3` 固定在本版。
 
 **支持平台**：linux/amd64（Intel/AMD）、linux/arm64（Apple Silicon、树莓派 4/5）。
 
@@ -619,15 +641,15 @@ python main.py
 | 来源 | 拉取命令 |
 |------|----------|
 | Docker Hub | `docker pull massif01/chatraw:latest` |
-| GitHub Container Registry | `docker pull ghcr.io/massif-01/chatraw:latest` |
-
-需要固定版本时使用相同标签格式，例如 `massif01/chatraw:v2.1.2`，版本号见 [Releases](https://github.com/massif-01/ChatRaw/releases)。
+| Docker Hub (2.3) | `docker pull massif01/chatraw:2.3` |
 
 ---
 
 ## 更新指南
 
 ### Docker（docker run）
+
+已部署宿主 Runner 的用户请按[更新与备份说明](deploy/REFERENCE.md#maintenance)操作。
 
 ```bash
 # 停止并删除当前容器
@@ -699,12 +721,12 @@ python main.py
 3. 点击任意插件的**安装**按钮
 4. 安装后，在**已安装**标签页中启用插件
 
-对于**上下文压缩**插件，启用插件后模型请求会使用压缩后的历史摘要。`autoCompress` 会自动创建或更新摘要；
+在普通聊天中，启用**上下文压缩**插件后，模型请求会使用压缩后的历史摘要。`autoCompress` 会自动创建或更新摘要；
 关闭自动压缩后，已有摘要仍会继续使用，未创建摘要时则走完整历史，也可以点击输入框工具栏的压缩按钮手动压缩。
 
-### 使用 Agent Skills
+### 在普通聊天中使用 Skills
 
-安装并启用 **Skill 管理器**后即可管理 Agent Skills。你可以从 GitHub 仓库 URL、`owner/repo`
+安装并启用 **Skill 管理器**后即可管理普通聊天使用的 Skills。你可以从 GitHub 仓库 URL、`owner/repo`
 简写、raw/blob `SKILL.md`、公开 tree URL 安装，也可以上传本地 `SKILL.md` / `.zip` 包。GitHub
 仓库根目录在能唯一解析出一个 skill 时可直接安装，例如根目录有 `SKILL.md`，或只有一个
 `skills/<name>/SKILL.md`；包含多个 skills 的仓库需要提供具体 tree URL。

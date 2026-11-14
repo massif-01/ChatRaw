@@ -1,0 +1,49 @@
+{
+  "no_native_process_or_model_started": true,
+  "cases": [
+    {
+      "supplied": {},
+      "sdk_patches": [],
+      "sdk_patches_type": "tuple",
+      "launch_suffix": [
+        "--profile",
+        "sdk"
+      ],
+      "started": false
+    },
+    {
+      "supplied": {
+        "patches": []
+      },
+      "sdk_patches": [],
+      "sdk_patches_type": "tuple",
+      "launch_suffix": [
+        "--profile",
+        "sdk"
+      ],
+      "started": false
+    },
+    {
+      "supplied": {
+        "patches": [
+          "/etc/chatraw-runner/model-v1.patch.yml",
+          "/etc/chatraw-runner/additional-v1.patch.yml"
+        ]
+      },
+      "sdk_patches": [
+        "/etc/chatraw-runner/model-v1.patch.yml",
+        "/etc/chatraw-runner/additional-v1.patch.yml"
+      ],
+      "sdk_patches_type": "tuple",
+      "launch_suffix": [
+        "--profile",
+        "sdk",
+        "--patch",
+        "/private/etc/chatraw-runner/model-v1.patch.yml",
+        "--patch",
+        "/private/etc/chatraw-runner/additional-v1.patch.yml"
+      ],
+      "started": false
+    }
+  ]
+}

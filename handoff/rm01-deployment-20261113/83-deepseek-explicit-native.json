@@ -1,0 +1,53 @@
+{
+  "session": {
+    "id": "404a7aeddfa94bc695947347b9f87625",
+    "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-d88d5df3d30a4ec8a3efb48f7ef21edc\",\"session_id\":\"session-d88d5df3d30a4ec8a3efb48f7ef21edc\"},\"session_id\":\"404a7aeddfa94bc695947347b9f87625\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/404a7aeddfa94bc695947347b9f87625\"}",
+    "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\",\"patches\":[\"/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml\"]}"
+  },
+  "events": [
+    {
+      "type": "assistant/message",
+      "seq": 16,
+      "time": 1794584404426,
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"tool_name\":\"bash\",\"params\":{\"command\":\"printf %s A_SAFE_d357ca5f252e > deny-e069377f13614bb8b2aa3a67d3b2f4f5.txt\",\"description\":\"Write this one acceptance marker\",\"justification\":\"This fixed harmless one-file acceptance command needs one-time permission because the host sandbox backend is unavailable.\",\"sandbox_permissions\":\"danger-full-access\"}}"
+          }
+        ],
+        "source": {
+          "kind": "model",
+          "provider": "deepseek-official",
+          "model": "RM-01 VLM",
+          "replayState": {
+            "response": {
+              "kind": "deepseek-messages",
+              "version": 1,
+              "model": "RM-01 VLM"
+            },
+            "blocks": [
+              {
+                "type": "text"
+              }
+            ]
+          }
+        },
+        "id": "b7c167fb-b54c-480a-a475-28578f440c21"
+      }
+    },
+    {
+      "type": "turn/end",
+      "seq": 18,
+      "time": 1794584404428,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    }
+  ],
+  "tool_call_count": 0
+}

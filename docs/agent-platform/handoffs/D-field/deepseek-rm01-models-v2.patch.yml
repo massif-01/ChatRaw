@@ -1,0 +1,18 @@
+- id: llm-pi-ai
+  config:
+    providers:
+      rm01-qwen:
+        api: openai-completions
+        baseURL: http://10.10.99.98:58000/v1
+        apiKeyEnv: DEEPSEEK_API_KEY
+        compat:
+          thinkingFormat: chat-template
+          chatTemplateKwargs:
+            enable_thinking: { $var: thinking.enabled }
+          maxTokensField: max_tokens
+        models:
+          - id: RM-01 VLM
+            input: [text, image]
+            contextWindow: 262144
+            maxTokens: 8192
+            reasoningEfforts: { off: null, high: high }

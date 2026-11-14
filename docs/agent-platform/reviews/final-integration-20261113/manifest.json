@@ -1,0 +1,78 @@
+{
+  "date": "2026-11-13",
+  "runtime_source": "adeb279",
+  "kind": "local tests; no field model requests",
+  "passed": 169,
+  "skipped": 29,
+  "cases": [
+    {
+      "module": "backend.test_agent_gateway",
+      "tests": 10,
+      "skipped": 0,
+      "passed": 10,
+      "interpreter": "A Python 3.12.4 venv"
+    },
+    {
+      "module": "backend.test_agent_migration",
+      "tests": 1,
+      "skipped": 0,
+      "passed": 1,
+      "interpreter": "root Python 3.12.4 venv"
+    },
+    {
+      "module": "backend.test_agent_titles",
+      "tests": 4,
+      "skipped": 0,
+      "passed": 4,
+      "interpreter": "root Python 3.12.4 venv"
+    },
+    {
+      "module": "backend.test_context_compaction",
+      "tests": 20,
+      "skipped": 0,
+      "passed": 20,
+      "interpreter": "root Python 3.12.4 venv"
+    },
+    {
+      "module": "backend.test_skills",
+      "tests": 57,
+      "skipped": 0,
+      "passed": 57,
+      "interpreter": "root Python 3.12.4 venv"
+    },
+    {
+      "module": "backend.test_http_session_tls",
+      "tests": 4,
+      "skipped": 0,
+      "passed": 4,
+      "interpreter": "root Python 3.12.4 venv"
+    },
+    {
+      "module": "backend.test_fonts_route",
+      "tests": 2,
+      "skipped": 0,
+      "passed": 2,
+      "interpreter": "root Python 3.12.4 venv"
+    },
+    {
+      "module": "backend.test_bundled_plugins",
+      "tests": 4,
+      "skipped": 0,
+      "passed": 4,
+      "interpreter": "root Python 3.12.4 venv"
+    },
+    {
+      "module": "agent_runner.tests discovery",
+      "tests": 96,
+      "skipped": 29,
+      "passed": 67,
+      "interpreter": "root Python 3.12.4 venv"
+    }
+  ],
+  "environment_notes": [
+    "Initial root environment lacked jsonschema; installed declared Runner requirements before the passing run.",
+    "Gateway initially could not import httpx in root environment; reran with existing A verification venv. No product failure was masked."
+  ],
+  "ci": "workflow parsed and wiring checked locally; GitHub Actions not run/pushed",
+  "frontend": "npm run build and vendor:check passed; browser evidence maintained by E"
+}

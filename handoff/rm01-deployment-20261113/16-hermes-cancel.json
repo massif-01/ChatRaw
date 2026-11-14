@@ -1,0 +1,36 @@
+{
+  "agent": "hermes",
+  "submitted": {
+    "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+    "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+    "status": "queued",
+    "last_seq": 1,
+    "run_id": "f16625359e924af293bb4dad54b470fc",
+    "interactions": []
+  },
+  "first_content_observed": true,
+  "before_cancel": {
+    "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+    "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+    "status": "running",
+    "last_seq": 5,
+    "run_id": "f16625359e924af293bb4dad54b470fc",
+    "interactions": []
+  },
+  "elapsed_before_cancel": 3.68,
+  "cancel_receipt": {
+    "run_id": "f16625359e924af293bb4dad54b470fc",
+    "status": "stopping"
+  },
+  "after_cancel": {
+    "chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc",
+    "session_id": "4e7b1a3095494a64a9d61f5f2732712a",
+    "status": "cancelled",
+    "last_seq": 10,
+    "run_id": "f16625359e924af293bb4dad54b470fc",
+    "interactions": [],
+    "final_text": "1"
+  },
+  "event_reader_errors": [],
+  "elapsed": 4.72
+}

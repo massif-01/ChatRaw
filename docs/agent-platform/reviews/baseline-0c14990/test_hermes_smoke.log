@@ -1,0 +1,16 @@
+test_approval_route_accepts_opaque_run_id_path_segments (backend.test_hermes_smoke.HermesSmokeTests.test_approval_route_accepts_opaque_run_id_path_segments) ... ok
+test_loopback_base_url_works_for_remote_browser_origin (backend.test_hermes_smoke.HermesSmokeTests.test_loopback_base_url_works_for_remote_browser_origin) ... ok
+test_real_approval_bridge_rejects_invalid_requests_without_forwarding (backend.test_hermes_smoke.HermesSmokeTests.test_real_approval_bridge_rejects_invalid_requests_without_forwarding) ... ok
+test_real_http_sse_approval_deny_blocks_without_saving_assistant (backend.test_hermes_smoke.HermesSmokeTests.test_real_http_sse_approval_deny_blocks_without_saving_assistant) ... ok
+test_real_http_sse_approval_once_completes_and_saves_final_content (backend.test_hermes_smoke.HermesSmokeTests.test_real_http_sse_approval_once_completes_and_saves_final_content) ... ok
+test_real_http_sse_disconnect_stops_and_stale_approval_does_not_forward (backend.test_hermes_smoke.HermesSmokeTests.test_real_http_sse_disconnect_stops_and_stale_approval_does_not_forward) ... ok
+test_real_http_sse_non_stream_approval_requires_stream_output_and_stops (backend.test_hermes_smoke.HermesSmokeTests.test_real_http_sse_non_stream_approval_requires_stream_output_and_stops) ... ok
+test_real_http_sse_session_approval_allows_later_matching_command (backend.test_hermes_smoke.HermesSmokeTests.test_real_http_sse_session_approval_allows_later_matching_command) ... ok
+test_real_http_sse_snapshot_final_output_does_not_duplicate (backend.test_hermes_smoke.HermesSmokeTests.test_real_http_sse_snapshot_final_output_does_not_duplicate) ... ok
+test_real_http_sse_stream_close_stops_quiet_run (backend.test_hermes_smoke.HermesSmokeTests.test_real_http_sse_stream_close_stops_quiet_run) ... ok
+test_real_http_sse_terminal_stopped_event_does_not_trigger_extra_stop_request (backend.test_hermes_smoke.HermesSmokeTests.test_real_http_sse_terminal_stopped_event_does_not_trigger_extra_stop_request) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.289s
+
+OK

@@ -15,8 +15,8 @@ COPY backend/requirements.txt .
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 # Copy application
-COPY backend/main.py .
-COPY backend/static ./static
+COPY backend/*.py ./backend/
+COPY backend/static ./backend/static
 COPY Plugins ./Plugins
 
 # Create data directory
@@ -28,4 +28,4 @@ ENV DATA_DIR=/app/data
 
 EXPOSE 51111
 
-CMD ["python", "main.py"]
+CMD ["python", "-m", "backend.main"]

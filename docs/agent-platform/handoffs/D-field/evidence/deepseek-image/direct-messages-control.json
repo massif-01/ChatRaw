@@ -1,0 +1,8 @@
+{
+  "same_png_sha256": "3b350da22d669fda1ce785398fe10a5441c3a855d530e1a20e0a411aff4d4da1",
+  "expected": "525877",
+  "answer": "525877",
+  "matched": true,
+  "stop_reason": "end_turn",
+  "model": "RM-01 VLM"
+}

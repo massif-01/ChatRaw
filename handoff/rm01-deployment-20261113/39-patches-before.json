@@ -1,0 +1,37 @@
+{
+  "nonterminal": [
+    {
+      "id": "e05b8525931c4d1585cae79770c7be3d",
+      "status": "unknown",
+      "error": "{\"code\":\"codex_tool_stop_unverified\",\"message\":\"Codex ended the turn, but an owned tool could not be confirmed stopped.\",\"retryable\":false}"
+    }
+  ],
+  "deepseek_sessions": [
+    {
+      "id": "14d1c7a3dbda4f3fad1a20a4b35d523f",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-2c63be8b22744b3cb0c81413a51f6aad\",\"session_id\":\"session-2c63be8b22744b3cb0c81413a51f6aad\"},\"session_id\":\"14d1c7a3dbda4f3fad1a20a4b35d523f\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/14d1c7a3dbda4f3fad1a20a4b35d523f\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "f6523c63113f450db6cfb2a394166bf7",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-79f17d14b00249c18b580614fad63c37\",\"session_id\":\"session-79f17d14b00249c18b580614fad63c37\"},\"session_id\":\"f6523c63113f450db6cfb2a394166bf7\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/f6523c63113f450db6cfb2a394166bf7\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "27110c5454ed4d4baf77b9680e133b4f",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-c4c984f5bcfb43e5968f6b3a7b313cf8\",\"session_id\":\"session-c4c984f5bcfb43e5968f6b3a7b313cf8\"},\"session_id\":\"27110c5454ed4d4baf77b9680e133b4f\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/27110c5454ed4d4baf77b9680e133b4f\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "6b359b8f76d94d06bc46868570909d22",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-1625a242811e4e3abbc5166a0556e39b\",\"session_id\":\"session-1625a242811e4e3abbc5166a0556e39b\"},\"session_id\":\"6b359b8f76d94d06bc46868570909d22\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/6b359b8f76d94d06bc46868570909d22\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    },
+    {
+      "id": "2e9396c599fe41a296c74c890fa2f058",
+      "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-9e6968fe8e2e418faceaf140327e706a\",\"session_id\":\"session-9e6968fe8e2e418faceaf140327e706a\"},\"session_id\":\"2e9396c599fe41a296c74c890fa2f058\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/2e9396c599fe41a296c74c890fa2f058\"}",
+      "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\"}"
+    }
+  ],
+  "codex_sha256": "a7d89c869f46a83d2f30fa88a2fd80a7b346773f1ae0776139edd88c9f569b2b"
+}

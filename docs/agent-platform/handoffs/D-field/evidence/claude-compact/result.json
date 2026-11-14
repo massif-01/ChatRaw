@@ -1,0 +1,166 @@
+{
+  "agent": "claude",
+  "case": "compact",
+  "steps": [
+    {
+      "label": "seed",
+      "client_request_id": "0d3f28ffc37d415d9a68706648e99bdc",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+        "session_id": "1e0072458ccd4be69b28326e72f2871a",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "d56be4f7d526485fb93a5ca286812fd4",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+        "session_id": "1e0072458ccd4be69b28326e72f2871a",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "d56be4f7d526485fb93a5ca286812fd4",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "history-1",
+      "client_request_id": "5935eda7d5204a9d953dce24aeae02a1",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+        "session_id": "1e0072458ccd4be69b28326e72f2871a",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "fd9fdc088c0841c4afbebbeef1fe9e34",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+        "session_id": "1e0072458ccd4be69b28326e72f2871a",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "fd9fdc088c0841c4afbebbeef1fe9e34",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "history-2",
+      "client_request_id": "e913a5081731468887662ae0d3aaef2a",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+        "session_id": "1e0072458ccd4be69b28326e72f2871a",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "8526c1acf1d2486693d25135fff8c16e",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+        "session_id": "1e0072458ccd4be69b28326e72f2871a",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "8526c1acf1d2486693d25135fff8c16e",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "compact",
+      "client_request_id": "c558cae23fb14c17be92e3a45324b83e",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+        "session_id": "1e0072458ccd4be69b28326e72f2871a",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "3df8cb9182cd4f84ba64b7f6c1f305cd",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+        "session_id": "1e0072458ccd4be69b28326e72f2871a",
+        "status": "completed",
+        "last_seq": 5,
+        "run_id": "3df8cb9182cd4f84ba64b7f6c1f305cd",
+        "interactions": [],
+        "final_text": ""
+      }
+    },
+    {
+      "label": "continuity",
+      "client_request_id": "fb42385738204747bd23c8ba298e9b07",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+        "session_id": "1e0072458ccd4be69b28326e72f2871a",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "4e1d2b4fa30544cd8a62aa8f8f65044c",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+        "session_id": "1e0072458ccd4be69b28326e72f2871a",
+        "status": "completed",
+        "last_seq": 9,
+        "run_id": "4e1d2b4fa30544cd8a62aa8f8f65044c",
+        "interactions": [],
+        "final_text": "D-9A303258A7"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "0.2.180 / Claude Code 2.1.321",
+    "reason": "Claude API key is configured. Authentication and model request untested.",
+    "capabilities": {
+      "streaming_text": true,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "native",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "max_image_bytes": 5242880,
+        "max_images": 4,
+        "authentication": "Anthropic API key configured on the Runner host.",
+        "approvals": "Native permission callbacks offer allow once or deny."
+      }
+    }
+  },
+  "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+  "binding": {
+    "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+    "session_id": "1e0072458ccd4be69b28326e72f2871a",
+    "agent_id": "claude",
+    "workspace": {
+      "id": "1e0072458ccd4be69b28326e72f2871a",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "continuity": {
+    "expected_code": "D-9A303258A7",
+    "same_chatraw_session": true,
+    "code_matched": true
+  },
+  "outcome": "native_evidence_pending"
+}

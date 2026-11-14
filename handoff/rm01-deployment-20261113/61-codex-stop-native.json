@@ -1,0 +1,89 @@
+{
+  "path": "/var/lib/chatraw-runner/codex-home/sessions/2026/11/13/rollout-2026-11-13T14-50-20-01a1d563-5904-7820-a73a-79d127bb0584.jsonl",
+  "binding": {
+    "agent_id": "codex",
+    "native": {
+      "run_id": "26c25ba7d3604bd1baa6b6c2f0bda1d7",
+      "stop_requested": true,
+      "thread_id": "01a1d563-5904-7820-a73a-79d127bb0584",
+      "turn_id": "01a1d563-592f-79b3-93e6-1bb3567c4ba6"
+    },
+    "session_id": "88053d718e83416db643f710cb2c63af",
+    "workspace": "/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af"
+  },
+  "events": [
+    {
+      "timestamp": "2026-11-13T14:50:41.419Z",
+      "ordinal": 8,
+      "type": "response_item",
+      "payload": {
+        "type": "function_call",
+        "id": "aff8dd619e356ddc",
+        "name": "exec_command",
+        "arguments": "{\"cmd\": \"test \\\"$(pwd -P)\\\" = '/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af' && set -C && printf '%s\\\\n' 'a088ad3f5ddf45edbb7830e09dabb7ba' > '/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af/d-a088ad3f5ddf45edbb7830e09dabb7ba.started' && sleep 30 && printf '%s\\\\n' 'a088ad3f5ddf45edbb7830e09dabb7ba' > '/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af/d-a088ad3f5ddf45edbb7830e09dabb7ba.late'\", \"yield_time_ms\": 30000}",
+        "call_id": "call_86e62d9f2d4532a1",
+        "internal_chat_message_metadata_passthrough": {
+          "turn_id": "01a1d563-592f-79b3-93e6-1bb3567c4ba6"
+        }
+      }
+    },
+    {
+      "timestamp": "2026-11-13T14:50:41.494Z",
+      "ordinal": 10,
+      "type": "response_item",
+      "payload": {
+        "type": "function_call_output",
+        "id": "fco_01a1d563-abd6-7e83-b76b-b7505725ea1f",
+        "call_id": "call_86e62d9f2d4532a1",
+        "output": "Chunk ID: c1b986\nWall time: 0.0000 seconds\nProcess exited with code 1\nOriginal token count: 16\nOutput:\nbwrap: loopback: Failed RTM_NEWADDR: Operation not permitted\n",
+        "internal_chat_message_metadata_passthrough": {
+          "turn_id": "01a1d563-592f-79b3-93e6-1bb3567c4ba6",
+          "create_time": 1794581441.4946551
+        }
+      }
+    },
+    {
+      "timestamp": "2026-11-13T14:50:59.944Z",
+      "ordinal": 12,
+      "type": "response_item",
+      "payload": {
+        "type": "function_call",
+        "id": "9a5104d19cfcfb6f",
+        "name": "exec_command",
+        "arguments": "{\"cmd\": \"test \\\"$(pwd -P)\\\" = '/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af' && set -C && printf '%s\\\\n' 'a088ad3f5ddf45edbb7830e09dabb7ba' > '/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af/d-a088ad3f5ddf45edbb7830e09dabb7ba.started' && sleep 30 && printf '%s\\\\n' 'a088ad3f5ddf45edbb7830e09dabb7ba' > '/var/lib/chatraw-runner/workspaces/88053d718e83416db643f710cb2c63af/d-a088ad3f5ddf45edbb7830e09dabb7ba.late'\", \"justification\": \"Run the D\u9a8c\u6536 stop-check command (writes two marker files with a 30s sleep) in your managed workspace. Allow it to run unsandboxed?\", \"sandbox_permissions\": \"require_escalated\", \"yield_time_ms\": 30000}",
+        "call_id": "call_b0993e3c45d485a0",
+        "internal_chat_message_metadata_passthrough": {
+          "turn_id": "01a1d563-592f-79b3-93e6-1bb3567c4ba6"
+        }
+      }
+    },
+    {
+      "timestamp": "2026-11-13T14:51:02.210Z",
+      "ordinal": 14,
+      "type": "response_item",
+      "payload": {
+        "type": "function_call_output",
+        "id": "fco_01a1d563-fcc2-7a91-8c14-e4091ed03fbf",
+        "call_id": "call_b0993e3c45d485a0",
+        "output": "Wall time: 2.3 seconds\naborted by user",
+        "internal_chat_message_metadata_passthrough": {
+          "turn_id": "01a1d563-592f-79b3-93e6-1bb3567c4ba6",
+          "create_time": 1794581462.2109027
+        }
+      }
+    },
+    {
+      "timestamp": "2026-11-13T14:51:02.218Z",
+      "ordinal": 17,
+      "type": "event_msg",
+      "payload": {
+        "type": "turn_aborted",
+        "turn_id": "01a1d563-592f-79b3-93e6-1bb3567c4ba6",
+        "reason": "interrupted",
+        "started_at": 1794581420,
+        "completed_at": 1794581462,
+        "duration_ms": 41879
+      }
+    }
+  ]
+}

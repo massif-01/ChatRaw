@@ -1,41 +1,33 @@
 // JustChat - Minimalist AI Chat Application
 
-// Lazy load highlight.js for better performance
-let hljsLoaded = false;
-let hljsLoading = false;
+// The browser build already contains Python, JavaScript, Bash, JSON and the
+// other common grammars. Share the same load with Markdown plugins.
+let highlightReady;
 
-async function loadHighlightJS() {
-    if (hljsLoaded || hljsLoading) return;
-    hljsLoading = true;
-    
-    try {
-        // Load CSS
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css';
-        document.head.appendChild(link);
-        
-        // Load core
-        await loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js');
-        
-        // Load common languages in parallel
-        await Promise.all([
-            loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/python.min.js'),
-            loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/javascript.min.js'),
-            loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/bash.min.js'),
-            loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/json.min.js')
-        ]);
-        
-        hljsLoaded = true;
-        
-        // Re-highlight any existing code blocks
-        document.querySelectorAll('pre code:not(.hljs)').forEach(block => {
-            hljs.highlightElement(block);
-        });
-    } catch (e) {
-        console.warn('Failed to load highlight.js:', e);
+function loadHighlightJS() {
+    if (!highlightReady) {
+        const base = 'vendor/highlight/11.9.0';
+        const theme = document.createElement('link');
+        theme.rel = 'stylesheet';
+        theme.href = `${base}/github-dark.min.css`;
+        document.head.appendChild(theme);
+
+        highlightReady = loadScript(`${base}/highlight.min.js`)
+            .then(() => {
+                document.querySelectorAll('.message-content pre > code:not(.hljs)').forEach(block => {
+                    const language = block.className.match(/\blanguage-(\S+)/)?.[1];
+                    if (language && window.hljs.getLanguage(language)) {
+                        window.hljs.highlightElement(block);
+                    }
+                });
+            })
+            .catch(error => {
+                theme.remove();
+                highlightReady = undefined;
+                console.warn('Failed to load highlight.js:', error);
+            });
     }
-    hljsLoading = false;
+    return highlightReady;
 }
 
 function loadScript(src) {
@@ -182,34 +174,6 @@ const i18n = {
         enterApiKey: 'Enter API Key',
         apiKeySet: 'API Key is already set. Clear and enter new key to change.',
         onlyZipSupported: 'Only .zip files are supported',
-        hermesRun: 'Hermes Run',
-        hermesRunStatusStarted: 'Started',
-        hermesRunStatusRunning: 'Running',
-        hermesRunStatusPendingApproval: 'Pending approval',
-        hermesRunStatusCompleted: 'Completed',
-        hermesRunStatusFailed: 'Failed',
-        hermesRunStatusCancelled: 'Cancelled',
-        hermesRunEventRunStarted: 'Run started',
-        hermesRunEventToolStarted: 'Tool started',
-        hermesRunEventToolCompleted: 'Tool completed',
-        hermesRunEventReasoning: 'Reasoning available',
-        hermesRunEventApprovalRequest: 'Approval required',
-        hermesRunEventApprovalResponded: 'Approval responded',
-        hermesRunEventRunCompleted: 'Run completed',
-        hermesRunEventRunFailed: 'Run failed',
-        hermesRunEventRunCancelled: 'Run cancelled',
-        hermesRunTool: 'Tool',
-        hermesRunPreview: 'Preview',
-        hermesRunCommand: 'Command',
-        hermesRunDescription: 'Description',
-        hermesRunPatterns: 'Patterns',
-        hermesRunDuration: 'Duration',
-        hermesRunChoice: 'Choice',
-        hermesApprovalOnce: 'Allow once',
-        hermesApprovalSession: 'Allow for session',
-        hermesApprovalDeny: 'Deny',
-        hermesApprovalSubmitting: 'Submitting...',
-        hermesApprovalError: 'Approval failed',
         close: 'Close'
     },
     zh: {
@@ -344,61 +308,29 @@ const i18n = {
         enterApiKey: '输入 API Key',
         apiKeySet: 'API Key 已设置。清空后输入新密钥可更改。',
         onlyZipSupported: '仅支持 .zip 文件',
-        hermesRun: 'Hermes Run',
-        hermesRunStatusStarted: '已开始',
-        hermesRunStatusRunning: '运行中',
-        hermesRunStatusPendingApproval: '等待审批',
-        hermesRunStatusCompleted: '已完成',
-        hermesRunStatusFailed: '失败',
-        hermesRunStatusCancelled: '已取消',
-        hermesRunEventRunStarted: 'Run 已开始',
-        hermesRunEventToolStarted: '工具已启动',
-        hermesRunEventToolCompleted: '工具已完成',
-        hermesRunEventReasoning: '推理可用',
-        hermesRunEventApprovalRequest: '需要审批',
-        hermesRunEventApprovalResponded: '审批已响应',
-        hermesRunEventRunCompleted: 'Run 已完成',
-        hermesRunEventRunFailed: 'Run 失败',
-        hermesRunEventRunCancelled: 'Run 已取消',
-        hermesRunTool: '工具',
-        hermesRunPreview: '预览',
-        hermesRunCommand: '命令',
-        hermesRunDescription: '说明',
-        hermesRunPatterns: '规则',
-        hermesRunDuration: '耗时',
-        hermesRunChoice: '选择',
-        hermesApprovalOnce: '允许一次',
-        hermesApprovalSession: '本会话允许',
-        hermesApprovalDeny: '拒绝',
-        hermesApprovalSubmitting: '提交中...',
-        hermesApprovalError: '审批失败',
         close: '关闭'
     }
 };
 
-// Configure marked.js with lazy-loaded highlight.js
-marked.setOptions({
-    highlight: function(code, lang) {
-        // Trigger lazy load of highlight.js
-        if (!hljsLoaded && !hljsLoading) {
-            loadHighlightJS();
-        }
-        
-        // If hljs is available, use it
-        if (typeof hljs !== 'undefined') {
-            if (lang && hljs.getLanguage(lang)) {
-                try {
-                    return hljs.highlight(code, { language: lang }).value;
-                } catch (e) {}
-            }
-            return hljs.highlightAuto(code).value;
-        }
-        
-        // Return escaped code if hljs not loaded yet
-        return code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    },
+// Marked 9 renders fenced code through the renderer extension.
+const defaultCodeRenderer = new marked.Renderer();
+marked.use({
     breaks: true,
-    gfm: true
+    gfm: true,
+    renderer: {
+        code(code, info, escaped) {
+            const language = (info || '').match(/^\S+/)?.[0];
+            if (!language || escaped) return false;
+            if (!window.hljs) {
+                loadHighlightJS();
+                return false;
+            }
+            if (!window.hljs.getLanguage(language)) return false;
+            const html = window.hljs.highlight(code, { language }).value;
+            return defaultCodeRenderer.code(html, info, true)
+                .replace('<code class="', '<code class="hljs ');
+        }
+    }
 });
 
 const MOBILE_VIEW_MEDIA_QUERY = '(max-width: 768px), (max-height: 500px) and (max-width: 900px) and (pointer: coarse)';
@@ -412,11 +344,6 @@ const COMPOSER_COMPLETION_LIMIT = 20;
 const SKILL_CATALOG_CACHE_MS = 30000;
 const MAX_ACTIVE_SKILLS_PER_REQUEST = 5;
 const DEFAULT_CHAT_ENDPOINT = '/api/chat';
-const CHAT_ROUTE_ENDPOINTS = Object.freeze({
-    hermes: '/api/hermes/chat'
-});
-const ALLOWED_CHAT_ENDPOINTS = new Set([DEFAULT_CHAT_ENDPOINT, ...Object.values(CHAT_ROUTE_ENDPOINTS)]);
-const ROUTE_MESSAGE_RESULT_KEYS = new Set(['success', 'route']);
 const RESERVED_SLASH_COMMANDS = new Set(['plugins', 'settings', 'help', 'clear', 'compact', 'api']);
 const COMMON_PATH_ROOTS = new Set(['tmp', 'var', 'usr', 'etc', 'home', 'users', 'opt', 'private', 'volumes', 'mnt']);
 const SKILL_NAME_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
@@ -425,7 +352,7 @@ function app() {
     const initialDesktopCollapsed = localStorage.getItem('chatraw_sidebar_collapsed') === '1';
     const initialIsMobile = isMobileViewport();
     
-    return {
+    const core = {
         // Language
         lang: localStorage.getItem('justchat_lang') || 'en',
         
@@ -434,6 +361,9 @@ function app() {
         desktopSidebarCollapsed: initialDesktopCollapsed,
         sidebarCollapsed: initialIsMobile ? true : initialDesktopCollapsed,
         _resizeRaf: null,
+        _messageLoad: 0,
+        _toastTimer: null,
+        followOutput: true,
         showSettings: false,
         settingsTab: 'models',
         showSystemPrompt: false,
@@ -507,7 +437,6 @@ function app() {
             // Message lifecycle
             send_intercept: [],      // Pre-send interceptors that can fully handle a message
             before_send: [],         // Before sending message to AI
-            route_message: [],        // Select a host-approved chat route
             after_receive: [],       // After receiving AI response
             
             // UI extensions
@@ -604,23 +533,50 @@ function app() {
             // Note: favicon is updated by loadLogo() which is called from loadSettings()
             // Initialize plugin system
             this.initPluginSystem();
+            this.initAgentUI();
+            const selected = localStorage.getItem('chatraw-selected-chat');
+            if (!this.currentChatId && this.chats.some(chat => chat.id === selected)) {
+                await this.selectChat(selected);
+            }
         },
         
         // Responsive layout sync (mobile drawer + desktop collapse)
         initResponsiveLayout() {
-            this.syncSidebarForViewport(true);
-            const onViewportChange = () => {
-                if (this._resizeRaf) {
-                    cancelAnimationFrame(this._resizeRaf);
+            const viewport = window.visualViewport;
+            const update = initial => {
+                this.syncSidebarForViewport(initial);
+                const root = document.documentElement;
+                if (!viewport || !this.isMobileView || viewport.scale > 1.05) {
+                    root.style.removeProperty('--visual-height');
+                    root.style.removeProperty('--visual-top');
+                    return;
                 }
+                root.style.setProperty('--visual-height', viewport.height + 'px');
+                root.style.setProperty('--visual-top', viewport.offsetTop + 'px');
+                const focused = document.activeElement;
+                if (focused?.matches('textarea, input, select')) {
+                    const scrollArea = focused.closest('.agent-dialog-body, .plugin-settings-content, .settings-scroll-area');
+                    if (scrollArea) {
+                        const bounds = scrollArea.getBoundingClientRect();
+                        const control = focused.getBoundingClientRect();
+                        if (control.bottom > bounds.bottom) scrollArea.scrollTop += control.bottom - bounds.bottom + 8;
+                        else if (control.top < bounds.top) scrollArea.scrollTop -= bounds.top - control.top + 8;
+                    }
+                }
+            };
+            const onViewportChange = () => {
+                if (this._resizeRaf) cancelAnimationFrame(this._resizeRaf);
                 this._resizeRaf = requestAnimationFrame(() => {
-                    this.syncSidebarForViewport(false);
+                    update(false);
+                    this.fitAgentMenu();
                 });
             };
+            update(true);
             window.addEventListener('resize', onViewportChange, { passive: true });
-            window.addEventListener('orientationchange', onViewportChange, { passive: true });
+            viewport?.addEventListener('resize', onViewportChange, { passive: true });
+            viewport?.addEventListener('scroll', onViewportChange, { passive: true });
         },
-        
+
         syncSidebarForViewport(isInitial) {
             const isMobileNow = isMobileViewport();
             const switchedToMobile = !this.isMobileView && isMobileNow;
@@ -758,102 +714,86 @@ function app() {
             }
         },
         
-        // Create new chat
         async createNewChat() {
-            // Stop any ongoing generation first
-            if (this.isGenerating) {
-                this.stopGeneration();
-            }
-            
             try {
-                const res = await fetch('/api/chats', { method: 'POST' });
-                if (res.ok) {
-                    const chat = await res.json();
-                    this.chats.unshift(chat);
-                    if (this.chats.length > 10) {
-                        this.chats.pop();
-                    }
-                    this.selectChat(chat.id);
-                    this.closeSidebarOnMobile();
-                }
-            } catch (e) {
-                this.showToast(this.t('createChatFailed'), 'error');
+                const response = await fetch('/api/chats', { method: 'POST' });
+                if (!response.ok) throw new Error(this.t('createChatFailed'));
+                const chat = await response.json();
+                this.chats.unshift(chat);
+                await this.selectChat(chat.id);
+            } catch (error) {
+                this.showToast(error.message, 'error');
             }
         },
-        
-        // Select chat
-        async selectChat(chatId) {
-            if (this.currentChatId === chatId) {
-                this.closeSidebarOnMobile();
+
+        async selectChat(chatId, reload = false) {
+            this.closeSidebarOnMobile();
+            if (this.currentChatId === chatId && !reload) return;
+            if (this.isGenerating) this.stopGeneration();
+            this.rememberAgentDraft();
+            this.currentChatId = chatId;
+            const nav = this.changeAgentView(chatId);
+            this.messages = [];
+            this.followOutput = true;
+            if (!chatId) {
+                localStorage.removeItem('chatraw-selected-chat');
                 return;
             }
-            if (this.isGenerating) {
-                this.stopGeneration();
-            }
-            this.currentChatId = chatId;
-            await this.loadMessages(chatId);
-            this.closeSidebarOnMobile();
+            localStorage.setItem('chatraw-selected-chat', chatId);
+            await Promise.all([this.loadMessages(chatId), this.loadAgentView(chatId, nav)]);
+            this.resumeAgentView(nav);
         },
-        
-        // Load messages
+
         async loadMessages(chatId) {
+            const load = ++this._messageLoad;
             try {
-                const res = await fetch(`/api/chats/${chatId}/messages`);
-                if (res.ok) {
-                    this.messages = await res.json() || [];
-                    this.$nextTick(() => this.scrollToBottom());
-                }
-            } catch (e) {
-                console.error('Failed to load messages:', e);
+                const res = await fetch('/api/chats/' + encodeURIComponent(chatId) + '/messages');
+                if (!res.ok) throw new Error(res.statusText);
+                const messages = await res.json();
+                if (load !== this._messageLoad || chatId !== this.currentChatId) return;
+                this.messages = messages || [];
+                this.$nextTick(() => this.scrollToBottom());
+            } catch (error) {
+                console.error('Failed to load messages:', error);
             }
         },
-        
-        // Delete chat
-        async deleteChat(chatId) {
+
+        async deleteChat(chatId, quiet = false, failures = null) {
             try {
-                if (this.currentChatId === chatId && this.isGenerating) {
-                    this.stopGeneration();
+                if (this.currentChatId === chatId && this.isGenerating) this.stopGeneration();
+                const response = await fetch('/api/chats/' + encodeURIComponent(chatId), { method: 'DELETE' });
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    throw new Error(this.chatDeleteErrorMessage(data, response.status));
                 }
-                await fetch(`/api/chats/${chatId}`, { method: 'DELETE' });
-                this.chats = this.chats.filter(c => c.id !== chatId);
-                if (this.currentChatId === chatId) {
-                    this.currentChatId = null;
-                    this.messages = [];
-                }
-            } catch (e) {
-                this.showToast(this.t('deleteFailed'), 'error');
+                this.chats = this.chats.filter(chat => chat.id !== chatId);
+                if (this.currentChatId === chatId) await this.selectChat(null);
+                this.forgetAgentDraft(chatId);
+                return true;
+            } catch (error) {
+                if (failures) failures.push(error.message);
+                if (!quiet) this.showToast(error.message, 'error');
+                return false;
             }
         },
-        
-        // Clear all chats
+
         async clearAllChats() {
             if (!confirm(this.t('confirmClearAll'))) return;
-            if (this.isGenerating) {
-                this.stopGeneration();
+            const failures = [];
+            for (const chat of [...this.chats]) {
+                await this.deleteChat(chat.id, true, failures);
             }
-            
-            try {
-                // Delete all chats one by one
-                for (const chat of this.chats) {
-                    await fetch(`/api/chats/${chat.id}`, { method: 'DELETE' });
-                }
-                this.chats = [];
-                this.currentChatId = null;
-                this.messages = [];
-                this.showToast(this.t('allChatsCleared'), 'success');
-            } catch (e) {
-                this.showToast(this.t('deleteFailed'), 'error');
-            }
+            const message = failures.length ? this.at('deletePartial')
+                .replace('{count}', String(failures.length))
+                .replace('{reason}', [...new Set(failures)].join('； ')) : this.t('allChatsCleared');
+            this.showToast(message, failures.length ? 'error' : 'success');
         },
-        
-        // Stop generation
+
         stopGeneration() {
-            if (this.abortController) {
-                this.markActiveHermesRunCancelled();
-                this.abortController.abort();
-                this.abortController = null;
-                this.isGenerating = false;
-            }
+            if (!this.abortController) return;
+            this.abortController.abort();
+            this.abortController = null;
+            this.isGenerating = false;
         },
 
         // ============ Composer Input and Completion ============
@@ -889,7 +829,7 @@ function app() {
             this.inputMessage = value;
             this.$nextTick(() => {
                 const el = this.$refs.inputBox;
-                if (!el) return;
+                if (!el || this.inputMessage !== value) return;
                 el.value = value;
                 if (Number.isInteger(selectionStart)) {
                     const end = Number.isInteger(selectionEnd) ? selectionEnd : selectionStart;
@@ -924,6 +864,7 @@ function app() {
             this.autoResize(event.target);
             this.syncComposerHighlightScroll(event);
             if (!this.isComposing) {
+                this.persistAgentDraft(event.target.value);
                 this.queueCompletionRefresh();
             }
         },
@@ -984,7 +925,7 @@ function app() {
         async handleComposerKeydown(event) {
             if (this.isComposing || event.isComposing) return;
 
-            if ((event.key === 'Backspace' || event.key === 'Delete') && this.deleteComposerSkillToken(event.key)) {
+            if (!this.agentId && (event.key === 'Backspace' || event.key === 'Delete') && this.deleteComposerSkillToken(event.key)) {
                 event.preventDefault();
                 this.closeCompletionMenu();
                 return;
@@ -1082,6 +1023,7 @@ function app() {
         },
 
         queueCompletionRefresh(delay = 80) {
+            if (this.agentId || this.agentViewLoading || this.agentBindingError) return;
             if (this.completionDebounceTimer) {
                 clearTimeout(this.completionDebounceTimer);
             }
@@ -1093,7 +1035,7 @@ function app() {
 
         async refreshCompletions() {
             const el = this.$refs.inputBox;
-            if (!el || this.isComposing) return;
+            if (!el || this.isComposing || this.agentId || this.agentViewLoading || this.agentBindingError) return;
 
             const range = this.detectSlashToken(this.inputMessage || '', el.selectionStart);
             if (!range) {
@@ -1386,6 +1328,7 @@ function app() {
         renderComposerHighlights(message) {
             const text = String(message || '');
             if (!text) return '';
+            if (this.agentId || this.agentViewLoading) return this.escapeComposerHtml(text);
 
             const ranges = this.getComposerSkillTokenRanges(text, { knownOnly: true });
             if (!ranges.length) return this.escapeComposerHtml(text);
@@ -1482,88 +1425,10 @@ function app() {
             this.$nextTick(() => this.scrollToBottom());
         },
 
-        normalizeChatEndpoint(endpoint) {
-            if (ALLOWED_CHAT_ENDPOINTS.has(endpoint)) {
-                return endpoint;
-            }
-            console.warn('[Route] Ignored non-allowlisted chat endpoint:', endpoint);
-            return DEFAULT_CHAT_ENDPOINT;
-        },
-
-        buildRouteMessageBody(body) {
-            const routeBody = { ...body };
-            if (Array.isArray(body.active_skills)) {
-                routeBody.active_skills = Object.freeze([...body.active_skills]);
-            }
-            return Object.freeze(routeBody);
-        },
-
-        isValidRouteMessageResult(result) {
-            if (!result || typeof result !== 'object' || Array.isArray(result)) {
-                return false;
-            }
-
-            const symbolKeys = Object.getOwnPropertySymbols(result);
-            if (symbolKeys.length > 0) {
-                console.warn('[Route] Ignored route_message result with unsupported symbol fields');
-                return false;
-            }
-
-            const resultKeys = Object.getOwnPropertyNames(result);
-            const extraKeys = resultKeys.filter(key => !ROUTE_MESSAGE_RESULT_KEYS.has(key));
-            if (extraKeys.length > 0) {
-                console.warn('[Route] Ignored route_message result with unsupported fields:', extraKeys.join(', '));
-                return false;
-            }
-
-            if (!Object.prototype.hasOwnProperty.call(result, 'success') || result.success !== true) {
-                console.warn('[Route] Ignored route_message result without success: true');
-                return false;
-            }
-
-            if (!Object.prototype.hasOwnProperty.call(result, 'route') || typeof result.route !== 'string') {
-                console.warn('[Route] Ignored route_message result without a string route');
-                return false;
-            }
-
-            return true;
-        },
-
-        async resolveMessageRouteEndpoint(body) {
-            const handlers = this.pluginHooks.route_message || [];
-            if (!handlers.length) {
-                return DEFAULT_CHAT_ENDPOINT;
-            }
-
-            const routeBody = this.buildRouteMessageBody(body);
-            for (const handler of handlers) {
-                if (handler._pluginId) {
-                    const plugin = this.installedPlugins.find(p => p.id === handler._pluginId);
-                    if (plugin && !plugin.enabled) continue;
-                }
-
-                try {
-                    const result = await handler.handler(routeBody);
-                    if (!result?.success) continue;
-                    if (!this.isValidRouteMessageResult(result)) continue;
-
-                    const endpoint = CHAT_ROUTE_ENDPOINTS[result.route];
-                    if (endpoint) {
-                        return this.normalizeChatEndpoint(endpoint);
-                    }
-
-                    console.warn('[Route] Ignored unknown chat route:', result.route);
-                } catch (e) {
-                    console.error('[Hook route_message] Error:', e);
-                }
-            }
-
-            return DEFAULT_CHAT_ENDPOINT;
-        },
-        
         // Send message
         async sendMessage() {
-            if (this.isGenerating) return;
+            if (this.agentId) return this.sendAgentRun();
+            if (this.isGenerating || !this.canSendMessage) return;
             this.isGenerating = true;
             const sendController = new AbortController();
             this.abortController = sendController;
@@ -1641,22 +1506,21 @@ function app() {
                     delete body.active_skills;
                 }
 
-                const endpoint = await this.resolveMessageRouteEndpoint(body);
-                if (sendController.signal.aborted) return;
-                
                 this.removeUploadedImage();
                 this.removeParsedUrl();
                 this.removeAttachedDocument();
                 
                 if (this.settings.chat_settings.stream) {
-                    await this.handleStreamResponse(body, endpoint, sendController.signal);
+                    await this.handleStreamResponse(body, sendController.signal);
                 } else {
-                    await this.handleNormalResponse(body, endpoint, sendController.signal);
+                    await this.handleNormalResponse(body, sendController.signal);
                 }
                 // Call after_receive hooks for post-processing
+                if (sendController.signal.aborted) return;
                 const lastMsg = this.messages[this.messages.length - 1];
                 if (lastMsg && lastMsg.role === 'assistant') {
                     const afterResult = await this.callHook('after_receive', lastMsg);
+                    if (sendController.signal.aborted) return;
                     if (afterResult?.success && afterResult.content) {
                         lastMsg.content = afterResult.content;
                         this.messages[this.messages.length - 1] = { ...lastMsg };
@@ -1676,444 +1540,66 @@ function app() {
                 if (this.abortController === sendController) {
                     this.abortController = null;
                     this.isGenerating = false;
-                } else if (this.abortController === null) {
-                    this.isGenerating = false;
                 }
             }
         },
 
-        createHermesRunState(chatId = '') {
-            return {
-                runId: '',
-                status: '',
-                events: [],
-                pendingApproval: null,
-                approvalSubmitting: false,
-                approvalError: '',
-                approvalBridgeResolvedKey: '',
-                chatId: chatId || this.currentChatId || ''
-            };
-        },
-
-        ensureHermesRunState(message) {
-            if (!message.hermesRun) {
-                message.hermesRun = this.createHermesRunState();
-            }
-            if (!message.hermesRun.events) {
-                message.hermesRun.events = [];
-            }
-            if (!message.hermesRun.chatId && this.currentChatId) {
-                message.hermesRun.chatId = this.currentChatId;
-            }
-            return message.hermesRun;
-        },
-
-        normalizeHermesRunEvent(event) {
-            if (!event || typeof event !== 'object' || Array.isArray(event)) {
-                return null;
-            }
-
-            const type = typeof event.type === 'string' ? event.type : '';
-            if (!type) return null;
-
-            const normalized = { type };
-            const stringFields = [
-                'run_id',
-                'status',
-                'tool',
-                'preview',
-                'error',
-                'command',
-                'description',
-                'choice'
-            ];
-            for (const field of stringFields) {
-                if (event[field] !== undefined && event[field] !== null) {
-                    normalized[field] = String(event[field]);
-                }
-            }
-
-            if (Array.isArray(event.pattern_keys)) {
-                normalized.pattern_keys = event.pattern_keys
-                    .map(item => String(item))
-                    .filter(Boolean)
-                    .slice(0, 20);
-            }
-            if (Array.isArray(event.choices)) {
-                normalized.choices = event.choices
-                    .map(item => String(item))
-                    .filter(Boolean);
-            }
-            if (Number.isFinite(event.duration_ms)) {
-                normalized.duration_ms = Math.round(event.duration_ms);
-            }
-            if (typeof event.resolved === 'boolean' || Number.isFinite(event.resolved)) {
-                normalized.resolved = event.resolved;
-            }
-            if (event.usage && typeof event.usage === 'object' && !Array.isArray(event.usage)) {
-                normalized.usage = {};
-                for (const [key, value] of Object.entries(event.usage)) {
-                    if (Number.isFinite(value)) {
-                        normalized.usage[key] = value;
-                    }
-                }
-            }
-            return normalized;
-        },
-
-        hermesApprovalRequestKey(event) {
-            if (!event) return '';
-            const patterns = Array.isArray(event.pattern_keys) ? event.pattern_keys.join('|') : '';
-            return [
-                event.run_id || '',
-                event.command || '',
-                event.description || '',
-                patterns
-            ].join('\n');
-        },
-
-        isHermesRunTerminalStatus(status) {
-            return ['completed', 'succeeded', 'failed', 'cancelled', 'canceled', 'stopped'].includes(status || '');
-        },
-
-        markActiveHermesRunCancelled() {
-            for (let i = this.messages.length - 1; i >= 0; i -= 1) {
-                const msg = this.messages[i];
-                const run = msg?.hermesRun;
-                if (!run || !Array.isArray(run.events) || !run.events.length) continue;
-                if (this.isHermesRunTerminalStatus(run.status)) return;
-                this.applyHermesRunEvent(msg, {
-                    type: 'run.cancelled',
-                    run_id: run.runId || '',
-                    status: 'cancelled'
-                }, i);
-                return;
-            }
-        },
-
-        applyHermesRunEvent(message, event, msgIndex = -1) {
-            const normalized = this.normalizeHermesRunEvent(event);
-            if (!normalized) return;
-
-            const hermesRun = this.ensureHermesRunState(message);
-            if (
-                normalized.type === 'approval.request' &&
-                (
-                    (
-                        hermesRun.pendingApproval &&
-                        this.hermesApprovalRequestKey(hermesRun.pendingApproval) === this.hermesApprovalRequestKey(normalized)
-                    ) ||
-                    hermesRun.approvalBridgeResolvedKey === this.hermesApprovalRequestKey(normalized)
-                )
-            ) {
-                return;
-            }
-
-            normalized._id = `${normalized.type}-${hermesRun.events.length}`;
-            if (normalized.run_id) {
-                hermesRun.runId = normalized.run_id;
-            }
-            if (normalized.status) {
-                hermesRun.status = normalized.status;
-            }
-
-            if (normalized.type === 'approval.request') {
-                hermesRun.status = 'pending_approval';
-                hermesRun.pendingApproval = normalized;
-                hermesRun.approvalSubmitting = false;
-                hermesRun.approvalError = '';
-            } else if (normalized.type === 'approval.responded') {
-                hermesRun.pendingApproval = null;
-                hermesRun.approvalSubmitting = false;
-                hermesRun.approvalError = '';
-                hermesRun.approvalBridgeResolvedKey = '';
-                hermesRun.status = normalized.status || 'running';
-            } else if (normalized.type === 'run.completed') {
-                hermesRun.pendingApproval = null;
-                hermesRun.approvalSubmitting = false;
-                hermesRun.approvalError = '';
-                hermesRun.approvalBridgeResolvedKey = '';
-                hermesRun.status = 'completed';
-            } else if (normalized.type === 'run.failed') {
-                hermesRun.pendingApproval = null;
-                hermesRun.approvalSubmitting = false;
-                hermesRun.approvalBridgeResolvedKey = '';
-                hermesRun.status = 'failed';
-            } else if (normalized.type === 'run.cancelled') {
-                hermesRun.pendingApproval = null;
-                hermesRun.approvalSubmitting = false;
-                hermesRun.approvalBridgeResolvedKey = '';
-                hermesRun.status = 'cancelled';
-            } else if (normalized.type === 'run.started' && !hermesRun.status) {
-                hermesRun.status = normalized.status || 'running';
-            }
-
-            hermesRun.events.push(normalized);
-            this.commitHermesRunMessage(message, msgIndex);
-        },
-
-        commitHermesRunMessage(message, msgIndex = -1) {
-            if (!message.hermesRun) return;
-            message.hermesRun = {
-                ...message.hermesRun,
-                events: [...message.hermesRun.events],
-                pendingApproval: message.hermesRun.pendingApproval ? { ...message.hermesRun.pendingApproval } : null
-            };
-            if (msgIndex >= 0) {
-                this.messages[msgIndex] = { ...message };
-            }
-            this.$nextTick(() => this.scrollToBottom());
-        },
-
-        hermesRunStatusLabel(status) {
-            const normalized = String(status || '').toLowerCase();
-            const labels = {
-                started: this.t('hermesRunStatusStarted'),
-                queued: this.t('hermesRunStatusStarted'),
-                running: this.t('hermesRunStatusRunning'),
-                in_progress: this.t('hermesRunStatusRunning'),
-                pending_approval: this.t('hermesRunStatusPendingApproval'),
-                completed: this.t('hermesRunStatusCompleted'),
-                succeeded: this.t('hermesRunStatusCompleted'),
-                failed: this.t('hermesRunStatusFailed'),
-                cancelled: this.t('hermesRunStatusCancelled'),
-                canceled: this.t('hermesRunStatusCancelled')
-            };
-            return labels[normalized] || status || this.t('hermesRunStatusRunning');
-        },
-
-        hermesRunEventTitle(event) {
-            const titles = {
-                'run.started': this.t('hermesRunEventRunStarted'),
-                'tool.started': this.t('hermesRunEventToolStarted'),
-                'tool.completed': this.t('hermesRunEventToolCompleted'),
-                'reasoning.available': this.t('hermesRunEventReasoning'),
-                'approval.request': this.t('hermesRunEventApprovalRequest'),
-                'approval.responded': this.t('hermesRunEventApprovalResponded'),
-                'run.completed': this.t('hermesRunEventRunCompleted'),
-                'run.failed': this.t('hermesRunEventRunFailed'),
-                'run.cancelled': this.t('hermesRunEventRunCancelled')
-            };
-            return titles[event?.type] || event?.type || this.t('hermesRun');
-        },
-
-        hermesRunEventIcon(event) {
-            const icons = {
-                'run.started': 'ri-play-circle-line',
-                'tool.started': 'ri-tools-line',
-                'tool.completed': 'ri-checkbox-circle-line',
-                'reasoning.available': 'ri-lightbulb-line',
-                'approval.request': 'ri-shield-keyhole-line',
-                'approval.responded': 'ri-check-double-line',
-                'run.completed': 'ri-checkbox-circle-line',
-                'run.failed': 'ri-error-warning-line',
-                'run.cancelled': 'ri-stop-circle-line'
-            };
-            return icons[event?.type] || 'ri-terminal-box-line';
-        },
-
-        hermesRunEventClass(event) {
-            const typeClass = String(event?.type || 'event').replace(/[^a-z0-9_-]+/gi, '-').toLowerCase();
-            const statusClass = String(event?.status || '').replace(/[^a-z0-9_-]+/gi, '-').toLowerCase();
-            return {
-                [`hermes-event-${typeClass}`]: true,
-                [`status-${statusClass}`]: Boolean(statusClass)
-            };
-        },
-
-        formatHermesDuration(ms) {
-            if (!Number.isFinite(ms)) return '';
-            if (ms < 1000) return `${ms} ms`;
-            return `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0)} s`;
-        },
-
-        hasHermesDuration(event) {
-            return Number.isFinite(event?.duration_ms);
-        },
-
-        isHermesPendingApprovalEvent(message, event) {
-            const pending = message?.hermesRun?.pendingApproval;
-            return Boolean(pending && event && pending._id === event._id);
-        },
-
-        async submitHermesApproval(message, choice, msgIndex = -1) {
-            const targetIndex = msgIndex >= 0 ? msgIndex : this.messages.indexOf(message);
-            if (
-                targetIndex >= 0 &&
-                this.messages[targetIndex] !== message &&
-                this.messages[targetIndex]?.hermesRun?.runId !== message?.hermesRun?.runId
-            ) {
-                return;
-            }
-            const targetMessage = targetIndex >= 0 ? this.messages[targetIndex] : message;
-            const hermesRun = targetMessage?.hermesRun;
-            const runId = hermesRun?.runId;
-            const chatId = hermesRun?.chatId;
-            if (!hermesRun || !runId || !chatId || hermesRun.approvalSubmitting) {
-                return;
-            }
-
-            hermesRun.approvalSubmitting = true;
-            hermesRun.approvalError = '';
-            this.commitHermesRunMessage(targetMessage, targetIndex);
-
-            try {
-                const response = await fetch(`/api/hermes/runs/${encodeURIComponent(runId)}/approval`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        choice,
-                        resolve_all: false
-                    })
-                });
-                let data = {};
-                try {
-                    data = await response.json();
-                } catch (_) {
-                    data = {};
-                }
-                if (!response.ok || data.success === false) {
-                    throw new Error(data.error || this.t('hermesApprovalError'));
-                }
-                hermesRun.status = data.status || hermesRun.status || 'running';
-                hermesRun.approvalBridgeResolvedKey = this.hermesApprovalRequestKey(hermesRun.pendingApproval);
-                hermesRun.pendingApproval = null;
-                hermesRun.approvalSubmitting = false;
-                hermesRun.approvalError = '';
-                this.commitHermesRunMessage(targetMessage, targetIndex);
-            } catch (error) {
-                hermesRun.approvalSubmitting = false;
-                hermesRun.approvalError = error.message || this.t('hermesApprovalError');
-                this.commitHermesRunMessage(targetMessage, targetIndex);
-            }
-        },
-        
-        // Handle stream response (NDJSON format) - TRUE STREAMING
-        async handleStreamResponse(body, endpoint = DEFAULT_CHAT_ENDPOINT, signal = this.abortController?.signal) {
-            const chatEndpoint = this.normalizeChatEndpoint(endpoint);
-            const res = await fetch(chatEndpoint, {
+        async handleStreamResponse(body, signal) {
+            const response = await fetch(DEFAULT_CHAT_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
                 signal
             });
-            
-            if (!res.ok) {
-                const errText = await res.text();
-                throw new Error(errText || 'Request failed');
-            }
-            
-            const assistantMsg = {
-                role: 'assistant',
-                content: '',
-                thinking: '',
-                references: [],
-                showThinking: false,
-                hermesRun: this.createHermesRunState()
-            };
-            this.messages.push(assistantMsg);
-            const msgIndex = this.messages.length - 1;
-            
-            const reader = res.body.getReader();
+            if (!response.ok) throw new Error(await response.text() || 'Request failed');
+            if (signal.aborted) return;
+
+            this.messages.push({ role: 'assistant', content: '', thinking: '', references: [], streaming: true });
+            const assistant = this.messages[this.messages.length - 1];
+            const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            
             try {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    
-                    buffer += decoder.decode(value, { stream: true });
-                    
-                    // Process complete lines
-                    let newlineIdx;
-                    while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
-                        const line = buffer.slice(0, newlineIdx).trim();
-                        buffer = buffer.slice(newlineIdx + 1);
-                        
-                        if (!line) continue;
-                        
+                while (!signal.aborted) {
+                    const { value, done } = await reader.read();
+                    if (signal.aborted) return;
+                    buffer += decoder.decode(value, { stream: !done });
+                    const lines = buffer.split('\n');
+                    buffer = done ? '' : lines.pop();
+                    for (const line of lines) {
+                        if (!line.trim()) continue;
+                        let parsed;
                         try {
-                            const parsed = JSON.parse(line);
-                            
-                            if (parsed.chat_id) {
-                                this.currentChatId = parsed.chat_id;
-                                if (assistantMsg.hermesRun) {
-                                    assistantMsg.hermesRun.chatId = parsed.chat_id;
-                                }
-                            }
-
-                            if (parsed.hermes_run) {
-                                this.applyHermesRunEvent(assistantMsg, parsed.hermes_run, msgIndex);
-                            }
-                            
-                            // Handle thinking/reasoning content
-                            if (parsed.thinking) {
-                                // Preserve showThinking state when updating
-                                const currentShowThinking = this.messages[msgIndex]?.showThinking || false;
-                                assistantMsg.thinking += parsed.thinking;
-                                assistantMsg.showThinking = currentShowThinking;
-                                this.messages[msgIndex] = { ...assistantMsg };
-                                this.$nextTick(() => this.scrollToBottom());
-                            }
-                            
-                            if (parsed.content) {
-                                // Preserve showThinking state when updating
-                                const currentShowThinking = this.messages[msgIndex]?.showThinking || false;
-                                assistantMsg.content += parsed.content;
-                                assistantMsg.showThinking = currentShowThinking;
-                                this.messages[msgIndex] = { ...assistantMsg };
-                                this.$nextTick(() => this.scrollToBottom());
-                            }
-                            
-                            if (parsed.references) {
-                                const currentShowThinking = this.messages[msgIndex]?.showThinking || false;
-                                assistantMsg.references = parsed.references;
-                                assistantMsg.showThinking = currentShowThinking;
-                                this.messages[msgIndex] = { ...assistantMsg };
-                                this.$nextTick(() => this.scrollToBottom());
-                            }
-                            
-                            if (parsed.error) {
-                                assistantMsg.content = 'Error: ' + parsed.error;
-                                this.messages[msgIndex] = { ...assistantMsg };
-                            }
-                        } catch (e) {
-                            // ignore parse errors
+                            parsed = JSON.parse(line);
+                        } catch {
+                            continue;
                         }
+                        if (parsed.chat_id) this.adoptOrdinaryChat(parsed.chat_id);
+                        if (parsed.thinking) assistant.thinking += parsed.thinking;
+                        if (parsed.content) assistant.content += parsed.content;
+                        if (parsed.references) assistant.references = parsed.references;
+                        if (parsed.error) assistant.content = 'Error: ' + parsed.error;
                     }
+                    this.$nextTick(() => this.followStream());
+                    if (done) break;
                 }
-            } catch (e) {
-                if (e.name === 'AbortError') {
-                    // User stopped generation, keep partial content
-                    try { await reader.cancel(); } catch (_) { /* ignore */ }
-                } else {
-                    throw e;
-                }
+            } finally {
+                assistant.streaming = false;
+                await reader.cancel().catch(() => {});
             }
         },
-        
-        // Handle normal response
-        async handleNormalResponse(body, endpoint = DEFAULT_CHAT_ENDPOINT, signal = this.abortController?.signal) {
-            const chatEndpoint = this.normalizeChatEndpoint(endpoint);
-            const res = await fetch(chatEndpoint, {
+
+        async handleNormalResponse(body, signal) {
+            const response = await fetch(DEFAULT_CHAT_ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
                 signal
             });
-            
-            const data = await res.json();
-            
-            if (!res.ok) {
-                throw new Error(data.error || 'Request failed');
-            }
-            
-            if (!this.currentChatId && data.chat_id) {
-                this.currentChatId = data.chat_id;
-            }
-            
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Request failed');
+            if (signal.aborted) return;
+            if (data.chat_id) this.adoptOrdinaryChat(data.chat_id);
             this.messages.push({
                 role: 'assistant',
                 content: data.content,
@@ -2122,7 +1608,12 @@ function app() {
             });
             this.$nextTick(() => this.scrollToBottom());
         },
-        
+
+        adoptOrdinaryChat(chatId) {
+            this.currentChatId = chatId;
+            localStorage.setItem('chatraw-selected-chat', chatId);
+        },
+
         // Handle file upload (documents) with progress
         async handleFileUpload(event) {
             const file = event.target.files[0];
@@ -2736,20 +2227,31 @@ function app() {
             }
         },
         
-        // Render Markdown
         renderMarkdown(content) {
-            if (!content) return '';
-            return marked.parse(content);
+            return window.ChatRawMarkdown.html(content);
         },
-        
-        // Scroll to bottom
+
+        renderMessage(element, content, live, replay) {
+            window.ChatRawMarkdown.render(element, content, { live, replay }, () => queueMicrotask(() => this.followStream()));
+        },
+
+        trackOutputScroll(event) {
+            const el = event.currentTarget;
+            this.followOutput = el.scrollHeight - el.clientHeight - el.scrollTop < 64;
+        },
+
+        followStream() {
+            if (this.followOutput) this.scrollToBottom();
+        },
+
         scrollToBottom() {
             const container = this.$refs.messagesContainer;
             if (container) {
+                this.followOutput = true;
                 container.scrollTop = container.scrollHeight;
             }
         },
-        
+
         // Auto resize textarea
         autoResize(el) {
             el.style.height = 'auto';
@@ -2778,19 +2280,19 @@ function app() {
                 .filter(btn => {
                     // Only show buttons from enabled plugins
                     const plugin = this.installedPlugins?.find(p => p.id === btn.pluginId);
-                    return plugin?.enabled !== false;
+                    return plugin?.enabled !== false && (!this.agentId || btn.pluginId === 'voice-input');
                 })
                 .sort((a, b) => (a.order || 100) - (b.order || 100));
         },
         
         // Computed: Visible plugin buttons (max 5)
         get visiblePluginButtons() {
-            return this.getSortedPluginButtons().slice(0, 5);
+            return this.getSortedPluginButtons().slice(0, this.isMobileView ? 0 : 4);
         },
         
         // Computed: Hidden plugin buttons (overflow into "More" menu)
         get hiddenPluginButtons() {
-            return this.getSortedPluginButtons().slice(5);
+            return this.getSortedPluginButtons().slice(this.isMobileView ? 0 : 4);
         },
         
         // Get localized button label
@@ -2877,6 +2379,8 @@ function app() {
                     }
                 },
                 
+                agents: { register: id => appInstance.registerAgent(id) },
+
                 // Plugin settings
                 settings: (pluginId) => this.getPluginSettings(pluginId || this._currentLoadingPlugin),
 
@@ -2951,7 +2455,7 @@ function app() {
                     getCurrentChatId: () => appInstance.currentChatId,
                     
                     // Get current messages
-                    getMessages: () => [...appInstance.messages],
+                    getMessages: () => appInstance.messages.map(msg => ({ ...msg, content: appInstance.messageText(msg) })),
                     
                     // Add a message to the current chat display
                     addMessage: (role, content) => {
@@ -3187,6 +2691,7 @@ function app() {
         async loadPluginJS(plugin) {
             try {
                 this.unregisterPluginHooks(plugin.id);
+                this.unregisterAgent(plugin.id);
                 this.unregisterPluginCompletions(plugin.id);
                 this.pluginToolbarButtons = this.pluginToolbarButtons.filter(
                     button => button.pluginId !== plugin.id
@@ -3198,20 +2703,26 @@ function app() {
                 // First load dependencies
                 if (plugin.dependencies) {
                     for (const [name, url] of Object.entries(plugin.dependencies)) {
+                        // Installed 1.0.0 manifests predate the bundled Papa Parse.
+                        const source = plugin.id === 'csv-parser' && name === 'papaparse'
+                            && url === 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
+                            ? '/vendor/papaparse/5.4.1/papaparse.min.js' : url;
                         if (!this.loadedPluginDeps[name]) {
                             try {
                                 // CSS must use loadCSS, not loadScript
-                                if (typeof url === 'string' && url.endsWith('.css')) {
-                                    await this.loadCSS(url);
+                                if (typeof source === 'string' && source.endsWith('.css')) {
+                                    await this.loadCSS(source);
                                     this.loadedPluginDeps[name] = true;
                                 } else if (name.startsWith('hljs-')) {
                                     // hljs language packs loaded on-demand by plugin (need hljs core first)
                                     continue;
                                 } else {
-                                    await this.loadScript(url);
+                                    await this.loadScript(source);
                                     // Common library detection patterns
                                     if (name === 'xlsx' && window.XLSX) {
                                         this.loadedPluginDeps[name] = window.XLSX;
+                                    } else if (name === 'papaparse' && window.Papa) {
+                                        this.loadedPluginDeps[name] = window.Papa;
                                     } else if (name === 'pdfjs' && window.pdfjsLib) {
                                         this.loadedPluginDeps[name] = window.pdfjsLib;
                                     } else if (window[name]) {
@@ -3422,13 +2933,7 @@ function app() {
                 const controller = new AbortController();
                 timeout = setTimeout(() => controller.abort(), 5000);
                 
-                let res = await fetch('/api/plugins/market', { signal: controller.signal });
-                if (!res.ok) {
-                    res = await fetch(
-                        'https://raw.githubusercontent.com/massif-01/ChatRaw/main/Plugins/Plugin_market/index.json',
-                        { signal: controller.signal }
-                    );
-                }
+                const res = await fetch('/api/plugins/market', { signal: controller.signal });
                 clearTimeout(timeout);
                 timeout = null;
                 
@@ -3486,17 +2991,27 @@ function app() {
             });
         },
         
+        canUpdateBundledPlugin(plugin) {
+            const installed = this.installedPlugins.find(item => item.id === plugin.id);
+            if (!installed) return false;
+            const version = value => String(value).split('.').map(part => Number.parseInt(part, 10) || 0);
+            const incoming = version(plugin.version);
+            const current = version(installed.version);
+            for (let i = 0; i < 3; i++) {
+                if (incoming[i] !== current[i]) return incoming[i] > current[i];
+            }
+            return false;
+        },
+
         // Install plugin from market
         async installPlugin(plugin) {
             this.pluginInstalling = plugin.id;
             
             try {
-                const sourceUrl = `https://raw.githubusercontent.com/massif-01/ChatRaw/main/Plugins/Plugin_market/${plugin.folder}`;
-                
-                const res = await fetch('/api/plugins/install', {
+                const res = await fetch('/api/plugins/install-bundled', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ source_url: sourceUrl })
+                    body: JSON.stringify({ plugin_id: plugin.id })
                 });
                 
                 const data = await res.json();
@@ -3504,13 +3019,14 @@ function app() {
                 if (data.success) {
                     this.showToast(this.t('installSuccess'), 'success');
                     await this.loadInstalledPlugins();
+                    this.loadAgentCatalog();
                     // Load the newly installed plugin
                     const newPlugin = this.installedPlugins.find(p => p.id === plugin.id);
-                    if (newPlugin) {
+                    if (newPlugin?.enabled) {
                         await this.loadPluginJS(newPlugin);
                     }
                 } else {
-                    this.showToast(this.t('installFailed') + ': ' + data.error, 'error');
+                    this.showToast(this.agentErrorMessage(data, this.t('installFailed')), 'error');
                 }
             } catch (e) {
                 this.showToast(this.t('installFailed') + ': ' + e.message, 'error');
@@ -3556,12 +3072,13 @@ function app() {
                 if (data.success) {
                     this.showToast(this.t('installSuccess'), 'success');
                     await this.loadInstalledPlugins();
+                    this.loadAgentCatalog();
                     const newPlugin = this.installedPlugins.find(p => p.id === data.plugin_id);
-                    if (newPlugin) {
+                    if (newPlugin?.enabled) {
                         await this.loadPluginJS(newPlugin);
                     }
                 } else {
-                    this.showToast(this.t('installFailed') + ': ' + data.error, 'error');
+                    this.showToast(this.agentErrorMessage(data, this.t('installFailed')), 'error');
                 }
             } catch (e) {
                 this.showToast(this.t('installFailed') + ': ' + e.message, 'error');
@@ -3584,6 +3101,7 @@ function app() {
                 
                 if (res.ok) {
                     plugin.enabled = newState;
+                    this.loadAgentCatalog();
                     if (newState) {
                         // Load plugin if enabled
                         await this.loadPluginJS(plugin);
@@ -3591,6 +3109,7 @@ function app() {
                     } else {
                         // Unregister hooks when disabled
                         this.unregisterPluginHooks(plugin.id);
+                        this.unregisterAgent(plugin.id);
                         this.unregisterPluginCompletions(plugin.id);
                         
                         // Clean up toolbar buttons registered by this plugin
@@ -3605,16 +3124,25 @@ function app() {
                         
                         this.showToast(this.t('pluginDisabled'), 'success');
                     }
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    this.showToast(this.agentErrorMessage(data, this.t('saveFailed')), 'error');
                 }
             } catch (e) {
                 this.showToast(this.t('saveFailed'), 'error');
             }
         },
-        
+
         // Open plugin settings
         async openPluginSettings(plugin) {
             this.currentPluginSettings = plugin;
-            
+            this.resetAgentHealth();
+            if (plugin.agent) {
+                this.showPluginSettings = true;
+                await this.openAgentSettings(plugin);
+                return;
+            }
+
             // Initialize settings with defaults, then override with saved values
             const settingsValues = {};
             if (plugin.settings) {
@@ -3671,7 +3199,8 @@ function app() {
                 });
                 
                 if (!settingsRes.ok) {
-                    throw new Error('Failed to save settings');
+                    const data = await settingsRes.json().catch(() => ({}));
+                    throw new Error(this.agentErrorMessage(data, this.t('saveFailed')));
                 }
                 
                 // Save API keys (only if user entered a new value, not the masked placeholder)
@@ -3693,47 +3222,50 @@ function app() {
                 }
                 
                 this.showPluginSettings = false;
+                this.loadAgentCatalog();
                 this.showToast(this.t('settingsSaved'), 'success');
             } catch (e) {
-                this.showToast(this.t('saveFailed'), 'error');
+                this.showToast(e.message || this.t('saveFailed'), 'error');
             }
         },
         
         // Uninstall plugin
         async uninstallPlugin(plugin) {
             if (!plugin || !confirm(this.t('confirmUninstall'))) return;
-            
+
             try {
-                // First unregister hooks
-                this.unregisterPluginHooks(plugin.id);
-                this.unregisterPluginCompletions(plugin.id);
-                
-                // Clean up toolbar buttons registered by this plugin
-                this.pluginToolbarButtons = this.pluginToolbarButtons.filter(
-                    btn => btn.pluginId !== plugin.id
-                );
-                
-                // If this plugin has a fullscreen modal open, close it
-                if (this.pluginFullscreenModal.pluginId === plugin.id) {
-                    this.closePluginFullscreenModal();
-                }
-                
                 const res = await fetch(`/api/plugins/${encodeURIComponent(plugin.id)}`, {
                     method: 'DELETE'
                 });
-                
+
                 if (res.ok) {
+                    this.unregisterPluginHooks(plugin.id);
+                    this.unregisterAgent(plugin.id);
+                    this.unregisterPluginCompletions(plugin.id);
+
+                    // Clean up toolbar buttons registered by this plugin
+                    this.pluginToolbarButtons = this.pluginToolbarButtons.filter(
+                        btn => btn.pluginId !== plugin.id
+                    );
+
+                    // If this plugin has a fullscreen modal open, close it
+                    if (this.pluginFullscreenModal.pluginId === plugin.id) {
+                        this.closePluginFullscreenModal();
+                    }
+
                     this.showPluginSettings = false;
                     this.currentPluginSettings = null;
                     this.showToast(this.t('uninstallSuccess'), 'success');
                     await this.loadInstalledPlugins();
+                    this.loadAgentCatalog();
                 } else {
                     const data = await res.json().catch(() => ({}));
-                    this.showToast(this.t('uninstallFailed') + (data.error ? ': ' + data.error : ''), 'error');
+                    this.showToast(this.agentErrorMessage(data, this.t('uninstallFailed')), 'error');
                 }
             } catch (e) {
                 this.showToast(this.t('uninstallFailed'), 'error');
             }
         }
     };
+    return Object.defineProperties(core, Object.getOwnPropertyDescriptors(window.ChatRawAgents.create()));
 }

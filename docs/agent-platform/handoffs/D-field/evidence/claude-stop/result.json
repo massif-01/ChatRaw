@@ -1,0 +1,101 @@
+{
+  "agent": "claude",
+  "case": "stop",
+  "steps": [
+    {
+      "label": "stop",
+      "client_request_id": "ca8c52f98aa6437aa283901de2a6fb98",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "0b4bea09-41a9-4223-a309-98de69c5b027",
+        "session_id": "787447d7aab94b7d8ce4a6afcc4196b9",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "f6c0be8411e74a34aad311dc6c7e23ba",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "0b4bea09-41a9-4223-a309-98de69c5b027",
+        "session_id": "787447d7aab94b7d8ce4a6afcc4196b9",
+        "status": "cancelled",
+        "last_seq": 11,
+        "run_id": "f6c0be8411e74a34aad311dc6c7e23ba",
+        "interactions": [],
+        "final_text": ""
+      },
+      "approval": {
+        "interaction_id": "7f2528d6e5b447fd9c3990010a070a3e",
+        "status": "accepted"
+      },
+      "cancel_requested_at": "2026-11-13T13:54:50.629584+00:00",
+      "cancel_receipt": {
+        "run_id": "f6c0be8411e74a34aad311dc6c7e23ba",
+        "status": "stopping"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "0.2.180 / Claude Code 2.1.321",
+    "reason": "Claude API key is configured. Authentication and model request untested.",
+    "capabilities": {
+      "streaming_text": true,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "native",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "max_image_bytes": 5242880,
+        "max_images": 4,
+        "authentication": "Anthropic API key configured on the Runner host.",
+        "approvals": "Native permission callbacks offer allow once or deny."
+      }
+    }
+  },
+  "chat_id": "0b4bea09-41a9-4223-a309-98de69c5b027",
+  "binding": {
+    "chat_id": "0b4bea09-41a9-4223-a309-98de69c5b027",
+    "session_id": "787447d7aab94b7d8ce4a6afcc4196b9",
+    "agent_id": "claude",
+    "workspace": {
+      "id": "787447d7aab94b7d8ce4a6afcc4196b9",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "markers": {
+    "token": "9d2c01715a9c4167bd1b4b6e13133e73",
+    "workspace": "/var/lib/chatraw-runner/workspaces/787447d7aab94b7d8ce4a6afcc4196b9",
+    "command": "set -C; printf '%s\\n' '9d2c01715a9c4167bd1b4b6e13133e73' > '/var/lib/chatraw-runner/workspaces/787447d7aab94b7d8ce4a6afcc4196b9/d-9d2c01715a9c4167bd1b4b6e13133e73.started' && sleep 30 && printf '%s\\n' '9d2c01715a9c4167bd1b4b6e13133e73' > '/var/lib/chatraw-runner/workspaces/787447d7aab94b7d8ce4a6afcc4196b9/d-9d2c01715a9c4167bd1b4b6e13133e73.late'",
+    "before": {
+      "started": "missing",
+      "late": "missing"
+    },
+    "during": {
+      "started": "matched",
+      "late": "missing"
+    },
+    "observed_at": "2026-11-13T13:54:50.628295+00:00",
+    "after": {
+      "started": "matched",
+      "late": "missing"
+    },
+    "checked_at": "2026-11-13T13:55:22.705468+00:00"
+  },
+  "outcome": "passed"
+}

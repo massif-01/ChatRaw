@@ -1,0 +1,18 @@
+DeepSeekApprovalTests (unittest.loader._FailedTest.DeepSeekApprovalTests) ... ERROR
+test_sdk_native_plan_and_permission (agent_runner.tests.test_d_native_adapters.DeepSeekNativeTests.test_sdk_native_plan_and_permission) ... /private/tmp/chatraw-d-dsh-py312/lib/python3.12/site-packages/deepseek_harness/api.py:172: ResourceWarning: unclosed file <_io.TextIOWrapper name=10 encoding='utf-8'>
+  self._client.close()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/private/tmp/chatraw-d-dsh-py312/lib/python3.12/site-packages/deepseek_harness/api.py:172: ResourceWarning: unclosed file <_io.TextIOWrapper name=12 encoding='utf-8'>
+  self._client.close()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+
+======================================================================
+ERROR: DeepSeekApprovalTests (unittest.loader._FailedTest.DeepSeekApprovalTests)
+----------------------------------------------------------------------
+AttributeError: module 'agent_runner.tests.test_d_adapter_protocol' has no attribute 'DeepSeekApprovalTests'. Did you mean: 'DeepSeekProtocolTests'?
+
+----------------------------------------------------------------------
+Ran 2 tests in 1.707s
+
+FAILED (errors=1)

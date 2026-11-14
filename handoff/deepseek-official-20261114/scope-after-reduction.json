@@ -1,0 +1,81 @@
+{
+  "official_agent_runs": [
+    {
+      "agent": "deepseek",
+      "case": "deny",
+      "chat_id": "d70efb14-c8cf-4704-b0b8-1d7906913e4b",
+      "run_id": "7952e4ac2a664f498df6a2b00f264d81",
+      "status": "completed",
+      "interactions": 0
+    },
+    {
+      "agent": "deepseek",
+      "case": "allow",
+      "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+      "run_id": "8d1d8752099a42b8b14e44059d02571f",
+      "status": "completed",
+      "interactions": 0
+    },
+    {
+      "agent": "deepseek",
+      "case": "stop",
+      "run_id": "5fe04ea8079d4c0dab5000bfcd643e3f",
+      "status": "cancelled",
+      "interactions": 0,
+      "outcome": "passed"
+    },
+    {
+      "agent": "deepseek",
+      "case": "image-resume",
+      "run_id": "4d0e74249aa2432c9fb2595245181a0e",
+      "status": "completed",
+      "interactions": 0,
+      "outcome": null
+    },
+    {
+      "agent": "deepseek",
+      "case": "compact",
+      "run_id": "4e0b89b9268a4b55bd9ecadf747fb42f",
+      "status": "completed",
+      "interactions": 0,
+      "outcome": "completed; native compaction evidence pending"
+    },
+    {
+      "agent": "deepseek",
+      "case": "postcompact",
+      "run_id": "7e78acabe9b346adb93953fca9246d7a",
+      "status": "completed",
+      "interactions": 0,
+      "outcome": "passed; native identity evidence pending"
+    },
+    {
+      "agent": "deepseek",
+      "case": "postrestart",
+      "run_id": "bb0171f13f3b49339fa16fdd05ba254c",
+      "status": "completed",
+      "interactions": 0,
+      "outcome": "passed; native identity evidence pending"
+    },
+    {
+      "agent": "codex",
+      "case": "official Responses apply_patch roundtrip",
+      "run_id": "e8e2fa3267f844f7aab09a84a3a29a2c",
+      "status": "completed",
+      "interactions": 0,
+      "outcome": "passed"
+    }
+  ],
+  "direct_history_generation": 1,
+  "unstarted_official_generations": [
+    "Codex remaining matrix",
+    "Claude",
+    "Pi",
+    "Hermes",
+    "ordinary chat"
+  ],
+  "future_generation_requires_specific_coordinator_release": true,
+  "final_same_file_direct_generation": 1,
+  "all_isolated_agent_runs_terminal": true,
+  "isolated_services_stopped": true,
+  "no_more_generations": true
+}

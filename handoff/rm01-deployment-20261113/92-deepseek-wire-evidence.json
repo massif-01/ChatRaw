@@ -1,0 +1,161 @@
+{
+  "date_local": "2026-11-14",
+  "restricted_host_directory": "/home/rm01/chatraw-diagnostics/deepseek-wire-20261114-01",
+  "directory_mode": "0o700",
+  "sdk": "0.2.2rc2",
+  "runtime": "0.2.2rc2",
+  "capture_only_requests": 1,
+  "real_model_requests": 2,
+  "serial": true,
+  "tool_executions": 0,
+  "production_configuration_changed": false,
+  "native_approvals_bypassed": false,
+  "prompt": "Use the bash tool to run exactly this harmless diagnostic command: printf %s DIAG_FIXED_MARKER > diagnostic-marker.txt && cat diagnostic-marker.txt",
+  "captured_request": {
+    "method": "POST",
+    "path": "/v1/messages",
+    "headers": {
+      "content-type": "application/json",
+      "accept": "text/event-stream",
+      "anthropic-version": "2023-06-01"
+    },
+    "bytes": 86433,
+    "sha256": "32df36c6cdf2ab3c2235de9c2ffa4627a5ce19291e460f8f13a2e25eeafa8ef3",
+    "sdk": "0.2.2rc2",
+    "runtime": "0.2.2rc2"
+  },
+  "request_shape": {
+    "model": "RM-01 VLM",
+    "max_tokens": 8192,
+    "thinking": {
+      "type": "enabled"
+    },
+    "output_config": {
+      "effort": "high"
+    },
+    "tool_count": 31,
+    "bash_required": [
+      "description",
+      "command"
+    ],
+    "bash_property_names": [
+      "description",
+      "command",
+      "timeoutMs",
+      "workdir",
+      "run_in_background",
+      "sandbox_permissions",
+      "justification"
+    ]
+  },
+  "control_all_other_parsed_fields_identical": true,
+  "responses": [
+    {
+      "label": "sdk_exact_stream",
+      "metadata": {
+        "purpose": "Unmodified SDK body replay",
+        "at_utc": "2026-11-13T16:25:56.507250+00:00",
+        "status": 200,
+        "response_headers": {
+          "date": "Fri, 13 Nov 2026 16:25:57 GMT",
+          "server": "uvicorn",
+          "content-type": "text/event-stream; charset=utf-8",
+          "connection": "close",
+          "transfer-encoding": "chunked"
+        },
+        "request_sha256": "32df36c6cdf2ab3c2235de9c2ffa4627a5ce19291e460f8f13a2e25eeafa8ef3",
+        "response_http_sha256": "38ece4aaaca9895570366e7c43585c804f585037fb9dc07c6287fbe51c4ac8f6",
+        "response_body_sha256": "2619f4c23210e7836694b1f1afabfe9d4f3d61319108a434ae7ea0704e4b5f92",
+        "http_bytes": 1605,
+        "body_bytes": 1366,
+        "first_response_seconds": 0.0717500860000655,
+        "elapsed_seconds": 2.6023635680001007,
+        "error": null,
+        "requests_sent": 1,
+        "tools_executed": 0
+      },
+      "response_excerpt": {
+        "event_types": [
+          "message_start",
+          "content_block_start",
+          "content_block_delta",
+          "content_block_delta",
+          "content_block_delta",
+          "content_block_delta",
+          "content_block_delta",
+          "content_block_delta",
+          "content_block_stop",
+          "message_delta",
+          "message_stop"
+        ],
+        "relevant_events": [
+          {
+            "type": "content_block_start",
+            "content_block": {
+              "type": "text",
+              "text": ""
+            },
+            "index": 0
+          },
+          {
+            "type": "message_delta",
+            "delta": {
+              "stop_reason": "end_turn"
+            },
+            "usage": {
+              "input_tokens": 9209,
+              "output_tokens": 16
+            }
+          }
+        ],
+        "text": "  I 'll run the diagnostic  command now.\n\n\n Run  the diagnostic marker  command\n\n   ",
+        "tool_use_blocks": 0,
+        "input_json_delta_count": 0
+      }
+    },
+    {
+      "label": "only_stream_false",
+      "metadata": {
+        "purpose": "Control changing only parsed stream field to false",
+        "at_utc": "2026-11-13T16:26:26.252575+00:00",
+        "status": 200,
+        "response_headers": {
+          "date": "Fri, 13 Nov 2026 16:26:24 GMT",
+          "server": "uvicorn",
+          "content-length": "510",
+          "content-type": "application/json",
+          "connection": "close"
+        },
+        "request_sha256": "a170aa8c3b669696ce4459073d50210a59ad6f5a114563ecbce92cf8b8ae88e2",
+        "response_http_sha256": "a5169bf9c49666cea6c1adebc8e65f2f552bca0475c4d995b1074e0850706d43",
+        "response_body_sha256": "726c188c0b3ae273bb961cf5bbccaef536ee2d8e10af4599f61b45ea40204c60",
+        "http_bytes": 655,
+        "body_bytes": 510,
+        "first_response_seconds": 5.33446017700021,
+        "elapsed_seconds": 5.336185399000215,
+        "error": null,
+        "requests_sent": 1,
+        "tools_executed": 0
+      },
+      "response_excerpt": {
+        "id": "chatcmpl-b9b41fa396dbad12",
+        "type": "message",
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "I'll run the diagnostic command as requested.\n\n\n<tool>\nbash\n<description>Run diagnostic marker command</description>\n<parameter>\n{\"description\": \"Run diagnostic marker command\", \"command\": \"printf %s DIAG_FIXED_MARKER > diagnostic-marker.txt && cat diagnostic-marker.txt\"}</parameter>\n</tool>"
+          }
+        ],
+        "model": "RM-01 VLM",
+        "stop_reason": "end_turn",
+        "usage": {
+          "input_tokens": 9209,
+          "output_tokens": 68
+        }
+      }
+    }
+  ],
+  "marker_exists": false,
+  "interpretation": "These two responses lack protocol tool_use before reaching SDK. They do not reproduce the prior empty-argument tool call and do not yet separate model generation, tool parser, or Messages conversion. Sampling was not held deterministic; do not infer causation from differing text."
+}

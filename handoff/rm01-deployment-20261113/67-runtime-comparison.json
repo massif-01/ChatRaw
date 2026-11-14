@@ -1,0 +1,42 @@
+{
+  "matched_unchanged_files": [
+    "agent_runner/M1.md",
+    "agent_runner/M2.md",
+    "agent_runner/README.md",
+    "agent_runner/__init__.py",
+    "agent_runner/__main__.py",
+    "agent_runner/adapters/__init__.py",
+    "agent_runner/adapters/base.py",
+    "agent_runner/adapters/claude.py",
+    "agent_runner/adapters/hermes.md",
+    "agent_runner/adapters/hermes.py",
+    "agent_runner/adapters/pi.py",
+    "agent_runner/adapters/pi_extensions/chatraw.ts",
+    "agent_runner/files.py",
+    "agent_runner/registry.py",
+    "agent_runner/requirements-claude.txt",
+    "agent_runner/requirements-deepseek.txt",
+    "agent_runner/requirements.txt",
+    "agent_runner/runtime.py",
+    "agent_runner/server.py",
+    "agent_runner/store.py",
+    "agent_runner/validation.py"
+  ],
+  "authorized_changes": [
+    {
+      "path": "agent_runner/adapters/codex.py",
+      "current": "8778f84e49892f8a64dc78ffe95700b84132074b94fa2eae8d18c737beb0a972",
+      "expected": "04d302dd63fe2b2092e742a0031d7992dd991c1cff91903cad6aa245ee630b5a"
+    },
+    {
+      "path": "agent_runner/adapters/codex_responses.py",
+      "current": null,
+      "expected": "0229ba36d65ed2d913312750b32e028bff21a747748e900d7f076a8bf6f185a6"
+    },
+    {
+      "path": "agent_runner/adapters/deepseek.py",
+      "current": "60daa18d32f38d9999970f2a2a1b71e4b227193308ed14c49afb2c4873840391",
+      "expected": "42efff6611a411aa7876a15dc9065a060e729e0713cea78929ce661f5074b07f"
+    }
+  ]
+}

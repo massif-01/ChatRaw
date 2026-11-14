@@ -1,0 +1,37 @@
+{
+  "review_date": "2026-11-12 Asia/Shanghai",
+  "source_commits": [
+    "02b25bd",
+    "270cf79017d86d5ed45e1fed5bd9529019ec1c21",
+    "224b01208f0f1d15d576a0d9152204843f27c280"
+  ],
+  "review_checkout": "1dc743511a8b2ce8a1bfcac6b0db5465a45ab857",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "/private/tmp/chatraw-d-dsh-py312/bin/python (3.12.3)",
+  "node": "24.10.0",
+  "pi": "/private/tmp/chatraw-d-pi-test/node_modules/.bin/pi (1.5.2)",
+  "deepseek_sdk": "0.2.2rc2",
+  "deepseek_runtime": "0.2.2rc2",
+  "pydantic": "2.14.3",
+  "model_service": "loopback fixture only; fixture credential",
+  "tests": {
+    "existing": {
+      "count": 16,
+      "passed": 16,
+      "skipped": 0
+    },
+    "independent": {
+      "count": 6,
+      "passed": 6,
+      "skipped": 0
+    }
+  },
+  "inputs": {
+    "/Users/massif/ChatRaw/docs/agent-platform/CONTRACT.md": "c92c75b756398ccaa00ca06fc56f07ad61480ce0333fe09ede8f6fc4adfcfa7f",
+    "docs/agent-platform/D-adapters.md": "298428e2b8f8698e5582b54e2d83de7f4fb013e347fe75b040bea4dd69e50def",
+    "agent_runner/adapters/base.py": "2ad8b55da9e4acdea8a0240359cd35ae840bf4d96406dee1f9162197c177d907",
+    "agent_runner/adapters/pi.py": "add83d8995784fa7eaaf6083b3a2059505ee2e6ad2191a33e1238fd737d7f7a9",
+    "agent_runner/adapters/deepseek.py": "91cf50cca8cfa90dcac11e2c1ca6f0730f59133c472c806d396b1baad49817b2",
+    "agent_runner/adapters/pi_extensions/chatraw.ts": "26aee2e259789911f702cd457b755454457a43ba03b418b1cdf3ea1d80d307b4"
+  }
+}

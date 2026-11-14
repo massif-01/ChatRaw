@@ -1,0 +1,97 @@
+{
+  "boot_id": "24e4247d-cfe9-4001-a26a-35268e37bf8c",
+  "container_id": "480aac4d4306a35f1c445a8897effb8d33f077f8632c95dcae81c9f27c22e7ae",
+  "image_id": "sha256:09bda4d9e7a59bbfc760160be861780baa4f9bdaf268576fe6624ccba8bc580f",
+  "services": {
+    "chatraw-runner": "active",
+    "chatraw-hermes": "active"
+  },
+  "all_predeployment_bindings_and_base_config_unchanged": true,
+  "predeployment_sessions": 29,
+  "new_sessions": [
+    {
+      "id": "c05eaf1a083b4df5976b0acb573b21d9",
+      "binding": {
+        "agent_id": "deepseek",
+        "native": {
+          "dsh_home": "/var/lib/chatraw-runner/deepseek/session-43af9254637f4e6c83a2fabe88a511b8",
+          "session_id": "session-43af9254637f4e6c83a2fabe88a511b8"
+        },
+        "session_id": "c05eaf1a083b4df5976b0acb573b21d9",
+        "workspace": "/var/lib/chatraw-runner/workspaces/c05eaf1a083b4df5976b0acb573b21d9"
+      },
+      "base_config": {
+        "dsh_home": "/var/lib/chatraw-runner/deepseek",
+        "max_tokens": 8192,
+        "patches": [
+          "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"
+        ],
+        "provider": "rm01-qwen",
+        "reasoning_effort": "high"
+      }
+    },
+    {
+      "id": "f2cc630c894b48298de054264ed19e9b",
+      "binding": {
+        "agent_id": "deepseek",
+        "native": {
+          "dsh_home": "/var/lib/chatraw-runner/deepseek/session-92e3246ccafd44339547768cbbee70e5",
+          "session_id": "session-92e3246ccafd44339547768cbbee70e5"
+        },
+        "session_id": "f2cc630c894b48298de054264ed19e9b",
+        "workspace": "/var/lib/chatraw-runner/workspaces/f2cc630c894b48298de054264ed19e9b"
+      },
+      "base_config": {
+        "dsh_home": "/var/lib/chatraw-runner/deepseek",
+        "max_tokens": 8192,
+        "patches": [
+          "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"
+        ],
+        "provider": "rm01-qwen",
+        "reasoning_effort": "high"
+      }
+    }
+  ],
+  "nonterminal": [
+    [
+      "e05b8525931c4d1585cae79770c7be3d",
+      "unknown"
+    ]
+  ],
+  "integrity": "ok",
+  "deepseek_host": {
+    "dsh_home": "/var/lib/chatraw-runner/deepseek",
+    "patches": [
+      "/etc/chatraw-runner/deepseek-rm01-models-v2.patch.yml"
+    ],
+    "provider": "rm01-qwen",
+    "reasoning_effort": "high",
+    "max_tokens": 8192
+  },
+  "deepseek_public": {
+    "max_tokens": 8192,
+    "model": "RM-01 VLM"
+  },
+  "old_v1_sha256": "dbee21fc2b7f74fe07f01bf3641f4ce1146851a1e80f5db2b2df896d5013f703",
+  "v2_sha256": "26b6a8db9895ed5444e60fb2f8d6ef8e7ed23306265c38704948e0d4e7c766b3",
+  "adapter_sha256": "03635326fac7ec64be64e6bafdbf4f0b52fb1a76e03dc5378806938d9284f934",
+  "original_user_chat": {
+    "id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+    "message_count": 12,
+    "messages_sha256": "e4aefaad7e89b7e3590c9203162016bbff75c32a5a5ae1807d5fbb7724862841",
+    "binding": {
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "session_id": "b7fea9a288d84d1489ff634e753a6652",
+      "agent_id": "codex",
+      "workspace": {
+        "id": "b7fea9a288d84d1489ff634e753a6652",
+        "kind": "managed",
+        "label": "Managed workspace"
+      },
+      "active_run_id": null,
+      "last_run_id": "5bb85815054a4cf4ae110322532b59c7"
+    },
+    "unchanged_from_reboot_acceptance": true
+  },
+  "observed_at_utc": "2026-11-13T17:12:24.750689+00:00"
+}

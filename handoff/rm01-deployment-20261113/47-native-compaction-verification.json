@@ -1,0 +1,143 @@
+{
+  "claude": {
+    "runner_session": "1e0072458ccd4be69b28326e72f2871a",
+    "native": {
+      "session_id": "5b81ece9-6e27-44bf-8179-e5d4744deb53"
+    },
+    "compact_run": {
+      "id": "3df8cb9182cd4f84ba64b7f6c1f305cd",
+      "kind": "compact",
+      "status": "completed",
+      "created_at": "2026-11-13T13:59:46.125265Z",
+      "updated_at": "2026-11-13T14:00:47.663060Z"
+    },
+    "continuity": {
+      "expected_code": "D-9A303258A7",
+      "same_chatraw_session": true,
+      "code_matched": true
+    },
+    "native_evidence": {
+      "boundary_uuid": "a5d7e218-a182-499c-b7db-44b80e7c82d3",
+      "timestamp": "2026-11-13T14:00:47.608Z",
+      "metadata": {
+        "trigger": "manual",
+        "preTokens": 12035,
+        "durationMs": 60992,
+        "preservedSegment": {
+          "headUuid": "5d25e6b0-a0d6-40a6-b844-97d99bbe0a9a",
+          "anchorUuid": "1acaaafe-b364-4b2e-9cea-fe92190182b7",
+          "tailUuid": "5d25e6b0-a0d6-40a6-b844-97d99bbe0a9a"
+        },
+        "preservedMessages": {
+          "anchorUuid": "1acaaafe-b364-4b2e-9cea-fe92190182b7",
+          "uuids": [
+            "5d25e6b0-a0d6-40a6-b844-97d99bbe0a9a"
+          ],
+          "allUuids": [
+            "5d25e6b0-a0d6-40a6-b844-97d99bbe0a9a"
+          ]
+        },
+        "postTokens": 3196,
+        "cumulativeDroppedTokens": 8839
+      },
+      "summary_uuid": "1acaaafe-b364-4b2e-9cea-fe92190182b7",
+      "summary_contains_marker": true
+    },
+    "native_event_inside_compact_run_window": true,
+    "verdict": "confirmed_native_compaction_and_same_session_continuity"
+  },
+  "pi": {
+    "runner_session": "dad3cb83129e46b8a8d48498b5642c74",
+    "native": {
+      "session_id": "01a1d537-c79a-70c9-a477-50a93b2aaaaf",
+      "transcript": "/var/lib/chatraw-runner/pi-sessions/abb2359f0f5e452c9dd2d9e825a66401/session.jsonl"
+    },
+    "compact_run": {
+      "id": "3ca9d29d8e934990a4fef20c64caee57",
+      "kind": "compact",
+      "status": "completed",
+      "created_at": "2026-11-13T14:03:13.508163Z",
+      "updated_at": "2026-11-13T14:03:25.483220Z"
+    },
+    "continuity": {
+      "expected_code": "D-BE0B87B194",
+      "same_chatraw_session": true,
+      "code_matched": true
+    },
+    "native_evidence": {
+      "compaction_id": "ff225977",
+      "timestamp": "2026-11-13T14:03:25.479Z",
+      "tokens_before": 18817,
+      "first_kept_entry_id": "800f140f",
+      "summary_contains_marker": true
+    },
+    "native_event_inside_compact_run_window": true,
+    "verdict": "confirmed_native_compaction_and_same_session_continuity"
+  },
+  "deepseek": {
+    "runner_session": "6b359b8f76d94d06bc46868570909d22",
+    "native": {
+      "dsh_home": "/var/lib/chatraw-runner/deepseek/session-1625a242811e4e3abbc5166a0556e39b",
+      "session_id": "session-1625a242811e4e3abbc5166a0556e39b"
+    },
+    "compact_run": {
+      "id": "932b483d06c24f0c91074066040b91a9",
+      "kind": "compact",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:09.685491Z",
+      "updated_at": "2026-11-13T14:01:21.336271Z"
+    },
+    "continuity": {
+      "expected_code": "D-F171D93450",
+      "same_chatraw_session": true,
+      "code_matched": true
+    },
+    "native_evidence": {
+      "compaction_id": "ce5557cf-9dbb-4671-9f14-8f6cdb068eea",
+      "summary_seq": 40,
+      "command_done_seq": 43,
+      "command_id": "cmd-15096ea9-1",
+      "result": "Compacted 8 history items (~686 tokens).",
+      "summary_contains_marker": true
+    },
+    "native_event_inside_compact_run_window": true,
+    "verdict": "confirmed_native_compaction_and_same_session_continuity"
+  },
+  "hermes": {
+    "runner_session": "5eac256cd0494613bda3e16664001cba",
+    "native": {
+      "admission_id": "c7a4281368a64656ae22f5ff092c64f7",
+      "operation": "run",
+      "profile_id": "/var/lib/chatraw-runner/hermes-home",
+      "run_id": "614bca1480b34ce5b6bef99a76a0cc49",
+      "session_id": "local-eb7920a203370c9e127f1dc4c30f8a8d004466af8691e1cfe5bc89b5ca7f122d",
+      "settings": {
+        "model": "RM-01 VLM",
+        "provider": "custom"
+      }
+    },
+    "compact_run": {
+      "id": "059a2d604ee5445490d54a3c850de25d",
+      "kind": "compact",
+      "status": "completed",
+      "created_at": "2026-11-13T14:01:51.700590Z",
+      "updated_at": "2026-11-13T14:02:34.778768Z"
+    },
+    "continuity": {
+      "expected_code": "D-CC84954169",
+      "same_chatraw_session": true,
+      "code_matched": true
+    },
+    "native_evidence": {
+      "logical_session_unchanged": true,
+      "physical_session": "local-eb7920a203370c9e127f1dc4c30f8a8d004466af8691e1cfe5bc89b5ca7f122d",
+      "summary_message_id": 28,
+      "summary_bytes": 6261,
+      "old_messages_compacted": 10,
+      "continuity_code_in_preserved_prefix": true,
+      "runtime_revision_after_continuity": 7
+    },
+    "native_event_inside_compact_run_window": true,
+    "verdict": "confirmed_native_compaction_and_same_session_continuity"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "agent": "deepseek",
+  "case": "postrestart",
+  "steps": [
+    {
+      "label": "postcompact",
+      "client_request_id": "d8e47ed2af2e474b9e688602402e0834",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+        "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "bb0171f13f3b49339fa16fdd05ba254c",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+        "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+        "status": "completed",
+        "last_seq": 7,
+        "run_id": "bb0171f13f3b49339fa16fdd05ba254c",
+        "interactions": [],
+        "final_text": "A_OFFICIAL_e524b80d54f0"
+      }
+    }
+  ],
+  "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+  "binding": {
+    "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+    "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "a16311bfa8874adf9e60ee3ca400bfed",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "7e78acabe9b346adb93953fca9246d7a"
+  },
+  "expected_continuity": "A_OFFICIAL_e524b80d54f0",
+  "fixture_source_sha256": "016a12bbb8615d2525a06ff5ed50161fb626bd61443f6381c7726b261d3832bb",
+  "answer": "A_OFFICIAL_e524b80d54f0",
+  "outcome": "passed",
+  "native_evidence_reference": "../native-final-and-isolation.json"
+}

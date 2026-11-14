@@ -1,0 +1,165 @@
+{
+  "agent": "deepseek",
+  "case": "compact",
+  "steps": [
+    {
+      "label": "seed",
+      "client_request_id": "4cb3c005fe6042e091c5abdd9fffae44",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+        "session_id": "6b359b8f76d94d06bc46868570909d22",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "36d74a1e0029451a82df580bc5dec15c",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+        "session_id": "6b359b8f76d94d06bc46868570909d22",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "36d74a1e0029451a82df580bc5dec15c",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "history-1",
+      "client_request_id": "a26b070a47a74b3ca4b13bc6c2e0c348",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+        "session_id": "6b359b8f76d94d06bc46868570909d22",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "3baee951788f4ceab667c7e9f4c610d0",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+        "session_id": "6b359b8f76d94d06bc46868570909d22",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "3baee951788f4ceab667c7e9f4c610d0",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "history-2",
+      "client_request_id": "dc4c032e63054340bf425d0584c16ca7",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+        "session_id": "6b359b8f76d94d06bc46868570909d22",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "477b502ba89d4d53bc1207f867d4586b",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+        "session_id": "6b359b8f76d94d06bc46868570909d22",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "477b502ba89d4d53bc1207f867d4586b",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "compact",
+      "client_request_id": "2139b0003b5e4b40a4d8591a2cce38a4",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+        "session_id": "6b359b8f76d94d06bc46868570909d22",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "932b483d06c24f0c91074066040b91a9",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+        "session_id": "6b359b8f76d94d06bc46868570909d22",
+        "status": "completed",
+        "last_seq": 4,
+        "run_id": "932b483d06c24f0c91074066040b91a9",
+        "interactions": [],
+        "final_text": "Compacted 8 history items (~686 tokens)."
+      }
+    },
+    {
+      "label": "continuity",
+      "client_request_id": "23da0b7a8ab8401593113f24bbb2873d",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+        "session_id": "6b359b8f76d94d06bc46868570909d22",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "df6ad600c2834b1896599d3d2c4f2745",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+        "session_id": "6b359b8f76d94d06bc46868570909d22",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "df6ad600c2834b1896599d3d2c4f2745",
+        "interactions": [],
+        "final_text": "D-F171D93450"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "0.2.2rc2",
+    "reason": "DeepSeek SDK and credential configuration are ready; model request unverified",
+    "capabilities": {
+      "streaming_text": false,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "process_stop",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "text_delivery": "committed_message",
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "image_total_bytes": 8388608,
+        "images_require_model_support": true
+      }
+    }
+  },
+  "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+  "binding": {
+    "chat_id": "36a0d2d7-29c7-4bfa-9527-6a7edb2623ce",
+    "session_id": "6b359b8f76d94d06bc46868570909d22",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "6b359b8f76d94d06bc46868570909d22",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "continuity": {
+    "expected_code": "D-F171D93450",
+    "same_chatraw_session": true,
+    "code_matched": true
+  },
+  "outcome": "native_evidence_pending"
+}

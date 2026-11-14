@@ -1,0 +1,5 @@
+{"agent": "codex", "verdict": "PASS", "status": "completed", "final_text": "D-54B28E292E", "elapsed_seconds": 4.788}
+{"agent": "claude", "verdict": "PASS", "status": "completed", "final_text": "D-9A303258A7", "elapsed_seconds": 19.003}
+{"agent": "pi", "verdict": "PASS", "status": "completed", "final_text": "D-BE0B87B194", "elapsed_seconds": 26.697}
+{"agent": "deepseek", "verdict": "PASS", "status": "completed", "final_text": "D-F171D93450", "elapsed_seconds": 10.571}
+{"agent": "hermes", "verdict": "PASS", "status": "completed", "final_text": "D-CC84954169", "elapsed_seconds": 20.968}

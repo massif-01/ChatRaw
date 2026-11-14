@@ -1,0 +1,30 @@
+{
+  "chat_id": "bbbbbbdf-d5fc-47e1-8ec2-07c4f70a495d",
+  "binding": {
+    "chat_id": "bbbbbbdf-d5fc-47e1-8ec2-07c4f70a495d",
+    "session_id": "8d48a05d42ed44f2b11d29ca0957c575",
+    "agent_id": "codex",
+    "workspace": {
+      "id": "8d48a05d42ed44f2b11d29ca0957c575",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "native_before": {
+    "binding": {
+      "agent_id": "codex",
+      "native": {},
+      "session_id": "8d48a05d42ed44f2b11d29ca0957c575",
+      "workspace": "/var/lib/chatraw-official-test/runner/workspaces/8d48a05d42ed44f2b11d29ca0957c575"
+    },
+    "config": {
+      "model": "deepseek-flash",
+      "reasoning": "low"
+    }
+  },
+  "marker": "OFFICIAL_CODEX_9828e1c79ac2",
+  "filename": "native-marker-f06647a91de04e2cb861c45cd1683807.txt",
+  "stable_native_identity": "01a1d66f-0879-7692-b88d-a0aa1e072886"
+}

@@ -1,0 +1,5 @@
+ChatRaw-e91d32f.tar.gz: OK
+ChatRaw-e91d32f-linux-amd64.docker.tar.gz: OK
+compose.prebuilt.yml: OK
+README.md: OK
+Loaded image: chatraw-agent-integration:e91d32f-amd64

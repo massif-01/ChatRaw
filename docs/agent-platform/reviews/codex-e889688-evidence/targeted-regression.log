@@ -1,0 +1,15 @@
+test_cross_thread_turn_and_secret_requests_cannot_be_authorized (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_cross_thread_turn_and_secret_requests_cannot_be_authorized) ... ok
+test_eof_leaves_turn_unknown_with_last_text (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_eof_leaves_turn_unknown_with_last_text) ... ok
+test_recovery_never_replays_or_substitutes_a_different_turn (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_recovery_never_replays_or_substitutes_a_different_turn) ... ok
+test_stop_finds_newly_registered_background_tool_without_stopping_other_turns (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_stop_finds_newly_registered_background_tool_without_stopping_other_turns) ... ok
+test_stop_waits_for_foreground_registration_before_interrupt (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_stop_waits_for_foreground_registration_before_interrupt) ... ok
+test_timed_question_resolves_empty_and_rejects_late_reply (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_timed_question_resolves_empty_and_rejects_late_reply) ... ok
+test_unverified_tool_stop_stays_unknown_across_recovery (agent_runner.tests.test_c_adapter_protocol.CodexProtocolTests.test_unverified_tool_stop_stays_unknown_across_recovery) ... ok
+test_codex_native_stop_confirms_foreground_shell (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_stop_confirms_foreground_shell) ... ok
+test_codex_native_stop_terminates_background_shell (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_stop_terminates_background_shell) ... ok
+test_codex_native_stop_during_approval (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_codex_native_stop_during_approval) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 11.659s
+
+OK

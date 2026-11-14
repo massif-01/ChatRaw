@@ -1,0 +1,35 @@
+{
+  "agent": "codex",
+  "started_at": 1794576406.0603268,
+  "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+  "binding": {
+    "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+    "session_id": "b7fea9a288d84d1489ff634e753a6652",
+    "agent_id": "codex",
+    "workspace": {
+      "id": "b7fea9a288d84d1489ff634e753a6652",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "submitted": {
+    "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+    "session_id": "b7fea9a288d84d1489ff634e753a6652",
+    "status": "queued",
+    "last_seq": 1,
+    "run_id": "8fd852ee00c24c0985bd000d02ffafeb",
+    "interactions": []
+  },
+  "snapshot": {
+    "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+    "session_id": "b7fea9a288d84d1489ff634e753a6652",
+    "status": "completed",
+    "last_seq": 33,
+    "run_id": "8fd852ee00c24c0985bd000d02ffafeb",
+    "interactions": [],
+    "final_text": "The sandbox failed to start, so I'll retry `pwd` with escalated permissions to get the working directory.\n\nWorking directory: `/var/lib/chatraw-runner/workspaces/b7fea9a288d84d1489ff634e753a6652`\n\nRM99_NATIVE_OK"
+  },
+  "elapsed": 42.53
+}

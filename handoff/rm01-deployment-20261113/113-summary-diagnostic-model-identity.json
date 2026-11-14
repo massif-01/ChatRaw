@@ -1,0 +1,18 @@
+{
+  "observed_at_utc": "2026-11-13T17:40:57.397150+00:00",
+  "method": "GET",
+  "endpoint": "http://10.10.99.98:58000/v1/models",
+  "status": 200,
+  "response_sha256": "07ae2b0bf361391c33db91e1563ebb7deeb3e1fc05c6662bce191a48ec0842d0",
+  "models": [
+    {
+      "id": "RM-01 VLM",
+      "root": "/home/rm01/models/dev/llm/Qwen3.8-27B-NVFP4/",
+      "parent": null,
+      "max_model_len": 262144,
+      "owned_by": "vllm"
+    }
+  ],
+  "inference_requests": 0,
+  "configuration_changes": false
+}

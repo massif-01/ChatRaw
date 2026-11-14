@@ -1,0 +1,18 @@
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: is subject to change. To configure the initial branch name to use in all
+hint: of your new repositories, which will suppress this warning, call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+Initialized empty Git repository in /opt/chatraw-agents/hermes/source/.git/
+From https://github.com/NousResearch/hermes-agent
+ * branch              6a0d2d12815c0546b0bcaf05046e2fe3293f60aa -> FETCH_HEAD
+HEAD is now at 6a0d2d12 dress-rehearsal: add display title
+Using CPython 3.12.3 interpreter at: /usr/bin/python3
+Creating virtual environment at: .venv
+Resolved 355 packages in 4.16s
+error: The current Python platform is not compatible with the lockfile's supported environments: `python_full_version >= '3.14'`

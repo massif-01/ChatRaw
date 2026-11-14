@@ -1,5 +1,6 @@
 services:
   chatraw:
+    build: .
     image: docker.io/massif01/chatraw:latest
     container_name: chatraw
     # Use host network mode to access LAN services (e.g., local LLM on 192.168.x.x)

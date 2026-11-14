@@ -1,0 +1,95 @@
+{
+  "scope": "Reduced by user: prioritize DeepSeek uncertainties; reuse already-proven local-model evidence for other routes",
+  "official_model": "deepseek-flash",
+  "matrix": [
+    {
+      "item": "Original failed history replay on official Flash",
+      "status": "FAIL",
+      "evidence": "01-failed-history-result.json",
+      "note": "Includes prior Qwen reasoning; not a fresh official native conversation."
+    },
+    {
+      "item": "DeepSeek public deny and accurate summary",
+      "status": "PASS",
+      "evidence": "deepseek/deny-public.json"
+    },
+    {
+      "item": "DeepSeek allow-once, real file effect and accurate summary",
+      "status": "PASS",
+      "evidence": "deepseek/allow-public.json"
+    },
+    {
+      "item": "DeepSeek tool-scope stop",
+      "status": "PASS",
+      "evidence": "deepseek/stop.json",
+      "note": "Two captured process identities exited; started present, late absent after full30s window."
+    },
+    {
+      "item": "DeepSeek same-session resume after stop",
+      "status": "PASS",
+      "evidence": "deepseek/image-resume.json",
+      "note": "Continuity marker correct; separate image answer failed."
+    },
+    {
+      "item": "DeepSeek native compact and post-compact continuity",
+      "status": "PASS",
+      "evidence": "native-final-and-isolation.json",
+      "note": "compaction/start-summary-end;16history items; same native ID and exact marker."
+    },
+    {
+      "item": "DeepSeek isolated Runner restart persistence",
+      "status": "PASS",
+      "evidence": "deepseek/postrestart.json"
+    },
+    {
+      "item": "DeepSeek original multi-turn image recognition",
+      "status": "FAIL",
+      "evidence": "deepseek/image-resume.json",
+      "note": "Expected111978, returned119780. PNG/JPEG pixels and Files index consistent; original wire body not captured."
+    },
+    {
+      "item": "Same original Files object, one fresh direct Messages read",
+      "status": "CORRECT_DIGITS_FORMAT_NOT_FOLLOWED",
+      "evidence": "deepseek/same-file-empty-history-control.json",
+      "note": "Recognized111978 with extra explanation; does not replace original native multi-turn failure."
+    },
+    {
+      "item": "Codex official Responses real apply_patch roundtrip",
+      "status": "PASS",
+      "evidence": "codex/tool-result.json",
+      "note": "Exact patch reviewed, once accepted, target contents correct, native result returned."
+    },
+    {
+      "item": "Other Codex functions; Claude/Pi/Hermes/ordinary official matrices",
+      "status": "NOT_RUN_PER_REDUCED_SCOPE",
+      "note": "Reuse only previously proven local-model evidence; no new claim of official API passes."
+    },
+    {
+      "item": "Mobile physical device",
+      "status": "DEFERRED_BY_USER"
+    }
+  ],
+  "product_runtime_source_changes": false,
+  "confirmed_new_integration_defect": false,
+  "quality_limits_remain": [
+    "Prior-history narrative false denial",
+    "Native multi-turn digit misrecognition",
+    "Direct image reply did not follow digits-only formatting"
+  ],
+  "shutdown": {
+    "isolated_nonterminal_before_stop": [],
+    "isolated_runner_active": "inactive",
+    "isolated_container_state": "exited",
+    "main_runner_state": "active",
+    "main_hermes_state": "active",
+    "main_container_running": "true",
+    "data_retained": true,
+    "config_retained": true,
+    "credential_mode": "0o600",
+    "hermes_isolated_service_created": false,
+    "boot_id": "24e4247d-cfe9-4001-a26a-35268e37bf8c"
+  },
+  "usage": "usage-summary.json",
+  "main_boundary": "Existing main services/container/code configuration were not replaced; official key absent from main process env/config. Old chat deletion predated this round and is not attributed. No full-main-DB unchanged claim.",
+  "main_old_chat_note": "main-old-chat-preexisting-deletion.json"
+}

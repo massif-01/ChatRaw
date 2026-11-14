@@ -15,6 +15,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check release notes
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: test -s "RELEASE_${RELEASE_TAG}.md"
+
+      - name: Verify original Mac installer for 2.3
+        if: github.ref_name == 'v2.3'
+        id: mac
+        run: |
+          asset="$RUNNER_TEMP/ChatRaw-for-Mac-2.2.1.dmg"
+          curl --fail --location --retry 3 --output "$asset" \
+            https://github.com/massif-01/ChatRaw/releases/download/v2.2.1/ChatRaw-for-Mac-2.2.1.dmg
+          digest=$(sha256sum "$asset")
+          test "${digest%% *}" = '4b2619eb41b9dc71f6d166700e0c359c7398d4813a201bcdf8eefaa09079f0a9'
+          printf 'asset=%s\n' "$asset" >> "$GITHUB_OUTPUT"
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -41,6 +57,9 @@ jobs:
           tags: |
             massif01/chatraw:${{ steps.version.outputs.VERSION }}
             massif01/chatraw:latest
+          labels: |
+            org.opencontainers.image.version=${{ steps.version.outputs.VERSION }}
+            org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -48,3 +67,5 @@ jobs:
           tag_name: ${{ github.ref_name }}
           body_path: RELEASE_${{ github.ref_name }}.md
           generate_release_notes: false
+          files: ${{ steps.mac.outputs.asset }}
+          fail_on_unmatched_files: true

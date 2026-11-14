@@ -1,0 +1,167 @@
+{
+  "sdk": "0.2.2rc2",
+  "runtime_sha256": "1cc41d5a8745a5b9d47c8604e44f23eb8af2d8ca02b2afa0be101d5f71be6ea4",
+  "source_native_session_log_sha256": "269bdccc581a88d50fcedd4d495172c6133e4ed8cac9df6963569ff18dcafb21",
+  "source_v2_patch_sha256": "26b6a8db9895ed5444e60fb2f8d6ef8e7ed23306265c38704948e0d4e7c766b3",
+  "method": "Resume a disposable copy, then submit stored header and native derived history prefixes to the unmodified native LLM route and an offline receiver.",
+  "original_outbound_http_capture": false,
+  "model_requests": 0,
+  "restored_tools_executed": 0,
+  "control_difference": "temperature=0 in both arms; the treatment adds a newline and [exit code: 0] to the one matched approved tool result.",
+  "requests": {
+    "after-approval": {
+      "native_result_through_seq": 28,
+      "reconstructed_sha256": "6d0d8aa5de42bf85524d6f5218879ca4ae737d3417230bd26d9376b0a221c510",
+      "bytes": 44524,
+      "message_count": 9,
+      "tool_definitions": 31,
+      "model": "RM-01 VLM",
+      "max_tokens": 8192,
+      "stream": true,
+      "chat_template_kwargs": {
+        "enable_thinking": true
+      },
+      "pairs": [
+        {
+          "call_id": "call_01ce05910f5f4205be52aeea",
+          "tool": "bash",
+          "call_index": 5,
+          "result_index": 6,
+          "arguments_match": true,
+          "result_matches": true,
+          "native_is_error": true,
+          "outbound_error_flag": false,
+          "outbound_empty_success": false
+        },
+        {
+          "call_id": "call_784e35af63404745b8e1ba9b",
+          "tool": "bash",
+          "call_index": 7,
+          "result_index": 8,
+          "arguments_match": true,
+          "result_matches": true,
+          "native_is_error": false,
+          "outbound_error_flag": false,
+          "outbound_empty_success": true
+        }
+      ],
+      "control_sha256": "aaffe8170951fabc8a25594d0c8fa903a25995416c61ef6fcc06b073735756a5",
+      "exit0_sha256": "dc4dac0a6f800e8fd7694bf9855a002db01e409bb54b40de273214cd91346503",
+      "assistant_reasoning_blocks": 2
+    },
+    "before-summary": {
+      "native_result_through_seq": 54,
+      "reconstructed_sha256": "18dc97860fd6498f2e4e91fce18359ada52ed6bc29f322833e93344baaa3e11d",
+      "bytes": 61621,
+      "message_count": 18,
+      "tool_definitions": 31,
+      "model": "RM-01 VLM",
+      "max_tokens": 8192,
+      "stream": true,
+      "chat_template_kwargs": {
+        "enable_thinking": true
+      },
+      "pairs": [
+        {
+          "call_id": "call_01ce05910f5f4205be52aeea",
+          "tool": "bash",
+          "call_index": 5,
+          "result_index": 6,
+          "arguments_match": true,
+          "result_matches": true,
+          "native_is_error": true,
+          "outbound_error_flag": false,
+          "outbound_empty_success": false
+        },
+        {
+          "call_id": "call_784e35af63404745b8e1ba9b",
+          "tool": "bash",
+          "call_index": 7,
+          "result_index": 8,
+          "arguments_match": true,
+          "result_matches": true,
+          "native_is_error": false,
+          "outbound_error_flag": false,
+          "outbound_empty_success": true
+        },
+        {
+          "call_id": "call_97640acc07f84233bbea074c",
+          "tool": "bash",
+          "call_index": 9,
+          "result_index": 10,
+          "arguments_match": true,
+          "result_matches": true,
+          "native_is_error": true,
+          "outbound_error_flag": false,
+          "outbound_empty_success": false
+        },
+        {
+          "call_id": "call_a84f9e18025b423d936143f0",
+          "tool": "read",
+          "call_index": 11,
+          "result_index": 12,
+          "arguments_match": true,
+          "result_matches": true,
+          "native_is_error": false,
+          "outbound_error_flag": false,
+          "outbound_empty_success": false
+        },
+        {
+          "call_id": "call_a97fb80ef7a149cfb813ebd3",
+          "tool": "bash",
+          "call_index": 13,
+          "result_index": 14,
+          "arguments_match": true,
+          "result_matches": true,
+          "native_is_error": true,
+          "outbound_error_flag": false,
+          "outbound_empty_success": false
+        },
+        {
+          "call_id": "call_0e3e13695d6649f4ab1202e2",
+          "tool": "read",
+          "call_index": 15,
+          "result_index": 16,
+          "arguments_match": true,
+          "result_matches": true,
+          "native_is_error": false,
+          "outbound_error_flag": false,
+          "outbound_empty_success": false
+        },
+        {
+          "call_id": "call_af88e654fa684b51be0c38b6",
+          "tool": "glob",
+          "call_index": 15,
+          "result_index": 17,
+          "arguments_match": true,
+          "result_matches": true,
+          "native_is_error": false,
+          "outbound_error_flag": false,
+          "outbound_empty_success": false
+        }
+      ],
+      "control_sha256": "1ebfe6d08f93d611d430f6cacb72971734445f2110b628dfe98477f702da4c73",
+      "exit0_sha256": "1047507976b2edb230821200cbeac9e001babfb9f804cbfa68cdaf770b37913b",
+      "assistant_reasoning_blocks": 6,
+      "render_token_difference": 8,
+      "render_verified_by": "C"
+    }
+  },
+  "synthetic_history": {
+    "outbound_requests": 4,
+    "pairs_per_request": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "result_sequence": [
+      "sandbox_error",
+      "completed_without_output",
+      "sandbox_error"
+    ],
+    "approved_arguments_and_call_id_match": true,
+    "approved_result_retained": true,
+    "tool_history_sha256": "f9647fde16b96182ad792e4037c4d1256a1ec13ac148dc7f7f3a997020f94c49"
+  }
+}

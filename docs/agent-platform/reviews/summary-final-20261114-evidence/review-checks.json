@@ -1,0 +1,17 @@
+{
+  "verdict": "NOT_FIXED",
+  "matched_response_and_final_hash_arms": [
+    "baseline",
+    "audit"
+  ],
+  "wrong_final_text_present_in_raw_generated_tokens": true,
+  "reconstructed_tool_pairs_exact": 7,
+  "reconstructed_reasoning_blocks": 6,
+  "original_field_http_capture": false,
+  "exit0_only_no_final_answer": true,
+  "valid_generation_arms": 3,
+  "F_new_model_calls": 0,
+  "F_field_access": 0,
+  "F_product_changes": 0,
+  "G05_execution_acceptance_unchanged": true
+}

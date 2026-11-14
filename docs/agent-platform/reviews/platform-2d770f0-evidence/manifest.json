@@ -1,0 +1,40 @@
+{
+  "commit": "2d770f0e079652d2dc99b49124d60f3305c8c393",
+  "snapshot": "/private/tmp/chatraw-f-platform-2d770f0.gzkej4",
+  "snapshot_tracked_regular_files_verified": 296,
+  "changed_files": [],
+  "date": "2026-11-12 Asia/Shanghai",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "/Users/massif/.codex/worktrees/04ec/ChatRaw/.venv/bin/python (3.12.4)",
+  "packages": {
+    "fastapi": "0.123.7",
+    "aiohttp": "3.13.3",
+    "pydantic": "2.13.4",
+    "httpx": "0.28.1"
+  },
+  "regression": {
+    "discovered": 176,
+    "skipped": 23,
+    "all_commands_passed": true
+  },
+  "independent_authority": {
+    "tests": 7,
+    "passed": 7
+  },
+  "question_contract": {
+    "tests": 1,
+    "failed": 1,
+    "boundary": "Real UI JS encoder + Runner SQLite + production Claude mapper; controlled native receiver"
+  },
+  "native_question_contract": {
+    "tests": 1,
+    "failed": 1,
+    "boundary": "Real Claude SDK 0.2.180 / Code 2.1.321 + Runner + UI JS encoder + loopback model; Python3.14.2"
+  },
+  "scripts_sha256": {
+    "test_platform_claude_multicustom_native.py": "4e86e796dc32431c5f0a4c508c29258850fa72faf8307f5ed0990721bf272d6a",
+    "test_platform_authority.py": "49a7f54870096f81c8b3a0ca362cbc3efdb63c3a94c33e9753f79d166130d988",
+    "run_platform_checks.py": "5c77c91e86d0d7d1fcd210a1b1f88db33783af6cf733abecff415eb349c8ae10",
+    "test_platform_question_contract.py": "def0e9f346f6232117a5127453554d9f593d0d6c62e013eefd2a83e44262c3b0"
+  }
+}

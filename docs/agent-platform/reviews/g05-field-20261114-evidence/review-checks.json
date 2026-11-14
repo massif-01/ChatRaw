@@ -1,0 +1,33 @@
+{
+  "verdict": "DeepSeek G05 field approval gap closed",
+  "records": [
+    {
+      "action": "deny",
+      "run_id": "4972775a3e0c453582494e9c7e5544e5",
+      "native_session_id": "session-92e3246ccafd44339547768cbbee70e5",
+      "call_id": "call_abf188ff2ed040a18b81099f",
+      "interaction_id": "e4edc52ce3ee4062acea599096ae14d1",
+      "public_and_native_decision": "rejected",
+      "ui_full_operation_and_no_preselection": true,
+      "side_effect_matches_decision": true,
+      "terminal": "completed"
+    },
+    {
+      "action": "allow",
+      "run_id": "7af45839755449bc8433749171e391f3",
+      "native_session_id": "session-43af9254637f4e6c83a2fabe88a511b8",
+      "call_id": "call_784e35af63404745b8e1ba9b",
+      "interaction_id": "5f12c76ce95743f2b83af4ddfd5c8d18",
+      "public_and_native_decision": "allowed-once",
+      "ui_full_operation_and_no_preselection": true,
+      "side_effect_matches_decision": true,
+      "terminal": "completed"
+    }
+  ],
+  "following_bash_sandbox_denials": 2,
+  "approved_run_final_narrative_inconsistent": true,
+  "model_received_payload_verified": false,
+  "reviewed_adapter_and_patch_match_field": true,
+  "new_model_calls": 0,
+  "field_changes": 0
+}

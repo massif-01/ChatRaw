@@ -1,0 +1,19 @@
+{
+  "verdict": "PASS",
+  "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+  "runner_session": "dc93d52367cb49f8a4909e297c214a3f",
+  "native_thread": "01a1d581-d366-7db1-a194-a75060d24e47",
+  "native_compaction_events": 1,
+  "continuity": {
+    "expected_code": "D-54B28E292E",
+    "same_chatraw_session": true,
+    "code_matched": true
+  },
+  "tool_run": "394d1c0f053344b8b5a3b4f499027bb1",
+  "tool_write_read_matched": true,
+  "image_run": "9697fc7d74b544bf957c4f444b96f6dd",
+  "image_pixels": "182809",
+  "native_image_sha256_matches_upload": true,
+  "same_chat_and_thread_for_all_checks": true,
+  "upstream": "http://10.10.99.98:58000/v1/responses"
+}

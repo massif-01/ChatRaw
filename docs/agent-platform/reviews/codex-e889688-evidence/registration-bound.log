@@ -1,0 +1,7 @@
+test_hung_pre_interrupt_lookup_is_bounded_and_still_unknown (test_codex_registration_bound.RegistrationBoundTests.test_hung_pre_interrupt_lookup_is_bounded_and_still_unknown) ... registration_wait_seconds=0.501; interrupt_sent=True; final=unknown; foreign_termination=False
+ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.711s
+
+OK

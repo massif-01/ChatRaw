@@ -1,0 +1,3 @@
+Traceback (most recent call last):
+  File "<stdin>", line 72, in <module>
+RuntimeError: Primary application state changed during snapshot window; private backups retained but verification stopped

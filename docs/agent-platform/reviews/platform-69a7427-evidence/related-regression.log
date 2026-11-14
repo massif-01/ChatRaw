@@ -1,0 +1,12 @@
+test_claude_native_selected_answers_with_custom_text (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_claude_native_selected_answers_with_custom_text) ... Executing <Task pending name='Task-3' coro=<_Sink.run() running at /private/tmp/chatraw-f-final-69a7427.Jwgg3Z/agent_runner/tests/test_c_native_adapters.py:305> cb=[_wait.<locals>._on_completion() at /opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/tasks.py:503] created at /opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/tasks.py:395> took 0.312 seconds
+ok
+test_claude_native_question_batch (agent_runner.tests.test_c_native_adapters.NativeAdapterTests.test_claude_native_question_batch) ... ok
+test_cancel_is_exact_and_must_be_declared (agent_runner.tests.test_validation.InteractionValidationTests.test_cancel_is_exact_and_must_be_declared) ... ok
+test_complete_batch_preserves_selected_options_and_free_text (agent_runner.tests.test_validation.InteractionValidationTests.test_complete_batch_preserves_selected_options_and_free_text) ... ok
+test_duplicate_native_ids_and_naive_expiry_are_not_admitted (agent_runner.tests.test_validation.InteractionValidationTests.test_duplicate_native_ids_and_naive_expiry_are_not_admitted) ... ok
+test_invalid_batch_variants_rejected (agent_runner.tests.test_validation.InteractionValidationTests.test_invalid_batch_variants_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.921s
+
+OK

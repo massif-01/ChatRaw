@@ -1,0 +1,14 @@
+{
+  "run_id": "e05b8525931c4d1585cae79770c7be3d",
+  "status": "unknown",
+  "last_seq": 25,
+  "native_thread_id": "01a1d531-0acc-76a0-9f94-7933d117fd87",
+  "stop_requested": true,
+  "native_files": [
+    {
+      "path": "/var/lib/chatraw-runner/codex-home/sessions/2026/11/13/rollout-2026-11-13T13-55-23-01a1d531-0acc-76a0-9f94-7933d117fd87.jsonl",
+      "last_native_record_at": "2026-11-13T13:55:54.717Z",
+      "native_record_count": 18
+    }
+  ]
+}

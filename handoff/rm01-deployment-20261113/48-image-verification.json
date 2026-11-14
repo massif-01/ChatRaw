@@ -1,0 +1,19 @@
+{
+  "verdict": "PASS",
+  "chat_id": "9f29d3b8-1368-4adc-b6e1-4b6a7b26ae87",
+  "runner_session": "55512bdd173b496f8cc9be631380acbc",
+  "native_session": "session-1e829c1aa4af44338cfdf30b60ad618a",
+  "run_id": "c87836f4a345490aa8e5f4eb5d9a290f",
+  "expected_pixels": "719734",
+  "actual_answer": "719734",
+  "answer_absent_from_prompt": true,
+  "tool_calls": 0,
+  "native_image_block_confirmed": true,
+  "patch": {
+    "path": "/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml",
+    "content": "- id: llm-deepseek\n  config:\n    models:\n      - id: RM-01 VLM\n        inputModalities: [text, image]\n        contextWindow: 262144\n",
+    "sha256": "dbee21fc2b7f74fe07f01bf3641f4ce1146851a1e80f5db2b2df896d5013f703",
+    "mode": "0o440"
+  },
+  "max_tokens": 8192
+}

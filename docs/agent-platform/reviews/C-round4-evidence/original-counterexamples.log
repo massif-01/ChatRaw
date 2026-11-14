@@ -1,0 +1,12 @@
+test_claude_cancel_stops_started_shell (test_c_independent.NativeCounterexamples.test_claude_cancel_stops_started_shell) ... Executing <Task pending name='Task-3' coro=<_Sink.run() running at /Users/massif/.codex/worktrees/527c/ChatRaw/agent_runner/tests/test_c_native_adapters.py:305> cb=[_wait.<locals>._on_completion() at /opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/tasks.py:503] created at /opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/asyncio/tasks.py:395> took 0.317 seconds
+RECEIVER_RESULT agent=claude status=cancelled cancel_seconds=0.025 absent_at_cancel_return=True late_marker=False
+ok
+test_claude_long_approval_describes_executed_suffix (test_c_independent.NativeCounterexamples.test_claude_long_approval_describes_executed_suffix) ... ok
+test_codex_cancel_stops_started_shell (test_c_independent.NativeCounterexamples.test_codex_cancel_stops_started_shell) ... RECEIVER_RESULT agent=codex status=cancelled cancel_seconds=0.007 absent_at_cancel_return=True late_marker=False
+ok
+test_codex_long_approval_describes_executed_suffix (test_c_independent.NativeCounterexamples.test_codex_long_approval_describes_executed_suffix) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 12.964s
+
+OK

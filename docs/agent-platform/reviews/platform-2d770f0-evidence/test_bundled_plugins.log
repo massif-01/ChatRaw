@@ -1,0 +1,9 @@
+test_configuration_failure_restores_previous_installation (backend.test_bundled_plugins.BundledPluginsTests.test_configuration_failure_restores_previous_installation) ... ok
+test_entire_bundle_and_settings_survive_install_and_reinstall (backend.test_bundled_plugins.BundledPluginsTests.test_entire_bundle_and_settings_survive_install_and_reinstall) ... ok
+test_link_in_bundle_is_not_followed (backend.test_bundled_plugins.BundledPluginsTests.test_link_in_bundle_is_not_followed) ... ok
+test_unknown_id_and_paths_cannot_select_host_files (backend.test_bundled_plugins.BundledPluginsTests.test_unknown_id_and_paths_cannot_select_host_files) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.012s
+
+OK

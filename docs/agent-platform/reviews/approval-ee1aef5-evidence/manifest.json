@@ -1,0 +1,25 @@
+{
+  "commit": "ee1aef5ed1b1c2dc89c58c25710bade24720a5ed",
+  "snapshot": "/var/folders/88/hzsgvlyj5xzghddxy9rk5_5m0000gn/T/chatraw-f-dapproval-ut46urp3",
+  "python": "/private/tmp/chatraw-d-dsh-py312/bin/python",
+  "native_sdk_version": "0.2.2rc2",
+  "commands": [
+    "PYTHONDONTWRITEBYTECODE=1 CHATRAW_TEST_DEEPSEEK=1 /private/tmp/chatraw-d-dsh-py312/bin/python -B -m unittest -v agent_runner.tests.test_d_adapter_protocol.DeepSeekApprovalTests agent_runner.tests.test_d_native_adapters.DeepSeekNativeTests.test_sdk_native_plan_and_permission",
+    "PYTHONDONTWRITEBYTECODE=1 /private/tmp/chatraw-d-dsh-py312/bin/python -B -m unittest discover -s /Users/massif/.codex/worktrees/527c/ChatRaw/docs/agent-platform/reviews -p test_deepseek_approval_independent.py -v"
+  ],
+  "command_cwd": "snapshot above; initial wrong-cwd attempt excluded",
+  "source_sha256": {
+    "agent_runner/adapters/deepseek.py": "42efff6611a411aa7876a15dc9065a060e729e0713cea78929ce661f5074b07f",
+    "agent_runner/tests/test_d_adapter_protocol.py": "7a431d39f7179b725aece6f69712af19f4fbec4b0580906e6c29a5b60bc0f468",
+    "agent_runner/tests/test_d_native_adapters.py": "be905b3ee723648f0ba42788eda2f1e9936c6333f0497293b8c0f0b9fa910775"
+  },
+  "evidence_sha256": {
+    "harness-wrong-cwd.log": "d8f490102a3a5c5334327da3ce062af276ffdc9a490aaeec0d6eb8a75896d79d",
+    "independent-tests.log": "7a58006cbc2cb2f6b2fdf2eac2b27cc5d48e066ea6040e83d49021bc8bc6caf8",
+    "targeted-tests.log": "ee4d83f4b3a43010a7422c79e1f650e611389f742b20de9aaaddfa1c3446a475",
+    "test_deepseek_approval_independent.py.txt": "8180c517a267f5883943d5263ecac6c518da450e1e9620a2b0711ec223df3cf6"
+  },
+  "stop_evidence_commit": "e3622526b31dcbbcffcf59e9c69c55aa96ce3267",
+  "field_model_requests": 0,
+  "field_mutations": 0
+}

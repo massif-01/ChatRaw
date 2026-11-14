@@ -393,6 +393,7 @@
         pre.parentNode.replaceChild(container, pre);
 
         const ok = await initMarkmap();
+        if (!container.isConnected) return;
         if (!ok || !window.markmap) {
             container.className = 'mindmap-error-container';
             container.innerHTML = `<strong>${escapeHtml(t('renderError'))}:</strong> Markmap failed to load`;
@@ -436,6 +437,15 @@
                 }
             }
 
+            if (window.ChatRawMarkdown) {
+                const nodes = [root];
+                while (nodes.length) {
+                    const node = nodes.pop();
+                    node.content = window.ChatRawMarkdown.diagramLabel(node.content || '');
+                    if (node.children) nodes.push(...node.children);
+                }
+            }
+
             if (assets.styles && assets.styles.length) {
                 for (let si = 0; si < assets.styles.length; si++) {
                     const s = assets.styles[si];
@@ -451,6 +461,7 @@
                 } catch (_) { /* ignore */ }
             }
 
+            if (!container.isConnected) return;
             container.innerHTML = '';
             container.classList.remove('mindmap-loading');
             container.classList.add('mindmap-rendered');
@@ -473,10 +484,23 @@
             };
             container.appendChild(downloadBtn);
 
-            const opts = { initialExpandLevel: -1, maxWidth: 280, autoFit: true, embedGlobalCSS: true, duration: 0 };
+            const opts = { initialExpandLevel: -1, maxWidth: 280, autoFit: false, embedGlobalCSS: true, duration: 0 };
             const mm = new Markmap(svg, opts);
             await mm.setData(root);
-            await mm.fit();
+            if (!svg.isConnected) {
+                mm.destroy();
+                return;
+            }
+            // A chat switch can hide or detach a map while Markmap is measuring it.
+            const resize = new ResizeObserver(([entry]) => {
+                if (!svg.isConnected) {
+                    resize.disconnect();
+                    mm.destroy();
+                } else if (entry.contentRect.width && entry.contentRect.height) {
+                    mm.fit();
+                }
+            });
+            resize.observe(svg);
             if (DEBUG) console.log('[MindmapRenderer] SVG children:', svg.childNodes.length, 'innerHTML preview:', svg.innerHTML.slice(0, 500));
         } catch (e) {
             console.error('[MindmapRenderer] Render error:', e);
@@ -548,13 +572,21 @@
         }
     }
 
+    function canProcess(element) {
+        return element.isConnected && !element.querySelector('[data-markdown-streaming]');
+    }
+
     function scheduleProcessing(element) {
         const key = element;
         const existing = contentStabilityMap.get(key);
         if (existing) clearTimeout(existing);
+        if (!canProcess(element)) {
+            contentStabilityMap.delete(key);
+            return;
+        }
         const timer = setTimeout(async () => {
             contentStabilityMap.delete(key);
-            await processMarkmapInElement(element);
+            if (canProcess(element)) await processMarkmapInElement(element);
         }, STABILITY_DELAY);
         contentStabilityMap.set(key, timer);
     }
@@ -578,7 +610,7 @@
                         }
                     }
                 }
-                if (m.type === 'characterData' || m.type === 'childList') {
+                if (m.type === 'characterData' || m.type === 'childList' || m.type === 'attributes') {
                     const target = m.target?.nodeType === Node.TEXT_NODE ? m.target.parentElement : m.target;
                     const mc = target?.closest?.('.message-content');
                     if (mc) elements.add(mc);
@@ -588,7 +620,9 @@
         });
 
         const container = document.querySelector('.messages') || document.querySelector('.messages-container') || document.body;
-        observer.observe(container, { childList: true, subtree: true, characterData: true });
+        observer.observe(container, {
+            childList: true, subtree: true, characterData: true, attributeFilter: ['data-markdown-streaming']
+        });
 
         const initial = document.querySelectorAll('.message-content');
         if (DEBUG) console.log('[MindmapRenderer] initObserver, container:', container?.className, 'message-contents:', initial.length);

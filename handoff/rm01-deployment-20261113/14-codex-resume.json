@@ -1,0 +1,67 @@
+{
+  "agent": "codex",
+  "before": {
+    "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+    "session_id": "b7fea9a288d84d1489ff634e753a6652",
+    "agent_id": "codex",
+    "workspace": {
+      "id": "b7fea9a288d84d1489ff634e753a6652",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "8fd852ee00c24c0985bd000d02ffafeb"
+  },
+  "submitted": {
+    "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+    "session_id": "b7fea9a288d84d1489ff634e753a6652",
+    "status": "queued",
+    "last_seq": 1,
+    "run_id": "e62e05ca92744e399ea75c3e445e2b33",
+    "interactions": []
+  },
+  "snapshot": {
+    "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+    "session_id": "b7fea9a288d84d1489ff634e753a6652",
+    "status": "completed",
+    "last_seq": 17,
+    "run_id": "e62e05ca92744e399ea75c3e445e2b33",
+    "interactions": [],
+    "final_text": "RM99_NATIVE_OK\n\nWorking directory observed: `/var/lib/chatraw-runner/workspaces/b7fea9a288d84d1489ff634e753a6652`"
+  },
+  "elapsed": 6.48,
+  "messages": [
+    {
+      "id": "agent-8fd852ee00c24c0985bd000d02ffafeb-user",
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "role": "user",
+      "content": "Use your native shell/terminal tool to run pwd exactly once. Then reply with the working directory and the literal text RM99_NATIVE_OK. Do not access other files or make network requests.",
+      "created_at": "2026-11-13T13:26:46.430661",
+      "run_id": "8fd852ee00c24c0985bd000d02ffafeb"
+    },
+    {
+      "id": "agent-8fd852ee00c24c0985bd000d02ffafeb-assistant",
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "role": "assistant",
+      "content": "The sandbox failed to start, so I'll retry `pwd` with escalated permissions to get the working directory.\n\nWorking directory: `/var/lib/chatraw-runner/workspaces/b7fea9a288d84d1489ff634e753a6652`\n\nRM99_NATIVE_OK",
+      "created_at": "2026-11-13T13:27:27.582219",
+      "run_id": "8fd852ee00c24c0985bd000d02ffafeb"
+    },
+    {
+      "id": "agent-e62e05ca92744e399ea75c3e445e2b33-user",
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "role": "user",
+      "content": "From our previous turn, repeat the literal RM99 validation marker and the working directory you actually observed. Use your existing conversation context only. Do not run any tools.",
+      "created_at": "2026-11-13T13:32:05.461432",
+      "run_id": "e62e05ca92744e399ea75c3e445e2b33"
+    },
+    {
+      "id": "agent-e62e05ca92744e399ea75c3e445e2b33-assistant",
+      "chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a",
+      "role": "assistant",
+      "content": "RM99_NATIVE_OK\n\nWorking directory observed: `/var/lib/chatraw-runner/workspaces/b7fea9a288d84d1489ff634e753a6652`",
+      "created_at": "2026-11-13T13:32:10.830075",
+      "run_id": "e62e05ca92744e399ea75c3e445e2b33"
+    }
+  ]
+}

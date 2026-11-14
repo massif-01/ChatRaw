@@ -1,0 +1,9 @@
+{
+  "changed_methods": [
+    "validate_config",
+    "probe",
+    "_make_harness"
+  ],
+  "approval_question_cancel_run_resume_methods_unchanged": true,
+  "patch_file": "docs/agent-platform/handoffs/D-field/deepseek-rm01-models-v2.patch.yml"
+}

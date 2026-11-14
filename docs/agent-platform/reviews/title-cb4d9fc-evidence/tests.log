@@ -1,0 +1,10 @@
+test_compaction_does_not_name_a_chat (backend.test_agent_titles.AgentTitleTests.test_compaction_does_not_name_a_chat) ... ok
+test_first_user_message_uses_ordinary_length_and_ellipsis_rule (backend.test_agent_titles.AgentTitleTests.test_first_user_message_uses_ordinary_length_and_ellipsis_rule) ... ok
+test_manual_title_survives_first_projection_and_replay (backend.test_agent_titles.AgentTitleTests.test_manual_title_survives_first_projection_and_replay) ... ok
+test_replay_and_later_turn_cannot_rename_first_message_title (backend.test_agent_titles.AgentTitleTests.test_replay_and_later_turn_cannot_rename_first_message_title) ... ok
+test_native_context_and_offline_completion_are_persisted_once (backend.test_agent_gateway.GatewayTests.test_native_context_and_offline_completion_are_persisted_once) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.062s
+
+OK

@@ -1,0 +1,109 @@
+{
+  "agent": "deepseek",
+  "case": "stop",
+  "steps": [
+    {
+      "label": "stop",
+      "client_request_id": "f529593ad6d64320a24e3a2bf4e3bb0c",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+        "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "5fe04ea8079d4c0dab5000bfcd643e3f",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+        "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+        "status": "cancelled",
+        "last_seq": 12,
+        "run_id": "5fe04ea8079d4c0dab5000bfcd643e3f",
+        "interactions": [],
+        "final_text": ""
+      },
+      "approval": {
+        "interaction_id": "cf00a78d5c684ae08c9d6cfdfd40c83c",
+        "status": "accepted"
+      },
+      "cancel_requested_at": "2026-11-13T19:31:43.345142+00:00",
+      "cancel_receipt": {
+        "run_id": "5fe04ea8079d4c0dab5000bfcd643e3f",
+        "status": "stopping"
+      }
+    }
+  ],
+  "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+  "binding": {
+    "chat_id": "0b829c8f-9a3d-4153-9009-46fd17fc151f",
+    "session_id": "a16311bfa8874adf9e60ee3ca400bfed",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "a16311bfa8874adf9e60ee3ca400bfed",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "8d1d8752099a42b8b14e44059d02571f"
+  },
+  "expected_continuity": "A_OFFICIAL_e524b80d54f0",
+  "fixture_source_sha256": "016a12bbb8615d2525a06ff5ed50161fb626bd61443f6381c7726b261d3832bb",
+  "markers": {
+    "token": "2b8f4419cb6b4185b1a80063af519066",
+    "workspace": "/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed",
+    "command": "test \"$(pwd -P)\" = '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed' && set -C && printf '%s\\n' '2b8f4419cb6b4185b1a80063af519066' > '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/d-2b8f4419cb6b4185b1a80063af519066.started' && sleep 30 && printf '%s\\n' '2b8f4419cb6b4185b1a80063af519066' > '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/d-2b8f4419cb6b4185b1a80063af519066.late'",
+    "before": {
+      "started": "missing",
+      "late": "missing"
+    },
+    "during": {
+      "started": "matched",
+      "late": "missing"
+    },
+    "observed_at": "2026-11-13T19:31:43.237333+00:00",
+    "after": {
+      "started": "matched",
+      "late": "missing"
+    },
+    "checked_at": "2026-11-13T19:32:15.318529+00:00"
+  },
+  "process_scope_before_cancel": {
+    "matching_scope": [
+      {
+        "pid": 6436,
+        "ppid": 6010,
+        "state": "S",
+        "start_ticks": "1246054",
+        "cwd": "/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed",
+        "command": "bash -c test \"$(pwd -P)\" = '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed' && set -C && printf '%s\\n' '2b8f4419cb6b4185b1a80063af519066' > '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/d-2b8f4419cb6b4185b1a80063af519066.started' && sleep 30 && printf '%s\\n' '2b8f4419cb6b4185b1a80063af519066' > '/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed/d-2b8f4419cb6b4185b1a80063af519066.late' "
+      },
+      {
+        "pid": 6438,
+        "ppid": 6436,
+        "state": "S",
+        "start_ticks": "1246055",
+        "cwd": "/var/lib/chatraw-official-test/runner/workspaces/a16311bfa8874adf9e60ee3ca400bfed",
+        "command": "sleep 30 "
+      }
+    ],
+    "known_scope_after": []
+  },
+  "process_scope_after": {
+    "matching_scope": [],
+    "known_scope_after": [
+      {
+        "pid": 6436,
+        "same_process_present": false,
+        "state": null
+      },
+      {
+        "pid": 6438,
+        "same_process_present": false,
+        "state": null
+      }
+    ]
+  },
+  "outcome": "passed",
+  "native_evidence_reference": "../native-final-and-isolation.json"
+}

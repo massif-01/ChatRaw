@@ -1,0 +1,31 @@
+Traceback (most recent call last):
+  File "/Users/massif/.codex/worktrees/04ec/ChatRaw/handoff/rm01-deployment-20261113/api.py", line 7, in api
+    with opener.open(req,timeout=90) as r:return json.load(r)
+         ~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 493, in open
+    response = meth(req, response)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 602, in http_response
+    response = self.parent.error(
+        'http', request, response, code, msg, hdrs)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 531, in error
+    return self._call_chain(*args)
+           ~~~~~~~~~~~~~~~~^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 464, in _call_chain
+    result = func(*args)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 611, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 503: Service Unavailable
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/massif/.codex/worktrees/04ec/ChatRaw/handoff/rm01-deployment-20261113/14-resume.py", line 6, in <module>
+    before=api('GET',f'/api/chats/{chat}/agent');started=time.time()
+  File "/Users/massif/.codex/worktrees/04ec/ChatRaw/handoff/rm01-deployment-20261113/api.py", line 8, in api
+    except urllib.error.HTTPError as e: raise RuntimeError(f'{method} {path}: {e.code} {e.read().decode()}')
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: GET /api/chats/6a5b5091-00be-4bf3-90cf-303160876c4a/agent: 503 {"error":{"code":"runner_unavailable","message":"Runner connection failed; check the existing request before submitting again","retryable":false}}
+{"agent": "codex", "before": {"chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a", "session_id": "b7fea9a288d84d1489ff634e753a6652", "agent_id": "codex", "workspace": {"id": "b7fea9a288d84d1489ff634e753a6652", "kind": "managed", "label": "Managed workspace"}, "active_run_id": null, "last_run_id": "8fd852ee00c24c0985bd000d02ffafeb"}, "submitted": {"chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a", "session_id": "b7fea9a288d84d1489ff634e753a6652", "status": "queued", "last_seq": 1, "run_id": "e62e05ca92744e399ea75c3e445e2b33", "interactions": []}, "snapshot": {"chat_id": "6a5b5091-00be-4bf3-90cf-303160876c4a", "session_id": "b7fea9a288d84d1489ff634e753a6652", "status": "completed", "last_seq": 17, "run_id": "e62e05ca92744e399ea75c3e445e2b33", "interactions": [], "final_text": "RM99_NATIVE_OK\n\nWorking directory observed: `/var/lib/chatraw-runner/workspaces/b7fea9a288d84d1489ff634e753a6652`"}, "elapsed": 6.48}
+{"agent": "claude", "before": {"chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c", "session_id": "88e2895ec55b4ab6872e731d8d0b67b4", "agent_id": "claude", "workspace": {"id": "88e2895ec55b4ab6872e731d8d0b67b4", "kind": "managed", "label": "Managed workspace"}, "active_run_id": null, "last_run_id": "ff47862ec823417190fe53b1a1edbe2f"}, "submitted": {"chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c", "session_id": "88e2895ec55b4ab6872e731d8d0b67b4", "status": "queued", "last_seq": 1, "run_id": "06c78d5fa7d44514901a7c8328d3655c", "interactions": []}, "snapshot": {"chat_id": "b703dc01-675b-4819-bba9-3414ce5dd62c", "session_id": "88e2895ec55b4ab6872e731d8d0b67b4", "status": "completed", "last_seq": 19, "run_id": "06c78d5fa7d44514901a7c8328d3655c", "interactions": [], "final_text": "Working directory observed: `/var/lib/chatraw-runner/workspaces/88e2895ec55b4ab6872e731d8d0b67b4`\n\nRM99_NATIVE_OK"}, "elapsed": 8.54}
+{"agent": "pi", "before": {"chat_id": "ba5a7cb3-9e0f-45e6-b406-b7678a0507b9", "session_id": "7efd25b09ff14e52be71f94abc638a1c", "agent_id": "pi", "workspace": {"id": "7efd25b09ff14e52be71f94abc638a1c", "kind": "managed", "label": "Managed workspace"}, "active_run_id": null, "last_run_id": "e024335f7bde4ebd846260c15b3eab50"}, "submitted": {"chat_id": "ba5a7cb3-9e0f-45e6-b406-b7678a0507b9", "session_id": "7efd25b09ff14e52be71f94abc638a1c", "status": "queued", "last_seq": 1, "run_id": "ea5d45ff82254d6d974ffac315ba94b8", "interactions": []}, "snapshot": {"chat_id": "ba5a7cb3-9e0f-45e6-b406-b7678a0507b9", "session_id": "7efd25b09ff14e52be71f94abc638a1c", "status": "completed", "last_seq": 17, "run_id": "ea5d45ff82254d6d974ffac315ba94b8", "interactions": [], "final_text": "Working directory: `/var/lib/chatraw-runner/workspaces/7efd25b09ff14e52be71f94abc638a1c`\n\nRM99_NATIVE_OK"}, "elapsed": 5.95}
+{"agent": "hermes", "before": {"chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc", "session_id": "4e7b1a3095494a64a9d61f5f2732712a", "agent_id": "hermes", "workspace": {"id": "4e7b1a3095494a64a9d61f5f2732712a", "kind": "managed", "label": "Managed workspace"}, "active_run_id": null, "last_run_id": "882a5e73da164864a38f556f2e4357bc"}, "submitted": {"chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc", "session_id": "4e7b1a3095494a64a9d61f5f2732712a", "status": "queued", "last_seq": 1, "run_id": "41c4e0a88615475089ca4ac7fa1bb740", "interactions": []}, "snapshot": {"chat_id": "8b777d56-5b1d-448f-848e-b7447e1d91bc", "session_id": "4e7b1a3095494a64a9d61f5f2732712a", "status": "completed", "last_seq": 23, "run_id": "41c4e0a88615475089ca4ac7fa1bb740", "interactions": [], "final_text": "RM99_NATIVE_OK\n\n`/var/lib/chatraw-runner/workspaces/4e7b1a3095494a64a9d61f5f2732712a`"}, "elapsed": 9.57}

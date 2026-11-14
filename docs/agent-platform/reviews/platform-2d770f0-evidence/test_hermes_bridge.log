@@ -1,0 +1,9 @@
+test_cors_wildcard_is_not_control_plane_authorization (backend.test_hermes_bridge.HermesMigrationTests.test_cors_wildcard_is_not_control_plane_authorization) ... ok
+test_explicit_cors_origin_is_still_supported (backend.test_hermes_bridge.HermesMigrationTests.test_explicit_cors_origin_is_still_supported) ... ok
+test_legacy_runtime_is_absent_from_production_module (backend.test_hermes_bridge.HermesMigrationTests.test_legacy_runtime_is_absent_from_production_module) ... ok
+test_same_origin_and_fetch_metadata_are_required (backend.test_hermes_bridge.HermesMigrationTests.test_same_origin_and_fetch_metadata_are_required) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+OK

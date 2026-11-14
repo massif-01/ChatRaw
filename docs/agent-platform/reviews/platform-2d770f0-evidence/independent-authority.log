@@ -1,0 +1,12 @@
+test_cross_chat_upload_rejected_and_artifact_owner_checked (test_platform_authority.GatewayAuthorityTests.test_cross_chat_upload_rejected_and_artifact_owner_checked) ... ok
+test_disable_wins_before_reply_and_uninstall_keeps_data (test_platform_authority.GatewayAuthorityTests.test_disable_wins_before_reply_and_uninstall_keeps_data) ... ok
+test_dropped_reply_then_disable_preserves_single_native_dispatch (test_platform_authority.GatewayAuthorityTests.test_dropped_reply_then_disable_preserves_single_native_dispatch) ... ok
+test_empty_final_replaces_partial_and_replay_does_not_duplicate (test_platform_authority.GatewayAuthorityTests.test_empty_final_replaces_partial_and_replay_does_not_duplicate) ... ok
+test_lost_202_then_gateway_and_database_reopen_project_once (test_platform_authority.GatewayAuthorityTests.test_lost_202_then_gateway_and_database_reopen_project_once) ... ok
+test_abrupt_runner_process_exit_preserves_unknown_and_global_slot (test_platform_authority.PersistentCrashTests.test_abrupt_runner_process_exit_preserves_unknown_and_global_slot) ... ok
+test_backup_copies_committed_wal_without_overwriting (test_platform_authority.PersistentCrashTests.test_backup_copies_committed_wal_without_overwriting) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 2.513s
+
+OK

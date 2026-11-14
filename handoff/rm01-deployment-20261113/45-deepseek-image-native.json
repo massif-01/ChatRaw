@@ -1,0 +1,130 @@
+{
+  "session": {
+    "id": "55512bdd173b496f8cc9be631380acbc",
+    "binding": "{\"agent_id\":\"deepseek\",\"native\":{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek/session-1e829c1aa4af44338cfdf30b60ad618a\",\"session_id\":\"session-1e829c1aa4af44338cfdf30b60ad618a\"},\"session_id\":\"55512bdd173b496f8cc9be631380acbc\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/55512bdd173b496f8cc9be631380acbc\"}",
+    "base_config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\",\"patches\":[\"/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml\"]}",
+    "config": "{\"dsh_home\":\"/var/lib/chatraw-runner/deepseek\",\"max_tokens\":8192,\"model\":\"RM-01 VLM\",\"patches\":[\"/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml\"]}"
+  },
+  "events": [
+    {
+      "type": "user/message",
+      "seq": 8,
+      "time": 1794580113498,
+      "data": {
+        "content": [
+          {
+            "type": "text",
+            "text": "D\u9a8c\u6536 deepseek PNG. Read the six black digits in the attached image, left to right. Use only the attached image, do not call tools, and return only the six digits."
+          },
+          {
+            "type": "image",
+            "attachment": {
+              "attachmentId": "sha256:d6391091093a06a5be7072b3448e14f6ec47896537d94506e96a688856a29a0a",
+              "mediaType": "image/jpeg",
+              "width": 284,
+              "height": 80,
+              "bytes": 3841
+            }
+          }
+        ],
+        "source": {
+          "kind": "user"
+        },
+        "role": "user",
+        "id": "3bd66a36-403c-4304-84ed-2b497404bc3a"
+      },
+      "surfaceOp": "append"
+    },
+    {
+      "type": "request/header",
+      "seq": 12,
+      "time": 1794580113505,
+      "config": {
+        "maxTokens": 8192,
+        "provider": "deepseek-official",
+        "model": "RM-01 VLM",
+        "reasoningEffort": "high"
+      }
+    },
+    {
+      "type": "assistant/message",
+      "seq": 16,
+      "time": 1794580116031,
+      "data": {
+        "turn": 1,
+        "step": 1,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "719734"
+            }
+          ],
+          "source": {
+            "kind": "model",
+            "provider": "deepseek-official",
+            "model": "RM-01 VLM",
+            "replayState": {
+              "response": {
+                "kind": "deepseek-messages",
+                "version": 1,
+                "model": "RM-01 VLM"
+              },
+              "blocks": [
+                {
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "id": "9fa969d4-8eb9-4430-9911-284163767e7a"
+        },
+        "usage": {
+          "inputTokens": 9552,
+          "outputTokens": 7,
+          "totalTokens": 9559
+        }
+      }
+    },
+    {
+      "type": "turn/end",
+      "seq": 18,
+      "time": 1794580116034,
+      "data": {
+        "turn": 1,
+        "reason": {
+          "kind": "completed"
+        }
+      }
+    }
+  ],
+  "event_types": [
+    "session",
+    "permission/preset",
+    "sandbox/mode",
+    "approval/policy",
+    "agent/inbox/spliced",
+    "turn/start",
+    "agent/inbox/spliced",
+    "step/start",
+    "system/message",
+    "user/message",
+    "user/message",
+    "user/message",
+    "user/message",
+    "request/header",
+    "request/context",
+    "session/title",
+    "session-log-deepseek/delivery-accepted",
+    "assistant/message",
+    "step/end",
+    "turn/end"
+  ],
+  "patch": {
+    "path": "/etc/chatraw-runner/deepseek-rm01-models-v1.patch.yml",
+    "content": "- id: llm-deepseek\n  config:\n    models:\n      - id: RM-01 VLM\n        inputModalities: [text, image]\n        contextWindow: 262144\n",
+    "sha256": "dbee21fc2b7f74fe07f01bf3641f4ce1146851a1e80f5db2b2df896d5013f703",
+    "mode": "0o440"
+  }
+}

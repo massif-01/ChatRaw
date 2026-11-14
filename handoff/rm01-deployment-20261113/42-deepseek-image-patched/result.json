@@ -1,0 +1,83 @@
+{
+  "agent": "deepseek",
+  "case": "image",
+  "steps": [
+    {
+      "label": "image",
+      "client_request_id": "95a58d808ea94e489068276c5f1db32d",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "9f29d3b8-1368-4adc-b6e1-4b6a7b26ae87",
+        "session_id": "55512bdd173b496f8cc9be631380acbc",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "c87836f4a345490aa8e5f4eb5d9a290f",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "9f29d3b8-1368-4adc-b6e1-4b6a7b26ae87",
+        "session_id": "55512bdd173b496f8cc9be631380acbc",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "c87836f4a345490aa8e5f4eb5d9a290f",
+        "interactions": [],
+        "final_text": "719734"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "0.2.2rc2",
+    "reason": "DeepSeek SDK and credential configuration are ready; model request unverified",
+    "capabilities": {
+      "streaming_text": false,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "process_stop",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "text_delivery": "committed_message",
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "image_total_bytes": 8388608,
+        "images_require_model_support": true
+      }
+    }
+  },
+  "chat_id": "9f29d3b8-1368-4adc-b6e1-4b6a7b26ae87",
+  "binding": {
+    "chat_id": "9f29d3b8-1368-4adc-b6e1-4b6a7b26ae87",
+    "session_id": "55512bdd173b496f8cc9be631380acbc",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "55512bdd173b496f8cc9be631380acbc",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "image": {
+    "expected_code": "719734",
+    "sha256": "b4b92ccee26c6ab81ff2dc8208ab1b89ac7b52412ad7d1c076e8b30f11d55b52",
+    "upload": {
+      "attachment_id": "2d4332aa287c4543857757826695832d",
+      "name": "D-vision.png",
+      "mime_type": "image/png",
+      "size": 338
+    },
+    "answer_matched": true
+  },
+  "outcome": "native_evidence_pending"
+}

@@ -1,0 +1,7 @@
+test_old_chat_health_and_approval_are_explicitly_retired (backend.test_hermes_smoke.HermesRetirementTests.test_old_chat_health_and_approval_are_explicitly_retired) ... ok
+test_retired_routes_do_not_bypass_origin_checks (backend.test_hermes_smoke.HermesRetirementTests.test_retired_routes_do_not_bypass_origin_checks) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.018s
+
+OK

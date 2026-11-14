@@ -1,0 +1,61 @@
+{
+  "saw_down": true,
+  "changes": [
+    {
+      "at_utc": "2026-11-13T16:04:03.556683+00:00",
+      "elapsed": 2.52,
+      "ports": {
+        "22": false,
+        "51111": false,
+        "59090": false,
+        "59009": false,
+        "2049": false,
+        "445": false,
+        "139": false
+      },
+      "chatraw_ready": false
+    },
+    {
+      "at_utc": "2026-11-13T16:04:15.765660+00:00",
+      "elapsed": 14.73,
+      "ports": {
+        "22": true,
+        "51111": false,
+        "59090": false,
+        "59009": true,
+        "2049": true,
+        "445": true,
+        "139": true
+      },
+      "chatraw_ready": false
+    },
+    {
+      "at_utc": "2026-11-13T16:04:17.883792+00:00",
+      "elapsed": 16.85,
+      "ports": {
+        "22": true,
+        "51111": true,
+        "59090": false,
+        "59009": true,
+        "2049": true,
+        "445": true,
+        "139": true
+      },
+      "chatraw_ready": true
+    },
+    {
+      "at_utc": "2026-11-13T16:04:19.900340+00:00",
+      "elapsed": 18.86,
+      "ports": {
+        "22": true,
+        "51111": true,
+        "59090": true,
+        "59009": true,
+        "2049": true,
+        "445": true,
+        "139": true
+      },
+      "chatraw_ready": true
+    }
+  ]
+}

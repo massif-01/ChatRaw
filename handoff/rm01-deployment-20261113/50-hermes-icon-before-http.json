@@ -1,0 +1,34 @@
+{
+  "/api/plugins/hermes/icon": {
+    "status": 200,
+    "headers": {
+      "Cache-Control": null,
+      "ETag": "\"c7ad11b30fe61488ba48465d76044ea2\"",
+      "Last-Modified": "Thu, 11 Jun 2026 07:19:26 GMT",
+      "Content-Type": "image/png",
+      "Content-Length": "6786",
+      "Expires": null
+    },
+    "sha256": "e441d6860d5e4621811dcb3a242ce37583d8b44d6fc7724fcf9cf0989069656e",
+    "png_dimensions": [
+      128,
+      128
+    ]
+  },
+  "/api/plugins/market/hermes/icon": {
+    "status": 200,
+    "headers": {
+      "Cache-Control": null,
+      "ETag": "\"c7ad11b30fe61488ba48465d76044ea2\"",
+      "Last-Modified": "Thu, 11 Jun 2026 07:19:26 GMT",
+      "Content-Type": "image/png",
+      "Content-Length": "6786",
+      "Expires": null
+    },
+    "sha256": "e441d6860d5e4621811dcb3a242ce37583d8b44d6fc7724fcf9cf0989069656e",
+    "png_dimensions": [
+      128,
+      128
+    ]
+  }
+}

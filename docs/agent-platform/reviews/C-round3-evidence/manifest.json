@@ -1,0 +1,35 @@
+{
+  "date": "2026-11-12 Asia/Shanghai",
+  "source_commits": [
+    "432bffca642bf492f9e0db49f3ed1582df7a5716",
+    "574d2568c8268d4ed61eb8dc4e6410152ab62362"
+  ],
+  "review_checkout": "7a2de7302a96b7cf7dde2f07fa6a7f373923828b",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "/private/tmp/chatraw-c.fMJYKf/venv/bin/python (3.14.2)",
+  "codex": "0.153.4",
+  "claude_agent_sdk": "0.2.180",
+  "claude_code": "2.1.321",
+  "boundary": "Real native CLI/SDK + loopback model fixture, dummy credentials, temp workspace shell writes only",
+  "tests": {
+    "existing": {
+      "count": 29,
+      "passed": 29,
+      "skipped": 0
+    },
+    "independent": {
+      "count": 4,
+      "passed": 1,
+      "failed": 3,
+      "repeated": 2
+    }
+  },
+  "inputs": {
+    "/Users/massif/ChatRaw/docs/agent-platform/CONTRACT.md": "c92c75b756398ccaa00ca06fc56f07ad61480ce0333fe09ede8f6fc4adfcfa7f",
+    "docs/agent-platform/C-ADAPTERS.md": "ac2fa11eecd30c7ab681245b86899bbf0c9649210f837d12f71fbf1029b904d0",
+    "agent_runner/adapters/base.py": "2ad8b55da9e4acdea8a0240359cd35ae840bf4d96406dee1f9162197c177d907",
+    "agent_runner/adapters/codex.py": "4a9a38c10140a326a374f5d2a7dd00135ced6e3534e78abfb7832abf874416ee",
+    "agent_runner/adapters/claude.py": "aed29212ef9eca871f35c09f632fd367e4b4dee40fcf09cedd6980e89e09d583",
+    "docs/agent-platform/reviews/test_c_independent.py": "f392ead13c32168992387eb605ab1dd97a38f88cf15fe8196bb278717d1a41a1"
+  }
+}

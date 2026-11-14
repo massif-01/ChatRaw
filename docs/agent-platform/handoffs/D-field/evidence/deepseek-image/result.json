@@ -1,0 +1,84 @@
+{
+  "agent": "deepseek",
+  "case": "image",
+  "steps": [
+    {
+      "label": "image",
+      "client_request_id": "db5aa02ffcd74058bf23397cc8f6532a",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "038ab243-84e0-46df-9297-1df6a428784d",
+        "session_id": "f6523c63113f450db6cfb2a394166bf7",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "788952b03cd943e48b599aec222eaedd",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "038ab243-84e0-46df-9297-1df6a428784d",
+        "session_id": "f6523c63113f450db6cfb2a394166bf7",
+        "status": "completed",
+        "last_seq": 6,
+        "run_id": "788952b03cd943e48b599aec222eaedd",
+        "interactions": [],
+        "final_text": "I can't read the image — it was omitted because this model accepts text only. I have no way to see the six digits, and I'm asked not to call tools, so I must decline rather than guess:\n\nI'm unable to answer. The attached image was not passed to this model (text-only), so the digits are not visible to me."
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": "0.2.2rc2",
+    "reason": "DeepSeek SDK and credential configuration are ready; model request unverified",
+    "capabilities": {
+      "streaming_text": false,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "process_stop",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "text_delivery": "committed_message",
+        "image_mime_types": [
+          "image/gif",
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ],
+        "image_total_bytes": 8388608,
+        "images_require_model_support": true
+      }
+    }
+  },
+  "chat_id": "038ab243-84e0-46df-9297-1df6a428784d",
+  "binding": {
+    "chat_id": "038ab243-84e0-46df-9297-1df6a428784d",
+    "session_id": "f6523c63113f450db6cfb2a394166bf7",
+    "agent_id": "deepseek",
+    "workspace": {
+      "id": "f6523c63113f450db6cfb2a394166bf7",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "image": {
+    "expected_code": "525877",
+    "sha256": "3b350da22d669fda1ce785398fe10a5441c3a855d530e1a20e0a411aff4d4da1",
+    "upload": {
+      "attachment_id": "2ab0d0cdf28b488c844b9e816dafed5f",
+      "name": "D-vision.png",
+      "mime_type": "image/png",
+      "size": 321
+    },
+    "answer_matched": false
+  },
+  "outcome": "unverified",
+  "reason": "The image-only random challenge answer did not match"
+}

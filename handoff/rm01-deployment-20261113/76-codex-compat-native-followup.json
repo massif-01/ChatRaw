@@ -1,0 +1,166 @@
+{
+  "session": {
+    "id": "dc93d52367cb49f8a4909e297c214a3f",
+    "binding": "{\"agent_id\":\"codex\",\"native\":{\"run_id\":\"9697fc7d74b544bf957c4f444b96f6dd\",\"thread_id\":\"01a1d581-d366-7db1-a194-a75060d24e47\",\"turn_id\":\"01a1d585-bb1a-7643-a894-97e0a86bddf6\"},\"session_id\":\"dc93d52367cb49f8a4909e297c214a3f\",\"workspace\":\"/var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f\"}",
+    "base_config": "{\"responses_compat_upstream\":\"http://10.10.99.98:58000/v1/responses\"}"
+  },
+  "native_thread_id": "01a1d581-d366-7db1-a194-a75060d24e47",
+  "records": [
+    {
+      "timestamp": "2026-11-13T15:23:40.258Z",
+      "ordinal": 12,
+      "type": "event_msg",
+      "payload": {
+        "type": "task_complete",
+        "turn_id": "01a1d581-d395-7ec0-8159-5d906cc854db",
+        "last_agent_message": "OK",
+        "started_at": 1794583417,
+        "completed_at": 1794583420,
+        "duration_ms": 2505,
+        "time_to_first_token_ms": 2324
+      }
+    },
+    {
+      "timestamp": "2026-11-13T15:23:44.149Z",
+      "ordinal": 21,
+      "type": "event_msg",
+      "payload": {
+        "type": "task_complete",
+        "turn_id": "01a1d581-e2d4-7602-be41-9964d95466fd",
+        "last_agent_message": "OK",
+        "started_at": 1794583421,
+        "completed_at": 1794583424,
+        "duration_ms": 2493,
+        "time_to_first_token_ms": 2320
+      }
+    },
+    {
+      "timestamp": "2026-11-13T15:23:48.256Z",
+      "ordinal": 30,
+      "type": "event_msg",
+      "payload": {
+        "type": "task_complete",
+        "turn_id": "01a1d581-f2cc-7803-8f63-aedd6e3a260f",
+        "last_agent_message": "OK",
+        "started_at": 1794583425,
+        "completed_at": 1794583428,
+        "duration_ms": 2513,
+        "time_to_first_token_ms": 2342
+      }
+    },
+    {
+      "timestamp": "2026-11-13T15:24:16.459Z",
+      "ordinal": 40,
+      "type": "event_msg",
+      "payload": {
+        "type": "task_complete",
+        "turn_id": "01a1d582-02ad-7700-9ebd-173ec92acde3",
+        "last_agent_message": null,
+        "started_at": 1794583429,
+        "completed_at": 1794583456,
+        "duration_ms": 26652
+      }
+    },
+    {
+      "timestamp": "2026-11-13T15:24:21.655Z",
+      "ordinal": 52,
+      "type": "event_msg",
+      "payload": {
+        "type": "task_complete",
+        "turn_id": "01a1d582-716e-75e0-b6df-8a7b4e0cdd8b",
+        "last_agent_message": "D-54B28E292E",
+        "started_at": 1794583458,
+        "completed_at": 1794583461,
+        "duration_ms": 3493,
+        "time_to_first_token_ms": 3011
+      }
+    },
+    {
+      "timestamp": "2026-11-13T15:25:46.214Z",
+      "ordinal": 59,
+      "type": "response_item",
+      "payload": {
+        "type": "function_call",
+        "id": "b5eae65f3cec739e",
+        "name": "exec_command",
+        "arguments": "{\"cmd\": \"test \\\"$(pwd -P)\\\" = /var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f && set -C && printf '%s\\\\n' A_CODEX_5deff5bc5bde > /var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f/allow-bc4bd84369a142cea0a377335126421c.txt && cat /var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f/allow-bc4bd84369a142cea0a377335126421c.txt\", \"workdir\": \"/var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f\", \"sandbox_permissions\": \"require_escalated\", \"justification\": \"Run the field-acceptance command that writes a marker file in the workspace. Do you want to allow it?\"}",
+        "call_id": "call_b5f06283e7230f25",
+        "internal_chat_message_metadata_passthrough": {
+          "turn_id": "01a1d583-82c7-7282-b5c3-0371cfd81e44"
+        }
+      }
+    },
+    {
+      "timestamp": "2026-11-13T15:27:18.352Z",
+      "ordinal": 62,
+      "type": "response_item",
+      "payload": {
+        "type": "function_call_output",
+        "id": "fco_01a1d585-314f-7cb2-9dec-f49b669ef571",
+        "call_id": "call_b5f06283e7230f25",
+        "output": "Chunk ID: 6ee4b4\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 6\nOutput:\nA_CODEX_5deff5bc5bde\n",
+        "internal_chat_message_metadata_passthrough": {
+          "turn_id": "01a1d583-82c7-7282-b5c3-0371cfd81e44",
+          "create_time": 1794583638.3519561
+        }
+      }
+    },
+    {
+      "timestamp": "2026-11-13T15:27:25.442Z",
+      "ordinal": 68,
+      "type": "event_msg",
+      "payload": {
+        "type": "task_complete",
+        "turn_id": "01a1d583-82c7-7282-b5c3-0371cfd81e44",
+        "last_agent_message": "Allowed and executed successfully. Actual output:\n\n```\nA_CODEX_5deff5bc5bde\n```\n\nThe marker file `allow-bc4bd84369a142cea0a377335126421c.txt` was written to the workspace and read back.",
+        "started_at": 1794583528,
+        "completed_at": 1794583645,
+        "duration_ms": 117302,
+        "time_to_first_token_ms": 3415
+      }
+    },
+    {
+      "timestamp": "2026-11-13T15:27:53.661Z",
+      "type": "response_item",
+      "payload": {
+        "type": "message",
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "D\u9a8c\u6536 codex PNG. Read the six black digits in the attached image, left to right. Use only the attached image, do not call tools, and return only the six digits."
+          },
+          {
+            "type": "input_text",
+            "text": "<image name=[Image #1] path=\"/var/lib/chatraw-runner/files/b70e1d00ffb64314b52d9e0ddfd18d76\">"
+          },
+          {
+            "type": "input_image",
+            "image_data_present": true,
+            "encoded_sha256": "ec478c32760a0777de2c2497b35b67383498c468214c37886f23c1c99d601345",
+            "encoded_length": 554
+          },
+          {
+            "type": "input_text",
+            "text": "</image>"
+          }
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-11-13T15:27:58.254Z",
+      "ordinal": 77,
+      "type": "event_msg",
+      "payload": {
+        "type": "task_complete",
+        "turn_id": "01a1d585-bb1a-7643-a894-97e0a86bddf6",
+        "last_agent_message": "182809",
+        "started_at": 1794583673,
+        "completed_at": 1794583678,
+        "duration_ms": 4623,
+        "time_to_first_token_ms": 4293
+      }
+    }
+  ],
+  "path": "/var/lib/chatraw-runner/codex-home/sessions/2026/11/13/rollout-2026-11-13T15-23-37-01a1d581-d366-7db1-a194-a75060d24e47.jsonl"
+}

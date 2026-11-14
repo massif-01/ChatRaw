@@ -1,0 +1,211 @@
+{
+  "agent": "hermes",
+  "case": "compact",
+  "steps": [
+    {
+      "label": "seed",
+      "client_request_id": "5681a904b0a04f3c909cac81249b6cbc",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "553d772e86334e37b31a1a705a0fc066",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "completed",
+        "last_seq": 9,
+        "run_id": "553d772e86334e37b31a1a705a0fc066",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "history-1",
+      "client_request_id": "df2fdd1962d1498dbecc04364f280772",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "491d9225c1b04a36b32f226f920a49af",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "completed",
+        "last_seq": 9,
+        "run_id": "491d9225c1b04a36b32f226f920a49af",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "history-2",
+      "client_request_id": "166861f3050f4f5dbed96aa8428b2b9c",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "ae77c1a1c9d3491ea0961887644efbcc",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "completed",
+        "last_seq": 9,
+        "run_id": "ae77c1a1c9d3491ea0961887644efbcc",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "history-3",
+      "client_request_id": "df42b1e6db4f4852a32aa5262b6878b9",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "e99bb689018a41e7a6c57680de5204bb",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "completed",
+        "last_seq": 9,
+        "run_id": "e99bb689018a41e7a6c57680de5204bb",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "history-4",
+      "client_request_id": "480f7b3665684357a336cdda4836dca7",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "da2a7f970751409bbec0dcb31b7c532d",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "completed",
+        "last_seq": 9,
+        "run_id": "da2a7f970751409bbec0dcb31b7c532d",
+        "interactions": [],
+        "final_text": "OK"
+      }
+    },
+    {
+      "label": "compact",
+      "client_request_id": "aae9829bc185414b8f1069e37744ad34",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "059a2d604ee5445490d54a3c850de25d",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "completed",
+        "last_seq": 4,
+        "run_id": "059a2d604ee5445490d54a3c850de25d",
+        "interactions": [],
+        "final_text": ""
+      }
+    },
+    {
+      "label": "continuity",
+      "client_request_id": "661997e6de23437a80c82c374b5794e8",
+      "submission": "accepted",
+      "accepted": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "queued",
+        "last_seq": 1,
+        "run_id": "614bca1480b34ce5b6bef99a76a0cc49",
+        "interactions": []
+      },
+      "snapshot": {
+        "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+        "session_id": "5eac256cd0494613bda3e16664001cba",
+        "status": "completed",
+        "last_seq": 12,
+        "run_id": "614bca1480b34ce5b6bef99a76a0cc49",
+        "interactions": [],
+        "final_text": "D-CC84954169"
+      }
+    }
+  ],
+  "health": {
+    "availability": "ready",
+    "version": null,
+    "reason": "Gateway authenticated; provider/model request has not been tested",
+    "capabilities": {
+      "streaming_text": true,
+      "tools": true,
+      "questions": true,
+      "approvals": true,
+      "cancel": true,
+      "cancel_mode": "native",
+      "resume": true,
+      "compact": true,
+      "images": true,
+      "files": false,
+      "steer": false,
+      "queue": false,
+      "limits": {
+        "questions": "Canonical clarification prompts; no secret/sudo input UI",
+        "workspace": "Gateway and Runner must run on the same host and account",
+        "image_mime_types": [
+          "image/png",
+          "image/jpeg",
+          "image/webp",
+          "image/gif"
+        ],
+        "images_require_model_support": true,
+        "max_image_bytes": 5242880,
+        "max_images": 4
+      }
+    }
+  },
+  "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+  "binding": {
+    "chat_id": "df9e3d18-6077-464a-a674-4e1ecd5b8f67",
+    "session_id": "5eac256cd0494613bda3e16664001cba",
+    "agent_id": "hermes",
+    "workspace": {
+      "id": "5eac256cd0494613bda3e16664001cba",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": null
+  },
+  "continuity": {
+    "expected_code": "D-CC84954169",
+    "same_chatraw_session": true,
+    "code_matched": true
+  },
+  "outcome": "native_evidence_pending"
+}

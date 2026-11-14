@@ -1,0 +1,234 @@
+diff --git a/Plugins/Plugin_market/csv-parser/main.js b/Plugins/Plugin_market/csv-parser/main.js
+index aede7a4..0bc4574 100644
+--- a/Plugins/Plugin_market/csv-parser/main.js
++++ b/Plugins/Plugin_market/csv-parser/main.js
+@@ -85,7 +85,7 @@
+                 if (!papaLib) {
+                     return {
+                         success: false,
+-                        error: 'Papa Parse library not loaded. Please check your internet connection and try again.'
++                        error: 'CSV parser library failed to load. Reload ChatRaw and try again.'
+                     };
+                 }
+                 
+diff --git a/Plugins/Plugin_market/csv-parser/manifest.json b/Plugins/Plugin_market/csv-parser/manifest.json
+index dcbcdb8..fbbc420 100644
+--- a/Plugins/Plugin_market/csv-parser/manifest.json
++++ b/Plugins/Plugin_market/csv-parser/manifest.json
+@@ -17,7 +17,7 @@
+   "hooks": ["parse_document"],
+   "fileTypes": [".csv", ".tsv"],
+   "dependencies": {
+-    "papaparse": "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"
++    "papaparse": "/vendor/papaparse/5.4.1/papaparse.min.js"
+   },
+   "settings": [],
+   "proxy": []
+diff --git a/backend/static/app.js b/backend/static/app.js
+index 5963e8b..efe26b6 100644
+--- a/backend/static/app.js
++++ b/backend/static/app.js
+@@ -1,41 +1,33 @@
+ // JustChat - Minimalist AI Chat Application
+ 
+-// Lazy load highlight.js for better performance
+-let hljsLoaded = false;
+-let hljsLoading = false;
+-
+-async function loadHighlightJS() {
+-    if (hljsLoaded || hljsLoading) return;
+-    hljsLoading = true;
+-    
+-    try {
+-        // Load CSS
+-        const link = document.createElement('link');
+-        link.rel = 'stylesheet';
+-        link.href = 'https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css';
+-        document.head.appendChild(link);
+-        
+-        // Load core
+-        await loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js');
+-        
+-        // Load common languages in parallel
+-        await Promise.all([
+-            loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/python.min.js'),
+-            loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/javascript.min.js'),
+-            loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/bash.min.js'),
+-            loadScript('https://unpkg.com/@highlightjs/cdn-assets@11.9.0/languages/json.min.js')
+-        ]);
+-        
+-        hljsLoaded = true;
+-        
+-        // Re-highlight any existing code blocks
+-        document.querySelectorAll('pre code:not(.hljs)').forEach(block => {
+-            hljs.highlightElement(block);
+-        });
+-    } catch (e) {
+-        console.warn('Failed to load highlight.js:', e);
++// The browser build already contains Python, JavaScript, Bash, JSON and the
++// other common grammars. Share the same load with Markdown plugins.
++let highlightReady;
++
++function loadHighlightJS() {
++    if (!highlightReady) {
++        const base = 'vendor/highlight/11.9.0';
++        const theme = document.createElement('link');
++        theme.rel = 'stylesheet';
++        theme.href = `${base}/github-dark.min.css`;
++        document.head.appendChild(theme);
++
++        highlightReady = loadScript(`${base}/highlight.min.js`)
++            .then(() => {
++                document.querySelectorAll('.message-content pre > code:not(.hljs)').forEach(block => {
++                    const language = block.className.match(/\blanguage-(\S+)/)?.[1];
++                    if (language && window.hljs.getLanguage(language)) {
++                        window.hljs.highlightElement(block);
++                    }
++                });
++            })
++            .catch(error => {
++                theme.remove();
++                highlightReady = undefined;
++                console.warn('Failed to load highlight.js:', error);
++            });
+     }
+-    hljsLoading = false;
++    return highlightReady;
+ }
+ 
+ function loadScript(src) {
+@@ -376,29 +368,25 @@ const i18n = {
+     }
+ };
+ 
+-// Configure marked.js with lazy-loaded highlight.js
+-marked.setOptions({
+-    highlight: function(code, lang) {
+-        // Trigger lazy load of highlight.js
+-        if (!hljsLoaded && !hljsLoading) {
+-            loadHighlightJS();
+-        }
+-        
+-        // If hljs is available, use it
+-        if (typeof hljs !== 'undefined') {
+-            if (lang && hljs.getLanguage(lang)) {
+-                try {
+-                    return hljs.highlight(code, { language: lang }).value;
+-                } catch (e) {}
++// Marked 9 renders fenced code through the renderer extension.
++const defaultCodeRenderer = new marked.Renderer();
++marked.use({
++    breaks: true,
++    gfm: true,
++    renderer: {
++        code(code, info, escaped) {
++            const language = (info || '').match(/^\S+/)?.[0];
++            if (!language || escaped) return false;
++            if (!window.hljs) {
++                loadHighlightJS();
++                return false;
+             }
+-            return hljs.highlightAuto(code).value;
++            if (!window.hljs.getLanguage(language)) return false;
++            const html = window.hljs.highlight(code, { language }).value;
++            return defaultCodeRenderer.code(html, info, true)
++                .replace('<code class="', '<code class="hljs ');
+         }
+-        
+-        // Return escaped code if hljs not loaded yet
+-        return code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+-    },
+-    breaks: true,
+-    gfm: true
++    }
+ });
+ 
+ const MOBILE_VIEW_MEDIA_QUERY = '(max-width: 768px), (max-height: 500px) and (max-width: 900px) and (pointer: coarse)';
+@@ -3198,20 +3186,26 @@ function app() {
+                 // First load dependencies
+                 if (plugin.dependencies) {
+                     for (const [name, url] of Object.entries(plugin.dependencies)) {
++                        // Installed 1.0.0 manifests predate the bundled Papa Parse.
++                        const source = plugin.id === 'csv-parser' && name === 'papaparse'
++                            && url === 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'
++                            ? '/vendor/papaparse/5.4.1/papaparse.min.js' : url;
+                         if (!this.loadedPluginDeps[name]) {
+                             try {
+                                 // CSS must use loadCSS, not loadScript
+-                                if (typeof url === 'string' && url.endsWith('.css')) {
+-                                    await this.loadCSS(url);
++                                if (typeof source === 'string' && source.endsWith('.css')) {
++                                    await this.loadCSS(source);
+                                     this.loadedPluginDeps[name] = true;
+                                 } else if (name.startsWith('hljs-')) {
+                                     // hljs language packs loaded on-demand by plugin (need hljs core first)
+                                     continue;
+                                 } else {
+-                                    await this.loadScript(url);
++                                    await this.loadScript(source);
+                                     // Common library detection patterns
+                                     if (name === 'xlsx' && window.XLSX) {
+                                         this.loadedPluginDeps[name] = window.XLSX;
++                                    } else if (name === 'papaparse' && window.Papa) {
++                                        this.loadedPluginDeps[name] = window.Papa;
+                                     } else if (name === 'pdfjs' && window.pdfjsLib) {
+                                         this.loadedPluginDeps[name] = window.pdfjsLib;
+                                     } else if (window[name]) {
+diff --git a/backend/static/index.html b/backend/static/index.html
+index 3d70b16..4cccae4 100644
+--- a/backend/static/index.html
++++ b/backend/static/index.html
+@@ -10,16 +10,12 @@
+     <title>ChatRaw</title>
+     <link rel="icon" id="favicon" href="data:,">
+     
+-    <!-- Performance: DNS Prefetch & Preconnect for CDN -->
+-    <link rel="dns-prefetch" href="https://unpkg.com">
+-    <link rel="preconnect" href="https://unpkg.com" crossorigin="anonymous">
+-    
+     <!-- Performance: Preload Critical Resources -->
+     <link rel="preload" href="fonts/remixicon/remixicon.woff2?t=1769685282643" as="font" type="font/woff2" crossorigin>
+     <link rel="preload" href="styles.min.css?v=7.6" as="style">
+-    <link rel="preload" href="app.min.js?v=7.7" as="script">
+-    <link rel="preload" href="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" as="script" crossorigin="anonymous">
+-    <link rel="preload" href="https://unpkg.com/marked@9.1.6/marked.min.js" as="script" crossorigin="anonymous">
++    <link rel="preload" href="app.min.js?v=7.8" as="script">
++    <link rel="preload" href="vendor/alpinejs/3.13.3/alpine.min.js" as="script" crossorigin="anonymous">
++    <link rel="preload" href="vendor/marked/9.1.6/marked.min.js" as="script" crossorigin="anonymous">
+     
+     <!-- Critical CSS: Inline for faster first paint -->
+     <style>
+@@ -141,15 +137,15 @@
+         }
+     </style>
+     
+-    <!-- External Scripts -->
+-    <script src="https://unpkg.com/marked@9.1.6/marked.min.js" crossorigin="anonymous"></script>
+-    <script defer src="https://unpkg.com/@alpinejs/collapse@3.13.3/dist/cdn.min.js" crossorigin="anonymous"></script>
+-    <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" crossorigin="anonymous"></script>
++    <!-- Vendor scripts: register Collapse before Alpine starts -->
++    <script src="vendor/marked/9.1.6/marked.min.js"></script>
++    <script defer src="vendor/collapse/3.13.3/collapse.min.js"></script>
++    <script defer src="vendor/alpinejs/3.13.3/alpine.min.js"></script>
+     <!-- highlight.js is lazy-loaded in app.min.js when needed -->
+     <link rel="stylesheet" href="fonts/remixicon/remixicon.css">
+     <link rel="stylesheet" href="styles.min.css?v=7.6">
+ </head>
+-<body x-data="app()" x-init="init()" :data-theme="settings.ui_settings.theme_mode">
++<body x-data="app()" :data-theme="settings.ui_settings.theme_mode">
+     <!-- Sidebar Overlay for Mobile -->
+     <div class="sidebar-overlay" x-show="isMobileView && !sidebarCollapsed" @click="closeSidebar()" x-transition:enter="fade-enter" x-transition:leave="fade-leave"></div>
+     
+@@ -1072,6 +1068,11 @@
+         <div class="plugin-fullscreen-content" x-html="pluginFullscreenModal.content"></div>
+     </div>
+ 
+-    <script src="app.min.js?v=7.7"></script>
++    <script>
++        if (document.documentMode) {
++            document.body.textContent = 'ChatRaw does not support Internet Explorer. Use Chrome 109 or later. / ChatRaw 不支持 Internet Explorer，请使用 Chrome 109 或更新版本。';
++        }
++    </script>
++    <script src="app.min.js?v=7.8"></script>
+ </body>
+ </html>

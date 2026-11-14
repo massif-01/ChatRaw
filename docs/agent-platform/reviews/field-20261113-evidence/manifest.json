@@ -1,0 +1,18 @@
+{
+  "date": "2026-11-13 Asia/Shanghai",
+  "mode": "Remote read-only inventory and SQLite mode=ro; no model/service/chat mutations",
+  "evidence_sha256": {
+    "deepseek-cancel-crosscheck.json": "d137457f2bbf946de762b904fd87093516ba707440595da8282a680fc596c04b",
+    "readonly-snapshot.json": "844ca44d310f0d7cac114dfcb6a26745a90090211f3b79d20f3b44fc6bcc1f86",
+    "readonly-after-budget.json": "09f1ea3cae7260ff14087f46a1e3d5e3eec756b8f49193a3686671d2e9a77a7d",
+    "handoff-crosscheck.json": "faa3ef837e00c94e5c9559133fb2bb513d4847dd4ad0320e0fa686f636eaff07",
+    "deepseek-header-budgets.json": "99f8de2022486d54a6ff82894ceddf9a141b8b29ce361f0c416f0e789e930531",
+    "deepseek-native-readonly.json": "dbc1764cdcb55ac0d665a2a3cf472734961cbc0d016d104ff83155c8387ca516",
+    "source-comparison.json": "7ad3ac6eaa6829527bdff8420702240fade8126e4e84904c7ef41d06e970d0bb",
+    "budget-validation.log": "47d12a6a940662edd52bc27fdfbc08567884bbe246e0143c43868fa230e5755d"
+  },
+  "collector_sha256": "6e323d2d6d1ed1a2f8db946adbdd76e73db0ed5cca43892a210480df434725c6",
+  "archived_script_texts": {
+    "collect_rm01_readonly.py.txt": "6e323d2d6d1ed1a2f8db946adbdd76e73db0ed5cca43892a210480df434725c6"
+  }
+}

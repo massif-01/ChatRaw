@@ -1,0 +1,38 @@
+{
+  "ready": {
+    "status": "ready",
+    "database": "connected"
+  },
+  "icons": {
+    "/api/plugins/hermes/icon": {
+      "status": 200,
+      "headers": {
+        "Cache-Control": null,
+        "ETag": "\"c18f26ac0fc1c42d71873cc9051c20c9\"",
+        "Last-Modified": "Fri, 13 Nov 2026 14:46:22 GMT",
+        "Content-Type": "image/png",
+        "Content-Length": "2103"
+      },
+      "sha256": "84dc1a015ab2055e774f1b0425e16d7f6a7611face26dfb186378f78f28b8d65",
+      "dimensions": [
+        128,
+        128
+      ]
+    },
+    "/api/plugins/market/hermes/icon": {
+      "status": 200,
+      "headers": {
+        "Cache-Control": null,
+        "ETag": "\"96f8b9113195b948b21ba436bb8b360d\"",
+        "Last-Modified": "Fri, 13 Nov 2026 14:45:35 GMT",
+        "Content-Type": "image/png",
+        "Content-Length": "2103"
+      },
+      "sha256": "84dc1a015ab2055e774f1b0425e16d7f6a7611face26dfb186378f78f28b8d65",
+      "dimensions": [
+        128,
+        128
+      ]
+    }
+  }
+}

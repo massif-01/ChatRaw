@@ -1,0 +1,45 @@
+{
+  "agent": "claude",
+  "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+  "expected_marker": "D-9A303258A7",
+  "runner_session": "1e0072458ccd4be69b28326e72f2871a",
+  "before_native_identity": "5b81ece9-6e27-44bf-8179-e5d4744deb53",
+  "started_at_utc": "2026-11-13T16:08:58.841707+00:00",
+  "run_id": "929702e0b08845dd80793f173be5bc13",
+  "binding_before": {
+    "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+    "session_id": "1e0072458ccd4be69b28326e72f2871a",
+    "agent_id": "claude",
+    "workspace": {
+      "id": "1e0072458ccd4be69b28326e72f2871a",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "4e1d2b4fa30544cd8a62aa8f8f65044c"
+  },
+  "snapshot": {
+    "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+    "session_id": "1e0072458ccd4be69b28326e72f2871a",
+    "status": "completed",
+    "last_seq": 9,
+    "run_id": "929702e0b08845dd80793f173be5bc13",
+    "interactions": [],
+    "final_text": "D-9A303258A7"
+  },
+  "elapsed_seconds": 19.003,
+  "tool_events": 0,
+  "binding_after": {
+    "chat_id": "30c055e1-1919-4707-bbcc-0ff50a7de3e8",
+    "session_id": "1e0072458ccd4be69b28326e72f2871a",
+    "agent_id": "claude",
+    "workspace": {
+      "id": "1e0072458ccd4be69b28326e72f2871a",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "929702e0b08845dd80793f173be5bc13"
+  },
+  "verdict": "PASS"
+}

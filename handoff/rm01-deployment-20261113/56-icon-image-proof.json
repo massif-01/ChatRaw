@@ -1,0 +1,11 @@
+{
+  "tag": "chatraw-agent-integration:b5cafcd-icon",
+  "image_id": "sha256:5e1ae59dfa5c07ffbfcdf1ed38441ad57bfe5f867405a2e747d6ffe68214d026",
+  "base_image_id": "sha256:97f9ac18f92decbba43e9f742689c9ef7a1f52ad67d18d3cf31d12c922d1434c",
+  "base_layers_preserved": true,
+  "base_layer_count": 13,
+  "new_layer_count": 14,
+  "architecture": "amd64",
+  "env_cmd_unchanged": true,
+  "revision_label": "b5cafcde302c33535f4359faf005fc8150b94734"
+}

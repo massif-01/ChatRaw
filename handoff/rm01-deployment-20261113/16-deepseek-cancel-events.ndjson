@@ -1,0 +1,5 @@
+{"data":{"status":"queued"},"run_id":"2ccbcb8956b841e2a6af805f0790e977","schema_version":1,"seq":1,"session_id":"14d1c7a3dbda4f3fad1a20a4b35d523f","timestamp":"2026-11-13T13:44:14.308397Z","type":"status"}
+{"data":{"status":"running"},"run_id":"2ccbcb8956b841e2a6af805f0790e977","schema_version":1,"seq":2,"session_id":"14d1c7a3dbda4f3fad1a20a4b35d523f","timestamp":"2026-11-13T13:44:14.310757Z","type":"status"}
+{"data":{"status":"stopping"},"run_id":"2ccbcb8956b841e2a6af805f0790e977","schema_version":1,"seq":3,"session_id":"14d1c7a3dbda4f3fad1a20a4b35d523f","timestamp":"2026-11-13T13:45:41.485224Z","type":"status"}
+{"data":{"status":"cancelled"},"run_id":"2ccbcb8956b841e2a6af805f0790e977","schema_version":1,"seq":4,"session_id":"14d1c7a3dbda4f3fad1a20a4b35d523f","timestamp":"2026-11-13T13:45:41.623595Z","type":"status"}
+{"data":{"final_text":"","status":"cancelled"},"run_id":"2ccbcb8956b841e2a6af805f0790e977","schema_version":1,"seq":5,"session_id":"14d1c7a3dbda4f3fad1a20a4b35d523f","timestamp":"2026-11-13T13:45:41.623706Z","type":"done"}

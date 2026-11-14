@@ -36,7 +36,6 @@ Thumbs.db
 
 # Node.js
 node_modules/
-package-lock.json
 
 # Local documentation
 FIX_SUMMARY.md

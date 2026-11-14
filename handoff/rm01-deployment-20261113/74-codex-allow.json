@@ -1,0 +1,70 @@
+{
+  "agent": "codex",
+  "action": "allow",
+  "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+  "binding": {
+    "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+    "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+    "agent_id": "codex",
+    "workspace": {
+      "id": "dc93d52367cb49f8a4909e297c214a3f",
+      "kind": "managed",
+      "label": "Managed workspace"
+    },
+    "active_run_id": null,
+    "last_run_id": "c39c35335109418199d2a1a395255914"
+  },
+  "run_id": "394d1c0f053344b8b5a3b4f499027bb1",
+  "command": "test \"$(pwd -P)\" = /var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f && set -C && printf '%s\n' A_CODEX_5deff5bc5bde > /var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f/allow-bc4bd84369a142cea0a377335126421c.txt && cat /var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f/allow-bc4bd84369a142cea0a377335126421c.txt",
+  "target": "/var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f/allow-bc4bd84369a142cea0a377335126421c.txt",
+  "token": "A_CODEX_5deff5bc5bde",
+  "approvals": [
+    {
+      "public_interaction": {
+        "allow_cancel": true,
+        "decisions": [
+          {
+            "id": "accept",
+            "label": "Allow once",
+            "scope": "once"
+          },
+          {
+            "id": "cancel",
+            "label": "Cancel",
+            "scope": "once"
+          }
+        ],
+        "detail": "Run the field-acceptance command that writes a marker file in the workspace. Do you want to allow it?",
+        "kind": "approval",
+        "operation": {
+          "command": "/bin/bash -lc 'test \"$(pwd -P)\" = /var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f && set -C && printf '\"'%s\\\\n' A_CODEX_5deff5bc5bde > /var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f/allow-bc4bd84369a142cea0a377335126421c.txt && cat /var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f/allow-bc4bd84369a142cea0a377335126421c.txt\"",
+          "cwd_label": "/var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f",
+          "tool": "commandExecution"
+        },
+        "title": "Codex requests approval",
+        "interaction_id": "114448d622cb4979b339ce109c41ea34"
+      },
+      "decision": "accept",
+      "receipt": {
+        "interaction_id": "114448d622cb4979b339ce109c41ea34",
+        "status": "accepted"
+      }
+    }
+  ],
+  "snapshot": {
+    "chat_id": "cbfa4dc9-3be6-4d11-afea-33867e0353cf",
+    "session_id": "dc93d52367cb49f8a4909e297c214a3f",
+    "status": "completed",
+    "last_seq": 36,
+    "run_id": "394d1c0f053344b8b5a3b4f499027bb1",
+    "interactions": [],
+    "final_text": "I'll run the field-acceptance command.\n\nAllowed and executed successfully. Actual output:\n\n```\nA_CODEX_5deff5bc5bde\n```\n\nThe marker file `allow-bc4bd84369a142cea0a377335126421c.txt` was written to the workspace and read back."
+  },
+  "reviewed_command": "test \"$(pwd -P)\" = /var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f && set -C && printf '%s\\n' A_CODEX_5deff5bc5bde > /var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f/allow-bc4bd84369a142cea0a377335126421c.txt && cat /var/lib/chatraw-runner/workspaces/dc93d52367cb49f8a4909e297c214a3f/allow-bc4bd84369a142cea0a377335126421c.txt",
+  "review_note": "Only printf format spelling changed: literal newline versus backslash-n; exact paths, guard, token and operations unchanged. Approved from public payload only.",
+  "file_state_after": {
+    "exists": true,
+    "content": "A_CODEX_5deff5bc5bde\n"
+  },
+  "verdict": "PASS"
+}
