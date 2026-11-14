@@ -99,8 +99,10 @@ def plan_agents(account):
             agents['hermes'] = {'executable': executable, 'home': home}
             environment['HERMES_HOME'] = home
             print('请确保该 home 的 Gateway 已运行；本脚本不会启动、停止或替换它。')
-    if any(name in environment for name in ('CODEX_HOME', 'PI_CODING_AGENT_DIR')):
-        print('\n如果 Agent 依赖 Node.js，后台服务也必须能找到 node。')
+    needs_node = any(name in environment for name in ('CODEX_HOME', 'PI_CODING_AGENT_DIR'))
+    if needs_node:
+        print('\nnpm 安装的入口通常依赖 Node.js；独立原生二进制可以跳过。')
+    if needs_node and yes('是否配置 Node.js 路径？', default=True):
         node = absolute_path('Node.js 程序完整路径', discover(account, 'node'), account, executable=True)
         if Path(node).name != 'node':
             raise RuntimeError('请使用名为 node 的 Node.js 程序入口。')

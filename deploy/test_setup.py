@@ -156,6 +156,17 @@ class SetupSafetyTests(unittest.TestCase):
              patch.object(setup, 'account_access', return_value=True):
             self.assertEqual(setup.absolute_path('home', '', account), str(path))
 
+    def test_existing_native_codex_can_skip_node(self):
+        account = type('Account', (), {'pw_name': 'user', 'pw_dir': '/home/user'})()
+        with patch.object(setup, 'discover', return_value=''), \
+             patch.object(setup, 'yes', side_effect=[True, False, False, False, False, False]), \
+             patch.object(setup, 'absolute_path', side_effect=['/opt/codex', '/home/user/.codex']) as paths:
+            agents, environment, sdk = setup.plan_agents(account)
+        self.assertEqual(paths.call_count, 2)
+        self.assertEqual(environment['CODEX_HOME'], '/home/user/.codex')
+        self.assertTrue(environment['PATH'].startswith('/opt:'))
+        self.assertEqual((agents, sdk), ({}, []))
+
     def test_health_bypasses_proxy_and_refuses_redirect(self):
         seen = []
         class Handler(http.server.BaseHTTPRequestHandler):
