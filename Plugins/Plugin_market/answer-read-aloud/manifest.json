@@ -1,0 +1,30 @@
+{
+  "id": "answer-read-aloud",
+  "version": "1.0.1",
+  "name": {
+    "en": "Answer Read Aloud",
+    "zh": "回答朗读"
+  },
+  "description": {
+    "en": "Read assistant answers using Aliyun Model Studio Qwen-TTS. Supports pause, stop, and long answers. Requires a Model Studio API key.",
+    "zh": "通过阿里云百炼 Qwen-TTS 朗读回答，支持暂停、停止和长文分段。需要百炼 API Key，可直接安装到原版 ChatRaw。"
+  },
+  "author": "ChatRaw",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "ui_extension",
+  "hooks": [
+    "custom_settings"
+  ],
+  "customSettings": true,
+  "proxy": [
+    {
+      "id": "aliyun-qwen-tts",
+      "name": {
+        "en": "Aliyun Model Studio",
+        "zh": "阿里云百炼"
+      }
+    }
+  ],
+  "homepage": "https://github.com/wowalxa2-tech/ChatRaw-AnswerReadAloud"
+}
