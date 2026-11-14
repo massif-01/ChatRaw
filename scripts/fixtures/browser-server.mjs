@@ -31,9 +31,13 @@ export async function startFixture(script, { cwd, env = {} } = {}) {
             child.once('exit', code => finish(reject, new Error('Fixture exited with status ' + code)));
         });
         const origin = 'http://127.0.0.1:' + port;
-        for (let attempt = 0; attempt < 60; attempt++) {
-            if (await fetch(origin).then(response => response.ok).catch(() => false)) return { origin, stop };
-            await delay(100);
+        const deadline = performance.now() + 6000;
+        while (performance.now() < deadline) {
+            const timeout = Math.max(1, Math.ceil(Math.min(1000, deadline - performance.now())));
+            if (await fetch(origin, { signal: AbortSignal.timeout(timeout) })
+                .then(response => response.ok).catch(() => false)) return { origin, stop };
+            const remaining = deadline - performance.now();
+            if (remaining > 0) await delay(Math.min(100, remaining));
         }
         throw new Error('Fixture did not serve its browser page');
     } catch (error) {
