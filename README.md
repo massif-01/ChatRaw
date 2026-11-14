@@ -154,6 +154,8 @@ ChatRaw runs in Docker and connects to a host Runner. The native Agent programs 
 
 ## Quick Start
 
+> **Using native Agents?** You also need the host Runner; see the [deployment guide](deploy/README.md) for interactive setup on a new machine or one with existing Agents.
+
 ### Option 1: Docker (Recommended)
 
 **Prerequisites**: [Docker](https://docs.docker.com/get-docker/) installed.
@@ -530,6 +532,8 @@ ChatRaw 主程序运行在 Docker 中，通过宿主 Runner 调用原生程序�
 ---
 
 ## 快速开始
+
+> **需要使用原生 Agent？** 除 ChatRaw 外，还需部署宿主 Runner；请查看[详细部署说明](deploy/README.md)，按新机器或已有 Agent 的情况选择交互式安装脚本。
 
 ### 方式一：Docker（推荐）
 
