@@ -50,7 +50,7 @@ sudo bash deploy/install-runner.sh rm01
 
 如果 Python 报 `ensurepip is not available`，先处理环境，不要反复重跑脚本。现场采用了人工替代路径：复制相同 Runner 代码与 unit，以 `python3 -m venv --without-pip` 创建环境，再用项目内 uv 的 `pip install --python /opt/chatraw-runner/venv/bin/python` 安装相同 requirements；目录、首次 token 和账户权限仍需管理员完整准备。这是现场手动安装记录，不是 `install-runner.sh` 已支持的自动分支。一般新部署补齐 venv 组件后使用上面的脚本更直接。
 
-Claude 和 DeepSeek 的可选 SDK 安装命令分别列在[按需添加 Agent](README.md#add-agent)，只执行所需项。
+Claude 和 DeepSeek 的可选 SDK 安装命令分别列在[按需添加 Agent](MANUAL.md#add-agent)，只执行所需项。
 
 <a id="install-codex"></a>
 ### 安装 Codex

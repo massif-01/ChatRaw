@@ -30,6 +30,10 @@ jobs:
           python-version: '3.11'
       - name: Install Runner dependencies
         run: pip install -r agent_runner/requirements.txt
+      - name: Check interactive installer safety
+        run: |
+          bash -n deploy/setup-new.sh deploy/setup-existing.sh
+          python -m unittest discover -s deploy -p test_setup.py -v
       - name: Run protocol and persistence tests
         # Native CLI/model tests are opt-in and have separate field evidence.
         run: python -m unittest discover -s agent_runner/tests -t . -v
@@ -97,3 +101,13 @@ jobs:
 
       - name: Smoke test
         run: docker run --rm chatraw:test python -c "print('✅ Docker OK')"
+
+      - name: Interactive installation and reuse smoke test
+        timeout-minutes: 10
+        run: bash deploy/test_setup_linux.sh
+
+      - name: Installer service diagnostics
+        if: failure()
+        run: |
+          sudo journalctl -u chatraw-runner --no-pager -n 60 || true
+          docker logs --tail=60 chatraw || true
