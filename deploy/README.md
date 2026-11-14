@@ -12,11 +12,11 @@
 在 Ubuntu Server 上准备好以下环境：
 
 - Python 3.11 或更新版本，以及对应的 venv 组件。Ubuntu 24.04 可使用系统 Python，执行 `sudo apt-get install python3-venv` 补齐 venv。
-- Docker Engine 和 Compose 插件，按 [Docker 官方说明](https://docs.docker.com/engine/install/ubuntu/)安装。
+- 本机 Docker Engine（标准 socket `/var/run/docker.sock`）和 Compose 插件，按 [Docker 官方说明](https://docs.docker.com/engine/install/ubuntu/)安装。
 - 一个已有的普通账户，用来运行 Runner。已有 Agent 时，优先选择平时使用它们的账户。
 - 本次发布的 ChatRaw 源码。进入源码根目录，再执行下面的命令。
 
-安装向导需要在有 systemd 的 Linux 主机上运行，不是在 ChatRaw 容器内运行。向导会检查依赖；缺少时说明需要补什么，不会擅自更换系统 Python、Docker 或全局 Agent 安装。
+安装向导需要在有 systemd 的 Linux 主机上运行，不是在 ChatRaw 容器内运行。向导固定使用本机 Engine，不跟随远程 Docker context，也不支持 Docker Desktop 虚拟机。向导会检查依赖；缺少时说明需要补什么，不会擅自更换系统 Python、Docker 或全局 Agent 安装。
 
 ## 情况一：新机器，还没有 Agent
 

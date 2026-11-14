@@ -19,10 +19,18 @@ CODE = Path('/opt/chatraw-runner')
 CONFIG = Path('/etc/chatraw-runner')
 DATA = Path('/var/lib/chatraw-runner')
 UNIT = Path('/etc/systemd/system/chatraw-runner.service')
+DOCKER_ENDPOINT = 'unix:///var/run/docker.sock'
 BASE_PATH = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
 
 
 def run(args, **kwargs):
+    if str(args[0]) == 'docker':
+        # CLI target is explicit and independent of the caller's remote context/TLS settings.
+        environment = dict(kwargs.pop('env', os.environ))
+        for name in ('DOCKER_HOST', 'DOCKER_CONTEXT', 'DOCKER_TLS', 'DOCKER_TLS_VERIFY', 'DOCKER_CERT_PATH'):
+            environment.pop(name, None)
+        kwargs['env'] = environment
+        args = ['docker', '--host', DOCKER_ENDPOINT, *args[1:]]
     return subprocess.run([str(a) for a in args], check=True, **kwargs)
 
 
@@ -58,10 +66,11 @@ def absolute_path(label, default, account, executable=False):
         if not path.is_absolute() or any(c in str(path) for c in '\n\r"\\%'):
             print('请填写绝对路径；路径不能包含换行、双引号、反斜杠或 %。')
             continue
-        mode = '-x' if executable else '-w'
-        if (path.is_file() if executable else path.is_dir()) and account_access(account, path, mode):
+        modes = ('-x',) if executable else ('-r', '-w', '-x')
+        if (path.is_file() if executable else path.is_dir()) and all(
+                account_access(account, path, mode) for mode in modes):
             return str(path)
-        print(f'账户 {account.pw_name} 无法{"执行该文件" if executable else "写入该目录"}。请修正路径或权限后再试。')
+        print(f'账户 {account.pw_name} 无法{"执行该文件" if executable else "读写并进入该目录"}。请修正路径或权限后再试。')
 
 
 def discover(account, name):
@@ -152,6 +161,9 @@ def _install_runner(account, agents, environment, sdk):
         os.chown(path, 0 if path != DATA else account.pw_uid, account.pw_gid)
     shutil.copytree(SOURCE / 'agent_runner', CODE / 'agent_runner',
                     ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+    # copytree preserves source modes, including restrictive checkout permissions.
+    for path in (CODE / 'agent_runner', *(CODE / 'agent_runner').rglob('*')):
+        path.chmod(0o755 if path.is_dir() or path.stat().st_mode & 0o111 else 0o644)
     run([sys.executable, '-m', 'venv', CODE / 'venv'])
     run([CODE / 'venv/bin/python', '-m', 'pip', 'install', '-r', CODE / 'agent_runner/requirements.txt'])
     for name in sdk:
@@ -282,7 +294,10 @@ def main():
     for command in ('docker', 'systemctl', 'runuser'):
         if not shutil.which(command):
             raise RuntimeError(f'缺少 {command}。请先按 deploy/README.md 准备 Docker Engine、Compose 和 systemd。')
-    run(['docker', 'info'], stdout=subprocess.DEVNULL)
+    print('使用本机 Docker Engine：/var/run/docker.sock（不切换你的全局 Docker 上下文）')
+    info = json.loads(capture(['docker', 'info', '--format', '{{json .}}']))
+    if info.get('OSType') != 'linux' or 'docker desktop' in info.get('OperatingSystem', '').lower():
+        raise RuntimeError('需要同一台 Linux 宿主机的 Docker Engine，不能使用 Docker Desktop 虚拟机或远程 Engine。')
     run(['docker', 'compose', 'version'])
     if not Path('/run/systemd/system').exists():
         raise RuntimeError('当前环境未运行 systemd，请在实际 Linux 主机上执行，而不是 Docker 容器内。')
@@ -333,8 +348,12 @@ def main():
         print('已取消，未修改配置或数据。')
         return
     if state == 'new':
+        if runner_state() != 'new':
+            raise RuntimeError('确认期间出现了 Runner 安装；已停止，不修改新出现的环境。')
         install_runner(account, agents, environment, sdk)
     if container == 'new':
+        if docker_state() != 'new':
+            raise RuntimeError('安装期间出现了 chatraw 容器；已停止，不修改新出现的容器。')
         run(compose() + ['up', '-d', '--build', 'chatraw'],
             env={**os.environ, 'CHATRAW_RUNNER_TOKEN_FILE': str(CONFIG / 'token')})
     summarize(container)

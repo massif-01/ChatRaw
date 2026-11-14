@@ -84,6 +84,7 @@ class SetupSafetyTests(unittest.TestCase):
              patch.object(setup.shutil, 'which', return_value='/usr/bin/tool'), \
              patch.object(setup.Path, 'exists', return_value=True), \
              patch.object(setup, 'run'), \
+             patch.object(setup, 'capture', return_value='{"OSType":"linux","OperatingSystem":"Ubuntu"}'), \
              patch.object(setup, 'runner_state', return_value='new'), \
              patch.object(setup, 'docker_state', return_value='new'), \
              patch.object(setup, 'free_port'), \
@@ -92,6 +93,26 @@ class SetupSafetyTests(unittest.TestCase):
              patch.object(setup, 'install_runner') as install:
             setup.main()
             install.assert_not_called()
+        self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_new_container_appearing_during_confirmation_is_preserved(self):
+        with patch.object(setup.sys, 'argv', ['setup.py', 'new']), \
+             patch.object(setup.sys, 'platform', 'linux'), \
+             patch.object(setup.os, 'geteuid', return_value=0), \
+             patch.object(setup.sys.stdin, 'isatty', return_value=True), \
+             patch.object(setup.shutil, 'which', return_value='/usr/bin/tool'), \
+             patch.object(setup.Path, 'exists', return_value=True), \
+             patch.object(setup, 'run') as run, \
+             patch.object(setup, 'capture', return_value='{"OSType":"linux","OperatingSystem":"Ubuntu"}'), \
+             patch.object(setup, 'runner_state', return_value='existing'), \
+             patch.object(setup, 'inspect_existing_runner'), \
+             patch.object(setup, 'docker_state', side_effect=['new', 'existing']), \
+             patch('builtins.input', return_value='y'), \
+             patch.object(setup, 'install_runner') as install:
+            with self.assertRaisesRegex(RuntimeError, '安装期间出现'):
+                setup.main()
+            install.assert_not_called()
+            self.assertFalse(any('up' in call.args[0] for call in run.call_args_list))
         self.assertEqual(list(self.root.iterdir()), [])
 
     def test_agent_plan_does_not_copy_keys_or_install(self):
@@ -105,21 +126,32 @@ class SetupSafetyTests(unittest.TestCase):
             if '-m' in args and 'venv' in args:
                 (self.paths['CODE'] / 'venv/bin').mkdir(parents=True)
                 (self.paths['CODE'] / 'venv/bin/python').touch()
+        source = self.root / 'source'
+        (source / 'agent_runner').mkdir(parents=True, mode=0o700)
+        (source / 'agent_runner/module.py').write_text('# test')
+        (source / 'agent_runner/module.py').chmod(0o600)
+        (source / 'deploy').mkdir()
+        (source / 'deploy/chatraw-runner.service').write_text('User=@RUNNER_USER@')
         previous = os.umask(0o077)
         try:
-            with patch.object(setup, 'run', side_effect=fake_run), \
+            with patch.object(setup, 'SOURCE', source), \
+                 patch.object(setup, 'run', side_effect=fake_run), \
                  patch.object(setup.os, 'chown'), patch.object(setup.os, 'fchown'), \
                  patch.object(setup, 'check_runner_health'):
                 setup.install_runner(account, {}, {}, [])
             restored = os.umask(0o077)
             self.assertEqual(restored, 0o077)
-            expected = {self.paths['CODE']: 0o755, self.paths['CONFIG']: 0o750,
+            expected = {self.paths['CODE'] / 'agent_runner': 0o755,
+                        self.paths['CODE'] / 'agent_runner/module.py': 0o644,
+                        self.paths['CODE']: 0o755, self.paths['CONFIG']: 0o750,
                         self.paths['DATA']: 0o700, self.paths['CODE'] / 'venv/bin': 0o755,
                         self.paths['CONFIG'] / 'config.json': 0o640,
                         self.paths['CONFIG'] / 'environment': 0o640,
                         self.paths['CONFIG'] / 'token': 0o600, self.paths['UNIT']: 0o644}
             for path, mode in expected.items():
                 self.assertEqual(path.stat().st_mode & 0o777, mode, str(path))
+            self.assertEqual((source / 'agent_runner').stat().st_mode & 0o777, 0o700)
+            self.assertEqual((source / 'agent_runner/module.py').stat().st_mode & 0o777, 0o600)
             before = {p: p.read_bytes() for p in self.root.rglob('*') if p.is_file()}
             with self.assertRaises(FileExistsError):
                 setup.install_runner(account, {}, {}, [])
@@ -166,6 +198,26 @@ class SetupSafetyTests(unittest.TestCase):
         self.assertEqual(environment['CODEX_HOME'], '/home/user/.codex')
         self.assertTrue(environment['PATH'].startswith('/opt:'))
         self.assertEqual((agents, sdk), ({}, []))
+
+    def test_docker_target_ignores_remote_environment(self):
+        with patch.dict(os.environ, {'DOCKER_HOST': 'tcp://remote:2375',
+                                     'DOCKER_CONTEXT': 'remote', 'DOCKER_TLS': '1', 'DOCKER_TLS_VERIFY': '1',
+                                     'DOCKER_CERT_PATH': '/private/certs'}), \
+             patch.object(setup.subprocess, 'run') as execute:
+            setup.run(['docker', 'info'])
+        args, kwargs = execute.call_args
+        self.assertEqual(args[0], ['docker', '--host', 'unix:///var/run/docker.sock', 'info'])
+        for key in ('DOCKER_HOST', 'DOCKER_CONTEXT', 'DOCKER_TLS', 'DOCKER_TLS_VERIFY', 'DOCKER_CERT_PATH'):
+            self.assertNotIn(key, kwargs['env'])
+
+    def test_home_requires_read_write_and_search_access(self):
+        path = self.root / 'home'
+        path.mkdir()
+        account = type('Account', (), {'pw_name': 'user'})()
+        with patch('builtins.input', side_effect=[str(path), str(path)]), \
+             patch.object(setup, 'account_access', side_effect=[True, True, False, True, True, True]) as access:
+            self.assertEqual(setup.absolute_path('home', '', account), str(path))
+        self.assertEqual([call.args[2] for call in access.call_args_list], ['-r', '-w', '-x'] * 2)
 
     def test_health_bypasses_proxy_and_refuses_redirect(self):
         seen = []
