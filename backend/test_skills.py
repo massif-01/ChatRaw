@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 import zipfile
+from unittest.mock import patch
 
 TEST_DATA_DIR = tempfile.mkdtemp(prefix="chatraw-skills-test-")
 os.environ["DATA_DIR"] = TEST_DATA_DIR
@@ -1667,6 +1668,64 @@ Use this skill for PDF work.
         system_content = fake_session.posts[-1]["json"]["messages"][0]["content"]
         self.assertIn('<active_skill name="stream-skill">', system_content)
         self.assertIn("SECRET-SKILL-BODY stream-skill", system_content)
+
+    def test_chat_stream_preserves_markdown_with_utf8_split_across_chunks(self):
+        self.configure_chat(stream=True)
+        self.patch_chat_session()
+        deltas = ["## 汉字\n\n", "**完成 🙂**\n", "`code`"]
+        frames = [
+            ("data: " + json.dumps(
+                {"choices": [{"delta": {"content": delta}}]}, ensure_ascii=False
+            ) + "\r\n\r\n").encode("utf-8")
+            for delta in deltas
+        ]
+        han_split = frames[0].index("汉".encode("utf-8")) + 1
+        emoji_split = frames[1].index("🙂".encode("utf-8")) + 2
+        done_requested = False
+
+        async def split_stream(_):
+            nonlocal done_requested
+            yield frames[0][:han_split]
+            yield frames[0][han_split:] + frames[1][:emoji_split]
+            yield frames[1][emoji_split:] + frames[2]
+            done_requested = True
+            yield b"data: [DONE]\r\n\r\n"
+
+        async def check_stream():
+            response = await main.chat(JsonRequest({"message": "stream Markdown"}))
+            events = response.body_iterator
+            chat_id = json.loads(await anext(events))["chat_id"]
+            for delta in deltas:
+                self.assertEqual(json.loads(await anext(events)), {"content": delta})
+                self.assertFalse(done_requested)
+            self.assertEqual([json.loads(event) async for event in events], [{"done": True}])
+            messages = main.db.get_messages(chat_id)
+            self.assertEqual(messages[-1].role, "assistant")
+            self.assertEqual(messages[-1].content, "".join(deltas))
+
+        with patch.object(FakeChatContent, "iter_any", split_stream):
+            asyncio.run(check_stream())
+
+    def test_chat_stream_rejects_truncated_utf8_at_eof(self):
+        self.configure_chat(stream=True)
+        self.patch_chat_session()
+
+        async def truncated_stream(_):
+            yield b'data: {"choices":[{"delta":{"content":"prefix"}}]}\n\n'
+            yield b'data: {"choices":[{"delta":{"content":"\xe6'
+
+        async def check_stream():
+            response = await main.chat(JsonRequest({"message": "truncated stream"}))
+            events = [json.loads(event) async for event in response.body_iterator]
+            self.assertEqual(events[1], {"content": "prefix"})
+            self.assertEqual(len(events), 3)
+            self.assertIn("error", events[2])
+            self.assertIn("unexpected end of data", events[2]["error"])
+            messages = main.db.get_messages(events[0]["chat_id"])
+            self.assertEqual([message.role for message in messages], ["user"])
+
+        with patch.object(FakeChatContent, "iter_any", truncated_stream):
+            asyncio.run(check_stream())
 
     def test_chat_active_skill_with_rag_keeps_rag_in_last_user_message(self):
         self.enable_skill_manager()

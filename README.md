@@ -48,7 +48,7 @@ Many developers, AI hardware vendors, and users just need a simple, lightweight 
 
 ChatRaw now includes a native macOS desktop version: **ChatRaw for Mac**. It wraps the same lightweight web interface in a SwiftUI + WKWebView desktop shell, automatically starts a local ChatRaw backend, and loads the app through a local `127.0.0.1` address. The Mac app provides model settings, plugins, document parsing, image understanding, and support for OpenAI-compatible APIs.
 
-The Mac download that accompanies ChatRaw 2.3 is the original `ChatRaw-for-Mac-2.2.1.dmg` from the v2.2.1 release. It targets Apple Silicon and requires macOS 14 or later. For native Agent setup in the Linux edition, see the [deployment guide](deploy/README.md).
+The Mac download that accompanies ChatRaw 2.3.1 is the original `ChatRaw-for-Mac-2.2.1.dmg` from the v2.2.1 release. It targets Apple Silicon and requires macOS 14 or later. For native Agent setup in the Linux edition, see the [deployment guide](deploy/README.md).
 
 ---
 
@@ -165,7 +165,7 @@ For native Agents, run ChatRaw in Docker and install the Runner on the same Linu
 
 **Prerequisites**: [Docker](https://docs.docker.com/get-docker/) installed.
 
-Images are published to **Docker Hub**. Pull `massif01/chatraw:latest` for the current release or `massif01/chatraw:2.3` for this version.
+Images are published to **Docker Hub**. Pull `massif01/chatraw:latest` for the current release or `massif01/chatraw:2.3.1` for this version.
 
 **Supported platforms**: linux/amd64 (Intel/AMD), linux/arm64 (Apple Silicon, Raspberry Pi 4/5).
 
@@ -257,7 +257,7 @@ python main.py
 | Source | Pull command |
 |--------|----------------|
 | Docker Hub | `docker pull massif01/chatraw:latest` |
-| Docker Hub (2.3) | `docker pull massif01/chatraw:2.3` |
+| Docker Hub (2.3.1) | `docker pull massif01/chatraw:2.3.1` |
 
 ---
 
@@ -437,7 +437,7 @@ MIT License
 
 ChatRaw 现在提供原生 macOS 桌面版本：**ChatRaw for Mac**。它使用 SwiftUI + WKWebView 桌面外壳承载同一套轻量 Web 界面，并自动启动本地 ChatRaw 后端，通过本机 `127.0.0.1` 地址加载应用。Mac 应用支持模型配置、插件、文档解析、图片理解和 OpenAI 兼容 API。
 
-ChatRaw 2.3 随附 v2.2.1 发布中的原版 `ChatRaw-for-Mac-2.2.1.dmg`。安装包面向 Apple Silicon，要求 macOS 14 或更高版本。Linux 版的原生 Agent 配置请参阅[部署指南](deploy/README.md)。
+ChatRaw 2.3.1 随附 v2.2.1 发布中的原版 `ChatRaw-for-Mac-2.2.1.dmg`。安装包面向 Apple Silicon，要求 macOS 14 或更高版本。Linux 版的原生 Agent 配置请参阅[部署指南](deploy/README.md)。
 
 ---
 
@@ -549,7 +549,7 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 
 **前置条件**：已安装 [Docker](https://docs.docker.com/get-docker/)。
 
-镜像发布在 **Docker Hub**。拉取 `massif01/chatraw:latest` 获取最新版，或使用 `massif01/chatraw:2.3` 固定在本版。
+镜像发布在 **Docker Hub**。拉取 `massif01/chatraw:latest` 获取最新版，或使用 `massif01/chatraw:2.3.1` 固定在本版。
 
 **支持平台**：linux/amd64（Intel/AMD）、linux/arm64（Apple Silicon、树莓派 4/5）。
 
@@ -641,7 +641,7 @@ python main.py
 | 来源 | 拉取命令 |
 |------|----------|
 | Docker Hub | `docker pull massif01/chatraw:latest` |
-| Docker Hub (2.3) | `docker pull massif01/chatraw:2.3` |
+| Docker Hub (2.3.1) | `docker pull massif01/chatraw:2.3.1` |
 
 ---
 

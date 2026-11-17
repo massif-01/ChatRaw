@@ -1249,13 +1249,15 @@ class LLMService:
                         yield json.dumps({"error": f"API error ({resp.status}): {error_text}"})
                         return
                     
-                    buffer = ""
+                    buffer = bytearray()
+                    search_start = 0
                     async for chunk in resp.content.iter_any():
-                        buffer += chunk.decode("utf-8")
-                        
-                        while "\n" in buffer:
-                            line, buffer = buffer.split("\n", 1)
-                            line = line.strip()
+                        buffer.extend(chunk)
+                        line_start = 0
+                        while (line_end := buffer.find(b"\n", search_start)) != -1:
+                            line = buffer[line_start:line_end].decode("utf-8").strip()
+                            line_start = line_end + 1
+                            search_start = line_start
                             
                             if not line.startswith("data: "):
                                 continue
@@ -1284,6 +1286,12 @@ class LLMService:
                                         yield json.dumps({"content": content})
                             except json.JSONDecodeError:
                                 continue
+                        del buffer[:line_start]
+                        # A partial line only needs to be scanned where new bytes arrive.
+                        search_start = len(buffer) if line_end == -1 else 0
+                    if buffer:
+                        # Validate the trailing bytes without processing an unterminated line.
+                        buffer.decode("utf-8")
             
             if full_response:
                 save_assistant_message(self.db, chat_id, message, full_response, full_thinking)
