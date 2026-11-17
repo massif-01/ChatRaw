@@ -88,6 +88,9 @@ jobs:
           cd backend
           python -c "from main import app"
 
+      - name: Test chat and skill integration
+        run: python -m unittest backend.test_skills
+
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
