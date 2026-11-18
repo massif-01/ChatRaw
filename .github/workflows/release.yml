@@ -76,15 +76,22 @@ jobs:
             org.opencontainers.image.version=${{ steps.version.outputs.number }}
             org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Verify both Docker Hub tags without signing in
+      - name: Verify both Docker Hub tags with anonymous pull access
+        shell: bash
         env:
           VERSION: ${{ steps.version.outputs.number }}
           DIGEST: ${{ steps.docker.outputs.digest }}
         run: |
           test -n "$DIGEST"
-          docker logout
+          token=$(curl --fail --silent --show-error --retry 3 --max-time 15 \
+            'https://auth.docker.io/token?service=registry.docker.io&scope=repository:massif01/chatraw:pull' | jq -er '.token')
+          echo "::add-mask::$token"
           for tag in "$VERSION" latest; do
-            published=$(docker buildx imagetools inspect "massif01/chatraw:$tag" --format '{{.Manifest.Digest}}')
+            published=$(curl --fail --silent --show-error --retry 3 --max-time 15 --head \
+              --header "Authorization: Bearer $token" \
+              --header 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json' \
+              "https://registry-1.docker.io/v2/massif01/chatraw/manifests/$tag" |
+              awk 'tolower($1) == "docker-content-digest:" { sub(/\r$/, "", $2); print $2 }')
             if [[ "$published" != "$DIGEST" ]]; then
               echo "::error::massif01/chatraw:$tag points to $published, expected $DIGEST"
               exit 1
