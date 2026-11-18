@@ -52,7 +52,7 @@ class Store:
         self.db.execute("PRAGMA synchronous=FULL")
         self.db.execute("PRAGMA foreign_keys=ON")
         version = self.db.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1, 2):
+        if version not in (0, 1, 2, 3):
             raise RuntimeError("Unsupported Runner database version")
         if version == 1:
             backup = self.directory / "runner.pre-v2.bak"
@@ -66,13 +66,26 @@ class Store:
                 )
                 self.db.execute("UPDATE sessions SET base_config=config")
                 self.db.execute("PRAGMA user_version=2")
+        if version in (1, 2):
+            self.db.executescript(
+                """
+                BEGIN IMMEDIATE;
+                ALTER TABLE sessions ADD COLUMN permission_mode TEXT NOT NULL DEFAULT 'ask';
+                ALTER TABLE sessions ADD COLUMN permission_revision INTEGER NOT NULL DEFAULT 0;
+                ALTER TABLE runs ADD COLUMN permission_mode TEXT NOT NULL DEFAULT 'ask';
+                PRAGMA user_version=3;
+                COMMIT;
+                """
+            )
         self.db.executescript(
             """
             CREATE TABLE IF NOT EXISTS sessions (
                 id TEXT PRIMARY KEY, chat_id TEXT NOT NULL, agent_id TEXT NOT NULL,
                 workspace TEXT NOT NULL, workspace_public TEXT NOT NULL,
                 binding TEXT, config TEXT NOT NULL, created_at TEXT NOT NULL,
-                base_config TEXT NOT NULL
+                base_config TEXT NOT NULL,
+                permission_mode TEXT NOT NULL DEFAULT 'ask',
+                permission_revision INTEGER NOT NULL DEFAULT 0
             );
             CREATE TABLE IF NOT EXISTS agents (
                 id TEXT PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 0,
@@ -84,6 +97,7 @@ class Store:
                 fingerprint TEXT NOT NULL, request TEXT NOT NULL, kind TEXT NOT NULL,
                 status TEXT NOT NULL, last_seq INTEGER NOT NULL DEFAULT 0,
                 final_text TEXT, error TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+                permission_mode TEXT NOT NULL DEFAULT 'ask',
                 UNIQUE(chat_id, client_request_id)
             );
             CREATE UNIQUE INDEX IF NOT EXISTS one_active_run ON runs(session_id)
@@ -102,7 +116,7 @@ class Store:
                 chat_id TEXT NOT NULL, run_id TEXT, kind TEXT NOT NULL,
                 name TEXT NOT NULL, mime_type TEXT NOT NULL, size INTEGER NOT NULL
             );
-            PRAGMA user_version=2;
+            PRAGMA user_version=3;
         """
         )
 
@@ -145,13 +159,20 @@ class Store:
     def snapshot(self, run_id):
         row = self.run(run_id)
         result = {
-            key: row[key] for key in ("chat_id", "session_id", "status", "last_seq")
+            key: row[key]
+            for key in (
+                "chat_id",
+                "session_id",
+                "status",
+                "last_seq",
+                "permission_mode",
+            )
         }
         result["run_id"] = row["id"]
         result["interactions"] = [
             {**json.loads(i["payload"]), "interaction_id": i["id"]}
             for i in self.db.execute(
-                "SELECT * FROM interactions WHERE run_id=? AND state='pending'",
+                "SELECT * FROM interactions WHERE run_id=? AND state='pending' ORDER BY rowid",
                 (run_id,),
             )
         ]

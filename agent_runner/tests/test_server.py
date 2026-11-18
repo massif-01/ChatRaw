@@ -63,6 +63,23 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status, 403)
         self.assertEqual(self.runtime.store.active(), [])
 
+    async def test_permission_mutation_requires_own_session_and_current_revision(self):
+        await self.create()
+        endpoint = self.base + "/v1/sessions/session1/permission"
+        body = {"mode": "full", "expected_permission_revision": 0}
+        async with self.client.put(
+            endpoint, json=body, headers={"X-ChatRaw-Chat-Id": "other"}
+        ) as response:
+            self.assertEqual(response.status, 403)
+        async with self.client.put(endpoint, json=body) as response:
+            self.assertEqual(response.status, 200, await response.text())
+            saved = await response.json()
+            self.assertEqual(
+                (saved["permission_mode"], saved["permission_revision"]), ("full", 1)
+            )
+        async with self.client.put(endpoint, json={**body, "mode": "ask"}) as response:
+            self.assertEqual(response.status, 409)
+
     async def test_extra_prompt_context_is_rejected_and_disconnected_client_can_find_run(
         self,
     ):

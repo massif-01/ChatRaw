@@ -96,6 +96,15 @@ class _Model(BaseHTTPRequestHandler):
                         ],
                     },
                 )
+        elif "TEST_UNRESTRICTED_BASH " in text and not tool_result:
+            target = shlex.quote(text.split("TEST_UNRESTRICTED_BASH ", 1)[1].split()[0])
+            tool = (
+                "bash",
+                {
+                    "command": f"printf ran > {target}",
+                    "description": "Write fixture marker",
+                },
+            )
         elif "TEST_BASH " in text and not tool_result:
             target = shlex.quote(text.split("TEST_BASH ", 1)[1].split()[0])
             args = {
@@ -272,6 +281,49 @@ class _NativeCase(unittest.IsolatedAsyncioTestCase):
     async def run_input(self, adapter, binding, prompt, name):
         request = {"run_id": name, "message": prompt, "attachments": []}
         return await adapter.run(binding, request, self.emit)
+
+    async def exercise_full_access(self, adapter, deny):
+        binding = await self.binding(adapter, self.config, "full-access")
+        other = type(adapter)()
+        other_binding = await self.binding(other, self.config, "parallel-ask")
+        await other.apply_permission_mode(other_binding, "ask")
+        other_marker = self.root / "parallel-denied"
+        parallel = asyncio.create_task(
+            self.run_input(
+                other, other_binding, f"TEST_BASH {other_marker}", "parallel"
+            )
+        )
+        request = await self.interaction(parallel)
+        for index in (1, 2):
+            marker = self.root / f"permission-{index}"
+            await adapter.apply_permission_mode(binding, "full")
+            result = await asyncio.wait_for(
+                self.run_input(
+                    adapter,
+                    binding,
+                    f"TEST_UNRESTRICTED_BASH {marker}",
+                    f"full-{index}",
+                ),
+                20,
+            )
+            self.assertEqual(result["status"], "completed", result)
+            self.assertEqual(marker.read_text(), "ran")
+        self.assertFalse(other_marker.exists())
+        await other.respond(other_binding, request["native_key"], {"decision_id": deny})
+        await asyncio.wait_for(parallel, 20)
+        self.assertFalse(other_marker.exists())
+
+        await adapter.apply_permission_mode(binding, "ask")
+        marker = self.root / "permission-denied"
+        task = asyncio.create_task(
+            self.run_input(adapter, binding, f"TEST_BASH {marker}", "ask")
+        )
+        request = await self.interaction(task)
+        self.assertEqual(request["data"]["kind"], "approval")
+        self.assertFalse(marker.exists())
+        await adapter.respond(binding, request["native_key"], {"decision_id": deny})
+        await asyncio.wait_for(task, 20)
+        self.assertFalse(marker.exists())
 
     async def run_image(self, adapter, binding):
         image = base64.b64decode(
@@ -476,6 +528,9 @@ class PiNativeTests(_NativeCase):
         with self.assertRaises(AdapterError):
             await adapter.resume_session(binding, self.config)
 
+    async def test_rpc_full_access_and_revoke(self):
+        await self.exercise_full_access(PiAdapter(), "deny")
+
 
 @unittest.skipUnless(
     os.getenv("CHATRAW_TEST_DEEPSEEK"),
@@ -497,6 +552,9 @@ class DeepSeekNativeTests(_NativeCase):
         self.config = {"dsh_home": str(self.root)}
         self.server.max_tokens = []
         self.server.image_sources = []
+
+    async def test_sdk_full_access_and_revoke(self):
+        await self.exercise_full_access(DeepSeekAdapter(), "rejected")
 
     async def test_sdk_output_budget_reaches_model_and_omission_keeps_default(self):
         from deepseek_harness import HarnessClient

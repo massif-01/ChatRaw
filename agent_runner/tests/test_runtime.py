@@ -2,6 +2,7 @@
 
 import asyncio
 import io
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,6 +15,7 @@ from agent_runner.store import RunnerError
 
 class ControlledAdapter(AgentAdapter):
     agent_id = "hermes"
+    supports_full_access = True
     settings_schema = {
         "type": "object",
         "properties": {"model": {"type": "string"}},
@@ -32,6 +34,10 @@ class ControlledAdapter(AgentAdapter):
         self.binding = None
         self.config = {}
         self.received_configs = []
+        self.permission_mode = "ask"
+
+    async def apply_permission_mode(self, binding, mode):
+        self.permission_mode = mode
 
     def validate_config(self, config):
         return config
@@ -165,6 +171,77 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.runtime.store.lookup("chat1", "key1")["run_id"], run_id)
         self.assertIsNone(self.runtime.store.lookup("other-chat", "key1"))
 
+    async def test_permission_is_session_scoped_and_fixed_at_admission(self):
+        run_id, adapter = await self.start("approval")
+        await self.runtime.create_session(
+            "session2", "chat2", "hermes", {"kind": "managed"}
+        )
+        changed = await self.runtime.set_permission_mode("session1", "full", 0)
+        self.assertEqual(changed["active_permission_mode"], "ask")
+        self.assertEqual(changed["permission_mode"], "full")
+        self.assertEqual(adapter.permission_mode, "ask")
+        self.assertEqual(
+            self.runtime.session_snapshot("session2")["permission_mode"], "ask"
+        )
+        self.assertEqual(len(self.runtime.store.snapshot(run_id)["interactions"]), 1)
+        await self.settle(run_id, adapter)
+
+        for stale in (None, 0):
+            with self.assertRaises(RunnerError) as failure:
+                await self.runtime.submit(
+                    "session1",
+                    "chat1",
+                    "next",
+                    "continue",
+                    expected_permission_revision=stale,
+                )
+            self.assertEqual(failure.exception.code, "permission_changed")
+        with self.assertRaises(RunnerError):
+            await self.runtime.set_permission_mode("session1", "ask", 0)
+
+        await self.runtime.close()
+        self.runtime = Runtime(self.temp.name, {"hermes": ControlledAdapter})
+        run = await self.runtime.submit(
+            "session1", "chat1", "next", "continue", expected_permission_revision=1
+        )
+        restored = self.runtime.instances["session1"]
+        self.assertEqual(restored.permission_mode, "full")
+        self.assertEqual(run["permission_mode"], "full")
+        await self.settle(run["run_id"], restored)
+
+        await self.runtime.set_permission_mode("session1", "ask", 1)
+        run = await self.runtime.submit(
+            "session1", "chat1", "again", "continue", expected_permission_revision=2
+        )
+        self.assertEqual(restored.permission_mode, "ask")
+        self.assertEqual(run["permission_mode"], "ask")
+        await self.settle(run["run_id"], restored)
+
+    async def test_v2_migration_keeps_session_and_run_history_with_ask_default(self):
+        run_id, adapter = await self.start()
+        completed = await self.settle(run_id, adapter)
+        binding = self.runtime.store.session("session1")["binding"]
+        await self.runtime.close()
+        with sqlite3.connect(Path(self.temp.name) / "runner.db") as legacy:
+            legacy.executescript(
+                """
+                ALTER TABLE sessions DROP COLUMN permission_mode;
+                ALTER TABLE sessions DROP COLUMN permission_revision;
+                ALTER TABLE runs DROP COLUMN permission_mode;
+                PRAGMA user_version=2;
+                """
+            )
+        self.runtime = Runtime(self.temp.name, {"hermes": ControlledAdapter})
+        self.assertEqual(
+            self.runtime.store.db.execute("PRAGMA user_version").fetchone()[0], 3
+        )
+        self.assertEqual(self.runtime.store.session("session1")["binding"], binding)
+        self.assertEqual(self.runtime.store.snapshot(run_id), completed)
+        snapshot = self.runtime.session_snapshot("session1")
+        self.assertEqual(
+            (snapshot["permission_mode"], snapshot["permission_revision"]), ("ask", 0)
+        )
+
     async def test_changed_model_applies_on_next_run_without_changing_native_session(
         self,
     ):
@@ -242,11 +319,15 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
             self.runtime.respond(run_id, iid, {"decision_id": "allow"})
         )
         await adapter.reply_entered.wait()
+        duplicate = asyncio.create_task(
+            self.runtime.respond(run_id, iid, {"decision_id": "allow"})
+        )
         stop = asyncio.create_task(self.runtime.cancel(run_id))
         await asyncio.sleep(0)
         self.assertEqual(adapter.stops, 0)
         adapter.reply_release.set()
         await reply
+        self.assertEqual((await duplicate)["status"], "accepted")
         await stop
         repeated = await self.runtime.respond(run_id, iid, {"decision_id": "allow"})
         self.assertEqual(repeated["status"], "accepted")

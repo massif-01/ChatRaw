@@ -238,21 +238,22 @@ class _ModelHandler(BaseHTTPRequestHandler):
                 ),
             }
         if "approval-fixture" in text and last.get("role") == "user":
+            arguments = {
+                "cmd": self.server.approval_command or "touch codex-approval-fixture",
+                "yield_time_ms": self.server.codex_yield_time_ms,
+            }
+            if "full-fixture" not in text:
+                arguments.update(
+                    sandbox_permissions="require_escalated",
+                    justification="Create fixture file",
+                )
             output = {
                 "id": f"{response_id}_call",
                 "type": "function_call",
                 "name": "exec_command",
                 "call_id": f"{response_id}_tool",
                 "status": "completed",
-                "arguments": json.dumps(
-                    {
-                        "cmd": self.server.approval_command
-                        or "touch codex-approval-fixture",
-                        "yield_time_ms": self.server.codex_yield_time_ms,
-                        "sandbox_permissions": "require_escalated",
-                        "justification": "Create fixture file",
-                    }
-                ),
+                "arguments": json.dumps(arguments),
             }
         response = {
             "id": response_id,
@@ -529,8 +530,10 @@ class NativeAdapterTests(unittest.IsolatedAsyncioTestCase):
             all(marker not in outbound for marker in chatraw_context.values())
         )
 
-    async def _exercise_question(self, adapter, config, answers):
+    async def _exercise_question(self, adapter, config, answers, *, full_access=False):
         await self._start(adapter, config)
+        if full_access:
+            await adapter.apply_permission_mode(self.sink.binding, "full")
         task = asyncio.create_task(self.sink.run(adapter, "ask", "ask-fixture"))
         event = await self._interaction(task)
         self.assertEqual(event["data"]["kind"], "question")
@@ -587,6 +590,17 @@ class NativeAdapterTests(unittest.IsolatedAsyncioTestCase):
         latest = [body for path, body in self.model.requests if body.get("stream")][-1]
         self.assertIn("Crimson", json.dumps(latest["messages"][-1]))
         self.assertIn("Large", json.dumps(latest["messages"][-1]))
+
+    async def test_claude_native_question_in_full_access(self):
+        await self._exercise_question(
+            ClaudeAdapter(),
+            {},
+            [
+                {"question_id": "0", "option_ids": ["0"]},
+                {"question_id": "1", "option_ids": ["1"]},
+            ],
+            full_access=True,
+        )
 
     async def test_claude_native_selected_answers_with_custom_text(self):
         await self._exercise_question(
@@ -660,6 +674,65 @@ class NativeAdapterTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_claude_native_approval(self):
         await self._exercise_approval(ClaudeAdapter(), "allow", "deny")
+
+    async def _exercise_conversation_permissions(self, adapter, deny):
+        await self._start(adapter, {})
+        file = self.workspace / f"{adapter.agent_id}-approval-fixture"
+        await adapter.apply_permission_mode(self.sink.binding, "full")
+        other_workspace = self.workspace.parent / "other"
+        other_workspace.mkdir()
+        other = type(adapter)()
+        parallel = _Sink(await other.create_session("s2", other_workspace, {}))
+        task = asyncio.create_task(parallel.run(other, "parallel", "approval-fixture"))
+        try:
+            pending = await asyncio.wait_for(parallel.interactions.get(), 15)
+            for index in (1, 2):
+                result = await asyncio.wait_for(
+                    self.sink.run(
+                        adapter, f"full-{index}", "approval-fixture full-fixture"
+                    ),
+                    20,
+                )
+                self.assertEqual(result["status"], "completed", result)
+                self.assertTrue(file.exists())
+                self.assertTrue(self.sink.interactions.empty())
+                file.unlink()
+            other_file = other_workspace / file.name
+            self.assertFalse(other_file.exists())
+            await other.respond(
+                parallel.binding, pending["native_key"], {"decision_id": deny}
+            )
+            await asyncio.wait_for(task, 15)
+            self.assertFalse(other_file.exists())
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+            await other.close(parallel.binding)
+        previous = self.sink.binding["native"].get("thread_id") or self.sink.binding[
+            "native"
+        ].get("session_id")
+
+        await adapter.apply_permission_mode(self.sink.binding, "ask")
+        task = asyncio.create_task(self.sink.run(adapter, "ask", "approval-fixture"))
+        event = await self._interaction(task)
+        self.assertEqual(event["data"]["kind"], "approval")
+        self.assertFalse(file.exists())
+        await adapter.respond(
+            self.sink.binding, event["native_key"], {"decision_id": deny}
+        )
+        await asyncio.wait_for(task, 15)
+        self.assertFalse(file.exists())
+        self.assertEqual(
+            self.sink.binding["native"].get("thread_id")
+            or self.sink.binding["native"].get("session_id"),
+            previous,
+        )
+
+    async def test_codex_native_full_access_and_revoke(self):
+        await self._exercise_conversation_permissions(CodexAdapter(), "cancel")
+
+    async def test_claude_native_full_access_and_revoke(self):
+        await self._exercise_conversation_permissions(ClaudeAdapter(), "deny")
 
     async def _exercise_approval_fidelity(self, adapter, allow):
         marker = self.workspace / "command-tail-fixture"

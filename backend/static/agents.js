@@ -52,6 +52,15 @@ window.ChatRawAgents = (() => {
             expired: 'Request expired', invalidated: 'Request is no longer active', answered: 'Answered',
             replyUnknown: 'Response status is unconfirmed. Checking the current request.',
             tool: 'Tool', command: 'Command', host: 'Host', paths: 'Paths',
+            permission: 'Conversation permissions', permissionAsk: 'Ask for approval', permissionFull: 'Full access',
+            permissionAskDetail: 'Pause when an action needs approval.', permissionFullDetail: 'Run ordinary tools without asking each time.',
+            fullConfirm: 'Enable full access for this conversation?',
+            fullScope: 'Future runs can use the running account’s file and network permissions on the computer running the Agent.',
+            permissionNextRun: 'Applies to the next run. This run keeps its current permissions.',
+            enableFull: 'Enable full access',
+            permissionReload: 'Could not confirm the conversation permissions. Reopen the conversation and try again.',
+            approvalNext: 'Next request', approvalCount: '{count} pending requests',
+            allowOnce: 'Allow once', allowSession: 'Allow for this session', deny: 'Deny', networkTarget: 'Network target',
             keepDraft: 'Finish uploading before sending.', uploadFailed: 'Could not attach the file.'
         },
         zh: {
@@ -90,7 +99,16 @@ window.ChatRawAgents = (() => {
             submit: '提交回复', cancelRequest: '取消请求', accepted: '已接收回复',
             expired: '请求已过期', invalidated: '请求已失效', answered: '已回答',
             replyUnknown: '回复结果待核实，正在查询当前请求。',
-            tool: '工具', command: '命令', host: '主机', paths: '路径',
+            tool: '工具', command: '命令', host: '计算机', paths: '路径',
+            permission: '当前对话权限', permissionAsk: '需要审批', permissionFull: '完全访问',
+            permissionAskDetail: '需要额外权限时暂停，等待批准。', permissionFullDetail: '常规工具操作无需逐次批准。',
+            fullConfirm: '为此对话开启完全访问？',
+            fullScope: '后续运行可使用 Agent 所在计算机上运行账户已有的文件和网络权限。',
+            permissionNextRun: '从下一次运行起生效。当前运行沿用原有权限。',
+            enableFull: '开启完全访问',
+            permissionReload: '无法确认对话权限，请重新打开对话后重试。',
+            approvalNext: '下一条请求', approvalCount: '有 {count} 条待审批请求',
+            allowOnce: '允许一次', allowSession: '本会话允许', deny: '拒绝', networkTarget: '网络目标',
             keepDraft: '请等待附件上传完成。', uploadFailed: '无法添加附件。'
         }
     };
@@ -104,6 +122,7 @@ window.ChatRawAgents = (() => {
         constructor(response, body) {
             super(errorMessage(body, response.statusText));
             this.status = response.status;
+            this.code = body?.error?.code || body?.detail?.code;
         }
     }
 
@@ -185,6 +204,7 @@ window.ChatRawAgents = (() => {
 
     function applySnapshot(run, snapshot) {
         run.status = snapshot.status;
+        run.permissionMode = snapshot.permission_mode || 'ask';
         run.error = snapshot.error?.message || '';
         run.authoritySeq = snapshot.last_seq;
         for (const item of run.interactions) item.open = false;
@@ -297,6 +317,10 @@ window.ChatRawAgents = (() => {
             agentSettingsError: '',
             agentSettingsLoading: false,
             agentInteraction: null,
+            agentApprovalId: null,
+            agentPermissionPanel: '',
+            agentPermissionSaving: false,
+            agentPermissionError: '',
             agentClock: Date.now(),
 
             at(key) {
@@ -335,7 +359,7 @@ window.ChatRawAgents = (() => {
 
             get agentBlocked() {
                 return this.agentViewLoading || !!this.agentBindingError || !!this.agentAdmission ||
-                    !!this.agentBinding?.active_run_id || this.agentSubmitBusy || this.agentUploads > 0;
+                    !!this.agentBinding?.active_run_id || this.agentSubmitBusy || this.agentPermissionSaving || this.agentUploads > 0;
             },
 
             get canSendAgent() {
@@ -517,6 +541,10 @@ window.ChatRawAgents = (() => {
                 observers.clear();
                 this.closeAgentInteraction();
                 this.closeAgentMenu();
+                this.agentApprovalId = null;
+                this.agentPermissionPanel = '';
+                this.agentPermissionSaving = false;
+                this.agentPermissionError = '';
                 this.agentRuns = [];
                 this.agentBinding = null;
                 this.agentBindingError = '';
@@ -745,6 +773,7 @@ window.ChatRawAgents = (() => {
                 const body = operation === 'compact' ? { client_request_id: admission.id } : {
                     chat_id: chat, client_request_id: admission.id, message, attachments
                 };
+                if (Number.isInteger(binding.permission_revision)) body.expected_permission_revision = binding.permission_revision;
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 20000);
                 try {
@@ -752,7 +781,10 @@ window.ChatRawAgents = (() => {
                     if (!run.run_id) throw new Error(this.at('admissionUnknown'));
                     this.acceptAgentAdmission(chat, admission.id, run, nav);
                 } catch (error) {
-                    if (nav === navigation) await this.checkAgentAdmission(error);
+                    if (nav === navigation) {
+                        if (error.code === 'permission_changed') await this.refreshAgentPermission(chat, binding.session_id, nav);
+                        await this.checkAgentAdmission(error);
+                    }
                 } finally {
                     clearTimeout(timeout);
                     if (nav === navigation) this.agentSubmitBusy = false;
@@ -844,6 +876,82 @@ window.ChatRawAgents = (() => {
                 return '/api/agents/artifacts/' + segment(id);
             },
 
+            get agentPermissionMode() {
+                return this.agentBinding?.permission_mode === 'full' ? 'full' : 'ask';
+            },
+
+            async refreshAgentPermission(chat, session, nav) {
+                try {
+                    const binding = await request(chatPath(chat));
+                    this.applyAgentPermission(binding, chat, session, nav);
+                } catch {
+                    if (nav === navigation) this.agentPermissionError = this.at('permissionReload');
+                }
+            },
+
+            applyAgentPermission(binding, chat, session, nav) {
+                if (nav !== navigation || this.agentBinding?.session_id !== session) return;
+                if (binding.chat_id !== chat || binding.session_id !== session || !Number.isInteger(binding.permission_revision)) {
+                    throw new Error(this.at('permissionReload'));
+                }
+                if (binding.permission_revision >= this.agentBinding.permission_revision) {
+                    this.agentBinding.permission_mode = binding.permission_mode;
+                    this.agentBinding.permission_revision = binding.permission_revision;
+                    this.agentBinding.supports_full_access = binding.supports_full_access;
+                }
+            },
+
+            async setAgentPermission(mode) {
+                if (this.agentPermissionSaving || !this.agentBinding?.supports_full_access) return;
+                const { chat_id: chat, session_id: session, permission_revision: revision } = this.agentBinding;
+                const nav = navigation;
+                this.agentPermissionSaving = true;
+                this.agentPermissionError = '';
+                try {
+                    const binding = await request(chatPath(chat) + '/permission', {
+                        method: 'PUT', body: { session_id: session, expected_permission_revision: revision, mode }
+                    });
+                    this.applyAgentPermission(binding, chat, session, nav);
+                    if (nav === navigation) this.closeAgentPermission();
+                } catch (error) {
+                    await this.refreshAgentPermission(chat, session, nav);
+                    if (nav === navigation && !this.agentPermissionError) this.agentPermissionError = error.message;
+                } finally {
+                    if (nav === navigation) this.agentPermissionSaving = false;
+                }
+            },
+
+            closeAgentPermission() {
+                this.agentPermissionPanel = '';
+                this.agentPermissionError = '';
+                this.$refs.agentPermissionButton?.focus({ preventScroll: true });
+            },
+
+            get pendingAgentApprovals() {
+                return this.activeAgentRun?.interactions.filter(({ open, data }) => open && data.kind === 'approval' &&
+                    !(data.expires_at && Date.parse(data.expires_at) <= this.agentClock)) || [];
+            },
+
+            get currentAgentApproval() {
+                return this.pendingAgentApprovals.find(item => item.data.interaction_id === this.agentApprovalId) || this.pendingAgentApprovals[0];
+            },
+
+            nextAgentApproval() {
+                const items = this.pendingAgentApprovals;
+                this.agentApprovalId = items[(items.indexOf(this.currentAgentApproval) + 1) % items.length].data.interaction_id;
+            },
+
+            approvalLabel(choice) {
+                const labels = { 'Allow once': 'allowOnce', 'Allow for this session': 'allowSession', Deny: 'deny', once: 'allowOnce', session: 'allowSession', deny: 'deny' };
+                return Object.prototype.hasOwnProperty.call(labels, choice.label) ? this.at(labels[choice.label]) : choice.label;
+            },
+
+            approvalChoices(item) {
+                const choices = item.data.decisions || [];
+                const primary = choices.find(choice => this.approvalLabel(choice) === this.at('allowOnce'));
+                return primary ? [...choices.filter(choice => choice !== primary), primary] : choices;
+            },
+
             openAgentInteraction(run, interaction) {
                 this.agentClock = Date.now();
                 this.agentInteraction = { run, interaction };
@@ -872,7 +980,7 @@ window.ChatRawAgents = (() => {
             },
 
             interactionActionable(run, item, now = this.agentClock) {
-                return item.open && run.authorized && !run.disconnected && run.seq >= run.authoritySeq &&
+                return item.open && run?.authorized && !run.disconnected && run.seq >= run.authoritySeq &&
                     !run.done && !terminal.has(run.status) && run.status !== 'stopping' && run.status !== 'unknown' &&
                     !run.stopPending && !item.submitting && !item.sent && !item.uncertain &&
                     !(item.data.expires_at && Date.parse(item.data.expires_at) <= now);
@@ -928,9 +1036,9 @@ window.ChatRawAgents = (() => {
                 if (snapshot && snapshot.last_seq >= run.seq) applySnapshot(run, snapshot);
             },
 
-            async submitAgentInteraction(run, item, cancel = false) {
+            async submitAgentInteraction(run, item, cancel = false, decision = null) {
                 if (!this.interactionActionable(run, item, Date.now()) || (cancel && !item.data.allow_cancel)) return;
-                const body = cancel ? { cancelled: true } : this.interactionReply(item);
+                const body = decision !== null ? { decision_id: decision } : cancel ? { cancelled: true } : this.interactionReply(item);
                 if (!body) return;
                 item.submitting = true;
                 item.error = '';

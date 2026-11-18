@@ -9,12 +9,14 @@ const question = Type.Object({
 });
 
 export default function chatraw(pi: ExtensionAPI) {
+  const fullAccess = process.env.CHATRAW_PI_PERMISSION_MODE === "full";
   pi.on("tool_call", async (event, ctx) => {
     const tool = event.toolName;
     if (tool !== "bash" && tool !== "write" && tool !== "edit") return;
 
     const deny = { block: true, reason: "The user did not approve the Pi tool call." };
     if (ctx.mode !== "rpc" || ctx.signal?.aborted) return deny;
+    if (fullAccess) return;
     try {
       const argument = tool === "bash" ? event.input.command : event.input.path;
       if (typeof argument !== "string" || !argument.trim()) return deny;

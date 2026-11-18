@@ -23,6 +23,7 @@ RunStatus = Literal[
     "completed", "failed", "cancelled", "interrupted", "unknown",
 ]
 TerminalStatus = Literal["completed", "failed", "cancelled", "interrupted"]
+PermissionMode = Literal["ask", "full"]
 TERMINAL_STATUSES = frozenset({"completed", "failed", "cancelled", "interrupted"})
 
 
@@ -273,6 +274,7 @@ class AgentAdapter(ABC):
     """
 
     agent_id: ClassVar[AgentId]
+    supports_full_access: ClassVar[bool] = False
     # JSON Schema for browser-editable settings only, additionalProperties=false.
     # Executables, argv, credentials and allowed roots are host config, not fields.
     settings_schema: ClassVar[JSONObject]
@@ -300,6 +302,13 @@ class AgentAdapter(ABC):
         old callbacks are invalid unless the native waiting request is verified.
         """
         raise UnsupportedCapability("resume")
+
+    async def apply_permission_mode(
+        self, binding: SessionBinding, mode: PermissionMode
+    ) -> None:
+        """Prepare the idle native session before admitting a new run."""
+        if mode != "ask":
+            raise UnsupportedCapability("full_access")
 
     async def recover_run(
         self, binding: SessionBinding, request: RecoveryRequest,
