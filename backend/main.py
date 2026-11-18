@@ -224,6 +224,13 @@ class Message(BaseModel):
     role: str
     content: str
     created_at: str
+    thinking: Optional[str] = None
+
+    @property
+    def context_content(self) -> str:
+        if self.thinking:
+            return f"<thinking>\n{self.thinking}\n</thinking>\n\n{self.content}"
+        return self.content
 
 # ============ Database ============
 
@@ -279,7 +286,8 @@ class Database:
                 chat_id TEXT NOT NULL,
                 role TEXT NOT NULL,
                 content TEXT NOT NULL,
-                created_at TEXT
+                created_at TEXT,
+                thinking TEXT
             );
 
             CREATE TABLE IF NOT EXISTS chat_compactions (
@@ -334,6 +342,12 @@ class Database:
         else:
             from agent_storage import initialize_agent_schema
         initialize_agent_schema(conn, self.db_path)
+
+        with conn:
+            conn.execute("BEGIN IMMEDIATE")
+            columns = {row["name"] for row in conn.execute("PRAGMA table_info(messages)")}
+            if "thinking" not in columns:
+                conn.execute("ALTER TABLE messages ADD COLUMN thinking TEXT")
         
         # Migrate old JSON embeddings to binary format
         self._migrate_embeddings(conn)
@@ -554,21 +568,22 @@ class Database:
             chat_id=row["chat_id"],
             role=row["role"],
             content=row["content"],
-            created_at=row["created_at"]
+            created_at=row["created_at"],
+            thinking=row["thinking"],
         ) for row in rows]
     
-    def add_message(self, chat_id: str, role: str, content: str) -> Message:
+    def add_message(self, chat_id: str, role: str, content: str, *, thinking: Optional[str] = None) -> Message:
         msg_id = str(uuid.uuid4())
         now = datetime.now().isoformat()
         
         conn = self.get_conn()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO messages (id, chat_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)",
-                      (msg_id, chat_id, role, content, now))
+        cursor.execute("INSERT INTO messages (id, chat_id, role, content, created_at, thinking) VALUES (?, ?, ?, ?, ?, ?)",
+                      (msg_id, chat_id, role, content, now, thinking))
         cursor.execute("UPDATE chats SET updated_at = ? WHERE id = ?", (now, chat_id))
         conn.commit()
         
-        return Message(id=msg_id, chat_id=chat_id, role=role, content=content, created_at=now)
+        return Message(id=msg_id, chat_id=chat_id, role=role, content=content, created_at=now, thinking=thinking)
 
     def add_skill_activations(self, chat_id: str, message_id: str, activations: List[dict]):
         if not activations:
@@ -839,7 +854,7 @@ class LLMService:
         return None
 
     def _raw_history_messages(self, history: List[Message]) -> List[dict]:
-        return [{"role": message.role, "content": message.content} for message in history]
+        return [{"role": message.role, "content": message.context_content} for message in history]
 
     def build_history_messages(
         self,
@@ -885,7 +900,7 @@ class LLMService:
         return truncated + suffix
 
     def _format_message_for_summary(self, message: Message, token_budget: int) -> str:
-        content = self._truncate_to_token_budget(message.content, max(64, token_budget))
+        content = self._truncate_to_token_budget(message.context_content, max(64, token_budget))
         return f"{message.role.upper()} [{message.created_at}]\n{content}"
 
     def _format_summary_batch(self, messages: List[Message], batch_budget: int) -> str:
@@ -902,7 +917,7 @@ class LLMService:
         current = []
         current_tokens = 0
         for message in messages:
-            message_tokens = min(estimate_text_tokens(message.content) + 8, batch_budget)
+            message_tokens = min(estimate_text_tokens(message.context_content) + 8, batch_budget)
             if current and current_tokens + message_tokens > batch_budget:
                 batches.append(current)
                 current = []
@@ -2249,10 +2264,7 @@ def build_effective_system_prompt(system_prompt: str, active_skill_context: str)
 
 
 def save_assistant_message(db_instance: Database, chat_id: str, original_user_message: str, content: str, thinking: str = "") -> Message:
-    save_content = content or ""
-    if thinking:
-        save_content = f"<thinking>\n{thinking}\n</thinking>\n\n{save_content}"
-    message = db_instance.add_message(chat_id, "assistant", save_content)
+    message = db_instance.add_message(chat_id, "assistant", content or "", thinking=thinking or "")
 
     messages_count = len(db_instance.get_messages(chat_id))
     if messages_count <= 2:
@@ -3194,8 +3206,21 @@ async def delete_chat(chat_id: str):
 
 @app.get("/api/chats/{chat_id}/messages")
 async def get_messages(chat_id: str):
-    messages = db.get_messages(chat_id)
-    return agent_gateway.enrich_messages(messages)
+    messages = agent_gateway.enrich_messages(db.get_messages(chat_id))
+    for message in messages:
+        thinking = message.pop("thinking")
+        if message["role"] != "assistant" or "run_id" in message:
+            continue
+        if thinking is None and message["content"].startswith("<thinking>\n"):
+            # A NULL thinking column marks records written before reasoning was stored separately.
+            legacy = message["content"].removeprefix("<thinking>\n")
+            reasoning, separator, answer = legacy.partition("\n</thinking>\n\n")
+            if reasoning and separator:
+                thinking = reasoning
+                message["content"] = answer
+        if thinking:
+            message["thinking"] = thinking
+    return messages
 
 @app.post("/api/chats/{chat_id}/compact")
 async def compact_chat_context(chat_id: str):

@@ -2649,10 +2649,15 @@ input[type=range]::-webkit-slider-thumb:hover {
     display: flex;
     align-items: center;
     gap: 8px;
+    width: 100%;
     cursor: pointer;
+    font-family: inherit;
     font-size: 0.85rem;
+    line-height: inherit;
+    text-align: left;
     color: var(--text-secondary);
     padding: 10px 14px;
+    border: 0;
     background: var(--bg-hover);
     transition: var(--transition);
     user-select: none;
@@ -2693,6 +2698,11 @@ input[type=range]::-webkit-slider-thumb:hover {
 
 .thinking-content p:last-child {
     margin-bottom: 0;
+}
+
+.thinking-header:focus-visible,
+.thinking-content:focus-visible {
+    outline-offset: -2px;
 }
 
 /* RAG References Bubble */

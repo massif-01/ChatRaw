@@ -1706,6 +1706,32 @@ Use this skill for PDF work.
         with patch.object(FakeChatContent, "iter_any", split_stream):
             asyncio.run(check_stream())
 
+    def test_chat_history_restores_legacy_and_current_reasoning(self):
+        chat = main.db.create_chat("Reasoning history")
+        tagged_text = "<thinking>\n旧记录的思考\n</thinking>\n\n旧记录的答复"
+        incomplete = "<thinking>\nAn incomplete literal example"
+        current_reasoning = "A literal delimiter follows:\n</thinking>\n\nStill reasoning."
+        user = main.db.add_message(chat.id, "user", tagged_text)
+        legacy = main.db.add_message(chat.id, "assistant", tagged_text)
+        malformed = main.db.add_message(chat.id, "assistant", incomplete)
+        current = main.save_assistant_message(main.db, chat.id, "prompt", "New answer", current_reasoning)
+        literal = main.save_assistant_message(main.db, chat.id, "prompt", tagged_text)
+
+        rows = {row["id"]: row for row in asyncio.run(main.get_messages(chat.id))}
+        self.assertEqual(rows[user.id]["content"], tagged_text)
+        self.assertEqual(rows[legacy.id]["thinking"], "旧记录的思考")
+        self.assertEqual(rows[legacy.id]["content"], "旧记录的答复")
+        self.assertEqual(rows[malformed.id]["content"], incomplete)
+        self.assertEqual(rows[current.id]["thinking"], current_reasoning)
+        self.assertEqual(rows[current.id]["content"], "New answer")
+        self.assertEqual(rows[literal.id]["content"], tagged_text)
+        for row in (user, malformed, literal):
+            self.assertNotIn("thinking", rows[row.id])
+
+        context = main.LLMService(main.db).build_history_messages(chat.id, use_compaction=False)
+        self.assertEqual(context[1]["content"], tagged_text)
+        self.assertEqual(context[3]["content"], f"<thinking>\n{current_reasoning}\n</thinking>\n\nNew answer")
+
     def test_chat_stream_rejects_truncated_utf8_at_eof(self):
         self.configure_chat(stream=True)
         self.patch_chat_session()

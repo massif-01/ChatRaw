@@ -364,6 +364,7 @@ function app() {
         _messageLoad: 0,
         _toastTimer: null,
         followOutput: true,
+        automaticScrollTop: null,
         showSettings: false,
         settingsTab: 'models',
         showSystemPrompt: false,
@@ -1575,10 +1576,19 @@ function app() {
                             continue;
                         }
                         if (parsed.chat_id) this.adoptOrdinaryChat(parsed.chat_id);
-                        if (parsed.thinking) assistant.thinking += parsed.thinking;
-                        if (parsed.content) assistant.content += parsed.content;
+                        if (parsed.thinking) {
+                            assistant.thinking += parsed.thinking;
+                            assistant.thinkingActive = true;
+                        }
+                        if (parsed.content) {
+                            assistant.content += parsed.content;
+                            assistant.thinkingActive = false;
+                        }
                         if (parsed.references) assistant.references = parsed.references;
-                        if (parsed.error) assistant.content = 'Error: ' + parsed.error;
+                        if (parsed.error) {
+                            assistant.content = 'Error: ' + parsed.error;
+                            assistant.thinkingActive = false;
+                        }
                     }
                     this.$nextTick(() => this.followStream());
                     if (done) break;
@@ -2231,12 +2241,34 @@ function app() {
             return window.ChatRawMarkdown.html(content);
         },
 
+        toggleThinking(message, panel) {
+            message.showThinking = !message.showThinking;
+            if (!message.showThinking || !message.streaming || !message.thinkingActive) return;
+
+            this.$nextTick(() => {
+                if (!message.showThinking || !panel.isConnected) return;
+                panel.scrollTop = panel.scrollHeight;
+                this.followStream();
+            });
+        },
+
+        renderThinking(element, content) {
+            const panel = element.parentElement;
+            const atBottom = panel.clientHeight > 0 && panel.scrollHeight - panel.clientHeight - panel.scrollTop <= 1;
+            element.innerHTML = this.renderMarkdown(content);
+            if (atBottom) panel.scrollTop = panel.scrollHeight;
+        },
+
         renderMessage(element, content, live, replay) {
             window.ChatRawMarkdown.render(element, content, { live, replay }, () => queueMicrotask(() => this.followStream()));
         },
 
         trackOutputScroll(event) {
             const el = event.currentTarget;
+            const automaticScrollTop = this.automaticScrollTop;
+            this.automaticScrollTop = null;
+            // More output can arrive before the browser dispatches our scroll event.
+            if (el.scrollTop === automaticScrollTop) return;
             this.followOutput = el.scrollHeight - el.clientHeight - el.scrollTop < 64;
         },
 
@@ -2248,7 +2280,9 @@ function app() {
             const container = this.$refs.messagesContainer;
             if (container) {
                 this.followOutput = true;
+                const previousTop = container.scrollTop;
                 container.scrollTop = container.scrollHeight;
+                if (container.scrollTop !== previousTop) this.automaticScrollTop = container.scrollTop;
             }
         },
 

@@ -12,8 +12,8 @@
     
     <!-- Performance: Preload Critical Resources -->
     <link rel="preload" href="fonts/remixicon/remixicon.woff2?t=1769685282643" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="styles.min.css?v=8.4" as="style">
-    <link rel="preload" href="app.min.js?v=8.3" as="script">
+    <link rel="preload" href="styles.min.css?v=8.5" as="style">
+    <link rel="preload" href="app.min.js?v=8.4" as="script">
     <link rel="preload" href="vendor/alpinejs/3.13.3/alpine.min.js" as="script">
     <link rel="preload" href="vendor/marked/9.1.6/marked.min.js" as="script">
     
@@ -143,7 +143,7 @@
     <script defer src="vendor/alpinejs/3.13.3/alpine.min.js"></script>
     <!-- highlight.js is lazy-loaded in app.min.js when needed -->
     <link rel="stylesheet" href="fonts/remixicon/remixicon.css">
-    <link rel="stylesheet" href="styles.min.css?v=8.4">
+    <link rel="stylesheet" href="styles.min.css?v=8.5">
 </head>
 <body x-data="app()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
@@ -263,13 +263,14 @@
                             </div>
                             <!-- Thinking/Reasoning Block -->
                             <div class="thinking-block" x-show="Boolean(msg.thinking && msg.thinking.length > 0)">
-                                <div class="thinking-header" @click="msg.showThinking = !msg.showThinking" role="button" :aria-expanded="msg.showThinking">
-                                    <i class="ri-lightbulb-line"></i>
+                                <button type="button" class="thinking-header" @click="toggleThinking(msg, $el.nextElementSibling)" :aria-expanded="Boolean(msg.showThinking)">
+                                    <i class="ri-lightbulb-line" aria-hidden="true"></i>
                                     <span x-text="t('thinkingProcess')"></span>
-                                    <i class="ri-arrow-down-s-line chevron" :class="{ 'expanded': msg.showThinking }"></i>
-                                </div>
-                                <div class="thinking-content" x-show="msg.showThinking" x-collapse>
-                                    <div x-html="renderMarkdown(msg.thinking)"></div>
+                                    <i class="ri-arrow-down-s-line chevron" :class="{ 'expanded': msg.showThinking }" aria-hidden="true"></i>
+                                </button>
+                                <div class="thinking-content" x-show="msg.showThinking" x-transition.opacity.duration.150ms
+                                     tabindex="0" role="region" :aria-label="t('thinkingProcess')">
+                                    <div x-effect="renderThinking($el, msg.thinking)"></div>
                                 </div>
                             </div>
 
@@ -1390,6 +1391,6 @@
     </script>
     <script src="stream-markdown.js?v=1"></script>
     <script src="agents.js?v=5"></script>
-    <script src="app.min.js?v=8.3"></script>
+    <script src="app.min.js?v=8.4"></script>
 </body>
 </html>
