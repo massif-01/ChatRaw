@@ -12,7 +12,7 @@
     
     <!-- Performance: Preload Critical Resources -->
     <link rel="preload" href="fonts/remixicon/remixicon.woff2?t=1769685282643" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="styles.min.css?v=8.3" as="style">
+    <link rel="preload" href="styles.min.css?v=8.4" as="style">
     <link rel="preload" href="app.min.js?v=8.3" as="script">
     <link rel="preload" href="vendor/alpinejs/3.13.3/alpine.min.js" as="script">
     <link rel="preload" href="vendor/marked/9.1.6/marked.min.js" as="script">
@@ -143,7 +143,7 @@
     <script defer src="vendor/alpinejs/3.13.3/alpine.min.js"></script>
     <!-- highlight.js is lazy-loaded in app.min.js when needed -->
     <link rel="stylesheet" href="fonts/remixicon/remixicon.css">
-    <link rel="stylesheet" href="styles.min.css?v=8.3">
+    <link rel="stylesheet" href="styles.min.css?v=8.4">
 </head>
 <body x-data="app()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
@@ -293,7 +293,7 @@
                                                 <span x-show="run.disconnected" x-text="at('reconnecting')"></span>
                                             </div>
                                             <p class="agent-error" x-show="Boolean(run.error)" x-text="run.error"></p>
-                                            <template x-for="item in run.interactions.filter(item => item.open)" :key="item.data.interaction_id">
+                                            <template x-for="item in run.interactions.filter(item => item.open && item.data.kind !== 'approval')" :key="item.data.interaction_id">
                                                 <button type="button" class="agent-request" @click="openAgentInteraction(run, item)">
                                                     <i :class="item.data.kind === 'approval' ? 'ri-shield-check-line' : 'ri-question-line'" aria-hidden="true"></i>
                                                     <span>
@@ -403,8 +403,80 @@
             </div>
 
             <!-- Input Area -->
-            <div class="input-area">
+            <div class="input-area" :class="{ 'agent-input-with-interactions': currentAgentApproval || agentPermissionPanel }">
                 <div class="input-container-inner">
+                    <div class="agent-composer-interactions" x-show="Boolean(currentAgentApproval || agentPermissionPanel)" x-cloak>
+                        <template x-for="item in currentAgentApproval ? [currentAgentApproval] : []" :key="item.data.interaction_id">
+                            <section class="agent-inline-card agent-approval-card" :aria-label="item.data.title">
+                                <header class="agent-inline-header">
+                                    <i class="ri-shield-keyhole-line agent-inline-icon" aria-hidden="true"></i>
+                                    <div class="agent-inline-title">
+                                        <h2 x-text="item.data.title"></h2>
+                                        <small x-text="agentName(agentId) + (item.data.presentation === 'plan' ? ' · ' + at('plan') : '')"></small>
+                                    </div>
+                                    <span class="agent-inline-count" role="status" x-text="at('approvalCount').replace('{count}', pendingAgentApprovals.length)" x-show="pendingAgentApprovals.length > 1"></span>
+                                </header>
+                                <div class="agent-inline-operation" tabindex="0" :aria-label="at('details')">
+                                    <div class="agent-plan" x-show="Boolean(item.data.detail)" x-html="renderMarkdown(item.data.detail)"></div>
+                                    <dl class="agent-facts" x-show="Boolean(item.data.operation)">
+                                        <dt x-show="Boolean(item.data.operation?.tool)" x-text="at('tool')"></dt>
+                                        <dd x-show="Boolean(item.data.operation?.tool)" x-text="item.data.operation?.tool"></dd>
+                                        <dt x-show="Boolean(item.data.operation?.cwd_label)" x-text="at('workspace')"></dt>
+                                        <dd x-show="Boolean(item.data.operation?.cwd_label)" x-text="item.data.operation?.cwd_label"></dd>
+                                        <dt x-show="Boolean(item.data.operation?.host_label)" x-text="at(item.data.operation?.tool?.startsWith('network') ? 'networkTarget' : 'host')"></dt>
+                                        <dd x-show="Boolean(item.data.operation?.host_label)" x-text="item.data.operation?.host_label"></dd>
+                                        <dt x-show="Boolean(item.data.operation?.paths?.length)" x-text="at('paths')"></dt>
+                                        <dd x-show="Boolean(item.data.operation?.paths?.length)"><pre x-text="item.data.operation?.paths?.join('\n')"></pre></dd>
+                                        <dt x-show="Boolean(item.data.operation?.command)" x-text="at('command')"></dt>
+                                        <dd x-show="Boolean(item.data.operation?.command)"><pre x-text="item.data.operation?.command"></pre></dd>
+                                    </dl>
+                                </div>
+                                <p class="agent-interaction-status" role="status" x-show="Boolean(interactionStatus(item, activeAgentRun))" x-text="interactionStatus(item, activeAgentRun)"></p>
+                                <footer class="agent-inline-actions">
+                                    <button type="button" class="btn-secondary" x-show="pendingAgentApprovals.length > 1" @click="nextAgentApproval()" x-text="at('approvalNext')"></button>
+                                    <button type="button" class="btn-secondary" x-show="item.data.allow_cancel && !item.data.decisions?.some(choice => choice.id === 'cancel' || choice.label === 'Cancel')"
+                                            :disabled="!interactionActionable(activeAgentRun, item)" @click="submitAgentInteraction(activeAgentRun, item, true)" x-text="at('cancelRequest')"></button>
+                                    <template x-for="choice in approvalChoices(item)" :key="choice.id">
+                                        <button type="button" :class="approvalLabel(choice) === at('allowOnce') ? 'btn-primary' : 'btn-secondary'"
+                                                :title="choice.scope || ''" :disabled="!interactionActionable(activeAgentRun, item)"
+                                                @click="submitAgentInteraction(activeAgentRun, item, false, choice.id)" x-text="approvalLabel(choice)"></button>
+                                    </template>
+                                </footer>
+                            </section>
+                        </template>
+
+                        <section id="agent-permission-panel" class="agent-inline-card agent-permission-panel" :aria-label="at('permission')" x-show="Boolean(agentPermissionPanel)"
+                                 @keydown.escape.stop="closeAgentPermission()">
+                            <div x-show="agentPermissionPanel === 'options'">
+                                <h2 x-text="at('permission')"></h2>
+                                <div class="agent-permission-options">
+                                    <button type="button" class="agent-option" x-ref="agentPermissionAsk" :aria-pressed="agentPermissionMode === 'ask'" :disabled="agentPermissionSaving"
+                                            @click="agentPermissionMode === 'ask' ? closeAgentPermission() : setAgentPermission('ask')">
+                                        <i class="ri-shield-check-line" aria-hidden="true"></i>
+                                        <span><strong x-text="at('permissionAsk')"></strong><small x-text="at('permissionAskDetail')"></small></span>
+                                    </button>
+                                    <button type="button" class="agent-option" :aria-pressed="agentPermissionMode === 'full'" :disabled="agentPermissionSaving"
+                                            @click="if (agentPermissionMode === 'full') closeAgentPermission(); else { agentPermissionPanel = 'confirm'; $nextTick(() => $refs.agentPermissionCancel.focus()) }">
+                                        <i class="ri-lock-unlock-line" aria-hidden="true"></i>
+                                        <span><strong x-text="at('permissionFull')"></strong><small x-text="at('permissionFullDetail')"></small></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="agent-permission-confirm" x-show="agentPermissionPanel === 'confirm'">
+                                <i class="ri-lock-unlock-line agent-inline-icon" aria-hidden="true"></i>
+                                <div class="agent-inline-title">
+                                    <h2 x-text="at('fullConfirm')"></h2>
+                                    <small x-text="at('fullScope')"></small>
+                                    <small x-show="Boolean(activeAgentRun)" x-text="at('permissionNextRun')"></small>
+                                </div>
+                                <div class="agent-inline-actions">
+                                    <button type="button" class="btn-secondary" x-ref="agentPermissionCancel" @click="closeAgentPermission()" x-text="t('cancel')"></button>
+                                    <button type="button" class="btn-primary" :disabled="agentPermissionSaving" @click="setAgentPermission('full')" x-text="at('enableFull')"></button>
+                                </div>
+                            </div>
+                            <p class="agent-error" role="status" x-show="Boolean(agentPermissionError)" x-text="agentPermissionError"></p>
+                        </section>
+                    </div>
                     <div class="uploaded-image-preview" x-show="Boolean(!agentId && uploadedImage && chatModelSupportsVision())">
                         <img :src="uploadedImage ? 'data:image/jpeg;base64,' + uploadedImageBase64 : ''" alt="Preview" width="60" height="60">
                         <button class="btn-delete-overlay" @click="removeUploadedImage()" aria-label="Remove image"><i class="ri-close-circle-fill"></i></button>
@@ -452,6 +524,7 @@
                                 @click="checkAgentAdmission()" :disabled="agentAdmission?.checking" x-text="at('verify')"></button>
                         <button type="button" class="btn-secondary" x-show="Boolean(agentBindingError)"
                                 @click="selectChat(currentChatId, true)" x-text="t('retry')"></button>
+                        <span x-show="Boolean(activeAgentRun?.permissionMode && activeAgentRun.permissionMode !== agentPermissionMode)" x-text="at('permissionNextRun')"></span>
                     </div>
 
                     <ul class="agent-attachments" x-show="Boolean(agentId && agentAttachments.length)" :aria-label="at('attachments')" x-cloak>
@@ -572,6 +645,15 @@
                             </button>
                             <input type="file" hidden multiple x-ref="agentFileInput" @change="uploadAgentAttachments($event)"
                                    :accept="agentAttachmentAccept">
+                            <button type="button" class="agent-permission-button" x-ref="agentPermissionButton"
+                                    x-show="Boolean(agentId && agentBinding?.supports_full_access)" :disabled="agentViewLoading || agentPermissionSaving"
+                                    :aria-expanded="Boolean(agentPermissionPanel)" aria-controls="agent-permission-panel"
+                                    :title="at(agentPermissionMode === 'full' ? 'permissionFull' : 'permissionAsk')"
+                                    @click="if (agentPermissionPanel) closeAgentPermission(); else { closeAgentMenu(); agentPermissionPanel = 'options'; $nextTick(() => $refs.agentPermissionAsk.focus()) }">
+                                <i :class="agentPermissionMode === 'full' ? 'ri-lock-unlock-line' : 'ri-shield-check-line'" aria-hidden="true"></i>
+                                <span x-text="at(agentPermissionMode === 'full' ? 'permissionFull' : 'permissionAsk')"></span>
+                                <i class="ri-arrow-up-s-line agent-permission-caret" aria-hidden="true"></i>
+                            </button>
                             <!-- Thinking Mode Toggle -->
                             <div class="thinking-toggle" x-show="!agentId" :class="{ 'active': useThinking }" @click="useThinking = !useThinking" :title="t('thinkingMode')">
                                 <i class="ri-lightbulb-line"></i>
@@ -1307,7 +1389,7 @@
         }
     </script>
     <script src="stream-markdown.js?v=1"></script>
-    <script src="agents.js?v=4"></script>
+    <script src="agents.js?v=5"></script>
     <script src="app.min.js?v=8.3"></script>
 </body>
 </html>

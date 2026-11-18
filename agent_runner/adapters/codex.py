@@ -274,6 +274,7 @@ def _result(status: str, text: str = "") -> RunResult:
 
 class CodexAdapter(AgentAdapter):
     agent_id = "codex"
+    supports_full_access = True
     settings_schema = {
         "type": "object",
         "properties": {
@@ -313,6 +314,12 @@ class CodexAdapter(AgentAdapter):
         self._server: _AppServer | None = None
         self._thread_id: str | None = None
         self._model: str | None = None
+        self._permission_mode = "ask"
+
+    async def apply_permission_mode(self, binding, mode):
+        if mode != self._permission_mode:
+            await self.close(binding)
+            self._permission_mode = mode
 
     def validate_config(self, config: AdapterConfig) -> AdapterConfig:
         normalized = {}
@@ -465,9 +472,13 @@ class CodexAdapter(AgentAdapter):
         server = await _AppServer.open(Path(binding["workspace"]), upstream=upstream)
         params = {
             "cwd": binding["workspace"],
-            "approvalPolicy": "on-request",
+            "approvalPolicy": (
+                "never" if self._permission_mode == "full" else "on-request"
+            ),
             "approvalsReviewer": "user",
         }
+        if self._permission_mode == "full":
+            params["sandbox"] = "danger-full-access"
         if config.get("model"):
             params["model"] = config["model"]
         if upstream:
@@ -478,6 +489,14 @@ class CodexAdapter(AgentAdapter):
             params.update(threadId=thread_id, excludeTurns=True)
         try:
             response = await server.call(method, params)
+            if self._permission_mode == "full" and (
+                response.get("approvalPolicy") != "never"
+                or response.get("sandbox", {}).get("type") != "dangerFullAccess"
+            ):
+                raise AdapterError(
+                    "codex_permission_unavailable",
+                    "Codex did not confirm full access on the computer running the Agent.",
+                )
             thread = response["thread"]
             loaded = thread["id"]
             if (
@@ -487,8 +506,13 @@ class CodexAdapter(AgentAdapter):
                 or (upstream and response.get("modelProvider") != PROVIDER)
             ):
                 raise _Disconnected()
-        except BaseException:
+        except BaseException as error:
             await server.close()
+            if self._permission_mode == "full" and isinstance(error, _Rejected):
+                raise AdapterError(
+                    "codex_permission_unavailable",
+                    "Codex rejected full access on the computer running the Agent.",
+                ) from None
             raise
         self._server, self._thread_id = server, loaded
         self._model = response.get("model")
@@ -595,6 +619,12 @@ class CodexAdapter(AgentAdapter):
                     )
                     if result is not None:
                         return result
+        except AdapterError as error:
+            return {
+                "status": "failed",
+                "final_text": "".join(turn.texts.values()),
+                "error": error.as_data(),
+            }
         except _Rejected:
             return _result("failed", "".join(turn.texts.values()))
         except (OSError, _Disconnected, TimeoutError, KeyError, TypeError, ValueError):

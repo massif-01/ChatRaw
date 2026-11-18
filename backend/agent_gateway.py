@@ -550,7 +550,7 @@ class AgentGateway:
                         "POST",
                         f"/v1/sessions/{binding['session_id']}/compact",
                         chat_id=chat_id,
-                        body={"client_request_id": key},
+                        body=body,
                     )
                 else:
                     result = await self.client.request(
@@ -698,12 +698,44 @@ class AgentGateway:
                 )
                 return result
 
+        @router.put("/api/chats/{chat_id}/agent/permission")
+        async def permission_set(chat_id: str, request: Request):
+            self.origin(request)
+            body = fields(
+                await request.json(),
+                {"session_id", "mode", "expected_permission_revision"},
+            )
+            async with self.lock(chat_id):
+                self.chat(chat_id)
+                binding = self.storage.binding(chat_id)
+                if (
+                    not binding
+                    or not binding["confirmed"]
+                    or not binding["session_id"]
+                    or binding["session_id"] != body["session_id"]
+                ):
+                    raise GatewayError(
+                        "agent_binding_changed",
+                        "The conversation Agent changed. Refresh and try again.",
+                        409,
+                    )
+                return await self.client.request(
+                    "PUT",
+                    f"/v1/sessions/{quote(binding['session_id'], safe='')}/permission",
+                    chat_id=chat_id,
+                    body={
+                        key: body[key]
+                        for key in ("mode", "expected_permission_revision")
+                    },
+                )
+
         @router.post("/api/agents/runs", status_code=202)
         async def submit(request: Request):
             self.origin(request)
             body = fields(
                 await request.json(),
                 {"chat_id", "client_request_id", "message", "attachments"},
+                {"expected_permission_revision"},
             )
             text(body["message"], "message", 1000000)
             if (
@@ -830,7 +862,11 @@ class AgentGateway:
         @router.post("/api/agents/sessions/{session_id}/compact", status_code=202)
         async def compact(session_id: str, request: Request):
             self.origin(request)
-            body = fields(await request.json(), {"client_request_id"})
+            body = fields(
+                await request.json(),
+                {"client_request_id"},
+                {"expected_permission_revision"},
+            )
             row = self.storage.db.execute(
                 "SELECT chat_id FROM agent_bindings WHERE session_id=?", (session_id,)
             ).fetchone()

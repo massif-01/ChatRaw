@@ -97,6 +97,12 @@ def demo_run(run, message):
         time.sleep(4.4)
         finish(run, 'interrupted', '')
         return
+    if message == 'approval queue':
+        add_event(run, 'text_delta', {'text': '\n\n' + '\n\n'.join(f'Result paragraph {i}' for i in range(50))})
+        status(run, 'waiting_approval')
+        interact(run, {**APPROVAL, 'interaction_id': 'queue-1', 'title': 'Review first operation'})
+        interact(run, {**APPROVAL, 'interaction_id': 'queue-2', 'title': 'Review second operation'})
+        return
     status(run, 'waiting_input')
     interact(run, QUESTIONS)
     interact(run, {**APPROVAL, 'interaction_id': 'parallel-1', 'title': 'Confirm test prerequisites'})

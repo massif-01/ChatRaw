@@ -121,6 +121,7 @@ class ClaudeAdapter(AgentAdapter):
         },
         "additionalProperties": False,
     }
+    supports_full_access = True
     capabilities: Capabilities = {
         "streaming_text": True,
         "tools": True,
@@ -146,6 +147,10 @@ class ClaudeAdapter(AgentAdapter):
     def __init__(self):
         self._config: AdapterConfig = {}
         self._active: _Turn | None = None
+        self._permission_mode = "default"
+
+    async def apply_permission_mode(self, binding, mode):
+        self._permission_mode = "bypassPermissions" if mode == "full" else "default"
 
     def validate_config(self, config: AdapterConfig) -> AdapterConfig:
         normalized = {}
@@ -166,11 +171,11 @@ class ClaudeAdapter(AgentAdapter):
         return normalized
 
     @staticmethod
-    def _options(sdk, **kwargs):
+    def _options(sdk, *, permission_mode="default", **kwargs):
         return sdk.ClaudeAgentOptions(
             **kwargs,
             system_prompt={"type": "preset", "preset": "claude_code"},
-            permission_mode="default",
+            permission_mode=permission_mode,
             # This integration uses the documented API-key path. Do not pass
             # a browser key or fall back to Claude Code subscription tokens.
             env={
@@ -379,6 +384,7 @@ class ClaudeAdapter(AgentAdapter):
             options = self._options(
                 sdk,
                 cwd=binding["workspace"],
+                permission_mode=self._permission_mode,
                 resume=turn.native_id,
                 model=self._config.get("model"),
                 effort=self._config.get("reasoning"),

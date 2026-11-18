@@ -3,6 +3,7 @@
 import asyncio
 import base64
 import json
+import os
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -64,6 +65,7 @@ class _Run:
 
 class PiAdapter(AgentAdapter):
     agent_id = "pi"
+    supports_full_access = True
     settings_schema = {
         "type": "object",
         "additionalProperties": False,
@@ -81,6 +83,8 @@ class PiAdapter(AgentAdapter):
         self._active: _Run | None = None
         self._binding: SessionBinding | None = None
         self._fenced = False
+        self._config = None
+        self._permission_mode = "ask"
 
     def validate_config(self, config: dict) -> dict:
         if set(config) - {
@@ -240,6 +244,7 @@ class PiAdapter(AgentAdapter):
                 "Pi could not initialize a persistent session",
             ) from None
         self._binding = binding
+        self._config = config
         return binding
 
     async def resume_session(
@@ -266,7 +271,19 @@ class PiAdapter(AgentAdapter):
                 "Pi could not reopen its original transcript. Check the session store or start a new chat",
             ) from None
         self._binding = binding
+        self._config = config
         return binding
+
+    async def apply_permission_mode(self, binding, mode):
+        if mode == self._permission_mode and self._process is not None:
+            return
+        previous = self._permission_mode
+        self._permission_mode = mode
+        try:
+            await self.resume_session(binding, self._config)
+        except BaseException:
+            self._permission_mode = previous
+            raise
 
     @staticmethod
     async def _program_version(config):
@@ -363,6 +380,7 @@ class PiAdapter(AgentAdapter):
         self._process = await asyncio.create_subprocess_exec(
             *argv,
             cwd=workspace,
+            env={**os.environ, "CHATRAW_PI_PERMISSION_MODE": self._permission_mode},
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,

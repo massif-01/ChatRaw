@@ -58,6 +58,7 @@ def unknown(message="Hermes execution state needs verification"):
 
 class HermesAdapter(AgentAdapter):
     agent_id = "hermes"
+    supports_full_access = True
     settings_schema = {
         "type": "object",
         "additionalProperties": False,
@@ -418,6 +419,25 @@ class HermesAdapter(AgentAdapter):
         self.binding = {**binding, "native": {**binding["native"], "settings": desired}}
         return self.binding
 
+    async def apply_permission_mode(self, binding, mode):
+        value = "1" if mode == "full" else "0"
+        try:
+            result = await self._rpc(
+                "config.set",
+                {
+                    "session_id": binding["native"]["session_id"],
+                    "key": "yolo",
+                    "value": value,
+                },
+            )
+        except (AdapterError, TimeoutError):
+            result = {}
+        if result != {"key": "yolo", "value": value, "scope": "session"}:
+            raise AdapterError(
+                "hermes_permission_unavailable",
+                "Hermes could not confirm the conversation permission mode.",
+            )
+
     async def _checkpoint(self, emit, **native):
         self.binding = {**self.binding, "native": {**self.binding["native"], **native}}
         await emit({"type": "binding_updated", "data": self.binding})
@@ -449,9 +469,15 @@ class HermesAdapter(AgentAdapter):
             self.events.get_nowait()
 
     async def run(self, binding, request, emit):
+        text = request["message"]
+        if text.lstrip().lower().split(maxsplit=1)[:1] == ["/yolo"]:
+            error = AdapterError(
+                "permission_controlled_by_chat",
+                "Change permissions using the conversation permissions menu.",
+            )
+            return {"status": "failed", "final_text": "", "error": error.as_data()}
         self._start(binding, request["run_id"])
         await self._checkpoint(emit, run_id=request["run_id"], operation="run")
-        text = request["message"]
         # Let Hermes resolve slash directives, including its native Skill logic.
         if text.startswith("/"):
             name, _, arg = text[1:].partition(" ")

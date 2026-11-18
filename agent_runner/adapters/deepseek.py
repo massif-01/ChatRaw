@@ -73,6 +73,7 @@ class _Run:
 
 class DeepSeekAdapter(AgentAdapter):
     agent_id = "deepseek"
+    supports_full_access = True
     settings_schema = {
         "type": "object",
         "additionalProperties": False,
@@ -340,7 +341,48 @@ class DeepSeekAdapter(AgentAdapter):
         self._harness, self._session = harness, session
         Thread(target=self._read_approvals, args=(harness,), daemon=True).start()
 
+    async def apply_permission_mode(self, binding, mode):
+        from deepseek_harness import SdkProtocolError
+
+        if self._active or self._fenced or self._binding != binding:
+            raise AdapterError(
+                "deepseek_session_busy",
+                "DeepSeek session is unavailable for a permission change",
+            )
+        if self._session is None:
+            await self._open(binding, self._config, resume=True)
+        ask_preset = (
+            "read-only"
+            if getenv("DSH_PERMISSION_MODE") == "read-only"
+            else "workspace-write"
+        )
+        preset = "danger-full-access" if mode == "full" else ask_preset
+        try:
+            result = await asyncio.wait_for(
+                asyncio.to_thread(self._session.run, f"/permission {preset}"), 12
+            )
+        except (TimeoutError, OSError, SdkProtocolError):
+            self._fenced = True
+            raise AdapterError(
+                "deepseek_permission_unconfirmed",
+                "DeepSeek could not confirm the conversation permission mode",
+            ) from None
+        if (
+            result.finish_reason != "completed"
+            or result.final_response != f"preset {preset}"
+        ):
+            raise AdapterError(
+                "deepseek_permission_unavailable",
+                "DeepSeek did not apply the conversation permission mode",
+            )
+
     async def run(self, binding, request, emit):
+        if re.match(r"\s*/permission(?:\s|$)", request["message"], flags=re.IGNORECASE):
+            error = AdapterError(
+                "permission_controlled_by_chat",
+                "Change permissions using the conversation permissions menu.",
+            )
+            return {"status": "failed", "final_text": "", "error": error.as_data()}
         return await self._execute(
             binding, request["run_id"], emit, request["message"], request["attachments"]
         )

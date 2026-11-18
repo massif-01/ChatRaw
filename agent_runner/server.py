@@ -168,11 +168,20 @@ def create_app(runtime, token):
         session = await owner(request, session_id=request.match_info["session_id"])
         return web.json_response(runtime.session_snapshot(session["id"]))
 
+    async def permission_set(request):
+        session = await owner(request, session_id=request.match_info["session_id"])
+        body = await request.json()
+        check.object_fields(body, {"mode", "expected_permission_revision"})
+        return web.json_response(
+            await runtime.set_permission_mode(session["id"], **body)
+        )
+
     async def submit(request):
         body = await request.json()
         check.object_fields(
             body,
             {"session_id", "chat_id", "client_request_id", "message", "attachments"},
+            {"expected_permission_revision"},
         )
         await owner(request, session_id=body["session_id"])
         result = await runtime.submit(**body)
@@ -180,10 +189,12 @@ def create_app(runtime, token):
 
     async def compact(request):
         body = await request.json()
-        check.object_fields(body, {"client_request_id"})
+        check.object_fields(
+            body, {"client_request_id"}, {"expected_permission_revision"}
+        )
         session = await owner(request, session_id=request.match_info["session_id"])
         result = await runtime.submit(
-            session["id"], session["chat_id"], body["client_request_id"], kind="compact"
+            session["id"], session["chat_id"], kind="compact", **body
         )
         return web.json_response(result, status=202)
 
@@ -320,6 +331,7 @@ def create_app(runtime, token):
     app.router.add_put("/v1/agents/{agent_id}", configure)
     app.router.add_post("/v1/sessions", create_session)
     app.router.add_get("/v1/sessions/{session_id}", session_snapshot)
+    app.router.add_put("/v1/sessions/{session_id}/permission", permission_set)
     app.router.add_post("/v1/sessions/{session_id}/compact", compact)
     app.router.add_post("/v1/runs", submit)
     app.router.add_get("/v1/runs", lookup)

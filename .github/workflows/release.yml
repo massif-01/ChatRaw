@@ -7,7 +7,7 @@ on:
     branches:
       - main
     paths:
-      - RELEASE_v2.3.1.md
+      - RELEASE_v2.3.2.md
 
 concurrency:
   group: release
@@ -28,7 +28,7 @@ jobs:
         run: |
           tag="$GITHUB_REF_NAME"
           if [[ "$GITHUB_REF_TYPE" == branch ]]; then
-            tag=v2.3.1
+            tag=v2.3.2
             existing=$(git ls-remote --refs origin "refs/tags/$tag")
             if [[ -n "$existing" && "$existing" != "$GITHUB_SHA"$'\t'"refs/tags/$tag" ]]; then
               echo "::error::$tag already points to a different commit"
@@ -39,7 +39,7 @@ jobs:
           printf 'tag=%s\nnumber=%s\n' "$tag" "${tag#v}" >> "$GITHUB_OUTPUT"
 
       - name: Verify original Mac 2.2.1 installer
-        if: steps.version.outputs.tag == 'v2.3' || steps.version.outputs.tag == 'v2.3.1'
+        if: steps.version.outputs.tag == 'v2.3' || steps.version.outputs.tag == 'v2.3.1' || steps.version.outputs.tag == 'v2.3.2'
         id: mac
         run: |
           asset="$RUNNER_TEMP/ChatRaw-for-Mac-2.2.1.dmg"
@@ -76,15 +76,19 @@ jobs:
             org.opencontainers.image.version=${{ steps.version.outputs.number }}
             org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Verify both Docker Hub tags
+      - name: Verify both Docker Hub tags without signing in
         env:
           VERSION: ${{ steps.version.outputs.number }}
           DIGEST: ${{ steps.docker.outputs.digest }}
         run: |
           test -n "$DIGEST"
+          docker logout
           for tag in "$VERSION" latest; do
             published=$(docker buildx imagetools inspect "massif01/chatraw:$tag" --format '{{.Manifest.Digest}}')
-            test "$published" = "$DIGEST"
+            if [[ "$published" != "$DIGEST" ]]; then
+              echo "::error::massif01/chatraw:$tag points to $published, expected $DIGEST"
+              exit 1
+            fi
           done
 
       - name: Create Release

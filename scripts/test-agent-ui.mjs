@@ -191,17 +191,24 @@ try {
     await page.reload();
     await page.getByRole('button', { name: 'Chat mode — Codex CLI' }).waitFor();
     await page.waitForFunction(() => document.querySelector('.input-wrapper textarea').value === 'Keep this draft while waiting');
-    await page.locator('.agent-request:visible').filter({ hasText: 'Confirm test prerequisites' }).click();
-    const approval = page.getByRole('dialog', { name: 'Confirm test prerequisites' });
-    await approval.getByText('Plan review', { exact: true }).waitFor();
+    const approval = page.getByRole('region', { name: 'Confirm test prerequisites' });
+    await approval.getByText('Plan review', { exact: false }).waitFor();
     assert.equal(await page.evaluate(() => window.fixtureUnsafe), undefined);
-    await approval.getByRole('radio', { name: 'Reject the change' }).check();
     assert.equal((await logs()).filter(row => String(row[1]).includes('/reply')).length, 1);
     await page.setViewportSize({ width: 740, height: 320 });
+    await page.waitForFunction(() => {
+        const input = document.querySelector('.input-wrapper').getBoundingClientRect();
+        const card = document.querySelector('.agent-approval-card').getBoundingClientRect();
+        const button = document.querySelector('.agent-approval-card .agent-inline-actions button:last-child');
+        const action = button.getBoundingClientRect();
+        return input.bottom <= innerHeight + 1 && input.top >= card.bottom &&
+            document.querySelector('.agent-inline-operation').clientHeight >= 18 &&
+            action.height >= 40 && button.contains(document.elementFromPoint(action.x + 5, action.y + 5));
+    });
     await page.screenshot({ path: evidence + '/landscape-approval.png' });
-    await approval.getByRole('button', { name: 'Send response' }).click();
+    await approval.getByRole('button', { name: 'Reject the change' }).click();
     await page.locator('.agent-artifacts a').waitFor({ state: 'attached' });
-    await approval.getByRole('button', { name: 'Close', exact: true }).last().click();
+    await approval.waitFor({ state: 'hidden' });
     assert.deepEqual((await logs()).find(row => String(row[1]).endsWith('/parallel-1/reply'))?.[2], { decision_id: 'reject' });
 
     await page.setViewportSize({ width: 1280, height: 860 });
@@ -231,12 +238,23 @@ try {
     stage = 'expiry';
     await composer.fill('expire');
     await page.getByRole('button', { name: 'send', exact: true }).click();
-    await page.getByRole('button', { name: /Review file change/ }).click();
-    const expired = page.getByRole('dialog', { name: 'Review file change' });
-    await expired.getByRole('radio', { name: /Allow this change/ }).check();
-    await expired.getByText('Request expired', { exact: true }).waitFor();
-    assert.equal(await expired.getByRole('button', { name: 'Send response' }).isEnabled(), false);
-    await expired.getByRole('button', { name: 'Close', exact: true }).last().click();
+    const expired = page.getByRole('region', { name: 'Review file change' });
+    await expired.getByRole('button', { name: 'Allow this change', exact: true }).waitFor();
+    await expired.waitFor({ state: 'hidden' });
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('.btn-stop')).display === 'none');
+
+    stage = 'approval queue';
+    await composer.fill('approval queue');
+    await page.getByRole('button', { name: 'send', exact: true }).click();
+    const firstRequest = page.getByRole('region', { name: 'Review first operation' });
+    const secondRequest = page.getByRole('region', { name: 'Review second operation' });
+    await firstRequest.getByText('2 pending requests', { exact: true }).waitFor();
+    await page.locator('.messages').evaluate(el => { el.scrollTop = 0; });
+    assert.equal(await page.locator('.messages').evaluate(el => el.scrollTop), 0);
+    await firstRequest.getByRole('button', { name: 'Next request' }).click();
+    await secondRequest.getByRole('button', { name: 'Reject the change' }).click();
+    await firstRequest.getByRole('button', { name: 'Reject the change' }).click();
+    await firstRequest.waitFor({ state: 'hidden' });
     await page.waitForFunction(() => getComputedStyle(document.querySelector('.btn-stop')).display === 'none');
 
     stage = 'stop and switch';

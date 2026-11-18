@@ -257,7 +257,7 @@ class Runtime:
             workspace, public = self.workspace(session_id, selection)
             with self.store.db:
                 self.store.db.execute(
-                    "INSERT INTO sessions VALUES (?,?,?,?,?,?,?,?,?)",
+                    "INSERT INTO sessions (id,chat_id,agent_id,workspace,workspace_public,binding,config,created_at,base_config) VALUES (?,?,?,?,?,?,?,?,?)",
                     (
                         session_id,
                         chat_id,
@@ -325,9 +325,56 @@ class Runtime:
             "session_id": session_id,
             "agent_id": session["agent_id"],
             "workspace": session["workspace_public"],
+            "permission_mode": session["permission_mode"],
+            "permission_revision": session["permission_revision"],
+            "supports_full_access": self.supports_full_access(session["agent_id"]),
             "active_run_id": active[0]["id"] if active else None,
+            "active_permission_mode": active[0]["permission_mode"] if active else None,
             "last_run_id": last[0] if last else None,
         }
+
+    def supports_full_access(self, agent_id):
+        return bool(
+            getattr(self.factories.get(agent_id), "supports_full_access", False)
+        )
+
+    async def set_permission_mode(self, session_id, mode, expected_permission_revision):
+        if mode not in ("ask", "full"):
+            raise RunnerError("invalid_permission_mode", "Invalid permission mode")
+        if (
+            type(expected_permission_revision) is not int
+            or expected_permission_revision < 0
+        ):
+            raise RunnerError(
+                "invalid_permission_revision", "Invalid permission revision"
+            )
+        async with self.admission:
+            session = self.store.session(session_id)
+            if session["binding"] is None:
+                raise RunnerError(
+                    "session_unknown", "Native session requires verification", 409
+                )
+            if session["permission_revision"] != expected_permission_revision:
+                raise RunnerError(
+                    "permission_changed",
+                    "The conversation permission changed. Refresh and try again.",
+                    409,
+                )
+            if mode == "full":
+                self.require_enabled(session["agent_id"])
+                if not self.supports_full_access(session["agent_id"]):
+                    raise RunnerError(
+                        "full_access_unavailable",
+                        "This Agent does not support conversation-scoped full access",
+                        409,
+                    )
+            if session["permission_mode"] != mode:
+                with self.store.db:
+                    self.store.db.execute(
+                        "UPDATE sessions SET permission_mode=?,permission_revision=permission_revision+1 WHERE id=?",
+                        (mode, session_id),
+                    )
+            return self.session_snapshot(session_id)
 
     async def instance(self, session):
         async with self.initializers.setdefault(session["id"], asyncio.Lock()):
@@ -384,6 +431,7 @@ class Runtime:
         message="",
         attachments=None,
         kind="run",
+        expected_permission_revision=None,
     ):
         check.text(session_id, "session ID", 200)
         check.text(chat_id, "chat ID", 200)
@@ -398,9 +446,17 @@ class Runtime:
             check.object_fields(attachment, {"attachment_id"})
             check.text(attachment["attachment_id"], "attachment ID", 200)
         request = {"message": message, "attachments": attachments}
-        fingerprint = hashlib.sha256(
-            encode({"kind": kind, "session_id": session_id, **request}).encode()
-        ).hexdigest()
+        intent = {"kind": kind, "session_id": session_id, **request}
+        if expected_permission_revision is not None:
+            if (
+                type(expected_permission_revision) is not int
+                or expected_permission_revision < 0
+            ):
+                raise RunnerError(
+                    "invalid_permission_revision", "Invalid permission revision"
+                )
+            intent["expected_permission_revision"] = expected_permission_revision
+        fingerprint = hashlib.sha256(encode(intent).encode()).hexdigest()
         async with self.admission:
             session = self.store.session(session_id)
             if session["chat_id"] != chat_id:
@@ -416,6 +472,15 @@ class Runtime:
                 return previous
             if self.closing:
                 raise RunnerError("runner_stopping", "Runner is shutting down", 503)
+            mode = session["permission_mode"]
+            if (mode == "full" or expected_permission_revision is not None) and (
+                expected_permission_revision != session["permission_revision"]
+            ):
+                raise RunnerError(
+                    "permission_changed",
+                    "The conversation permission changed. Refresh and try again.",
+                    409,
+                )
             self.require_enabled(session["agent_id"])
             if self.store.active(session_id):
                 raise RunnerError(
@@ -438,10 +503,13 @@ class Runtime:
                         "unsupported_capability", "Attachments are unavailable"
                     )
                 self.file_store.attachments(session, attachments, capabilities)
+            session = self.store.session(session_id)
+            await adapter.apply_permission_mode(session["binding"], mode)
+            self.require_enabled(session["agent_id"])
             run_id = identifier()
             with self.store.db:
                 self.store.db.execute(
-                    "INSERT INTO runs (id,session_id,chat_id,client_request_id,fingerprint,request,kind,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                    "INSERT INTO runs (id,session_id,chat_id,client_request_id,fingerprint,request,kind,status,created_at,updated_at,permission_mode) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                     (
                         run_id,
                         session_id,
@@ -453,6 +521,7 @@ class Runtime:
                         "queued",
                         now(),
                         now(),
+                        mode,
                     ),
                 )
                 self.store.event(run_id, "status", {"status": "queued"})

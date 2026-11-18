@@ -71,19 +71,32 @@ try {
     await page.locator('.agent-attachments').getByText('evidence.txt').waitFor();
     await page.locator('.input-wrapper textarea').fill('approval');
     await page.getByRole('button', { name: 'send', exact: true }).click();
-    await page.locator('.agent-request:visible').filter({ hasText: 'Write a file?' }).waitFor();
+    await page.getByRole('region', { name: 'Write a file?' }).waitFor();
     const chat = await page.evaluate(() => localStorage.getItem('chatraw-selected-chat'));
     await first.context.close();
 
     const second = await createContext();
     await second.page.goto(origin);
     await second.page.locator('.chat-select').first().click();
-    await second.page.locator('.agent-request:visible').filter({ hasText: 'Write a file?' }).click();
-    const approval = second.page.getByRole('dialog', { name: 'Write a file?' });
-    await approval.getByRole('radio', { name: 'Allow', exact: true }).check();
+    const approval = second.page.getByRole('region', { name: 'Write a file?' });
+    await approval.waitFor();
+    const permission = second.page.locator('.agent-permission-button');
+    await second.page.setViewportSize({ width: 320, height: 568 });
+    await permission.click();
+    await second.page.getByRole('button', { name: /^Full access Run ordinary tools/ }).click();
+    await second.page.waitForFunction(() => {
+        const field = document.querySelector('.input-wrapper textarea').getBoundingClientRect();
+        const input = document.querySelector('.input-wrapper').getBoundingClientRect();
+        const panel = document.getElementById('agent-permission-panel').getBoundingClientRect();
+        return field.top >= 0 && input.bottom <= innerHeight + 1 && panel.bottom <= input.top;
+    });
+    await second.page.getByRole('button', { name: 'Enable full access', exact: true }).click();
+    await permission.filter({ hasText: 'Full access' }).waitFor();
+    await approval.waitFor();
+    assert.match(await second.page.locator('.agent-composer-status').innerText(), /Applies to the next run/);
     assert.equal(writes.filter(item => item.path.endsWith('/reply')).length, 0);
-    await approval.getByRole('button', { name: 'Send response' }).click();
-    await approval.getByRole('button', { name: 'Close', exact: true }).click();
+    await approval.getByRole('button', { name: 'Allow', exact: true }).click();
+    await approval.waitFor({ state: 'hidden' });
     await second.page.getByText('FINAL', { exact: true }).waitFor();
     assert.equal(await second.page.getByText('partial', { exact: true }).count(), 0);
 
@@ -95,14 +108,17 @@ try {
     if (!stored.some(row => row.role === 'assistant')) await waitForProjection();
     await second.page.reload();
     await second.page.getByText('FINAL', { exact: true }).waitFor();
+    await permission.filter({ hasText: 'Full access' }).waitFor();
     assert.equal(await second.page.getByText('FINAL', { exact: true }).count(), 1);
     const body = writes.find(item => item.path === '/api/agents/runs')?.payload;
     assert.equal(body.message, 'approval');
-    assert.deepEqual(Object.keys(body).sort(), ['attachments', 'chat_id', 'client_request_id', 'message']);
+    assert.deepEqual(Object.keys(body).sort(), ['attachments', 'chat_id', 'client_request_id', 'expected_permission_revision', 'message']);
+    assert.equal(body.expected_permission_revision, 0);
     assert.equal(body.attachments.length, 1);
     assert.equal(writes.filter(item => item.path.endsWith('/reply')).length, 1);
     assert.equal(writes.filter(item => item.path.endsWith('/cancel')).length, 0);
     assert.deepEqual(errors, []);
+    await second.page.setViewportSize({ width: 1120, height: 800 });
     await second.page.screenshot({ path: resolve(evidence, 'real-gateway-controlled-adapter.png') });
 
     const workspaces = await readdir(resolve(state, 'runner', 'workspaces'), { recursive: true });
