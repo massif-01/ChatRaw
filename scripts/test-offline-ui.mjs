@@ -44,6 +44,9 @@ const pluginMarkdown = [
 ].join('\n');
 
 const requests = [];
+const reasoningIntro = 'Offline reasoning fixture';
+const reasoningContinuation = 'A paragraph of streamed reasoning.\n\n'.repeat(30) + 'Latest after opening';
+let reasoningFixture;
 const provider = createServer(async (request, response) => {
     if (request.method !== 'POST' || request.url !== '/v1/chat/completions') {
         response.writeHead(404).end();
@@ -56,10 +59,23 @@ const provider = createServer(async (request, response) => {
     const content = requests.length === 1 ? markdown : pluginMarkdown;
     response.writeHead(200, { 'Content-Type': 'text/event-stream' });
     const send = delta => response.write(`data: ${JSON.stringify({ choices: [{ delta }] })}\n\n`);
-    if (input.enable_thinking) send({ reasoning_content: 'Offline reasoning fixture' });
-    send({ content: content.slice(0, 37) });
-    send({ content: content.slice(37) });
-    response.end('data: [DONE]\n\n');
+    const startAnswer = () => send({ content: content.slice(0, 37) });
+    const finishAnswer = () => {
+        send({ content: content.slice(37) });
+        response.end('data: [DONE]\n\n');
+    };
+    if (requests.length === 1 && input.enable_thinking) {
+        reasoningFixture = {
+            append: text => send({ reasoning_content: `${text}\n\n` }),
+            startAnswer,
+            finishAnswer,
+        };
+        reasoningFixture.append(reasoningIntro);
+        return;
+    }
+    if (input.enable_thinking) send({ reasoning_content: `${reasoningIntro}\n\n${reasoningContinuation}` });
+    startAnswer();
+    finishAnswer();
 });
 
 const data = await mkdtemp(join(tmpdir(), 'chatraw-offline-'));
@@ -217,15 +233,74 @@ try {
     await page.locator('.thinking-toggle').click();
     await send('Check normal chat without Markdown Enhancer');
     const assistant = page.locator('.message.assistant').filter({ has: page.locator('.message-actions') }).last();
+    const thinkingHeader = assistant.getByRole('button', { name: 'Thinking Process' });
+    const thinking = assistant.locator('.thinking-content');
+    const waitForThinkingTail = async text => {
+        await thinking.getByText(text, { exact: true }).waitFor();
+        await page.waitForFunction(panel => {
+            const tail = panel.querySelector('p:last-child').getBoundingClientRect();
+            const visibleBottom = Math.min(panel.getBoundingClientRect().bottom, panel.closest('.messages').getBoundingClientRect().bottom);
+            return panel.scrollHeight > panel.clientHeight &&
+                panel.scrollHeight - panel.clientHeight - panel.scrollTop <= 1 && tail.bottom <= visibleBottom + 1;
+        }, await thinking.elementHandle());
+    };
+    await thinking.getByText(reasoningIntro, { exact: true }).waitFor({ state: 'attached' });
+    await thinkingHeader.click();
+    reasoningFixture.append(reasoningContinuation);
+    await waitForThinkingTail('Latest after opening');
+    await thinkingHeader.click();
+    await thinking.waitFor({ state: 'hidden' });
+    await thinkingHeader.click();
+    await waitForThinkingTail('Latest after opening');
+    reasoningFixture.append('Latest while following');
+    await waitForThinkingTail('Latest while following');
+
+    await thinking.evaluate(panel => { panel.scrollTop = 120; });
+    for (const text of ['Latest while reading earlier lines', 'Another line while reading earlier lines']) {
+        reasoningFixture.append(text);
+        await thinking.getByText(text, { exact: true }).waitFor();
+        assert.equal(await thinking.evaluate(panel => panel.scrollTop), 120);
+    }
+    await thinking.evaluate(panel => { panel.scrollTop = panel.scrollHeight; });
+    reasoningFixture.append('Latest after returning to the bottom');
+    await waitForThinkingTail('Latest after returning to the bottom');
+    await thinking.evaluate(panel => { panel.scrollTop = 0; });
+    await thinkingHeader.click();
+    await thinking.waitFor({ state: 'hidden' });
+    reasoningFixture.startAnswer();
+    await assistant.locator('.message-markdown h2').waitFor();
+    await thinkingHeader.focus();
+    await page.keyboard.press('Enter');
+    await thinking.getByText('Offline reasoning fixture', { exact: true }).waitFor();
+    assert.equal(await thinkingHeader.getAttribute('aria-expanded'), 'true');
+    assert.equal(await thinking.evaluate(panel => panel.scrollTop), 0);
+    await page.keyboard.press('Tab');
+    assert.equal(await thinking.evaluate(panel => panel === document.activeElement), true);
+    await page.keyboard.press('PageDown');
+    await page.waitForFunction(panel => panel.scrollTop > 0, await thinking.elementHandle());
+    await thinkingHeader.click();
+    await thinking.waitFor({ state: 'hidden' });
+    reasoningFixture.append('Latest when reasoning resumes after an answer delta');
+    await thinking.getByText('Latest when reasoning resumes after an answer delta', { exact: true }).waitFor({ state: 'attached' });
+    await thinkingHeader.click();
+    await waitForThinkingTail('Latest when reasoning resumes after an answer delta');
+    reasoningFixture.finishAnswer();
+
     await assistant.locator('table').waitFor({ state: 'visible' });
-    await assistant.locator('.thinking-header').click();
-    await assistant.locator('.thinking-content').getByText('Offline reasoning fixture').waitFor({ state: 'visible' });
     await assistant.locator('code.language-python.hljs .hljs-keyword').first().waitFor({ state: 'visible' });
     const literal = assistant.locator('code.language-fixture-unknown');
     assert.equal((await literal.textContent()).trim(), '<strong>literal code</strong>');
     assert.equal(await literal.locator('strong').count(), 0);
     await page.waitForFunction(() => [...document.styleSheets].some(sheet => sheet.href?.endsWith('/github-dark.min.css')));
     assert.equal(await page.evaluate(() => [Alpine.version, hljs.versionString, XLSX.version].join(',')), '3.13.3,11.9.0,0.20.1');
+    await page.reload();
+    await assistant.locator('table').waitFor();
+    assert.equal(await thinkingHeader.getAttribute('aria-expanded'), 'false');
+    assert.doesNotMatch(await assistant.locator('.message-markdown').textContent(), /Offline reasoning fixture/);
+    await thinkingHeader.click();
+    await thinking.getByText('Offline reasoning fixture', { exact: true }).waitFor();
+    assert.equal(await thinking.evaluate(panel => panel.scrollTop), 0);
+    console.log('Thinking: live expansion, follow, pause, resume, keyboard, answer transition and history reload passed.');
     console.log('Core chat: streamed Markdown, table, syntax colors and escaped code passed.');
 
     await post('/api/plugins/markdown-enhancer/toggle', { enabled: true });
@@ -237,6 +312,7 @@ try {
         name: 'fixture.csv', mimeType: 'text/csv', buffer: Buffer.from('Name,Value\nlegacy,109\n'),
     });
     await page.locator('.attached-doc-name').waitFor({ state: 'visible' });
+    await page.locator('.thinking-toggle').click();
     await send('Check plugins and parse the CSV');
     await assistant.locator('.katex').first().waitFor({ state: 'visible' });
     await assistant.locator('.mermaid-rendered .mermaid-shadow-host').first().waitFor({ state: 'visible' });
@@ -244,6 +320,15 @@ try {
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     assert.ok([...loaded].some(path => /\/lib\/fonts\/KaTeX_.*\.woff2$/.test(path)), 'No KaTeX font served');
     assert.match(requests[1].messages.at(-1).content, /\| legacy \| 109 \|/);
+    assert.match(requests[1].messages.find(message => message.role === 'assistant').content, /^<thinking>\nOffline reasoning fixture/);
+
+    await assistant.locator('.message-actions').waitFor();
+    await thinkingHeader.click();
+    await thinking.getByText('Offline reasoning fixture', { exact: true }).waitFor();
+    assert.equal(await thinking.evaluate(panel => panel.scrollTop), 0);
+    await thinkingHeader.click();
+    await thinking.waitFor({ state: 'hidden' });
+    console.log('Thinking: first expansion after completion starts at the top.');
 
     const pdfEvent = page.waitForEvent('download', download => download.suggestedFilename().endsWith('.pdf'));
     await assistant.locator('.btn-export-ee').click();
