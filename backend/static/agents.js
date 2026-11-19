@@ -22,6 +22,7 @@ window.ChatRawAgents = (() => {
             bindingFailed: 'Could not load this chat’s mode. Reload the chat before sending.',
             busy: 'A run is active. Your draft will stay here.', bindingLocked: 'A run is active in this chat. Stop it or wait for it to finish before deleting the chat.',
             deleteUnknown: 'This task’s status is unconfirmed, so this chat has been kept. Ask an administrator to verify that the native task has stopped before deleting it.',
+            deleteRunnerUnavailable: 'Cannot reach the Agent Runner to verify the task status. Try deleting this chat again when the Runner is available.',
             deleteBinding: 'This chat’s Agent binding has not been verified. Check the Runner connection and reload the chat before retrying.',
             deleteSubmission: 'The Agent submission receipt is unconfirmed, so this chat has been kept. Check the request status before retrying; do not resend it.',
             deletePartial: '{count} chat(s) kept: {reason}',
@@ -70,6 +71,7 @@ window.ChatRawAgents = (() => {
             bindingFailed: '无法读取此聊天的模式。请重新载入聊天后再发送。',
             busy: '任务仍在执行，草稿会保留在这里。', bindingLocked: '此聊天有未结束的任务。请先停止任务或等待任务结束，再删除聊天。',
             deleteUnknown: '任务状态尚无法确认，因此保留了此对话。请由管理员核实原生任务已停止后再删除，不必一直等待。',
+            deleteRunnerUnavailable: '无法连接 Agent 执行服务（Runner），暂时无法核验任务状态。请在服务恢复后重试删除。',
             deleteBinding: '此对话的 Agent 绑定尚未核实。请检查执行服务连接，重新打开对话后再试。',
             deleteSubmission: 'Agent 提交回执尚未确认，因此保留了此对话。请先检查请求状态后再试，不要重复发送任务。',
             deletePartial: '有 {count} 个对话未删除：{reason}',
@@ -396,7 +398,8 @@ window.ChatRawAgents = (() => {
                 const code = body?.detail?.code || body?.error?.code;
                 const key = {
                     chat_run_active: 'bindingLocked', chat_run_unverified: 'deleteUnknown',
-                    chat_binding_unverified: 'deleteBinding', chat_submission_unverified: 'deleteSubmission'
+                    chat_binding_unverified: 'deleteBinding', chat_submission_unverified: 'deleteSubmission',
+                    runner_unavailable: 'deleteRunnerUnavailable'
                 }[code];
                 return key ? this.at(key) : errorMessage(body,
                     status === 409 ? this.at('bindingLocked') : this.t('deleteFailed'));

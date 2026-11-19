@@ -3200,7 +3200,19 @@ async def create_chat():
 @app.delete("/api/chats/{chat_id}")
 async def delete_chat(chat_id: str):
     async with agent_gateway.lock(chat_id):
-        await agent_gateway.before_delete(chat_id)
+        try:
+            await agent_gateway.before_delete(chat_id)
+        except GatewayError as error:
+            message = error.message
+            if error.code == "runner_unavailable":
+                message = (
+                    "Cannot reach the Agent Runner to verify the task state. "
+                    "Retry deletion when the Runner is available."
+                )
+            raise HTTPException(
+                status_code=error.status,
+                detail={"code": error.code, "message": message},
+            ) from error
         db.delete_chat(chat_id)
     return {"success": True}
 
@@ -4867,9 +4879,9 @@ class CachedStaticFiles(StaticFiles):
         return response
 
 if __package__:
-    from .agent_gateway import AgentGateway
+    from .agent_gateway import AgentGateway, GatewayError
 else:
-    from agent_gateway import AgentGateway
+    from agent_gateway import AgentGateway, GatewayError
 import sys
 agent_gateway = AgentGateway(sys.modules[__name__])
 app.include_router(agent_gateway.router)

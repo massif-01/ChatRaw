@@ -14,7 +14,7 @@ try {
     const ordinary = await (await page.request.post(fixture.origin + '/api/chats')).json();
     let code = 'chat_run_unverified';
     await page.route(fixture.origin + '/api/chats/' + locked.id, route => route.request().method() === 'DELETE'
-        ? route.fulfill({ status: 409, json: { detail: { code, message: 'Server reason' } } }) : route.fallback());
+        ? route.fulfill({ status: code === 'runner_unavailable' ? 503 : 409, json: { detail: { code, message: 'Server reason' } } }) : route.fallback());
     await page.addInitScript(() => localStorage.setItem('justchat_lang', 'zh'));
     await page.goto(fixture.origin);
     const deleteButton = page.getByRole('button', { name: '删除 ' + locked.title, exact: true });
@@ -22,7 +22,8 @@ try {
         ['chat_run_unverified', '请由管理员核实原生任务已停止'],
         ['chat_run_active', '请先停止任务或等待任务结束'],
         ['chat_binding_unverified', 'Agent 绑定尚未核实'],
-        ['chat_submission_unverified', 'Agent 提交回执尚未确认']
+        ['chat_submission_unverified', 'Agent 提交回执尚未确认'],
+        ['runner_unavailable', '无法连接 Agent 执行服务（Runner），暂时无法核验任务状态。请在服务恢复后重试删除。']
     ]) {
         code = reason;
         await deleteButton.click();
@@ -37,7 +38,7 @@ try {
     const remaining = await (await page.request.get(fixture.origin + '/api/chats')).json();
     assert(remaining.some(chat => chat.id === locked.id));
     assert(!remaining.some(chat => chat.id === ordinary.id));
-    console.log('Deletion feedback passed: four blocking reasons, partial clear preserves only locked chat.');
+    console.log('Deletion feedback passed: five blocking reasons, partial clear preserves only locked chat.');
 } finally {
     await browser?.close();
     await fixture.stop();
