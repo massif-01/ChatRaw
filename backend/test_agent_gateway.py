@@ -69,7 +69,8 @@ class GatewayTests(unittest.IsolatedAsyncioTestCase):
         main.agent_gateway.locks.clear()
         await main.agent_gateway.start()
         self.client = httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=main.app),
+            # Give each fixture its own budget in the shared rate limiter.
+            transport=httpx.ASGITransport(app=main.app, client=(self.id(), 12345)),
             base_url="http://testserver",
             headers={"Origin": "http://testserver"},
         )
@@ -231,6 +232,33 @@ class GatewayTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             main.load_plugin_config()["api_keys"]["hermes"], "legacy-secret-kept"
         )
+
+    async def test_delete_preserves_settled_agent_chat_when_runner_is_unreachable(self):
+        await self.bind()
+        run, adapter = await self.submit()
+        adapter.finish.set()
+        messages = await self.wait_messages(2)
+        status = await self.client.get(f"/api/agents/runs/{run['run_id']}")
+        self.assertEqual(status.json()["status"], "completed")
+        (site,) = self.server.sites
+        port = site._server.sockets[0].getsockname()[1]
+        await site.stop()
+        await main.agent_gateway.client.close()
+
+        response = await self.client.delete(f"/api/chats/{self.chat_id}")
+        self.assertEqual(response.status_code, 503, response.text)
+        self.assertEqual(response.json()["detail"]["code"], "runner_unavailable")
+        self.assertTrue(self.database.chat_exists(self.chat_id))
+        self.assertEqual(
+            (await self.client.get(f"/api/chats/{self.chat_id}/messages")).json(),
+            messages,
+        )
+
+        await web.TCPSite(self.server, "127.0.0.1", port).start()
+        response = await self.client.delete(f"/api/chats/{self.chat_id}")
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertFalse(self.database.chat_exists(self.chat_id))
+        self.assertEqual(self.database.get_messages(self.chat_id), [])
 
     async def test_schema_and_secrets_and_retired_hermes_route(self):
         agents = (await self.client.get("/api/agents")).json()["agents"]
