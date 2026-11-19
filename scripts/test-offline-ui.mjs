@@ -57,6 +57,13 @@ const provider = createServer(async (request, response) => {
     const input = JSON.parse(body);
     requests.push(input);
     const content = requests.length === 1 ? markdown : pluginMarkdown;
+    if (!input.stream) {
+        response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify({ choices: [{ message: {
+            content: 'Non-streaming answer', reasoning_content: 'Fixture transient thought',
+        }, finish_reason: 'stop' }] }));
+        return;
+    }
     response.writeHead(200, { 'Content-Type': 'text/event-stream' });
     const send = delta => response.write(`data: ${JSON.stringify({ choices: [{ delta }] })}\n\n`);
     const startAnswer = () => send({ content: content.slice(0, 37) });
@@ -156,6 +163,7 @@ try {
         name: 'Offline fixture',
         api_url: `http://127.0.0.1:${provider.address().port}/v1`,
         model_id: 'offline-fixture',
+        capability: { thinking_control: { request_format: 'enable_thinking' } },
     });
 
     browser = await chromium.launch({
@@ -230,7 +238,7 @@ try {
     await market.getByRole('button', { name: 'Close', exact: true }).click();
     console.log('Bundled market: three fresh installs, partial Markdown Enhancer upgrade and retained settings passed.');
     await page.waitForFunction(() => window.Papa && window.XLSX && window.html2pdf && window.markmap);
-    await page.locator('.thinking-toggle').click();
+    await page.locator('.thinking-mode').selectOption('on');
     await send('Check normal chat without Markdown Enhancer');
     const assistant = page.locator('.message.assistant').filter({ has: page.locator('.message-actions') }).last();
     const thinkingHeader = assistant.getByRole('button', { name: 'Thinking Process' });
@@ -312,7 +320,7 @@ try {
         name: 'fixture.csv', mimeType: 'text/csv', buffer: Buffer.from('Name,Value\nlegacy,109\n'),
     });
     await page.locator('.attached-doc-name').waitFor({ state: 'visible' });
-    await page.locator('.thinking-toggle').click();
+    await page.locator('.thinking-mode').selectOption('on');
     await send('Check plugins and parse the CSV');
     await assistant.locator('.katex').first().waitFor({ state: 'visible' });
     await assistant.locator('.mermaid-rendered .mermaid-shadow-host').first().waitFor({ state: 'visible' });
@@ -320,7 +328,9 @@ try {
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     assert.ok([...loaded].some(path => /\/lib\/fonts\/KaTeX_.*\.woff2$/.test(path)), 'No KaTeX font served');
     assert.match(requests[1].messages.at(-1).content, /\| legacy \| 109 \|/);
-    assert.match(requests[1].messages.find(message => message.role === 'assistant').content, /^<thinking>\nOffline reasoning fixture/);
+    assert.equal(requests[1].messages.find(message => message.role === 'assistant').content, markdown);
+    assert.equal(requests[1].enable_thinking, true);
+    assert.equal('stream_options' in requests[1], false);
 
     await assistant.locator('.message-actions').waitFor();
     await thinkingHeader.click();
@@ -336,9 +346,97 @@ try {
     assert.equal((await readFile(await pdf.path())).subarray(0, 5).toString(), '%PDF-');
     console.log('Plugins: legacy CSV upload, KaTeX fonts, Mermaid, Markmap, PDF download and market icons passed.');
 
+    const settings = await (await fetch(origin + '/api/settings')).json();
+    settings.chat_settings.stream = false;
+    await post('/api/settings', settings);
+    await page.reload();
+    await page.locator('.thinking-mode').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('.thinking-mode').inputValue(), 'default');
+    await page.evaluate(() => {
+        const state = Alpine.$data(document.body);
+        state.pluginHooks.after_receive.unshift({ handler: message => {
+            window.capturedThinkingMessage = message;
+        } });
+    });
+    await send('Follow model default in non-streaming chat');
+    const lastAnswer = assistant;
+    const nonStreamingAnswer = lastAnswer.locator('.message-markdown').filter({ hasText: 'Non-streaming answer' });
+    await nonStreamingAnswer.waitFor();
+    assert.equal((await nonStreamingAnswer.textContent()).trim(), 'Non-streaming answer');
+    await lastAnswer.getByRole('button', { name: 'Thinking Process' }).click();
+    await lastAnswer.locator('.thinking-content').filter({ hasText: 'Fixture transient thought' }).waitFor();
+    assert.equal(requests[2].stream, false);
+    assert.equal('enable_thinking' in requests[2], false);
+    await page.waitForFunction(() => window.capturedThinkingMessage?.content === 'Non-streaming answer');
+    assert.deepEqual(await page.evaluate(() => ({
+        thinking: window.capturedThinkingMessage.thinking,
+        previewThinking: window.capturedThinkingMessage.previewThinking,
+    })), { thinking: '', previewThinking: undefined });
+    const chatId = await page.evaluate(() => Alpine.$data(document.body).currentChatId);
+    const storedMessages = await (await fetch(origin + '/api/chats/' + chatId + '/messages')).json();
+    assert.equal('thinking' in storedMessages.at(-1), false);
+
+    await page.evaluate(() => Alpine.$data(document.body).pluginHooks.before_send.unshift({
+        handler: body => ({ success: true, body: { ...body, use_thinking: true } }),
+    }));
+    await Promise.all([
+        page.waitForResponse(response => new URL(response.url()).pathname === '/api/chat'),
+        send('Legacy plugin overrides the thinking mode'),
+    ]);
+    await page.waitForFunction(() => !Alpine.$data(document.body).isGenerating);
+    assert.equal(requests[3].enable_thinking, true);
+
+    await page.evaluate(() => Alpine.$data(document.body).pluginHooks.before_send.unshift({
+        handler: (body, { thinking_mode }) => ({ success: true, body: { ...body, use_thinking: true, thinking_mode } }),
+    }));
+    await Promise.all([
+        page.waitForResponse(response => new URL(response.url()).pathname === '/api/chat'),
+        send('Explicit new mode takes priority in a plugin'),
+    ]);
+    await page.waitForFunction(() => !Alpine.$data(document.body).isGenerating);
+    assert.equal('enable_thinking' in requests[4], false);
+    console.log('Thinking: non-streaming default, transient display, storage and legacy/new plugin precedence passed.');
+
+    await page.locator('.btn-settings:visible').click();
+    const modelForm = page.locator('.settings-modal:visible .model-card:visible');
+    const policy = modelForm.locator('select[id^="thinking-control-"]');
+    await policy.selectOption('default');
+    await policy.selectOption('switchable');
+    const requestFormat = modelForm.locator('.thinking-request select').first();
+    await requestFormat.waitFor({ state: 'visible' });
+    await page.evaluate(() => { Alpine.$data(document.body).settings.chat_settings.stream = true; });
+    await page.locator('.settings-modal:visible .modal-actions-bar .btn-primary').click();
+    await page.waitForFunction(() => Alpine.$data(document.body).toast.type === 'error');
+    assert.equal(await policy.isVisible(), true);
+    assert.equal(await requestFormat.inputValue(), '');
+    assert.equal((await (await fetch(origin + '/api/settings')).json()).chat_settings.stream, false);
+
+    const rejected = await fetch(origin + '/api/models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: 'default-chat', capability: { thinking_control: { request_format: '' } } }),
+    });
+    assert.equal(rejected.status, 422);
+
+    await requestFormat.selectOption('template-enable');
+    await page.locator('.settings-modal:visible .modal-actions-bar .btn-primary').click();
+    await page.locator('.settings-modal:visible').waitFor({ state: 'hidden' });
+    assert.equal((await (await fetch(origin + '/api/settings')).json()).chat_settings.stream, true);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const control = page.locator('.thinking-mode');
+    await control.waitFor({ state: 'visible' });
+    const mobile = await control.evaluate(element => {
+        const select = element.getBoundingClientRect();
+        const send = document.querySelector('.btn-send').getBoundingClientRect();
+        return select.left >= 0 && select.right < send.left && select.bottom <= innerHeight;
+    });
+    assert.equal(mobile, true);
+    console.log('Settings: invalid thinking draft leaves saved settings intact, valid save applies, and the mobile selector fits.');
+
     assert.deepEqual(blocked, [], 'External browser requests were attempted');
     assert.deepEqual(failures, [], 'Browser or HTTP errors');
     if (process.env.OFFLINE_UI_SCREENSHOT) {
+        await page.waitForFunction(() => !Alpine.$data(document.body).toast.show);
         await page.screenshot({ path: process.env.OFFLINE_UI_SCREENSHOT });
     }
     console.log('Zero external requests, HTTP errors or browser errors.');

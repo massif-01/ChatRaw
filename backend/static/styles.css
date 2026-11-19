@@ -920,71 +920,43 @@ select:focus:not(:focus-visible),
     background: var(--bg-primary);
 }
 
-/* Thinking Mode Toggle (same style as RAG toggle) */
-.thinking-toggle {
+.thinking-control {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    color: var(--text-muted);
-    transition: var(--transition);
-    z-index: 10;
-    position: relative;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-    touch-action: manipulation;
-}
-
-.thinking-toggle:hover {
-    background: var(--bg-tertiary);
+    flex: 0 0 auto;
+    gap: 4px;
+    padding: 0 4px;
     color: var(--text-secondary);
+    font-size: var(--text-xs);
+    white-space: nowrap;
 }
 
-.thinking-toggle.active {
-    color: var(--text-primary);
-}
-
-.thinking-slider {
-    display: block;
-    width: 28px;
-    height: 14px;
-    min-width: 28px;
-    min-height: 14px;
-    background: var(--bg-tertiary);
-    border-radius: 7px;
-    position: relative;
-    transition: background 0.2s ease;
-    flex-shrink: 0;
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-}
-
-.thinking-toggle.active .thinking-slider {
-    background: var(--text-primary);
-}
-
-.thinking-slider-handle {
-    display: block;
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 10px;
-    height: 10px;
-    min-width: 10px;
-    min-height: 10px;
-    background: var(--text-muted);
-    border-radius: 50%;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-}
-
-.thinking-toggle.active .thinking-slider-handle {
-    left: 16px;
+.thinking-mode {
+    min-height: 32px;
+    max-width: 118px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
     background: var(--bg-primary);
+    color: var(--text-primary);
+    font: inherit;
+    cursor: pointer;
+}
+
+.thinking-request {
+    margin: 8px 0;
+    padding: 8px 0;
+    border-top: 1px solid var(--border-color);
+}
+
+.thinking-request summary { cursor: pointer; margin-bottom: 8px; }
+.thinking-request .form-label { margin-bottom: 8px; }
+.thinking-request select { display: block; width: 100%; }
+.completion-status { color: var(--text-secondary); font-size: var(--text-sm); margin-top: 8px; }
+
+@media (max-width: 420px) {
+    .thinking-control { padding-inline: 0; }
+    .thinking-control > i { display: none; }
+    .thinking-mode { max-width: 93px; }
 }
 
 .input-wrapper {
@@ -2509,14 +2481,12 @@ input[type=range]::-webkit-slider-thumb:hover {
     }
     
     /* Ensure touch-friendly size for toggles */
-    .thinking-toggle,
     .rag-toggle {
         min-height: 44px;
         padding: 8px 6px;
         -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
     }
     
-    .thinking-slider,
     .rag-slider {
         display: block !important;
         width: 28px;
@@ -2526,7 +2496,6 @@ input[type=range]::-webkit-slider-thumb:hover {
         -webkit-transform: translateZ(0);
     }
     
-    .thinking-slider-handle,
     .rag-slider-handle {
         display: block !important;
         width: 10px;

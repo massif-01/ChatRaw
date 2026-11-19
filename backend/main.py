@@ -99,6 +99,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
+if __package__:
+    from .chat_completion import (
+        ThinkingControl, CompletionError, completion_choice, completion_problem,
+        content_text, error_message, reasoning_text, stream_choices,
+    )
+else:
+    from chat_completion import (
+        ThinkingControl, CompletionError, completion_choice, completion_problem,
+        content_text, error_message, reasoning_text, stream_choices,
+    )
 import sqlite3
 import math
 from collections import defaultdict
@@ -160,6 +170,9 @@ class ModelCapability(BaseModel):
     vision: bool = False
     reasoning: bool = False
     tools: bool = False
+    thinking_control: ThinkingControl | None = None
+    always_thinks: bool = False
+    chat_stream_only: bool = False
 
 class ModelConfig(BaseModel):
     model_config = {"protected_namespaces": ()}
@@ -203,7 +216,8 @@ class ChatRequest(BaseModel):
     chat_id: Optional[str] = ""
     message: str = ""
     use_rag: Optional[bool] = False
-    use_thinking: Optional[bool] = False  # Enable thinking/reasoning mode
+    use_thinking: Optional[bool] = False  # Legacy clients
+    thinking_mode: Optional[str] = None
     image_base64: Optional[str] = ""
     web_content: Optional[str] = ""  # Parsed web page content
     web_url: Optional[str] = ""  # Source URL for reference
@@ -226,11 +240,14 @@ class Message(BaseModel):
     created_at: str
     thinking: Optional[str] = None
 
-    @property
-    def context_content(self) -> str:
-        if self.thinking:
-            return f"<thinking>\n{self.thinking}\n</thinking>\n\n{self.content}"
-        return self.content
+    completion_status: str | None = None
+
+    def text_parts(self) -> tuple[str, str | None]:
+        if self.role == "assistant" and self.thinking is None and self.content.startswith("<thinking>\n"):
+            thinking, separator, answer = self.content.removeprefix("<thinking>\n").partition("\n</thinking>\n\n")
+            if thinking and separator:
+                return answer, thinking
+        return self.content, self.thinking
 
 # ============ Database ============
 
@@ -287,7 +304,8 @@ class Database:
                 role TEXT NOT NULL,
                 content TEXT NOT NULL,
                 created_at TEXT,
-                thinking TEXT
+                thinking TEXT,
+                completion_status TEXT
             );
 
             CREATE TABLE IF NOT EXISTS chat_compactions (
@@ -348,6 +366,8 @@ class Database:
             columns = {row["name"] for row in conn.execute("PRAGMA table_info(messages)")}
             if "thinking" not in columns:
                 conn.execute("ALTER TABLE messages ADD COLUMN thinking TEXT")
+            if "completion_status" not in columns:
+                conn.execute("ALTER TABLE messages ADD COLUMN completion_status TEXT")
         
         # Migrate old JSON embeddings to binary format
         self._migrate_embeddings(conn)
@@ -429,7 +449,7 @@ class Database:
     # Model configs
     def get_model_configs(self) -> List[ModelConfig]:
         cursor = self.get_conn().cursor()
-        cursor.execute("SELECT * FROM model_configs")
+        cursor.execute("SELECT * FROM model_configs ORDER BY rowid")
         rows = cursor.fetchall()
         
         configs = []
@@ -450,7 +470,7 @@ class Database:
     
     def get_model_by_type(self, model_type: str) -> Optional[ModelConfig]:
         cursor = self.get_conn().cursor()
-        cursor.execute("SELECT * FROM model_configs WHERE type = ? LIMIT 1", (model_type,))
+        cursor.execute("SELECT * FROM model_configs WHERE type = ? ORDER BY rowid LIMIT 1", (model_type,))
         row = cursor.fetchone()
         
         if row:
@@ -474,14 +494,36 @@ class Database:
         
         conn = self.get_conn()
         cursor = conn.cursor()
-        cursor.execute("""
-            INSERT OR REPLACE INTO model_configs 
-            (id, name, api_key, api_url, model_id, context_length, max_output, type, capability, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (config.id, config.name or config.model_id, config.api_key, config.api_url, config.model_id,
-              config.context_length, config.max_output, config.type,
-              json.dumps(config.capability.model_dump()), datetime.now().isoformat()))
-        conn.commit()
+        with conn:
+            conn.execute("BEGIN IMMEDIATE")
+            previous = cursor.execute(
+                "SELECT api_url, model_id, api_key, capability FROM model_configs WHERE id = ?",
+                (config.id,),
+            ).fetchone()
+            if previous:
+                same_connection = (
+                    previous["api_url"].rstrip("/") == config.api_url.rstrip("/")
+                    and previous["model_id"] == config.model_id
+                    and (previous["api_key"] or "") == config.api_key
+                )
+                if same_connection:
+                    old_capability = ModelCapability.model_validate_json(previous["capability"] or "{}")
+                    for field in ("thinking_control", "always_thinks", "chat_stream_only"):
+                        if field not in config.capability.model_fields_set:
+                            setattr(config.capability, field, getattr(old_capability, field))
+            if config.capability.always_thinks and config.capability.thinking_control:
+                raise ValueError("An always-thinking connection cannot switch thinking modes")
+            cursor.execute("""
+                INSERT INTO model_configs
+                (id, name, api_key, api_url, model_id, context_length, max_output, type, capability, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    name=excluded.name, api_key=excluded.api_key, api_url=excluded.api_url,
+                    model_id=excluded.model_id, context_length=excluded.context_length,
+                    max_output=excluded.max_output, type=excluded.type, capability=excluded.capability
+            """, (config.id, config.name or config.model_id, config.api_key, config.api_url, config.model_id,
+                  config.context_length, config.max_output, config.type, config.capability.model_dump_json(),
+                  datetime.now().isoformat()))
         return config
     
     def delete_model_config(self, model_id: str):
@@ -570,20 +612,22 @@ class Database:
             content=row["content"],
             created_at=row["created_at"],
             thinking=row["thinking"],
+            completion_status=row["completion_status"],
         ) for row in rows]
     
-    def add_message(self, chat_id: str, role: str, content: str, *, thinking: Optional[str] = None) -> Message:
+    def add_message(self, chat_id: str, role: str, content: str, *, thinking: Optional[str] = None,
+                    completion_status: str | None = None) -> Message:
         msg_id = str(uuid.uuid4())
         now = datetime.now().isoformat()
         
         conn = self.get_conn()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO messages (id, chat_id, role, content, created_at, thinking) VALUES (?, ?, ?, ?, ?, ?)",
-                      (msg_id, chat_id, role, content, now, thinking))
+        cursor.execute("INSERT INTO messages (id, chat_id, role, content, created_at, thinking, completion_status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                      (msg_id, chat_id, role, content, now, thinking, completion_status))
         cursor.execute("UPDATE chats SET updated_at = ? WHERE id = ?", (now, chat_id))
         conn.commit()
         
-        return Message(id=msg_id, chat_id=chat_id, role=role, content=content, created_at=now, thinking=thinking)
+        return Message(id=msg_id, chat_id=chat_id, role=role, content=content, created_at=now, thinking=thinking, completion_status=completion_status)
 
     def add_skill_activations(self, chat_id: str, message_id: str, activations: List[dict]):
         if not activations:
@@ -798,30 +842,8 @@ def get_chat_lock(chat_id: str) -> asyncio.Lock:
 
 
 def extract_openai_message_text(message: Any) -> str:
-    """Normalize OpenAI-style chat completion `message` to plain text.
-    Handles string content, multimodal `content` arrays, and empty `content`
-    with text only in `reasoning_content` / `thinking` (some providers)."""
-    if not message or not isinstance(message, dict):
-        return ""
-    content = message.get("content")
-    if isinstance(content, str) and content.strip():
-        return content.strip()
-    if isinstance(content, list):
-        parts = []
-        for part in content:
-            if not isinstance(part, dict):
-                continue
-            if part.get("type") == "text" and part.get("text"):
-                parts.append(str(part["text"]))
-            elif "text" in part and part.get("text"):
-                parts.append(str(part["text"]))
-        if parts:
-            return "\n".join(parts).strip()
-    for key in ("reasoning_content", "reasoning", "thinking"):
-        val = message.get(key)
-        if isinstance(val, str) and val.strip():
-            return val.strip()
-    return ""
+    """Return only the formal completion, never reasoning or a reasoning summary."""
+    return content_text(message.get("content"), separator="\n").strip() if isinstance(message, dict) else ""
 
 
 # ============ LLM Service ============
@@ -854,7 +876,7 @@ class LLMService:
         return None
 
     def _raw_history_messages(self, history: List[Message]) -> List[dict]:
-        return [{"role": message.role, "content": message.context_content} for message in history]
+        return [{"role": message.role, "content": message.text_parts()[0]} for message in history]
 
     def build_history_messages(
         self,
@@ -900,7 +922,7 @@ class LLMService:
         return truncated + suffix
 
     def _format_message_for_summary(self, message: Message, token_budget: int) -> str:
-        content = self._truncate_to_token_budget(message.context_content, max(64, token_budget))
+        content = self._truncate_to_token_budget(message.text_parts()[0], max(64, token_budget))
         return f"{message.role.upper()} [{message.created_at}]\n{content}"
 
     def _format_summary_batch(self, messages: List[Message], batch_budget: int) -> str:
@@ -917,7 +939,7 @@ class LLMService:
         current = []
         current_tokens = 0
         for message in messages:
-            message_tokens = min(estimate_text_tokens(message.context_content) + 8, batch_budget)
+            message_tokens = min(estimate_text_tokens(message.text_parts()[0]) + 8, batch_budget)
             if current and current_tokens + message_tokens > batch_budget:
                 batches.append(current)
                 current = []
@@ -961,44 +983,23 @@ class LLMService:
         max_tokens: int,
         temperature: float = 0.2,
     ) -> str:
-        url = config.api_url.rstrip("/") + "/chat/completions"
-        headers = {"Content-Type": "application/json"}
-        if config.api_key:
-            headers["Authorization"] = f"Bearer {config.api_key}"
-
-        settings = self.db.get_settings()
-        payload = {
-            "model": config.model_id,
-            "messages": messages,
-            "temperature": temperature,
-            "top_p": settings.chat_settings.top_p,
-            "max_tokens": max_tokens,
-            "stream": False
-        }
-
-        session = await get_http_session()
-        async with session.post(url, json=payload, headers=headers) as resp:
-            if resp.status != 200:
-                error_text = await resp.text()
-                raise RuntimeError(f"Summary API error ({resp.status}): {error_text[:500]}")
-            data = await resp.json()
-            choices = data.get("choices") or []
-            if not choices:
-                raise ContextCompactionUnavailable("Summary model returned no choices")
-            choice0 = choices[0] if isinstance(choices[0], dict) else {}
-            msg = choice0.get("message") or {}
-            text = extract_openai_message_text(msg)
-            if not text:
-                fr = choice0.get("finish_reason")
-                logger.warning(
-                    "Summary completion empty content; message keys=%s finish_reason=%r",
-                    list(msg.keys()) if isinstance(msg, dict) else type(msg),
-                    fr,
-                )
-                raise ContextCompactionUnavailable(
-                    "Summary model returned empty content; no context was compressed"
-                )
-            return text
+        payload = self.completion_payload(
+            config, self.db.get_settings().chat_settings, messages,
+            max_tokens=max_tokens, temperature=temperature, stream=config.capability.chat_stream_only,
+        )
+        text = ""
+        reason = None
+        try:
+            async for choice in self.request_completion(config, payload):
+                part = choice.get("delta" if payload["stream"] else "message") or {}
+                if isinstance(part, dict):
+                    text += content_text(part.get("content"), separator="\n")
+                reason = choice.get("finish_reason") or reason
+            if problem := completion_problem(reason, text):
+                raise CompletionError(problem)
+        except CompletionError as exc:
+            raise ContextCompactionUnavailable("Summary model did not return a complete answer") from exc
+        return extract_openai_message_text({"content": text})
 
     async def _summarize_messages(
         self,
@@ -1036,7 +1037,7 @@ class LLMService:
             remaining_messages = remaining_messages[len(batch):]
         return summary
 
-    async def compact_chat_history(self, chat_id: str) -> dict:
+    async def compact_chat_history(self, chat_id: str, config: ModelConfig | None = None) -> dict:
         async with get_chat_lock(chat_id):
             history = self.db.get_messages(chat_id)
             if len(history) <= CONTEXT_COMPRESSOR_KEEP_MESSAGES:
@@ -1072,7 +1073,7 @@ class LLMService:
                     "compressed_message_count": compaction.get("compressed_message_count", 0) if compaction else 0,
                 }
 
-            config = self.db.get_model_by_type("chat")
+            config = config or self.db.get_model_by_type("chat")
             if not config or not config.api_url or not config.model_id:
                 raise RuntimeError("Chat model not configured")
             self._get_input_budget(config)
@@ -1132,8 +1133,9 @@ class LLMService:
         current_user_content: str,
         threshold_percent: int,
         system_prompt: str = "",
+        config: ModelConfig | None = None,
     ) -> dict:
-        config = self.db.get_model_by_type("chat")
+        config = config or self.db.get_model_by_type("chat")
         if not config or not config.api_url or not config.model_id:
             return {"success": True, "compressed": False, "reason": "model_not_configured"}
 
@@ -1152,7 +1154,7 @@ class LLMService:
 
         hard_exceeded = estimated_tokens >= input_budget
         try:
-            result = await self.compact_chat_history(chat_id)
+            result = await self.compact_chat_history(chat_id, config)
         except Exception as e:
             if hard_exceeded:
                 return {"success": False, "error": str(e), "hard_exceeded": True}
@@ -1210,172 +1212,99 @@ class LLMService:
 
         return messages, rag_references
 
-    async def chat_stream(self, chat_id: str, message: str, use_rag: bool = False, use_thinking: bool = False, image_base64: str = "", web_content: str = "", web_url: str = "", effective_system_prompt: Optional[str] = None) -> AsyncGenerator[str, None]:
-        """Stream chat responses with optional thinking/reasoning support"""
-        config = self.db.get_model_by_type("chat")
-        if not config or not config.api_url or not config.model_id:
-            yield json.dumps({"error": "Chat model not configured"})
-            return
+    def completion_payload(
+        self, config: ModelConfig, settings: ChatSettings, messages: list[dict],
+        *, max_tokens: int | None = None, stream: bool | None = None,
+        temperature: float | None = None, thinking_fields: dict | None = None,
+    ) -> dict:
+        return {
+            "model": config.model_id,
+            "messages": messages,
+            "temperature": settings.temperature if temperature is None else temperature,
+            "top_p": settings.top_p,
+            "max_tokens": config.max_output if max_tokens is None else max_tokens,
+            "stream": settings.stream if stream is None else stream,
+            **(thinking_fields or {}),
+        }
 
-        settings = self.db.get_settings()
-
-        messages, rag_references = await self.build_chat_completion_messages(
-            chat_id,
-            message,
-            use_rag,
-            image_base64,
-            effective_system_prompt,
-            include_image=bool(config.capability.vision),
-        )
-        
-        # API request
+    async def request_completion(self, config: ModelConfig, payload: dict):
         url = config.api_url.rstrip("/") + "/chat/completions"
         headers = {"Content-Type": "application/json"}
         if config.api_key:
             headers["Authorization"] = f"Bearer {config.api_key}"
-        
-        payload = {
-            "model": config.model_id,
-            "messages": messages,
-            "temperature": settings.chat_settings.temperature,
-            "top_p": settings.chat_settings.top_p,
-            "max_tokens": config.max_output,
-            "stream": True
-        }
-        
-        # Enable thinking/reasoning mode if requested
-        # Different models use different parameters:
-        # - DeepSeek R1: enable_thinking + stream_options.include_reasoning
-        # - Qwen QwQ: enable_thinking
-        # - OpenAI o1: reasoning_effort (but o1 thinks by default)
-        # - GPTOSS/compatible APIs: enable_thinking
-        if use_thinking:
-            payload["enable_thinking"] = True
-            payload["stream_options"] = {"include_reasoning": True}
-        
-        full_response = ""
-        full_thinking = ""
-        
-        try:
-            session = await get_http_session()
-            async with session.post(url, json=payload, headers=headers) as resp:
-                    if resp.status != 200:
-                        error_text = await resp.text()
-                        yield json.dumps({"error": f"API error ({resp.status}): {error_text}"})
-                        return
-                    
-                    buffer = bytearray()
-                    search_start = 0
-                    async for chunk in resp.content.iter_any():
-                        buffer.extend(chunk)
-                        line_start = 0
-                        while (line_end := buffer.find(b"\n", search_start)) != -1:
-                            line = buffer[line_start:line_end].decode("utf-8").strip()
-                            line_start = line_end + 1
-                            search_start = line_start
-                            
-                            if not line.startswith("data: "):
-                                continue
-                            
-                            data = line[6:]
-                            if data == "[DONE]":
-                                break
-                            
-                            try:
-                                chunk_data = json.loads(data)
-                                if chunk_data.get("choices") and len(chunk_data["choices"]) > 0:
-                                    delta = chunk_data["choices"][0].get("delta", {})
-                                    
-                                    # Handle reasoning/thinking content (DeepSeek, Qwen, etc.)
-                                    # Only process if thinking mode is enabled
-                                    if use_thinking:
-                                        reasoning = delta.get("reasoning_content", "") or delta.get("reasoning", "") or delta.get("thinking", "")
-                                        if reasoning:
-                                            full_thinking += reasoning
-                                            yield json.dumps({"thinking": reasoning})
-                                    
-                                    # Handle regular content
-                                    content = delta.get("content", "")
-                                    if content:
-                                        full_response += content
-                                        yield json.dumps({"content": content})
-                            except json.JSONDecodeError:
-                                continue
-                        del buffer[:line_start]
-                        # A partial line only needs to be scanned where new bytes arrive.
-                        search_start = len(buffer) if line_end == -1 else 0
-                    if buffer:
-                        # Validate the trailing bytes without processing an unterminated line.
-                        buffer.decode("utf-8")
-            
-            if full_response:
-                save_assistant_message(self.db, chat_id, message, full_response, full_thinking)
-            
-            # Send references if RAG was used
-            if rag_references:
-                yield json.dumps({"references": rag_references})
-            
-            yield json.dumps({"done": True})
-            
-        except asyncio.TimeoutError:
-            yield json.dumps({"error": "Request timeout"})
-        except Exception as e:
-            yield json.dumps({"error": str(e)})
-    
-    async def chat_non_stream(self, chat_id: str, message: str, use_rag: bool = False, use_thinking: bool = False, image_base64: str = "", web_content: str = "", web_url: str = "", effective_system_prompt: Optional[str] = None) -> dict:
-        """Non-streaming chat, returns dict with content, thinking, and references"""
-        config = self.db.get_model_by_type("chat")
-        if not config or not config.api_url or not config.model_id:
-            raise HTTPException(status_code=500, detail="Chat model not configured")
-        
-        settings = self.db.get_settings()
 
-        messages, rag_references = await self.build_chat_completion_messages(
-            chat_id,
-            message,
-            use_rag,
-            image_base64,
-            effective_system_prompt,
-            include_image=bool(config.capability.vision),
-        )
-        
-        url = config.api_url.rstrip("/") + "/chat/completions"
-        headers = {"Content-Type": "application/json"}
-        if config.api_key:
-            headers["Authorization"] = f"Bearer {config.api_key}"
-        
-        payload = {
-            "model": config.model_id,
-            "messages": messages,
-            "temperature": settings.chat_settings.temperature,
-            "top_p": settings.chat_settings.top_p,
-            "max_tokens": config.max_output,
-            "stream": False
-        }
-        
-        # Enable thinking/reasoning mode if requested
-        if use_thinking:
-            payload["enable_thinking"] = True
-        
         session = await get_http_session()
-        async with session.post(url, json=payload, headers=headers) as resp:
-            if resp.status != 200:
-                error_text = await resp.text()
-                raise HTTPException(status_code=500, detail=f"API error: {error_text}")
-            
-            data = await resp.json()
-            msg_data = data["choices"][0]["message"]
-            content = msg_data.get("content", "")
-            
-            # Extract thinking/reasoning content if thinking mode is enabled
-            thinking = ""
-            if use_thinking:
-                thinking = msg_data.get("reasoning_content", "") or msg_data.get("reasoning", "") or msg_data.get("thinking", "")
-            
-            save_assistant_message(self.db, chat_id, message, content, thinking)
-            
-            return {"content": content, "thinking": thinking, "references": rag_references}
-    
+        try:
+            async with session.post(url, json=payload, headers=headers) as response:
+                if response.status != 200:
+                    fallback = f"Upstream API error ({response.status})"
+                    try:
+                        body = await response.json()
+                    except (ValueError, aiohttp.ContentTypeError):
+                        body = None
+                    detail = error_message(body, fallback)
+                    if config.api_key:
+                        detail = detail.replace(config.api_key, "[redacted]")
+                    raise CompletionError(detail if detail == fallback else f"{fallback}: {detail}")
+                if payload["stream"]:
+                    async for choice in stream_choices(response):
+                        yield choice
+                else:
+                    yield completion_choice(await response.json(), streamed=False)
+        except asyncio.TimeoutError as exc:
+            raise CompletionError("Upstream request timed out") from exc
+        except UnicodeDecodeError as exc:
+            raise CompletionError("Upstream response contains invalid UTF-8") from exc
+        except (aiohttp.ClientError, ValueError) as exc:
+            raise CompletionError("Could not read the upstream response") from exc
+
+    async def chat_completion(
+        self, chat_id: str, message: str, config: ModelConfig, settings: ChatSettings,
+        *, thinking_fields: dict, reasoning_channel: str | None, use_rag: bool,
+        image_base64: str, effective_system_prompt: str,
+    ) -> AsyncGenerator[dict, None]:
+        messages, references = await self.build_chat_completion_messages(
+            chat_id, message, use_rag, image_base64, effective_system_prompt,
+            include_image=config.capability.vision,
+        )
+        payload = self.completion_payload(config, settings, messages, thinking_fields=thinking_fields)
+        content = ""
+        thinking = ""
+        finish_reason = None
+        error = None
+
+        try:
+            async for choice in self.request_completion(config, payload):
+                finish_reason = choice.get("finish_reason") or finish_reason
+                message_key = "delta" if settings.stream else "message"
+                part = choice.get(message_key) or {}
+                if not isinstance(part, dict):
+                    raise CompletionError("Invalid upstream completion message")
+                if reasoning_channel and (reasoning := reasoning_text(part)):
+                    if reasoning_channel == "thinking":
+                        thinking += reasoning
+                    yield {reasoning_channel: reasoning}
+                if answer := content_text(part.get("content")) or content_text(part.get("refusal")):
+                    content += answer
+                    yield {"content": answer}
+            error = completion_problem(finish_reason, content)
+        except CompletionError as exc:
+            error = str(exc)
+
+        if error and config.api_key:
+            error = error.replace(config.api_key, "[redacted]")
+        if content.strip():
+            save_assistant_message(
+                self.db, chat_id, message, content, thinking,
+                completion_status="incomplete" if error else None,
+            )
+        if references:
+            yield {"references": references}
+        if error:
+            yield {"error": error, "completion_status": "incomplete" if content.strip() else "failed"}
+        else:
+            yield {"done": True}
+
     async def get_embedding(self, text: str) -> List[float]:
         """Get embedding for single text"""
         results = await self.get_embeddings_batch([text])
@@ -2263,8 +2192,10 @@ def build_effective_system_prompt(system_prompt: str, active_skill_context: str)
     )
 
 
-def save_assistant_message(db_instance: Database, chat_id: str, original_user_message: str, content: str, thinking: str = "") -> Message:
-    message = db_instance.add_message(chat_id, "assistant", content or "", thinking=thinking or "")
+def save_assistant_message(db_instance: Database, chat_id: str, original_user_message: str,
+                           content: str, thinking: str = "", completion_status: str | None = None) -> Message:
+    message = db_instance.add_message(chat_id, "assistant", content or "", thinking=thinking or "",
+                                      completion_status=completion_status)
 
     messages_count = len(db_instance.get_messages(chat_id))
     if messages_count <= 2:
@@ -2287,7 +2218,6 @@ async def _prepare_chat_submission(body: dict) -> dict:
     chat_id = body.get("chat_id", "") or ""
     message = body.get("message", "") or ""
     use_rag = body.get("use_rag", False) or False
-    use_thinking = body.get("use_thinking", False) or False
     image_base64 = body.get("image_base64", "") or ""
     web_content = body.get("web_content", "") or ""
     web_url = body.get("web_url", "") or ""
@@ -2295,6 +2225,37 @@ async def _prepare_chat_submission(body: dict) -> dict:
 
     if not message:
         raise HTTPException(status_code=400, detail="Message is required")
+
+    settings = db.get_settings()
+    config = db.get_model_by_type("chat")
+    if not config or not config.api_url or not config.model_id:
+        raise HTTPException(status_code=400, detail="Chat model not configured")
+    if config.capability.chat_stream_only and not settings.chat_settings.stream:
+        raise HTTPException(status_code=400, detail="Enable streaming in Chat Settings for this model connection")
+
+    thinking_fields = {}
+    reasoning_channel = None
+    mode = body.get("thinking_mode")
+    control = config.capability.thinking_control
+    if "thinking_mode" in body:
+        if mode not in ("default", "on", "off"):
+            raise HTTPException(status_code=400, detail="Invalid thinking mode")
+        reasoning_channel = "thinking" if mode == "on" else "preview_thinking"
+        if mode != "default":
+            if not control or config.capability.always_thinks:
+                raise HTTPException(status_code=400, detail="This model connection follows its server's thinking settings")
+            try:
+                thinking_fields = control.fields(mode)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+    elif body.get("use_thinking"):
+        reasoning_channel = "thinking"
+        if control and control.actions != "off" and not config.capability.always_thinks:
+            thinking_fields = control.fields("on")
+        elif not control and not config.capability.always_thinks:
+            thinking_fields = {"enable_thinking": True}
+            if settings.chat_settings.stream:
+                thinking_fields["stream_options"] = {"include_reasoning": True}
 
     active_skill_names = parse_active_skill_names(raw_active_skills)
     if active_skill_names and not is_skill_manager_enabled():
@@ -2305,7 +2266,6 @@ async def _prepare_chat_submission(body: dict) -> dict:
         chat_obj = db.create_chat("New Chat")
         chat_id = chat_obj.id
 
-    settings = db.get_settings()
     effective_system_prompt = build_effective_system_prompt(
         settings.chat_settings.system_prompt,
         active_skill_context,
@@ -2320,6 +2280,7 @@ async def _prepare_chat_submission(body: dict) -> dict:
             message_to_save,
             compressor_config["threshold_percent"],
             effective_system_prompt,
+            config,
         )
         if not auto_result.get("success"):
             raise HTTPException(status_code=400, detail=auto_result.get("error", "Context compaction failed"))
@@ -2331,11 +2292,11 @@ async def _prepare_chat_submission(body: dict) -> dict:
         "chat_id": chat_id,
         "message": message,
         "use_rag": use_rag,
-        "use_thinking": use_thinking,
+        "thinking_fields": thinking_fields,
+        "reasoning_channel": reasoning_channel,
         "image_base64": image_base64,
-        "web_content": web_content,
-        "web_url": web_url,
-        "settings": settings,
+        "config": config,
+        "settings": settings.chat_settings,
         "effective_system_prompt": effective_system_prompt,
     }
 
@@ -3120,7 +3081,10 @@ async def get_models():
 
 @app.post("/api/models")
 async def save_model(config: ModelConfig):
-    saved = db.save_model_config(config)
+    try:
+        saved = db.save_model_config(config)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return saved.model_dump()
 
 @app.post("/api/models/verify")
@@ -3136,18 +3100,28 @@ async def verify_model(config: ModelConfig):
     try:
         session = await get_http_session()
         if config.type == "chat":
-            payload = {
-                "model": config.model_id,
-                "messages": [{"role": "user", "content": "Say OK"}],
-                "max_tokens": 5,
-                "stream": False
-            }
-            async with session.post(f"{url}/chat/completions", json=payload, headers=headers) as resp:
-                if resp.status == 200:
-                    return {"success": True}
-                else:
-                    text = await resp.text()
-                    return {"success": False, "error": f"API error ({resp.status}): {text[:200]}"}
+            settings = db.get_settings().chat_settings
+            stream = settings.stream
+            if config.capability.chat_stream_only and not stream:
+                return {"success": False, "error": "Enable streaming in Chat Settings for this model connection"}
+            payload = llm_service.completion_payload(
+                config, settings, [{"role": "user", "content": "Say OK"}],
+                max_tokens=max(1, min(config.max_output, 256)), stream=stream,
+            )
+            text = ""
+            reason = None
+            try:
+                async for choice in llm_service.request_completion(config, payload):
+                    part = choice.get("delta" if stream else "message") or {}
+                    if isinstance(part, dict):
+                        text += content_text(part.get("content"))
+                    reason = choice.get("finish_reason") or reason
+            except CompletionError as exc:
+                detail = str(exc)
+                return {"success": False, "error": detail.replace(config.api_key, "[redacted]") if config.api_key else detail}
+            if problem := completion_problem(reason, text):
+                return {"success": False, "error": problem, "received_answer": bool(text.strip())}
+            return {"success": True, "received_answer": True, "thinking_mode_verified": False}
         elif config.type == "embedding":
             payload = {"model": config.model_id, "input": "test"}
             async with session.post(f"{url}/embeddings", json=payload, headers=headers) as resp:
@@ -3218,20 +3192,16 @@ async def delete_chat(chat_id: str):
 
 @app.get("/api/chats/{chat_id}/messages")
 async def get_messages(chat_id: str):
-    messages = agent_gateway.enrich_messages(db.get_messages(chat_id))
-    for message in messages:
-        thinking = message.pop("thinking")
-        if message["role"] != "assistant" or "run_id" in message:
-            continue
-        if thinking is None and message["content"].startswith("<thinking>\n"):
-            # A NULL thinking column marks records written before reasoning was stored separately.
-            legacy = message["content"].removeprefix("<thinking>\n")
-            reasoning, separator, answer = legacy.partition("\n</thinking>\n\n")
-            if reasoning and separator:
-                thinking = reasoning
-                message["content"] = answer
-        if thinking:
-            message["thinking"] = thinking
+    rows = db.get_messages(chat_id)
+    messages = agent_gateway.enrich_messages(rows)
+    for row, message in zip(rows, messages):
+        message.pop("thinking")
+        if not message.get("completion_status"):
+            message.pop("completion_status", None)
+        if message["role"] == "assistant" and "run_id" not in message:
+            message["content"], thinking = row.text_parts()
+            if thinking:
+                message["thinking"] = thinking
     return messages
 
 @app.post("/api/chats/{chat_id}/compact")
@@ -3266,56 +3236,35 @@ async def chat(request: Request):
         return JSONResponse({"error": e.detail}, status_code=e.status_code)
 
     chat_id = submission["chat_id"]
-    message = submission["message"]
-    use_rag = submission["use_rag"]
-    use_thinking = submission["use_thinking"]
-    image_base64 = submission["image_base64"]
-    web_content = submission["web_content"]
-    web_url = submission["web_url"]
-    settings = submission["settings"]
-    effective_system_prompt = submission["effective_system_prompt"]
-    
-    if settings.chat_settings.stream:
-        # Streaming response
+    completion = llm_service.chat_completion(**submission)
+
+    if submission["settings"].stream:
         async def generate():
-            # Send chat_id first
             yield json.dumps({"chat_id": chat_id}) + "\n"
-            
-            # Stream content
-            async for chunk in llm_service.chat_stream(
-                chat_id,
-                message,
-                use_rag,
-                use_thinking,
-                image_base64,
-                web_content,
-                web_url,
-                effective_system_prompt,
-            ):
-                yield chunk + "\n"
-        
+            async for chunk in completion:
+                yield json.dumps(chunk) + "\n"
+
         return StreamingResponse(
-            generate(), 
+            generate(),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
                 "X-Accel-Buffering": "no",
-                "Content-Encoding": "identity"
-            }
+                "Content-Encoding": "identity",
+            },
         )
-    else:
-        # Non-streaming response
-        result = await llm_service.chat_non_stream(
-            chat_id,
-            message,
-            use_rag,
-            use_thinking,
-            image_base64,
-            web_content,
-            web_url,
-            effective_system_prompt,
-        )
-        return {"chat_id": chat_id, "content": result["content"], "thinking": result.get("thinking", ""), "references": result["references"]}
+
+    result = {"chat_id": chat_id, "content": "", "thinking": "", "references": []}
+    async for chunk in completion:
+        for key in ("content", "thinking", "preview_thinking"):
+            if key in chunk:
+                result[key] = result.get(key, "") + chunk[key]
+        for key in ("references", "error", "completion_status"):
+            if key in chunk:
+                result[key] = chunk[key]
+    if result.get("completion_status") == "failed":
+        return JSONResponse(result, status_code=502)
+    return result
 
 @app.get("/api/documents")
 async def get_documents():

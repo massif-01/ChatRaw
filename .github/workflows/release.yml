@@ -4,10 +4,23 @@ on:
   push:
     tags:
       - 'v*'
-    branches:
-      - main
-    paths:
-      - RELEASE_v2.3.4.md
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to replace
+        required: true
+        type: string
+      previous_sha:
+        description: Commit currently referenced by the release tag
+        required: true
+        type: string
+      previous_release_id:
+        description: GitHub release ID to replace
+        required: true
+        type: string
+      retire_docker_tags:
+        description: Comma-separated Docker version tags to remove after publishing
+        type: string
 
 concurrency:
   group: release
@@ -25,14 +38,35 @@ jobs:
 
       - name: Resolve release version
         id: version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPLACEMENT_TAG: ${{ inputs.tag }}
+          PREVIOUS_SHA: ${{ inputs.previous_sha }}
+          PREVIOUS_RELEASE_ID: ${{ inputs.previous_release_id }}
+          RETIRE_TAGS: ${{ inputs.retire_docker_tags }}
         run: |
           tag="$GITHUB_REF_NAME"
-          if [[ "$GITHUB_REF_TYPE" == branch ]]; then
-            tag=v2.3.4
-            existing=$(git ls-remote --refs origin "refs/tags/$tag")
-            if [[ -n "$existing" && "$existing" != "$GITHUB_SHA"$'\t'"refs/tags/$tag" ]]; then
-              echo "::error::$tag already points to a different commit"
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            test "$GITHUB_REF" = refs/heads/main
+            tag="$REPLACEMENT_TAG"
+            [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+            [[ "$PREVIOUS_SHA" =~ ^[0-9a-f]{40}$ ]]
+            [[ "$PREVIOUS_RELEASE_ID" =~ ^[0-9]+$ ]]
+            test "$PREVIOUS_SHA" != "$GITHUB_SHA"
+            if [[ -n "$RETIRE_TAGS" ]]; then
+              version_pattern='[0-9]+\.[0-9]+\.[0-9]+'
+              [[ "$RETIRE_TAGS" =~ ^$version_pattern(,$version_pattern)*$ ]]
+              [[ ",$RETIRE_TAGS," != *",${tag#v},"* ]]
+            fi
+            current=$(git ls-remote --refs origin "refs/tags/$tag" | cut -f1)
+            if [[ "$current" != "$PREVIOUS_SHA" && "$current" != "$GITHUB_SHA" ]]; then
+              echo "::error::$tag has changed since the release replacement was requested"
               exit 1
+            fi
+            if [[ "$current" == "$PREVIOUS_SHA" ]]; then
+              release=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" --jq .id)
+              test "$release" = "$PREVIOUS_RELEASE_ID"
             fi
           fi
           test -s "RELEASE_${tag}.md"
@@ -98,6 +132,29 @@ jobs:
             fi
           done
 
+      - name: Replace previous GitHub release
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          PREVIOUS_SHA: ${{ inputs.previous_sha }}
+          PREVIOUS_RELEASE_ID: ${{ inputs.previous_release_id }}
+        run: |
+          ref="refs/tags/$TAG"
+          current=$(git ls-remote --refs origin "$ref" | cut -f1)
+          if [[ "$current" != "$GITHUB_SHA" ]]; then
+            git push --force-with-lease="$ref:$PREVIOUS_SHA" origin "$GITHUB_SHA:$ref"
+          fi
+          if release=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq .id 2>&1); then
+            if [[ "$release" == "$PREVIOUS_RELEASE_ID" ]]; then
+              gh api --method DELETE "repos/$GITHUB_REPOSITORY/releases/$PREVIOUS_RELEASE_ID"
+            fi
+          elif [[ "$release" != *"HTTP 404"* ]]; then
+            echo "::error::Could not check the previous release"
+            exit 1
+          fi
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -105,5 +162,30 @@ jobs:
           target_commitish: ${{ github.sha }}
           body_path: RELEASE_${{ steps.version.outputs.tag }}.md
           generate_release_notes: false
+          make_latest: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'legacy' }}
           files: ${{ steps.mac.outputs.asset }}
           fail_on_unmatched_files: true
+
+      - name: Remove retired Docker tags
+        if: github.event_name == 'workflow_dispatch' && inputs.retire_docker_tags != ''
+        shell: bash
+        env:
+          RETIRE_TAGS: ${{ inputs.retire_docker_tags }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          token=$(jq -n '{identifier: env.DOCKERHUB_USERNAME, secret: env.DOCKERHUB_TOKEN}' |
+            curl --fail --silent --show-error --max-time 30 \
+              --header 'Content-Type: application/json' --data-binary @- \
+              'https://hub.docker.com/v2/auth/token' | jq -er '.access_token')
+          echo "::add-mask::$token"
+          IFS=, read -r -a tags <<< "$RETIRE_TAGS"
+          for tag in "${tags[@]}"; do
+            status=$(curl --silent --show-error --max-time 30 --output /dev/null \
+              --write-out '%{http_code}' --request DELETE --header "Authorization: Bearer $token" \
+              "https://hub.docker.com/v2/repositories/massif01/chatraw/tags/$tag/")
+            case "$status" in
+              204|404) echo "Retired massif01/chatraw:$tag" ;;
+              *) echo "::error::Could not remove massif01/chatraw:$tag (HTTP $status)"; exit 1 ;;
+            esac
+          done

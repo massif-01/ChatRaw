@@ -48,7 +48,7 @@ Many developers, AI hardware vendors, and users just need a simple, lightweight 
 
 ChatRaw now includes a native macOS desktop version: **ChatRaw for Mac**. It wraps the same lightweight web interface in a SwiftUI + WKWebView desktop shell, automatically starts a local ChatRaw backend, and loads the app through a local `127.0.0.1` address. The Mac app provides model settings, plugins, document parsing, image understanding, and support for OpenAI-compatible APIs.
 
-The Mac download that accompanies ChatRaw 2.3.4 is the original `ChatRaw-for-Mac-2.2.1.dmg` from the v2.2.1 release. It targets Apple Silicon and requires macOS 14 or later. For native Agent setup in the Linux edition, see the [deployment guide](deploy/README.md).
+The Mac download that accompanies ChatRaw 2.3.1 is the original `ChatRaw-for-Mac-2.2.1.dmg` from the v2.2.1 release. It targets Apple Silicon and requires macOS 14 or later. For native Agent setup in the Linux edition, see the [deployment guide](deploy/README.md).
 
 ---
 
@@ -82,8 +82,10 @@ The Mac download that accompanies ChatRaw 2.3.4 is the original `ChatRaw-for-Mac
 - Built-in endpoint validation and testing
 
 **Thinking Mode**
-- Deep reasoning for supported models
-- Collapsible thought process display
+- Ordinary chat follows the server by default. Expand the reasoning panel when the endpoint returns a readable trace or summary.
+- To enable switching, open **Settings → Models** and set **Thinking control** beneath **Model ID**. Choose the parameter and actions supported by that connection. For a hybrid Qwen model on vLLM, select `chat_template_kwargs.enable_thinking` if the deployed template supports it.
+- Mark connections that always think or require streaming under **Connection limits**. The model connection test checks for an answer using server defaults. Verify overrides separately against the deployed model.
+- Reasoning shown in **Follow server** mode is kept in the current view. The chat history sent upstream uses answer text.
 
 **Custom Branding**
 - Customize interface: name, Logo, subtitle, avatar, and theme colors
@@ -165,7 +167,7 @@ For native Agents, run ChatRaw in Docker and install the Runner on the same Linu
 
 **Prerequisites**: [Docker](https://docs.docker.com/get-docker/) installed.
 
-Images are published to **Docker Hub**. Pull `massif01/chatraw:latest` for the current release or `massif01/chatraw:2.3.4` for this version. If you already use native Agents, [update the host Runner](deploy/REFERENCE.md#maintenance) to enable the conversation permission controls.
+Images are published to **Docker Hub**. Pull `massif01/chatraw:latest` for the current release or `massif01/chatraw:2.3.1` for this version. If you already use native Agents, [update the host Runner](deploy/REFERENCE.md#maintenance) to enable the conversation permission controls.
 
 **Supported platforms**: linux/amd64 (Intel/AMD), linux/arm64 (Apple Silicon, Raspberry Pi 4/5).
 
@@ -257,7 +259,7 @@ python main.py
 | Source | Pull command |
 |--------|----------------|
 | Docker Hub | `docker pull massif01/chatraw:latest` |
-| Docker Hub (2.3.4) | `docker pull massif01/chatraw:2.3.4` |
+| Docker Hub (2.3.1) | `docker pull massif01/chatraw:2.3.1` |
 
 ---
 
@@ -437,7 +439,7 @@ MIT License
 
 ChatRaw 现在提供原生 macOS 桌面版本：**ChatRaw for Mac**。它使用 SwiftUI + WKWebView 桌面外壳承载同一套轻量 Web 界面，并自动启动本地 ChatRaw 后端，通过本机 `127.0.0.1` 地址加载应用。Mac 应用支持模型配置、插件、文档解析、图片理解和 OpenAI 兼容 API。
 
-ChatRaw 2.3.4 随附 v2.2.1 发布中的原版 `ChatRaw-for-Mac-2.2.1.dmg`。安装包面向 Apple Silicon，要求 macOS 14 或更高版本。Linux 版的原生 Agent 配置请参阅[部署指南](deploy/README.md)。
+ChatRaw 2.3.1 随附 v2.2.1 发布中的原版 `ChatRaw-for-Mac-2.2.1.dmg`。安装包面向 Apple Silicon，要求 macOS 14 或更高版本。Linux 版的原生 Agent 配置请参阅[部署指南](deploy/README.md)。
 
 ---
 
@@ -471,8 +473,10 @@ ChatRaw 2.3.4 随附 v2.2.1 发布中的原版 `ChatRaw-for-Mac-2.2.1.dmg`。安
 - 内置端点验证和测试
 
 **思考模式**
-- 为支持的模型启用深度推理
-- 可折叠的思考过程显示
+- 普通对话默认跟随服务端。服务端返回可读的思考过程或摘要时，可在消息中展开。
+- 如需在对话中切换，在 **设置 → 模型配置** 的 **Model ID** 下选择「允许在对话中切换」，再按实际连接配置参数和操作。例如，若 vLLM 部署的千问模板支持逐请求切换，可选 `chat_template_kwargs.enable_thinking`。
+- 始终思考或仅支持流式的连接可在「连接限制」里标记。连接测试检查默认模式能否返回正文，显式切换需要用实际端点单独验证。
+- 「跟随服务端」下收到的思考只在当前界面展示。发送给模型的普通对话历史使用回答正文。
 
 **自定义品牌**
 - 自定义界面：名称、Logo、副标题、头像和主题颜色
@@ -549,7 +553,7 @@ ChatRaw 拥有完整的**插件系统**以扩展功能：
 
 **前置条件**：已安装 [Docker](https://docs.docker.com/get-docker/)。
 
-镜像发布在 **Docker Hub**。拉取 `massif01/chatraw:latest` 获取最新版，或使用 `massif01/chatraw:2.3.4` 固定在本版。已在使用原生 Agent 的用户可[更新计算机上的 Runner](deploy/REFERENCE.md#maintenance)，以使用对话权限控制。
+镜像发布在 **Docker Hub**。拉取 `massif01/chatraw:latest` 获取最新版，或使用 `massif01/chatraw:2.3.1` 固定在本版。已在使用原生 Agent 的用户可[更新计算机上的 Runner](deploy/REFERENCE.md#maintenance)，以使用对话权限控制。
 
 **支持平台**：linux/amd64（Intel/AMD）、linux/arm64（Apple Silicon、树莓派 4/5）。
 
@@ -641,7 +645,7 @@ python main.py
 | 来源 | 拉取命令 |
 |------|----------|
 | Docker Hub | `docker pull massif01/chatraw:latest` |
-| Docker Hub (2.3.4) | `docker pull massif01/chatraw:2.3.4` |
+| Docker Hub (2.3.1) | `docker pull massif01/chatraw:2.3.1` |
 
 ---
 
