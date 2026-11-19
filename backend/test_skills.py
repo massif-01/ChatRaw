@@ -254,7 +254,7 @@ class SkillRegistryTests(unittest.TestCase):
                 context_length=8192,
                 max_output=1024,
                 type="chat",
-                capability=main.ModelCapability(vision=vision),
+                capability=main.ModelCapability(vision=vision, thinking_control=None, chat_stream_only=False, always_thinks=False),
             )
         )
 
@@ -1729,8 +1729,11 @@ Use this skill for PDF work.
             self.assertNotIn("thinking", rows[row.id])
 
         context = main.LLMService(main.db).build_history_messages(chat.id, use_compaction=False)
-        self.assertEqual(context[1]["content"], tagged_text)
-        self.assertEqual(context[3]["content"], f"<thinking>\n{current_reasoning}\n</thinking>\n\nNew answer")
+        self.assertEqual(context[0]["content"], tagged_text)
+        self.assertEqual(context[1]["content"], "旧记录的答复")
+        self.assertEqual(context[2]["content"], incomplete)
+        self.assertEqual(context[3]["content"], "New answer")
+        self.assertEqual(context[4]["content"], tagged_text)
 
     def test_chat_stream_rejects_truncated_utf8_at_eof(self):
         self.configure_chat(stream=True)
@@ -1746,12 +1749,166 @@ Use this skill for PDF work.
             self.assertEqual(events[1], {"content": "prefix"})
             self.assertEqual(len(events), 3)
             self.assertIn("error", events[2])
-            self.assertIn("unexpected end of data", events[2]["error"])
+            self.assertIn("invalid UTF-8", events[2]["error"])
+            self.assertEqual(events[2]["completion_status"], "incomplete")
             messages = main.db.get_messages(events[0]["chat_id"])
-            self.assertEqual([message.role for message in messages], ["user"])
+            self.assertEqual([message.role for message in messages], ["user", "assistant"])
+            self.assertEqual((messages[-1].content, messages[-1].completion_status), ("prefix", "incomplete"))
 
         with patch.object(FakeChatContent, "iter_any", truncated_stream):
             asyncio.run(check_stream())
+
+    def test_thinking_modes_across_streaming_and_legacy_clients(self):
+        async def check(stream):
+            self.configure_chat(stream=stream)
+            config = main.db.get_model_by_type("chat")
+            config.capability.thinking_control = main.ThinkingControl(request_format="template-enable")
+            main.db.save_model_config(config)
+            session = self.patch_chat_session()
+
+            async def chunks(_):
+                for delta in ({"reasoning": "first "}, {"reasoning_content": "second"}, {"content": "answer"}):
+                    yield ("data:" + json.dumps({"choices": [{"delta": delta}]}) + "\n").encode()
+                yield b"data: [DONE]\n"
+
+            async def answer(_):
+                return {"choices": [{"message": {"reasoning_content": "first second", "content": "answer"}}]}
+
+            async def submit(body):
+                result = await main.chat(JsonRequest({"message": "hello", **body}))
+                if not stream:
+                    return result
+                out = {}
+                async for line in result.body_iterator:
+                    for key, value in json.loads(line).items():
+                        out[key] = out.get(key, "") + value if key in ("thinking", "preview_thinking", "content") else value
+                return out
+
+            with patch.object(FakeChatContent, "iter_any", chunks), patch.object(FakeChatResponse, "json", answer):
+                for body, expected, channel in (
+                    ({"thinking_mode": "default"}, None, "preview_thinking"),
+                    ({"thinking_mode": "on"}, True, "thinking"),
+                    ({"thinking_mode": "off", "use_thinking": True}, False, "preview_thinking"),
+                    ({"use_thinking": True}, True, "thinking"),
+                    ({"use_thinking": False}, None, None),
+                ):
+                    result = await submit(body)
+                    self.assertEqual(result["content"], "answer")
+                    payload = session.posts[-1]["json"]
+                    self.assertNotIn("enable_thinking", payload)
+                    self.assertNotIn("stream_options", payload)
+                    if expected is None:
+                        self.assertNotIn("chat_template_kwargs", payload)
+                    else:
+                        self.assertEqual(payload["chat_template_kwargs"], {"enable_thinking": expected})
+                    stored = main.db.get_messages(result["chat_id"])[-1]
+                    self.assertEqual(stored.thinking, "first second" if channel == "thinking" else "")
+                    if channel:
+                        self.assertEqual(result[channel], "first second")
+                    else:
+                        self.assertNotIn("preview_thinking", result)
+                        self.assertFalse(result.get("thinking"))
+
+                config.capability.thinking_control = None
+                main.db.save_model_config(config)
+                await submit({"use_thinking": True})
+                payload = session.posts[-1]["json"]
+                self.assertIs(payload["enable_thinking"], True)
+                self.assertEqual(payload.get("stream_options"), {"include_reasoning": True} if stream else None)
+
+        for stream in (True, False):
+            with self.subTest(stream=stream):
+                asyncio.run(check(stream))
+
+    def test_supported_thinking_request_formats(self):
+        expected = (
+            ("enable_thinking", {"enable_thinking": True}, {"enable_thinking": False}),
+            ("template-enable", {"chat_template_kwargs": {"enable_thinking": True}},
+                                {"chat_template_kwargs": {"enable_thinking": False}}),
+            ("template-thinking", {"chat_template_kwargs": {"thinking": True}},
+                                  {"chat_template_kwargs": {"thinking": False}}),
+            ("thinking-type", {"thinking": {"type": "enabled"}}, {"thinking": {"type": "disabled"}}),
+            ("reasoning-enabled", {"reasoning": {"enabled": True}}, {"reasoning": {"enabled": False}}),
+            ("reasoning-effort", {"reasoning_effort": "medium"}, {"reasoning_effort": "none"}),
+        )
+        for request_format, on, off in expected:
+            with self.subTest(request_format=request_format):
+                options = {"enable_effort": "medium"} if request_format == "reasoning-effort" else {}
+                control = main.ThinkingControl(request_format=request_format, **options)
+                self.assertEqual(control.fields("on"), on)
+                self.assertEqual(control.fields("off"), off)
+        off_only = main.ThinkingControl(request_format="reasoning-effort", actions="off")
+        self.assertEqual(off_only.fields("off"), {"reasoning_effort": "none"})
+        with self.assertRaisesRegex(ValueError, "does not support"):
+            off_only.fields("on")
+
+    def test_thinking_preflight_rejects_unsupported_requests_before_writes(self):
+        async def check():
+            self.configure_chat(stream=False)
+            fake = self.patch_chat_session()
+            before = len(main.db.get_chats())
+            result = await main.chat(JsonRequest({"message": "hello", "thinking_mode": "on"}))
+            self.assertEqual(result.status_code, 400)
+            config = main.db.get_model_by_type("chat")
+            config.capability.chat_stream_only = True
+            main.db.save_model_config(config)
+            result = await main.chat(JsonRequest({"message": "hello", "thinking_mode": "default"}))
+            self.assertEqual(result.status_code, 400)
+            self.assertIn("Enable streaming", json.loads(result.body)["error"])
+            self.assertEqual(len(main.db.get_chats()), before)
+            self.assertEqual(fake.posts, [])
+
+        asyncio.run(check())
+
+    def test_legacy_model_save_keeps_control_for_same_connection(self):
+        self.configure_chat()
+        config = main.db.get_model_by_type("chat")
+        config.capability.thinking_control = main.ThinkingControl(request_format="thinking-type")
+        main.db.save_model_config(config)
+        old_body = config.model_dump(exclude={"capability"})
+        old_body["capability"] = {"vision": False, "reasoning": True}
+        main.db.save_model_config(main.ModelConfig(**old_body))
+        persisted = main.db.get_model_by_type("chat")
+        self.assertEqual(persisted.capability.thinking_control.fields("off"), {"thinking": {"type": "disabled"}})
+        self.assertTrue(persisted.capability.reasoning)
+        self.assertFalse(persisted.capability.vision)
+        old_body["model_id"] = "other-model"
+        main.db.save_model_config(main.ModelConfig(**old_body))
+        self.assertIsNone(main.db.get_model_by_type("chat").capability.thinking_control)
+
+    def test_thinking_only_and_upstream_error_are_not_success(self):
+        async def check():
+            self.configure_chat(stream=True)
+            self.patch_chat_session()
+
+            async def stream(_):
+                yield b'data: {"choices":[{"delta":{"reasoning":"partial reasoning"}}]}\n'
+                yield b'data: {"error":{"code":"bad_setting","message":"unsupported option"}}\n'
+
+            with patch.object(FakeChatContent, "iter_any", stream):
+                response = await main.chat(JsonRequest({"message": "ask", "thinking_mode": "default"}))
+                events = [json.loads(line) async for line in response.body_iterator]
+                self.assertEqual(events[1], {"preview_thinking": "partial reasoning"})
+                self.assertEqual(events[2], {"error": "bad_setting: unsupported option", "completion_status": "failed"})
+                self.assertEqual([row.role for row in main.db.get_messages(events[0]["chat_id"])], ["user"])
+
+            self.configure_chat(stream=False)
+
+            async def answer(_):
+                return {"choices": [{"message": {"reasoning": "partial reasoning", "content": None},
+                                     "finish_reason": "length"}]}
+
+            with patch.object(FakeChatResponse, "json", answer):
+                response = await main.chat(JsonRequest({"message": "ask", "thinking_mode": "default"}))
+                self.assertEqual(response.status_code, 502)
+                result = json.loads(response.body)
+                self.assertEqual(result["preview_thinking"], "partial reasoning")
+                self.assertIn("Output limit reached before an answer", result["error"])
+                self.assertEqual([row.role for row in main.db.get_messages(result["chat_id"])], ["user"])
+                verify = await main.verify_model(main.db.get_model_by_type("chat"))
+                self.assertFalse(verify["success"])
+
+        asyncio.run(check())
 
     def test_chat_active_skill_with_rag_keeps_rag_in_last_user_message(self):
         self.enable_skill_manager()

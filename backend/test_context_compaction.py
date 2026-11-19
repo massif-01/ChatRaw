@@ -360,6 +360,24 @@ class ContextCompactionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["reason"], "summary_not_shorter")
         self.assertIsNone(self.db.get_chat_compaction(chat.id))
 
+    async def test_truncated_reasoning_preserves_existing_compaction(self):
+        chat = self.create_chat_with_messages(16)
+        result = await self.service.compact_chat_history(chat.id)
+        self.assertTrue(result["compressed"])
+        existing = self.db.get_chat_compaction(chat.id)
+        for _ in range(12):
+            self.db.add_message(chat.id, "user", "new discussion details " * 40)
+            self.db.add_message(chat.id, "assistant", "further decisions " * 40)
+
+        class ThinkingOnly(main.LLMService):
+            async def request_completion(self, config, payload):
+                yield {"message": {"content": None, "reasoning_content": "unfinished thought"}, "finish_reason": "length"}
+
+        result = await ThinkingOnly(self.db).compact_chat_history(chat.id)
+        self.assertFalse(result["compressed"])
+        self.assertEqual(result["reason"], "summary_unavailable")
+        self.assertEqual(self.db.get_chat_compaction(chat.id), existing)
+
     def test_extract_openai_message_text_variants(self):
         self.assertEqual(main.extract_openai_message_text({}), "")
         self.assertEqual(main.extract_openai_message_text({"content": "  hi  "}), "hi")
@@ -373,7 +391,7 @@ class ContextCompactionTests(unittest.IsolatedAsyncioTestCase):
             main.extract_openai_message_text(
                 {"content": "", "reasoning_content": "  chain  "}
             ),
-            "chain",
+            "",
         )
 
 

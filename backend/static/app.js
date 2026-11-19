@@ -57,7 +57,26 @@ const i18n = {
         knowledgeBase: 'Knowledge Base',
         kbEnabled: 'KB Enabled',
         thinkingMode: 'Thinking Mode',
-        thinkingEnabled: 'Thinking Enabled',
+        thinkingControl: 'Thinking control',
+        thinkingDefault: 'Follow server',
+        thinkingDefaultCompact: 'Default',
+        thinkingSwitchable: 'Allow switching in chat',
+        thinkingFixed: 'Always thinks',
+        thinkingOn: 'On',
+        thinkingOff: 'Off',
+        thinkingRequest: 'Request parameters',
+        thinkingFormat: 'Parameter format',
+        thinkingSelectFormat: 'Select a supported format',
+        thinkingActions: 'Supported actions',
+        thinkingBoth: 'On and off',
+        thinkingEffort: 'Effort when on',
+        thinkingSelectEffort: 'Select a supported effort for enabling thinking',
+        thinkingFormatHint: 'Use settings supported by this model connection.',
+        thinkingStreamOnly: 'Requires streaming',
+        thinkingConnectionLimits: 'Connection limits',
+        thinkingVerify: 'Received an answer using server defaults',
+        incompleteAnswer: 'Incomplete answer',
+        failedAnswer: 'Could not generate an answer',
         thinkingProcess: 'Thinking Process',
         uploadImage: 'Upload Image',
         uploadDocument: 'Upload Document',
@@ -191,7 +210,26 @@ const i18n = {
         knowledgeBase: '知识库',
         kbEnabled: '知识库已开启',
         thinkingMode: '思考模式',
-        thinkingEnabled: '思考模式已开启',
+        thinkingControl: '思考控制',
+        thinkingDefault: '跟随服务端',
+        thinkingDefaultCompact: '跟随服务端',
+        thinkingSwitchable: '允许在对话中切换',
+        thinkingFixed: '始终思考',
+        thinkingOn: '开启',
+        thinkingOff: '关闭',
+        thinkingRequest: '请求参数',
+        thinkingFormat: '参数格式',
+        thinkingSelectFormat: '选择接口支持的参数',
+        thinkingActions: '支持的操作',
+        thinkingBoth: '开启和关闭',
+        thinkingEffort: '开启时的强度',
+        thinkingSelectEffort: '请选择模型支持的开启强度',
+        thinkingFormatHint: '请按当前模型连接支持的格式和操作配置。',
+        thinkingStreamOnly: '仅支持流式',
+        thinkingConnectionLimits: '连接限制',
+        thinkingVerify: '已收到使用服务端默认设置的回答',
+        incompleteAnswer: '回答未完成',
+        failedAnswer: '未能生成回答',
         thinkingProcess: '思考过程',
         uploadImage: '上传图片',
         uploadDocument: '上传文档',
@@ -382,7 +420,8 @@ function app() {
         skillCatalogCache: null,
         skillCatalogLoadedAt: 0,
         useRAG: false,
-        useThinking: false,
+        thinkingMode: 'default',
+        savedThinkingModel: null,
         isGenerating: false,
         abortController: null,
         uploadedImage: null,
@@ -510,6 +549,56 @@ function app() {
         
         getChatModel() {
             return this.models.find(model => model?.type === 'chat') || null;
+        },
+
+        syncThinkingModel(model) {
+            const next = model ? {
+                id: model.id, endpoint: model.api_url, model: model.model_id,
+                control: model.capability?.thinking_control ? { ...model.capability.thinking_control } : null,
+                fixed: Boolean(model.capability?.always_thinks),
+            } : null;
+            if (JSON.stringify(this.savedThinkingModel) !== JSON.stringify(next)) this.thinkingMode = 'default';
+            this.savedThinkingModel = next;
+        },
+
+        thinkingActions() {
+            const actions = this.savedThinkingModel?.control?.actions;
+            return this.savedThinkingModel?.fixed || !this.savedThinkingModel?.control ? null : (actions || 'both');
+        },
+
+        setThinkingControl(model, switchable) {
+            model.capability.thinking_control = switchable
+                ? { request_format: '', actions: 'both', enable_effort: null }
+                : null;
+            if (switchable) this.$nextTick(() => {
+                const details = document.getElementById('thinking-control-' + this.models.indexOf(model))
+                    ?.parentElement.querySelector('.thinking-request');
+                if (details) details.open = true;
+            });
+        },
+
+        resetConnectionThinking(model) {
+            if (this.savedThinkingModel?.id === model.id) this.thinkingMode = 'default';
+            model.capability.thinking_control = null;
+            model.capability.always_thinks = false;
+            model.capability.chat_stream_only = false;
+        },
+
+        pluginMessage(message) {
+            if (!message.previewThinking) return message;
+            const { previewThinking, ...publicMessage } = message;
+            return publicMessage;
+        },
+
+        async responseError(response) {
+            const data = await response.json().catch(() => ({}));
+            if (typeof data.error === 'string') return data.error;
+            if (typeof data.detail === 'string') return data.detail;
+            if (Array.isArray(data.detail)) {
+                return data.detail.map(item => (item.loc?.includes('thinking_control')
+                    ? this.t('thinkingControl') + ' — ' : '') + item.msg).join('。');
+            }
+            return this.t('saveFailed') + ' (HTTP ' + response.status + ')';
         },
 
         chatModelSupportsVision() {
@@ -685,6 +774,7 @@ function app() {
                         }
                     });
                     this.syncVisionCapabilityState();
+                    this.syncThinkingModel(this.getChatModel());
                 }
             } catch (e) {
                 console.error('Failed to load models:', e);
@@ -1485,21 +1575,26 @@ function app() {
                     contentSource = contentSource ? contentSource + ', ' + this.attachedDocument.filename : this.attachedDocument.filename;
                 }
                 
+                const thinkingMode = this.thinkingMode;
+                const legacyThinking = thinkingMode === 'on';
                 let body = {
                     chat_id: this.currentChatId,
                     message: message,
                     use_rag: this.useRAG,
-                    use_thinking: this.useThinking,
+                    use_thinking: legacyThinking,
                     image_base64: this.uploadedImageBase64,
                     web_content: combinedContent,
                     web_url: contentSource
                 };
                 
-                // Call before_send hooks to allow plugins to modify the request
-                const beforeSendResult = await this.callHook('before_send', body);
+                // Keep the original hook body shape so copying it cannot implicitly select a mode.
+                const beforeSendResult = await this.callHook('before_send', body, { thinking_mode: thinkingMode });
                 if (sendController.signal.aborted) return;
                 if (beforeSendResult?.success && beforeSendResult.body) {
                     body = { ...body, ...beforeSendResult.body };
+                }
+                if (!Object.hasOwn(body, 'thinking_mode') && body.use_thinking === legacyThinking) {
+                    body.thinking_mode = thinkingMode;
                 }
                 if (activeSkillNames.length > 0) {
                     body.active_skills = activeSkillNames;
@@ -1519,8 +1614,8 @@ function app() {
                 // Call after_receive hooks for post-processing
                 if (sendController.signal.aborted) return;
                 const lastMsg = this.messages[this.messages.length - 1];
-                if (lastMsg && lastMsg.role === 'assistant') {
-                    const afterResult = await this.callHook('after_receive', lastMsg);
+                if (lastMsg && lastMsg.role === 'assistant' && !lastMsg.completion_status) {
+                    const afterResult = await this.callHook('after_receive', this.pluginMessage(lastMsg));
                     if (sendController.signal.aborted) return;
                     if (afterResult?.success && afterResult.content) {
                         lastMsg.content = afterResult.content;
@@ -1552,7 +1647,7 @@ function app() {
                 body: JSON.stringify(body),
                 signal
             });
-            if (!response.ok) throw new Error(await response.text() || 'Request failed');
+            if (!response.ok) throw new Error(await this.responseError(response));
             if (signal.aborted) return;
 
             this.messages.push({ role: 'assistant', content: '', thinking: '', references: [], streaming: true });
@@ -1580,13 +1675,18 @@ function app() {
                             assistant.thinking += parsed.thinking;
                             assistant.thinkingActive = true;
                         }
+                        if (parsed.preview_thinking) {
+                            assistant.previewThinking = (assistant.previewThinking || '') + parsed.preview_thinking;
+                            assistant.thinkingActive = true;
+                        }
                         if (parsed.content) {
                             assistant.content += parsed.content;
                             assistant.thinkingActive = false;
                         }
                         if (parsed.references) assistant.references = parsed.references;
                         if (parsed.error) {
-                            assistant.content = 'Error: ' + parsed.error;
+                            assistant.completionError = parsed.error;
+                            assistant.completion_status = parsed.completion_status || 'failed';
                             assistant.thinkingActive = false;
                         }
                     }
@@ -1607,13 +1707,16 @@ function app() {
                 signal
             });
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Request failed');
+            if (!response.ok && !data.chat_id) throw new Error(data.error || data.detail || 'Request failed');
             if (signal.aborted) return;
             if (data.chat_id) this.adoptOrdinaryChat(data.chat_id);
             this.messages.push({
                 role: 'assistant',
                 content: data.content,
                 thinking: data.thinking || '',
+                ...(data.preview_thinking ? { previewThinking: data.preview_thinking } : {}),
+                completionError: data.error || '',
+                completion_status: data.completion_status,
                 references: data.references || []
             });
             this.$nextTick(() => this.scrollToBottom());
@@ -2119,12 +2222,22 @@ function app() {
             }
         },
         
+        validateThinkingDraft(model) {
+            const control = model.capability?.thinking_control;
+            if (!control) return;
+            if (!control.request_format) throw new Error(this.t('thinkingSelectFormat'));
+            if (control.request_format === 'reasoning-effort' && control.actions !== 'off' && !control.enable_effort) {
+                throw new Error(this.t('thinkingSelectEffort'));
+            }
+        },
+
         // Save and verify model
         async saveAndVerifyModel(model, index) {
             model.status = 'loading';
             model.verifyMessage = '';
             
             try {
+                this.validateThinkingDraft(model);
                 // Set name to model_id if empty
                 if (!model.name) {
                     model.name = model.model_id || 'Unnamed';
@@ -2137,14 +2250,13 @@ function app() {
                     body: JSON.stringify(model)
                 });
                 
-                if (!saveRes.ok) {
-                    throw new Error('Failed to save');
-                }
+                if (!saveRes.ok) throw new Error(await this.responseError(saveRes));
                 
                 const savedModel = await saveRes.json();
                 if (savedModel.id) {
                     model.id = savedModel.id;
                 }
+                if (this.getChatModel()?.id === savedModel.id) this.syncThinkingModel(savedModel);
                 
                 // Verify model connection
                 const verifyRes = await fetch('/api/models/verify', {
@@ -2154,7 +2266,9 @@ function app() {
                         api_url: model.api_url,
                         api_key: model.api_key,
                         model_id: model.model_id,
-                        type: model.type
+                        type: model.type,
+                        max_output: model.max_output,
+                        capability: savedModel.capability
                     })
                 });
                 
@@ -2162,7 +2276,7 @@ function app() {
                 
                 if (verifyRes.ok && verifyData.success) {
                     model.status = 'success';
-                    model.verifyMessage = this.t('verifySuccess');
+                    model.verifyMessage = this.t(model.type === 'chat' ? 'thinkingVerify' : 'verifySuccess');
                 } else {
                     model.status = 'error';
                     model.verifyMessage = verifyData.error || this.t('verifyFailed');
@@ -2177,12 +2291,14 @@ function app() {
         // Save all settings
         async saveAllSettings() {
             try {
+                for (const model of this.models) this.validateThinkingDraft(model);
                 // Save settings
-                await fetch('/api/settings', {
+                const settingsResponse = await fetch('/api/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(this.settings)
                 });
+                if (!settingsResponse.ok) throw new Error(await this.responseError(settingsResponse));
                 
                 // Save model configs
                 for (const model of this.models) {
@@ -2190,11 +2306,14 @@ function app() {
                     if (!model.name) {
                         model.name = model.model_id || 'Unnamed';
                     }
-                    await fetch('/api/models', {
+                    const response = await fetch('/api/models', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(model)
                     });
+                    if (!response.ok) throw new Error(await this.responseError(response));
+                    const persisted = await response.json();
+                    if (this.getChatModel()?.id === persisted.id) this.syncThinkingModel(persisted);
                 }
                 
                 this.applyTheme();
@@ -2489,7 +2608,7 @@ function app() {
                     getCurrentChatId: () => appInstance.currentChatId,
                     
                     // Get current messages
-                    getMessages: () => appInstance.messages.map(msg => ({ ...msg, content: appInstance.messageText(msg) })),
+                    getMessages: () => appInstance.messages.map(msg => ({ ...appInstance.pluginMessage(msg), content: appInstance.messageText(msg) })),
                     
                     // Add a message to the current chat display
                     addMessage: (role, content) => {

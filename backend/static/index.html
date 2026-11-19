@@ -12,8 +12,8 @@
     
     <!-- Performance: Preload Critical Resources -->
     <link rel="preload" href="fonts/remixicon/remixicon.woff2?t=1769685282643" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="styles.min.css?v=8.5" as="style">
-    <link rel="preload" href="app.min.js?v=8.4" as="script">
+    <link rel="preload" href="styles.min.css?v=8.6" as="style">
+    <link rel="preload" href="app.min.js?v=8.7" as="script">
     <link rel="preload" href="vendor/alpinejs/3.13.3/alpine.min.js" as="script">
     <link rel="preload" href="vendor/marked/9.1.6/marked.min.js" as="script">
     
@@ -143,7 +143,7 @@
     <script defer src="vendor/alpinejs/3.13.3/alpine.min.js"></script>
     <!-- highlight.js is lazy-loaded in app.min.js when needed -->
     <link rel="stylesheet" href="fonts/remixicon/remixicon.css">
-    <link rel="stylesheet" href="styles.min.css?v=8.5">
+    <link rel="stylesheet" href="styles.min.css?v=8.6">
 </head>
 <body x-data="app()" :data-theme="settings.ui_settings.theme_mode">
     <!-- Sidebar Overlay for Mobile -->
@@ -262,7 +262,7 @@
                                 <span></span><span></span><span></span>
                             </div>
                             <!-- Thinking/Reasoning Block -->
-                            <div class="thinking-block" x-show="Boolean(msg.thinking && msg.thinking.length > 0)">
+                            <div class="thinking-block" x-show="Boolean(msg.thinking || msg.previewThinking)">
                                 <button type="button" class="thinking-header" @click="toggleThinking(msg, $el.nextElementSibling)" :aria-expanded="Boolean(msg.showThinking)">
                                     <i class="ri-lightbulb-line" aria-hidden="true"></i>
                                     <span x-text="t('thinkingProcess')"></span>
@@ -270,12 +270,14 @@
                                 </button>
                                 <div class="thinking-content" x-show="msg.showThinking" x-transition.opacity.duration.150ms
                                      tabindex="0" role="region" :aria-label="t('thinkingProcess')">
-                                    <div x-effect="renderThinking($el, msg.thinking)"></div>
+                                    <div x-effect="renderThinking($el, msg.thinking || msg.previewThinking)"></div>
                                 </div>
                             </div>
 
                             <div class="message-markdown" x-show="Boolean(messageText(msg))"
                                  x-effect="renderMessage($el, messageText(msg), messageLive(msg), !!getMessageRun(msg)?.replaying)"></div>
+                            <p class="completion-status" x-show="msg.completion_status" role="status"
+                               x-text="msg.completionError || t(msg.completion_status === 'incomplete' ? 'incompleteAnswer' : 'failedAnswer')"></p>
 
                             <ul class="agent-attachments sent-attachments" x-show="Boolean(msg.role === 'user' && msg.attachments?.length)" :aria-label="at('attachments')">
                                 <template x-for="file in msg.attachments || []" :key="file.attachment_id">
@@ -655,12 +657,15 @@
                                 <span x-text="at(agentPermissionMode === 'full' ? 'permissionFull' : 'permissionAsk')"></span>
                                 <i class="ri-arrow-up-s-line agent-permission-caret" aria-hidden="true"></i>
                             </button>
-                            <!-- Thinking Mode Toggle -->
-                            <div class="thinking-toggle" x-show="!agentId" :class="{ 'active': useThinking }" @click="useThinking = !useThinking" :title="t('thinkingMode')">
-                                <i class="ri-lightbulb-line"></i>
-                                <div class="thinking-slider">
-                                    <div class="thinking-slider-handle"></div>
-                                </div>
+                            <div class="thinking-control" x-show="!agentId && savedThinkingModel">
+                                <i class="ri-lightbulb-line" aria-hidden="true"></i>
+                                <select class="thinking-mode" x-show="thinkingActions()" x-model="thinkingMode"
+                                        :aria-label="t('thinkingMode')" :disabled="isGenerating">
+                                    <option value="default" x-text="t(isMobileView ? 'thinkingDefaultCompact' : 'thinkingDefault')"></option>
+                                    <option value="on" x-show="thinkingActions() !== 'off'" :disabled="thinkingActions() === 'off'" x-text="t('thinkingOn')"></option>
+                                    <option value="off" x-show="thinkingActions() !== 'on'" :disabled="thinkingActions() === 'on'" x-text="t('thinkingOff')"></option>
+                                </select>
+                                <span x-show="!thinkingActions()" x-text="t(savedThinkingModel?.fixed ? 'thinkingFixed' : (isMobileView ? 'thinkingDefaultCompact' : 'thinkingDefault'))"></span>
                             </div>
                             <template x-if="!agentId && chatModelSupportsVision()">
                                 <label class="btn-tool btn-tool-upload" :title="t('uploadImage')">
@@ -770,17 +775,75 @@
                                 
                                 <div class="form-group">
                                     <label class="form-label">API Endpoint</label>
-                                    <input type="text" class="input-minimal" x-model="model.api_url">
+                                    <input type="text" class="input-minimal" x-model="model.api_url" @input="resetConnectionThinking(model)">
                                 </div>
                                 
                                 <div class="form-group">
                                     <label class="form-label">API Key (Optional)</label>
-                                    <input type="password" class="input-minimal" x-model="model.api_key">
+                                    <input type="password" class="input-minimal" x-model="model.api_key" @input="resetConnectionThinking(model)">
                                 </div>
 
                                 <div class="form-group">
                                     <label class="form-label">Model ID</label>
-                                    <input type="text" class="input-minimal" x-model="model.model_id">
+                                    <input type="text" class="input-minimal" x-model="model.model_id" @input="resetConnectionThinking(model)">
+                                </div>
+
+                                <div class="form-group" x-show="model.type === 'chat'">
+                                    <label class="form-label" :for="'thinking-control-' + index" x-text="t('thinkingControl')"></label>
+                                    <select class="input-minimal" :id="'thinking-control-' + index"
+                                            :value="model.capability.thinking_control ? 'switchable' : 'default'"
+                                            @change="setThinkingControl(model, $event.target.value === 'switchable')">
+                                        <option value="default" x-text="t('thinkingDefault')"></option>
+                                        <option value="switchable" :disabled="model.capability.always_thinks" x-text="t('thinkingSwitchable')"></option>
+                                    </select>
+                                    <span class="form-sublabel" x-show="model.capability.always_thinks" x-text="t('thinkingFixed')"></span>
+                                    <template x-if="model.capability.thinking_control">
+                                        <details class="thinking-request">
+                                            <summary x-text="t('thinkingRequest')"></summary>
+                                            <label class="form-label">
+                                                <span x-text="t('thinkingFormat')"></span>
+                                                <select class="input-minimal" x-model="model.capability.thinking_control.request_format">
+                                                    <option value="" x-text="t('thinkingSelectFormat')"></option>
+                                                    <option value="enable_thinking">enable_thinking</option>
+                                                    <option value="template-enable">chat_template_kwargs.enable_thinking</option>
+                                                    <option value="template-thinking">chat_template_kwargs.thinking</option>
+                                                    <option value="thinking-type">thinking.type</option>
+                                                    <option value="reasoning-enabled">reasoning.enabled</option>
+                                                    <option value="reasoning-effort">reasoning_effort</option>
+                                                </select>
+                                            </label>
+                                            <label class="form-label">
+                                                <span x-text="t('thinkingActions')"></span>
+                                                <select class="input-minimal" x-model="model.capability.thinking_control.actions">
+                                                    <option value="both" x-text="t('thinkingBoth')"></option>
+                                                    <option value="on" x-text="t('thinkingOn')"></option>
+                                                    <option value="off" x-text="t('thinkingOff')"></option>
+                                                </select>
+                                            </label>
+                                            <label class="form-label" x-show="model.capability.thinking_control.request_format === 'reasoning-effort' && model.capability.thinking_control.actions !== 'off'">
+                                                <span x-text="t('thinkingEffort')"></span>
+                                                <select class="input-minimal" :value="model.capability.thinking_control.enable_effort || ''"
+                                                        @change="model.capability.thinking_control.enable_effort = $event.target.value || null">
+                                                    <option value="">—</option>
+                                                    <option>minimal</option><option>low</option><option>medium</option>
+                                                    <option>high</option><option>xhigh</option><option>max</option>
+                                                </select>
+                                            </label>
+                                            <span class="form-sublabel" x-text="t('thinkingFormatHint')"></span>
+                                        </details>
+                                    </template>
+                                    <details class="thinking-request">
+                                        <summary x-text="t('thinkingConnectionLimits')"></summary>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" x-model="model.capability.always_thinks"
+                                                   @change="if ($event.target.checked) setThinkingControl(model, false)">
+                                            <span x-text="t('thinkingFixed')"></span>
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" x-model="model.capability.chat_stream_only">
+                                            <span x-text="t('thinkingStreamOnly')"></span>
+                                        </label>
+                                    </details>
                                 </div>
 
                                 <div class="form-group" x-show="model.type === 'chat'">
@@ -788,9 +851,6 @@
                                     <div class="checkbox-group">
                                         <label class="checkbox-label">
                                             <input type="checkbox" x-model="model.capability.vision" @change="$nextTick(() => syncVisionCapabilityState())"> <span x-text="t('vision')"></span>
-                                        </label>
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" x-model="model.capability.reasoning"> <span x-text="t('reasoning')"></span>
                                         </label>
                                         <label class="checkbox-label">
                                             <input type="checkbox" x-model="model.capability.tools"> <span x-text="t('tools')"></span>
@@ -1391,6 +1451,6 @@
     </script>
     <script src="stream-markdown.js?v=1"></script>
     <script src="agents.js?v=6"></script>
-    <script src="app.min.js?v=8.4"></script>
+    <script src="app.min.js?v=8.7"></script>
 </body>
 </html>
