@@ -91,6 +91,9 @@ jobs:
       - name: Test chat and skill integration
         run: python -m unittest backend.test_skills
 
+      - name: Test HTML Renderer helper
+        run: python -m unittest backend.test_html_renderer_plugin -v
+
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
