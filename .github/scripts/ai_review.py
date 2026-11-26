@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """
 AI Code Review Script for PR - Gemini / OpenAI compatible.
-Runs from PR branch checkout; script itself is from main branch.
+Reads PR patches as data from the GitHub API when invoked by Actions.
 """
+
+import json
 import os
+import re
 import subprocess
 import sys
+import urllib.request
 
 GITHUB_STEP_SUMMARY = os.environ.get("GITHUB_STEP_SUMMARY")
 GITHUB_BASE_REF = os.environ.get("GITHUB_BASE_REF", "main")
@@ -21,7 +25,14 @@ REVIEW_DIMENSIONS = """请从以下维度审查代码变更，给出简明扼要
 6. **前端特有**（若含 JS/CSS）：DOM 操作是否安全、浏览器兼容性、无障碍性（a11y）"""
 
 # 支持审查的文件类型
-REVIEW_PATTERNS = ["*.py", "*.js", "*.css", "backend/**/*.py", "backend/**/*.js", "backend/**/*.css"]
+REVIEW_PATTERNS = [
+    "*.py",
+    "*.js",
+    "*.css",
+    "backend/**/*.py",
+    "backend/**/*.js",
+    "backend/**/*.css",
+]
 
 
 def run_cmd(cmd: list[str], cwd: str | None = None) -> tuple[int, str]:
@@ -38,11 +49,14 @@ def run_cmd(cmd: list[str], cwd: str | None = None) -> tuple[int, str]:
 
 def get_code_diff() -> tuple[list[str], str]:
     """Get list of changed .py/.js/.css files and the diff content."""
+    pr_number = os.environ.get("PR_NUMBER")
+    if pr_number:
+        return get_pr_patches(pr_number)
+
     base_ref = f"origin/{GITHUB_BASE_REF}"
     # Get changed files (Python, JavaScript, CSS)
     rc, out = run_cmd(
-        ["git", "diff", "--name-only", f"{base_ref}...HEAD", "--"]
-        + REVIEW_PATTERNS
+        ["git", "diff", "--name-only", f"{base_ref}...HEAD", "--"] + REVIEW_PATTERNS
     )
     if rc != 0:
         return [], ""
@@ -57,15 +71,70 @@ def get_code_diff() -> tuple[list[str], str]:
     diff = diff_out if rc == 0 else ""
 
     if len(diff) > MAX_DIFF_CHARS:
-        diff = diff[:MAX_DIFF_CHARS] + f"\n\n...[diff 已截断，总计超出 {MAX_DIFF_CHARS} 字符]..."
+        diff = (
+            diff[:MAX_DIFF_CHARS]
+            + f"\n\n...[diff 已截断，总计超出 {MAX_DIFF_CHARS} 字符]..."
+        )
 
+    return files, diff
+
+
+def get_pr_patches(pr_number: str) -> tuple[list[str], str]:
+    """Fetch PR file patches without checking out or executing PR content."""
+    repository = os.environ.get("GITHUB_REPOSITORY", "")
+    token = os.environ.get("GITHUB_TOKEN", "")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
+        raise ValueError("Invalid GITHUB_REPOSITORY")
+    if not pr_number.isascii() or not pr_number.isdigit() or not token:
+        raise ValueError("Missing or invalid PR_NUMBER or GITHUB_TOKEN")
+
+    files: list[str] = []
+    patches: list[str] = []
+    for page in range(1, 31):
+        url = (
+            f"https://api.github.com/repos/{repository}/pulls/{pr_number}/files"
+            f"?per_page=100&page={page}"
+        )
+        request = urllib.request.Request(
+            url,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {token}",
+                "User-Agent": "ChatRaw-PR-Review",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+        )
+        with urllib.request.urlopen(request, timeout=20) as response:
+            page_files = json.load(response)
+        if not isinstance(page_files, list):
+            raise ValueError("Invalid GitHub PR file response")
+        for item in page_files:
+            name = item.get("filename", "")
+            if not isinstance(name, str) or not name.lower().endswith(
+                (".py", ".js", ".mjs", ".css")
+            ):
+                continue
+            files.append(name)
+            patch = item.get("patch")
+            if not isinstance(patch, str):
+                patch = "[GitHub did not provide a textual patch for this file.]"
+            patches.append(f"--- {name}\n{patch}\n")
+        if len(page_files) < 100:
+            break
+
+    diff = "\n".join(patches)
+    if len(diff) > MAX_DIFF_CHARS:
+        diff = (
+            diff[:MAX_DIFF_CHARS]
+            + f"\n\n...[diff 已截断，总计超出 {MAX_DIFF_CHARS} 字符]..."
+        )
     return files, diff
 
 
 def build_prompt(files: list[str], diff: str) -> str:
     """Build the review prompt."""
     py_count = sum(1 for f in files if f.endswith(".py"))
-    js_count = sum(1 for f in files if f.endswith(".js"))
+    js_count = sum(1 for f in files if f.lower().endswith((".js", ".mjs")))
     css_count = sum(1 for f in files if f.endswith(".css"))
     lang_parts = []
     if py_count:
@@ -168,9 +237,7 @@ def main() -> int:
     if result is None:
         result = call_gemini(prompt)
     if result is None:
-        result = (
-            "⚠️ AI 审查未执行：请配置 `OPENAI_API_KEY`（DeepSeek 等）或 `GEMINI_API_KEY`。"
-        )
+        result = "⚠️ AI 审查未执行：请配置 `OPENAI_API_KEY`（DeepSeek 等）或 `GEMINI_API_KEY`。"
 
     write_result(result)
     return 0
