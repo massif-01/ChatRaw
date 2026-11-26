@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """
 AI Code Review Script for PR - Gemini / OpenAI compatible.
-Reads PR patches as data from the GitHub API when invoked by Actions.
+Reads the checked commit comparison as data when invoked by Actions.
 """
 
 import json
 import os
-import re
 import subprocess
 import sys
-import urllib.request
 
 GITHUB_STEP_SUMMARY = os.environ.get("GITHUB_STEP_SUMMARY")
 GITHUB_BASE_REF = os.environ.get("GITHUB_BASE_REF", "main")
@@ -49,9 +47,11 @@ def run_cmd(cmd: list[str], cwd: str | None = None) -> tuple[int, str]:
 
 def get_code_diff() -> tuple[list[str], str]:
     """Get list of changed .py/.js/.css files and the diff content."""
-    pr_number = os.environ.get("PR_NUMBER")
-    if pr_number:
-        return get_pr_patches(pr_number)
+    changes_file = os.environ.get("PR_CHANGES_FILE")
+    if changes_file:
+        return get_pr_patches(changes_file)
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        raise ValueError("Missing PR_CHANGES_FILE")
 
     base_ref = f"origin/{GITHUB_BASE_REF}"
     # Get changed files (Python, JavaScript, CSS)
@@ -79,48 +79,34 @@ def get_code_diff() -> tuple[list[str], str]:
     return files, diff
 
 
-def get_pr_patches(pr_number: str) -> tuple[list[str], str]:
-    """Fetch PR file patches without checking out or executing PR content."""
-    repository = os.environ.get("GITHUB_REPOSITORY", "")
-    token = os.environ.get("GITHUB_TOKEN", "")
-    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
-        raise ValueError("Invalid GITHUB_REPOSITORY")
-    if not pr_number.isascii() or not pr_number.isdigit() or not token:
-        raise ValueError("Missing or invalid PR_NUMBER or GITHUB_TOKEN")
-
+def get_pr_patches(changes_file: str) -> tuple[list[str], str]:
+    """Read the exact change set checked for this run without executing it."""
+    base = os.environ.get("PR_BASE_SHA")
+    head = os.environ.get("PR_HEAD_SHA")
+    with open(changes_file, encoding="utf-8") as f:
+        snapshot = json.load(f)
+    if (
+        not base
+        or not head
+        or not isinstance(snapshot, dict)
+        or snapshot.get("base_sha") != base
+        or snapshot.get("head_sha") != head
+        or not isinstance(snapshot.get("files"), list)
+    ):
+        raise ValueError("PR change set does not match this run's commits")
     files: list[str] = []
     patches: list[str] = []
-    for page in range(1, 31):
-        url = (
-            f"https://api.github.com/repos/{repository}/pulls/{pr_number}/files"
-            f"?per_page=100&page={page}"
-        )
-        request = urllib.request.Request(
-            url,
-            headers={
-                "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {token}",
-                "User-Agent": "ChatRaw-PR-Review",
-                "X-GitHub-Api-Version": "2022-11-28",
-            },
-        )
-        with urllib.request.urlopen(request, timeout=20) as response:
-            page_files = json.load(response)
-        if not isinstance(page_files, list):
-            raise ValueError("Invalid GitHub PR file response")
-        for item in page_files:
-            name = item.get("filename", "")
-            if not isinstance(name, str) or not name.lower().endswith(
-                (".py", ".js", ".mjs", ".css")
-            ):
-                continue
-            files.append(name)
-            patch = item.get("patch")
-            if not isinstance(patch, str):
-                patch = "[GitHub did not provide a textual patch for this file.]"
-            patches.append(f"--- {name}\n{patch}\n")
-        if len(page_files) < 100:
-            break
+    for item in snapshot["files"]:
+        name = item.get("filename", "")
+        if not isinstance(name, str) or not name.lower().endswith(
+            (".py", ".js", ".mjs", ".css")
+        ):
+            continue
+        files.append(name)
+        patch = item.get("patch")
+        if not isinstance(patch, str):
+            patch = "[GitHub did not provide a textual patch for this file.]"
+        patches.append(f"--- {name}\n{patch}\n")
 
     diff = "\n".join(patches)
     if len(diff) > MAX_DIFF_CHARS:
