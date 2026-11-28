@@ -1,0 +1,17 @@
+{
+  "id": "html-renderer",
+  "version": "1.0.2",
+  "name": {
+    "en": "HTML Renderer",
+    "zh": "HTML 网页渲染"
+  },
+  "description": {
+    "en": "Run HTML code blocks in an interactive browser tab.",
+    "zh": "在浏览器标签页运行 HTML 代码。"
+  },
+  "author": "wowalxa2-tech",
+  "icon": "icon.png",
+  "main": "main.js",
+  "type": "ui_extension",
+  "hooks": []
+}

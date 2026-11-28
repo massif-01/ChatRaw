@@ -94,6 +94,14 @@ jobs:
       - name: Test chat and skill integration
         run: python -m unittest backend.test_skills
 
+      - name: Install browser test dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Test HTML Renderer in Chrome
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: node scripts/test-html-renderer-ui.mjs
+
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
