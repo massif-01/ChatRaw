@@ -53,6 +53,9 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
+      - name: Test PR review workflow
+        run: python scripts/test-pr-review-workflow.py -v
+
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt flake8
