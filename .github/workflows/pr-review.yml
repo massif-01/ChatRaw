@@ -278,6 +278,7 @@ jobs:
     if: always() && github.event_name == 'pull_request_target'
     concurrency:
       group: pr-review-comment-${{ github.event.pull_request.number }}
+      queue: max
       cancel-in-progress: false
     permissions:
       pull-requests: write

@@ -155,14 +155,16 @@ class WorkflowPolicyTest(unittest.TestCase):
             )
         return json.loads(result.stdout)
 
-    def report(self, mode="current", status="ok", result="success"):
+    def report(
+        self, mode="current", status="ok", result="success", queue_mode="single"
+    ):
         runner = """
           const fs = require('fs');
           const input = JSON.parse(fs.readFileSync(0, 'utf8'));
           const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
           const fn = new AsyncFunction('context', 'github', 'core', input.code);
           const old = 'b'.repeat(40), current = 'c'.repeat(40), base = 'a'.repeat(40);
-          const state = {body: null, writes: [], notices: []};
+          const state = {body: null, writes: [], notices: [], queued: []};
           const issues = {
             listComments: () => {},
             createComment: async ({body}) => {state.body = body; state.writes.push(body);},
@@ -187,8 +189,20 @@ class WorkflowPolicyTest(unittest.TestCase):
             await fn(context, github, core);
           };
           (async () => {
-            await invoke(current);
-            if (input.mode === 'old-after-new') await invoke(old);
+            if (input.mode === 'new-waits-before-old') {
+              const enqueue = head => {
+                if (input.queue_mode !== 'max') state.queued.length = 0;
+                state.queued.push(head);
+              };
+              // Another report is running: the current report waits first,
+              // then an older run reaches the queue.
+              enqueue(current);
+              enqueue(old);
+              for (const head of state.queued) await invoke(head);
+            } else {
+              await invoke(current);
+              if (input.mode === 'old-after-new') await invoke(old);
+            }
             process.stdout.write(JSON.stringify(state));
           })().catch(error => { console.error(error); process.exitCode = 1; });
         """
@@ -198,6 +212,7 @@ class WorkflowPolicyTest(unittest.TestCase):
                 "mode": mode,
                 "status": status,
                 "result": result,
+                "queue_mode": queue_mode,
             }
         )
         with tempfile.TemporaryDirectory() as temp:
@@ -283,6 +298,24 @@ class WorkflowPolicyTest(unittest.TestCase):
             self.comment,
         )
         self.assertIn("cancel-in-progress: false", self.comment)
+
+    def test_latest_waiting_report_survives_a_later_stale_arrival(self):
+        concurrency = self.comment.split("    concurrency:\n", 1)[1].split(
+            "\n    permissions:", 1
+        )[0]
+        queue_mode = next(
+            (
+                line.split(":", 1)[1].strip()
+                for line in concurrency.splitlines()
+                if line.strip().startswith("queue:")
+            ),
+            "single",
+        )
+        report = self.report(mode="new-waits-before-old", queue_mode=queue_mode)
+        self.assertEqual(report["queued"], ["c" * 40, "b" * 40])
+        self.assertEqual(len(report["writes"]), 1)
+        self.assertIn("`" + "c" * 40 + "`", report["body"])
+        self.assertEqual(len(report["notices"]), 1)
 
     def test_privileged_jobs_do_not_checkout_pr_code(self):
         self.assertNotIn("actions/checkout", self.security)
