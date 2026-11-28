@@ -11,15 +11,11 @@
   const labels = {
     en: {
       render: 'Render', preview: 'Web preview',
-      bridge: 'Enable the included Mac browser helper first.',
-      failed: 'Could not open the browser. Check the browser helper.',
-      tooLarge: 'This HTML exceeds the 8 MB preview limit.'
+      blocked: 'Allow pop-ups for this site, then click Render again.'
     },
     zh: {
       render: '渲染', preview: '网页预览',
-      bridge: '请先启用插件附带的 Mac 浏览器辅助模块。',
-      failed: '无法打开浏览器，请检查辅助模块。',
-      tooLarge: 'HTML 超过 8 MB，无法预览。'
+      blocked: '请允许此网站打开新标签页后，再点击“渲染”。'
     }
   };
   const t = key => (labels[chatraw.utils.getLanguage()] || labels.en)[key];
@@ -38,43 +34,31 @@
         'content="connect-src &#39;none&#39;; form-action &#39;none&#39;; ' +
         'object-src &#39;none&#39;; base-uri &#39;none&#39;">';
 
-  async function openPreview(source) {
+  function openPreview(source) {
     const tab = window.open('', '_blank');
-    if (tab) {
-      tab.opener = null;
-      const doc = tab.document;
-      doc.title = t('preview');
-      const policy = doc.createElement('meta');
-      policy.httpEquiv = 'Content-Security-Policy';
-      policy.content = 'frame-src about:; connect-src \'none\'; form-action \'none\'; ' +
-                'object-src \'none\'; base-uri \'none\'';
-      doc.head.appendChild(policy);
-      doc.documentElement.style.height = '100%';
-      doc.body.style.cssText = 'margin:0;height:100%;overflow:hidden';
-      const frame = doc.createElement('iframe');
-      frame.title = t('preview');
-      frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-pointer-lock');
-      frame.referrerPolicy = 'no-referrer';
-      frame.style.cssText = 'display:block;width:100%;height:100%;border:0';
-      frame.addEventListener('load', () => frame.focus(), { once: true });
-      doc.body.appendChild(frame);
-      frame.srcdoc = documentPrefix + source;
+    if (!tab) {
+      chatraw.utils.showToast(t('blocked'), 'error');
       return;
     }
 
-    try {
-      const response = await fetch('http://127.0.0.1:38479/open', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: source, language: chatraw.utils.getLanguage() })
-      });
-      if (!response.ok) {
-        chatraw.utils.showToast(t(response.status === 413 ? 'tooLarge' : 'failed'), 'error');
-      }
-    } catch (error) {
-      console.error('[HTML Renderer] Browser helper unavailable:', error);
-      chatraw.utils.showToast(t('bridge'), 'error');
-    }
+    tab.opener = null;
+    const doc = tab.document;
+    doc.title = t('preview');
+    const policy = doc.createElement('meta');
+    policy.httpEquiv = 'Content-Security-Policy';
+    policy.content = 'frame-src about:; connect-src \'none\'; form-action \'none\'; ' +
+                'object-src \'none\'; base-uri \'none\'';
+    doc.head.appendChild(policy);
+    doc.documentElement.style.height = '100%';
+    doc.body.style.cssText = 'margin:0;height:100%;overflow:hidden';
+    const frame = doc.createElement('iframe');
+    frame.title = t('preview');
+    frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-pointer-lock');
+    frame.referrerPolicy = 'no-referrer';
+    frame.style.cssText = 'display:block;width:100%;height:100%;border:0';
+    frame.addEventListener('load', () => frame.focus(), { once: true });
+    doc.body.appendChild(frame);
+    frame.srcdoc = documentPrefix + source;
   }
 
   function isHtml(code) {

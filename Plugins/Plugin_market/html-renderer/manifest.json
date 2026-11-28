@@ -1,13 +1,13 @@
 {
   "id": "html-renderer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "name": {
     "en": "HTML Renderer",
     "zh": "HTML 网页渲染"
   },
   "description": {
-    "en": "Run HTML code blocks in an interactive browser tab. The macOS app requires a one-time helper setup.",
-    "zh": "在浏览器标签页运行 HTML 代码；macOS 客户端需一次启用辅助模块。"
+    "en": "Run HTML code blocks in an interactive browser tab.",
+    "zh": "在浏览器标签页运行 HTML 代码。"
   },
   "author": "wowalxa2-tech",
   "icon": "icon.png",

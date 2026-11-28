@@ -48,8 +48,8 @@ try {
   assert.equal(install.status, 200);
   assert.equal((await install.json()).success, true);
   const installed = join(data, 'plugins/installed/html-renderer');
-  assert.ok((await readFile(join(installed, 'bridge.py'), 'utf8')).includes('class PreviewServer'));
-  assert.ok((await readFile(join(installed, 'install-mac.sh'), 'utf8')).includes('launchctl bootstrap'));
+  assert.equal(JSON.parse(await readFile(join(installed, 'manifest.json'), 'utf8')).id, 'html-renderer');
+  assert.ok((await readFile(join(installed, 'main.js'), 'utf8')).includes('openPreview'));
 
   browser = await chromium.launch({ executablePath: browserPath });
   const context = await browser.newContext();
@@ -79,6 +79,38 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('.chatraw-html-render-action').length === 2);
   assert.equal(await page.locator('.message.user .chatraw-html-render-action').count(), 0);
   assert.equal(await page.locator('.message.assistant').nth(1).locator('.chatraw-html-render-action').count(), 0);
+
+  await page.evaluate(() => {
+    const originalFetch = window.fetch;
+    const originalOpen = window.open;
+    const originalToast = window.ChatRawPlugin.utils.showToast;
+    const result = { calls: [], toasts: [] };
+    window.__popupProbe = { originalFetch, originalOpen, originalToast, result };
+    window.open = () => null;
+    window.fetch = function (input, ...args) {
+      if (String(input).startsWith('http://127.0.0.1:38479/')) {
+        result.calls.push(String(input));
+        return Promise.reject(new Error('Unexpected helper request'));
+      }
+      return originalFetch.call(this, input, ...args);
+    };
+    window.ChatRawPlugin.utils.showToast = (...args) => {
+      result.toasts.push(args);
+      return originalToast(...args);
+    };
+  });
+  await page.locator('.message.assistant').first().getByRole('button', { name: 'Render', exact: true }).first().click();
+  await page.waitForFunction(() => window.__popupProbe.result.toasts.length > 0);
+  const blocked = await page.evaluate(() => window.__popupProbe.result);
+  assert.deepEqual(blocked.calls, []);
+  assert.match(blocked.toasts[0][0], /Allow pop-ups/);
+  await page.evaluate(() => {
+    const probe = window.__popupProbe;
+    window.fetch = probe.originalFetch;
+    window.open = probe.originalOpen;
+    window.ChatRawPlugin.utils.showToast = probe.originalToast;
+    delete window.__popupProbe;
+  });
 
   const [preview] = await Promise.all([
     context.waitForEvent('page'),
