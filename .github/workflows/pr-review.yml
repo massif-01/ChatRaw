@@ -8,6 +8,8 @@ on:
       - 'backend/**/*.py'
       - 'backend/requirements.txt'
       - 'backend/static/**'
+      - 'Plugins/**'
+      - 'scripts/**'
       - 'Dockerfile'
       - 'docker-compose.yml'
       - 'docs/**'
@@ -20,6 +22,8 @@ on:
       - 'backend/**/*.py'
       - 'backend/requirements.txt'
       - 'backend/static/**'
+      - 'Plugins/**'
+      - 'scripts/**'
       - 'Dockerfile'
       - 'docker-compose.yml'
       - 'docs/**'
@@ -29,11 +33,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
-
-env:
-  BASE_REF: ${{ github.event.pull_request.base.ref || github.ref_name }}
+  pull-requests: read
 
 jobs:
   guard:
@@ -46,36 +46,77 @@ jobs:
   security-check:
     name: Security Check
     runs-on: ubuntu-latest
-    if: github.event.pull_request != null
+    if: github.event_name == 'pull_request_target'
     outputs:
       safe_to_run: ${{ steps.check.outputs.safe_to_run }}
+      has_reviewable_changes: ${{ steps.check.outputs.has_reviewable_changes }}
+      status: ${{ steps.check.outputs.status }}
+      file_count: ${{ steps.check.outputs.file_count }}
+      additions: ${{ steps.check.outputs.additions }}
+      deletions: ${{ steps.check.outputs.deletions }}
     steps:
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          fetch-depth: 0
-
-      - name: Fetch base branch
-        run: git fetch origin ${{ env.BASE_REF }}
-
       - name: Check sensitive files
         id: check
-        run: |
-          CHANGED=$(git diff --name-only origin/${{ env.BASE_REF }}...HEAD -- '.github/workflows/*.yml' '.github/scripts/*.py' 2>/dev/null || true)
-          if [ -n "$CHANGED" ]; then
-            echo "safe_to_run=false" >> $GITHUB_OUTPUT
-            echo "⚠️ 敏感文件被修改 (.github/workflows 或 .github/scripts)，跳过 AI 审查"
-          else
-            echo "safe_to_run=true" >> $GITHUB_OUTPUT
-          fi
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const pr = context.payload.pull_request;
+            const base = pr.base.sha;
+            const head = pr.head.sha;
+            let files;
+            try {
+              const { data } = await github.request('GET /repos/{owner}/{repo}/compare/{basehead}', {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                basehead: `${base}...${head}`,
+                per_page: 1,
+              });
+              if (!Array.isArray(data.files)) throw new Error('Missing changed files');
+              files = data.files;
+            } catch (error) {
+              core.setOutput('status', 'api_error');
+              core.warning(`Could not fetch the commit comparison: ${error.message}`);
+              return;
+            }
+            const names = files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean));
+            const sensitive = names.some(name =>
+              /^\.github\/workflows\/.*\.ya?ml$/i.test(name) ||
+              /^\.github\/scripts\/.*\.py$/i.test(name)
+            );
+            const complete = Number.isInteger(pr.changed_files) && files.length === pr.changed_files;
+            const reviewable = files.some(file => /\.(py|js|mjs|css)$/i.test(file.filename));
+            const status = !complete ? 'incomplete' : sensitive ? 'sensitive' : 'ok';
+            core.setOutput('status', status);
+            core.setOutput('safe_to_run', String(complete && !sensitive));
+            core.setOutput('has_reviewable_changes', String(reviewable));
+            core.setOutput('file_count', String(files.length));
+            core.setOutput('additions', String(files.reduce((n, file) => n + (file.additions || 0), 0)));
+            core.setOutput('deletions', String(files.reduce((n, file) => n + (file.deletions || 0), 0)));
+            if (!complete || sensitive) core.notice('Sensitive files changed or PR file list is incomplete; AI review skipped.');
+            if (complete && !sensitive && reviewable) {
+              fs.mkdirSync('pr-review-data', { recursive: true });
+              fs.writeFileSync('pr-review-data/changes.json', JSON.stringify({ base_sha: base, head_sha: head, files }));
+            }
+
+      - name: Fail when the comparison API is unavailable
+        if: steps.check.outputs.status == 'api_error'
+        run: exit 1
+
+      - name: Save the reviewed change set
+        if: steps.check.outputs.safe_to_run == 'true' && steps.check.outputs.has_reviewable_changes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-review-changes
+          path: pr-review-data/changes.json
+          if-no-files-found: error
 
   auto-check:
     name: Auto Check
     runs-on: ubuntu-latest
-    needs: security-check
-    if: needs.security-check.outputs.safe_to_run == 'true'
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
     outputs:
       has_reviewable_changes: ${{ steps.check.outputs.has_reviewable_changes }}
       syntax_ok: ${{ steps.check.outputs.syntax_ok }}
@@ -83,9 +124,8 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -98,56 +138,55 @@ jobs:
 
       - name: Static check (syntax + Flake8)
         id: check
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          git fetch origin ${{ env.BASE_REF }}
           # 检测可审查的代码变更：Python、JavaScript、CSS
-          ALL_FILES=$(git diff --name-only origin/${{ env.BASE_REF }}...HEAD -- '*.py' '*.js' '*.css' 'backend/**/*.py' 'backend/**/*.js' 'backend/**/*.css' 2>/dev/null | tr '\n' ' ')
-          PY_FILES=$(git diff --name-only origin/${{ env.BASE_REF }}...HEAD -- '*.py' 'backend/**/*.py' 2>/dev/null | tr '\n' ' ')
-          if [ -z "$ALL_FILES" ]; then
-            echo "has_reviewable_changes=false" >> $GITHUB_OUTPUT
-            echo "syntax_ok=true" >> $GITHUB_OUTPUT
-            echo "## Static Check: 无 Python/JS/CSS 变更" >> $GITHUB_STEP_SUMMARY
+          CHANGED_FILES=$(mktemp)
+          trap 'rm -f "$CHANGED_FILES"' EXIT
+          git diff --name-only -z --diff-filter=ACMR "$PR_BASE_SHA"...HEAD -- '*.py' '*.js' '*.mjs' '*.css' > "$CHANGED_FILES"
+          if [ ! -s "$CHANGED_FILES" ]; then
+            echo "has_reviewable_changes=false" >> "$GITHUB_OUTPUT"
+            echo "syntax_ok=true" >> "$GITHUB_OUTPUT"
+            echo "## Static Check: 无 Python/JS/CSS 变更" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          echo "has_reviewable_changes=true" >> $GITHUB_OUTPUT
+          echo "has_reviewable_changes=true" >> "$GITHUB_OUTPUT"
           SYNTAX_OK=true
-          if [ -n "$PY_FILES" ]; then
-            for f in $PY_FILES; do
-              if [ -f "$f" ]; then
-                python -m py_compile "$f" 2>/dev/null || SYNTAX_OK=false
-              fi
-            done
-            flake8 --select=E9,F63,F7,F82 $PY_FILES 2>/dev/null || SYNTAX_OK=false
-            echo "## Static Check: 已检查 $(echo $PY_FILES | wc -w) 个 Python 文件" >> $GITHUB_STEP_SUMMARY
+          PY_COUNT=0
+          while IFS= read -r -d '' f; do
+            if [[ "$f" == *.py && -f "$f" ]]; then
+              ((PY_COUNT += 1))
+              python -m py_compile -- "$f" || SYNTAX_OK=false
+              flake8 --select=E9,F63,F7,F82 -- "$f" || SYNTAX_OK=false
+            fi
+          done < "$CHANGED_FILES"
+          if [ "$PY_COUNT" -gt 0 ]; then
+            echo "## Static Check: 已检查 $PY_COUNT 个 Python 文件" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "## Static Check: 仅 JS/CSS 变更，跳过 Python 检查" >> $GITHUB_STEP_SUMMARY
+            echo "## Static Check: 仅 JS/CSS 变更，跳过 Python 检查" >> "$GITHUB_STEP_SUMMARY"
           fi
-          echo "syntax_ok=$SYNTAX_OK" >> $GITHUB_OUTPUT
+          echo "syntax_ok=$SYNTAX_OK" >> "$GITHUB_OUTPUT"
+          [ "$SYNTAX_OK" = true ]
 
   ai-review:
     name: AI Review
     runs-on: ubuntu-latest
-    needs: [security-check, auto-check]
+    needs: security-check
     if: |
       always() &&
+      github.event_name == 'pull_request_target' &&
       needs.security-check.outputs.safe_to_run == 'true' &&
-      needs.auto-check.outputs.has_reviewable_changes == 'true' &&
-      needs.auto-check.result == 'success'
+      needs.security-check.outputs.has_reviewable_changes == 'true'
     steps:
-      - name: Checkout scripts from default branch
+      - name: Checkout trusted base scripts
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.event.pull_request.base.sha }}
           sparse-checkout: |
             .github/scripts
           path: main-scripts
-
-      - name: Checkout PR code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          path: pr-code
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -157,29 +196,39 @@ jobs:
       - name: Install AI dependencies
         run: pip install google-genai openai httpx
 
+      - name: Download the reviewed change set
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-review-changes
+          path: pr-review-data
+
       - name: Run AI review
-        working-directory: pr-code
+        working-directory: main-scripts
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_BASE_REF: ${{ env.BASE_REF }}
+          PR_CHANGES_FILE: ../pr-review-data/changes.json
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GEMINI_MODEL_FALLBACK: ${{ vars.GEMINI_MODEL_FALLBACK || 'gemini-2.5-flash' }}
           OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
         run: |
-          python ../main-scripts/.github/scripts/ai_review.py || echo "⚠️ AI 审查未执行：请配置 GEMINI_API_KEY 或 OPENAI_API_KEY" > ai_review_result.txt
+          python -I .github/scripts/ai_review.py || echo "⚠️ AI 审查未执行：无法获取 PR 变更或调用服务" > ai_review_result.txt
 
       - name: Upload AI review result
         uses: actions/upload-artifact@v4
         with:
           name: ai-review-result
-          path: pr-code/ai_review_result.txt
+          path: main-scripts/ai_review_result.txt
 
   labeler:
     name: Labeler
     runs-on: ubuntu-latest
-    if: github.event.pull_request != null
+    if: github.event_name == 'pull_request_target'
+    permissions:
+      pull-requests: write
+      issues: write
     steps:
       - name: Apply labels
         uses: actions/github-script@v7
@@ -187,7 +236,7 @@ jobs:
           script: |
             try {
             const pr = context.payload.pull_request;
-            const { data: files } = await github.rest.pulls.listFiles({
+            const files = await github.paginate(github.rest.pulls.listFiles, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: pr.number,
@@ -225,8 +274,15 @@ jobs:
   comment:
     name: Comment Report
     runs-on: ubuntu-latest
-    needs: [security-check, auto-check, ai-review]
-    if: always() && github.event.pull_request != null
+    needs: [security-check, ai-review]
+    if: always() && github.event_name == 'pull_request_target'
+    concurrency:
+      group: pr-review-comment-${{ github.event.pull_request.number }}
+      queue: max
+      cancel-in-progress: false
+    permissions:
+      pull-requests: write
+      issues: write
     steps:
       - name: Download AI review artifact
         uses: actions/download-artifact@v4
@@ -236,35 +292,51 @@ jobs:
 
       - name: Create or update comment
         uses: actions/github-script@v7
+        env:
+          SECURITY_RESULT: ${{ needs.security-check.result }}
+          SECURITY_STATUS: ${{ needs.security-check.outputs.status }}
+          FILE_COUNT: ${{ needs.security-check.outputs.file_count }}
+          ADDITIONS: ${{ needs.security-check.outputs.additions }}
+          DELETIONS: ${{ needs.security-check.outputs.deletions }}
         with:
           script: |
             const fs = require('fs');
-            const safeToRun = '${{ needs.security-check.outputs.safe_to_run }}' === 'true';
             let aiResult = 'AI 审查未执行或未产生结果。';
             if (fs.existsSync('ai_review_result.txt')) {
               aiResult = fs.readFileSync('ai_review_result.txt', 'utf8');
             }
-            const prNum = context.payload.pull_request?.number || context.issue?.number;
+            const pr = context.payload.pull_request;
+            const prNum = pr?.number;
             if (!prNum) return;
-            const { data: files } = await github.rest.pulls.listFiles({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNum,
-            });
-            const additions = files.reduce((a, f) => a + (f.additions || 0), 0);
-            const deletions = files.reduce((a, f) => a + (f.deletions || 0), 0);
-            const autoOk = '${{ needs.auto-check.outputs.syntax_ok }}' === 'true';
-            if (!safeToRun) {
-              aiResult = '⚠️ 本 PR 修改了 `.github/workflows` 或 `.github/scripts`，出于安全考虑已跳过 AI 审查。合并后，后续仅修改业务代码的 PR 将获得完整审查。';
+            const status = process.env.SECURITY_STATUS;
+            if (status === 'api_error') {
+              aiResult = '⚠️ 获取提交变更的 GitHub API 失败，未进行 AI 审查。';
+            } else if (process.env.SECURITY_RESULT !== 'success') {
+              aiResult = '⚠️ 变更检查任务失败，未进行 AI 审查；请查看 Security Check。';
+            } else if (status === 'sensitive') {
+              aiResult = '⚠️ 本 PR 修改了敏感文件，出于安全考虑已跳过 AI 审查。';
+            } else if (status === 'incomplete') {
+              aiResult = '⚠️ 变更文件列表不完整，出于安全考虑已跳过 AI 审查。';
             }
-            const staticStatus = !safeToRun ? '⏭️ 已跳过（敏感文件变更）' : (autoOk ? '✅ 通过' : '❌ 未通过');
+            const staticStatus = '请查看 Checks 中独立运行的 CI 和 Auto Check。';
+            let stats = ['- 变更统计不可用'];
+            if (status === 'ok' || status === 'sensitive') {
+              stats = [
+                '- 变更文件：' + process.env.FILE_COUNT,
+                '- 新增行：+' + process.env.ADDITIONS,
+                '- 删除行：-' + process.env.DELETIONS,
+              ];
+            } else if (status === 'incomplete') {
+              stats = ['- 文件列表不完整：获取 ' + process.env.FILE_COUNT + ' 个，预期 ' + pr.changed_files + ' 个'];
+            }
             const body = [
               '## 🤖 自动审查报告',
               '',
+              '- 审查提交：`' + pr.head.sha + '`',
+              '- 对比基准：`' + pr.base.sha + '`',
+              '',
               '### 变更统计',
-              '- 变更文件：' + files.length,
-              '- 新增行：+' + additions,
-              '- 删除行：-' + deletions,
+              ...stats,
               '',
               '### 静态检查',
               staticStatus,
@@ -276,12 +348,21 @@ jobs:
               '*本报告由 CI 自动生成*',
             ].join('\n');
 
-            const { data: comments } = await github.rest.issues.listComments({
+            const comments = await github.paginate(github.rest.issues.listComments, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNum,
             });
             const bot = comments.find(c => c.user.type === 'Bot' && c.body.includes('## 🤖 自动审查报告'));
+            const { data: current } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNum,
+            });
+            if (current.head.sha !== pr.head.sha || current.base.sha !== pr.base.sha) {
+              core.notice('PR head or base changed; refusing to overwrite the current report.');
+              return;
+            }
             if (bot) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,

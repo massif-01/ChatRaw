@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
 AI Code Review Script for PR - Gemini / OpenAI compatible.
-Runs from PR branch checkout; script itself is from main branch.
+Reads the checked commit comparison as data when invoked by Actions.
 """
+
+import json
 import os
 import subprocess
 import sys
@@ -21,7 +23,14 @@ REVIEW_DIMENSIONS = """请从以下维度审查代码变更，给出简明扼要
 6. **前端特有**（若含 JS/CSS）：DOM 操作是否安全、浏览器兼容性、无障碍性（a11y）"""
 
 # 支持审查的文件类型
-REVIEW_PATTERNS = ["*.py", "*.js", "*.css", "backend/**/*.py", "backend/**/*.js", "backend/**/*.css"]
+REVIEW_PATTERNS = [
+    "*.py",
+    "*.js",
+    "*.css",
+    "backend/**/*.py",
+    "backend/**/*.js",
+    "backend/**/*.css",
+]
 
 
 def run_cmd(cmd: list[str], cwd: str | None = None) -> tuple[int, str]:
@@ -38,11 +47,16 @@ def run_cmd(cmd: list[str], cwd: str | None = None) -> tuple[int, str]:
 
 def get_code_diff() -> tuple[list[str], str]:
     """Get list of changed .py/.js/.css files and the diff content."""
+    changes_file = os.environ.get("PR_CHANGES_FILE")
+    if changes_file:
+        return get_pr_patches(changes_file)
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        raise ValueError("Missing PR_CHANGES_FILE")
+
     base_ref = f"origin/{GITHUB_BASE_REF}"
     # Get changed files (Python, JavaScript, CSS)
     rc, out = run_cmd(
-        ["git", "diff", "--name-only", f"{base_ref}...HEAD", "--"]
-        + REVIEW_PATTERNS
+        ["git", "diff", "--name-only", f"{base_ref}...HEAD", "--"] + REVIEW_PATTERNS
     )
     if rc != 0:
         return [], ""
@@ -57,15 +71,56 @@ def get_code_diff() -> tuple[list[str], str]:
     diff = diff_out if rc == 0 else ""
 
     if len(diff) > MAX_DIFF_CHARS:
-        diff = diff[:MAX_DIFF_CHARS] + f"\n\n...[diff 已截断，总计超出 {MAX_DIFF_CHARS} 字符]..."
+        diff = (
+            diff[:MAX_DIFF_CHARS]
+            + f"\n\n...[diff 已截断，总计超出 {MAX_DIFF_CHARS} 字符]..."
+        )
 
+    return files, diff
+
+
+def get_pr_patches(changes_file: str) -> tuple[list[str], str]:
+    """Read the exact change set checked for this run without executing it."""
+    base = os.environ.get("PR_BASE_SHA")
+    head = os.environ.get("PR_HEAD_SHA")
+    with open(changes_file, encoding="utf-8") as f:
+        snapshot = json.load(f)
+    if (
+        not base
+        or not head
+        or not isinstance(snapshot, dict)
+        or snapshot.get("base_sha") != base
+        or snapshot.get("head_sha") != head
+        or not isinstance(snapshot.get("files"), list)
+    ):
+        raise ValueError("PR change set does not match this run's commits")
+    files: list[str] = []
+    patches: list[str] = []
+    for item in snapshot["files"]:
+        name = item.get("filename", "")
+        if not isinstance(name, str) or not name.lower().endswith(
+            (".py", ".js", ".mjs", ".css")
+        ):
+            continue
+        files.append(name)
+        patch = item.get("patch")
+        if not isinstance(patch, str):
+            patch = "[GitHub did not provide a textual patch for this file.]"
+        patches.append(f"--- {name}\n{patch}\n")
+
+    diff = "\n".join(patches)
+    if len(diff) > MAX_DIFF_CHARS:
+        diff = (
+            diff[:MAX_DIFF_CHARS]
+            + f"\n\n...[diff 已截断，总计超出 {MAX_DIFF_CHARS} 字符]..."
+        )
     return files, diff
 
 
 def build_prompt(files: list[str], diff: str) -> str:
     """Build the review prompt."""
     py_count = sum(1 for f in files if f.endswith(".py"))
-    js_count = sum(1 for f in files if f.endswith(".js"))
+    js_count = sum(1 for f in files if f.lower().endswith((".js", ".mjs")))
     css_count = sum(1 for f in files if f.endswith(".css"))
     lang_parts = []
     if py_count:
@@ -168,9 +223,7 @@ def main() -> int:
     if result is None:
         result = call_gemini(prompt)
     if result is None:
-        result = (
-            "⚠️ AI 审查未执行：请配置 `OPENAI_API_KEY`（DeepSeek 等）或 `GEMINI_API_KEY`。"
-        )
+        result = "⚠️ AI 审查未执行：请配置 `OPENAI_API_KEY`（DeepSeek 等）或 `GEMINI_API_KEY`。"
 
     write_result(result)
     return 0
